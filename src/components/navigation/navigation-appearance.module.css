@@ -1,4 +1,34 @@
 /* Keep navigation chrome independent of event-owned colors and artwork. */
+.chrome :global([data-sidebar-background]) {
+  filter: none;
+  transition: filter 160ms ease;
+}
+
+.chrome:global([data-account-menu-open="true"]) :global([data-sidebar-background]) {
+  filter: blur(1.5px);
+}
+
+.accountBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  background: rgb(16 12 22 / 5%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.chrome:global([data-account-menu-open="true"]) .accountBackdrop {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chrome :global([data-sidebar-background]),
+  .accountBackdrop {
+    transition: none;
+  }
+}
+
 :global(html.dark) .chrome {
   --nav-chrome-ink: var(--navigation-foreground, #f2c6de);
   --nav-chrome-muted: var(--navigation-muted, #cdb5c8);

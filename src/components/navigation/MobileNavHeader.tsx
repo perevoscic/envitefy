@@ -5,8 +5,8 @@ import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
 import Link from "next/link";
 import type { MouseEvent, ReactNode, RefObject } from "react";
 import { useSidebar } from "@/app/sidebar-context";
-import wordmark from "../../../public/brand/envitefy-wordmark.png";
-import whiteWordmark from "../../../public/brand/white-v1/envitefy-wordmark.png";
+import wordmark from "../../../public/brand/wordmark-v2/envitefy-wordmark.webp";
+import whiteWordmark from "../../../public/brand/wordmark-v2/envitefy-wordmark-white.webp";
 import appearanceStyles from "./navigation-appearance.module.css";
 
 export default function MobileNavHeader({ visible, onOpenNavigation, onHome, openButtonRef, menuIcon }: {

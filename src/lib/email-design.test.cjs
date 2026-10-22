@@ -12,7 +12,7 @@ test("new email chrome has dark branding, adaptive inbox body and immutable whit
   assert.match(html, /prefers-color-scheme: dark/);
   assert.match(html, /email-brand-band[^>]*bgcolor="#251F2D"/);
   assert.match(html, /email-content email-surface[^>]*bgcolor="#FFFFFF"/);
-  assert.match(html, /\/email\/white-v1\/matte\/envitefy-wordmark-email\.png/);
+  assert.match(html, /\/email\/wordmark-v2\/matte\/envitefy-wordmark-email\.gif/);
   assert.equal((html.match(/class="social-icon-cell"/g) || []).length, 5);
   for (const name of ["instagram", "facebook", "youtube", "tiktok", "reddit"]) {
     assert.ok(html.includes(`/email/white-v1/matte/social-${name}.png`));
@@ -90,7 +90,7 @@ test("all built-in marketing full documents have adaptive chrome and keep origin
     const adaptive = render({ baseUrl: "https://envitefy.com" });
     const legacy = render({ baseUrl: "https://envitefy.com", emailDesignVersion: "legacy" });
     assert.match(adaptive, /data-email-design="adaptive-v1"/);
-    assert.match(adaptive, /white-v1\/matte\/envitefy-wordmark-email/);
+    assert.match(adaptive, /wordmark-v2\/matte\/envitefy-wordmark-email/);
     assert.match(adaptive, /email-footer-band/);
     assert.equal((adaptive.match(/white-v1\/matte\/social-/g) || []).length, 5);
     const artwork = html => [...html.matchAll(/src="([^"]+\.(?:webp|jpg))"/g)].map(m => m[1]);

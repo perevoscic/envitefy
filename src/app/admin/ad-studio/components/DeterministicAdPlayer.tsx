@@ -14,6 +14,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
 import type {
   AdStudioCampaign,
   AdStudioRenderableFormat,
@@ -384,7 +385,7 @@ function BrandStrip({ compact }: { compact: boolean }) {
         className={compact ? "h-5 w-5 rounded-md" : "h-6 w-6 rounded-md"}
       />
       <img
-        src="/email/envitefy-wordmark-email.png"
+        src={ENVITEFY_BRAND_ASSETS.wordmark.white}
         alt="Envitefy"
         className={compact ? "h-3.5 w-auto" : "h-4 w-auto"}
       />
@@ -539,7 +540,7 @@ function BrandReveal({
       </div>
       <div className="rounded-lg border border-white/10 bg-slate-950/80 p-3 text-white shadow-xl backdrop-blur">
         <img
-          src="/email/envitefy-wordmark-email.png"
+          src={ENVITEFY_BRAND_ASSETS.wordmark.white}
           alt="Envitefy"
           className="mx-auto h-6 w-auto"
         />
@@ -569,7 +570,7 @@ function FinalCta({
       <PhoneHero campaign={campaign} format={format} compact />
       <div className="rounded-lg border border-white/10 bg-white p-3 text-center text-slate-950 shadow-2xl">
         <img
-          src="/email/envitefy-wordmark-email.png"
+          src={ENVITEFY_BRAND_ASSETS.wordmark.color}
           alt="Envitefy"
           className="mx-auto h-5 w-auto"
         />

@@ -69,9 +69,9 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
         if(screen==="livecard") {
           const title=page.getByLabel("Event title",{exact:true});
           await title.fill("Movie Under the Stars");
-          await page.getByRole("radio",{name:"Light",exact:true}).check();
+          await page.getByRole("switch",{name:"Dark mode",exact:true}).uncheck();
           assert.equal(await title.inputValue(),"Movie Under the Stars");
-          await page.getByRole("radio",{name:"Dark",exact:true}).check();
+          await page.getByRole("switch",{name:"Dark mode",exact:true}).check();
           assert.equal(await title.inputValue(),"Movie Under the Stars");
         }
         if(screen==="gallery") {
@@ -84,15 +84,56 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             // The app-owned favorite control overlays the authored thumbnail.
             const screenshotOptions={animations:"disabled",mask:[page.locator("[data-template-masonry-card]").first().getByRole("button")],maskColor:"#000000"};
             const before=await artwork.screenshot(screenshotOptions);
-            await page.getByRole("radio",{name:"Light",exact:true}).filter({visible:true}).check();
+            await page.getByRole("switch",{name:"Dark mode",exact:true}).filter({visible:true}).uncheck();
             const light=await artwork.screenshot(screenshotOptions);
             await fs.writeFile(path.join(out,"authored-artwork-dark.png"),before);
             await fs.writeFile(path.join(out,"authored-artwork-light.png"),light);
-            // Exclude the one-pixel antialiased perimeter blended with app-owned surroundings.
-            const contentPixels=async buffer=>{const image=sharp(buffer);const size=await image.metadata();return image.extract({left:1,top:1,width:size.width-2,height:size.height-2}).raw().toBuffer();};
+            // Rounded clipping exposes app-owned surroundings inside the screenshot's
+            // rectangular bounds. Preserve strict comparison of every opaque artwork
+            // pixel, excluding only those corners and their one-pixel antialias edge.
+            const clipping=await artwork.evaluate(element=>{
+              const target=element.getBoundingClientRect();
+              const shapes=[];
+              for(let node=element;node;node=node.parentElement){
+                const style=getComputedStyle(node);
+                if(node!==element&&!/(hidden|clip)/.test(`${style.overflowX} ${style.overflowY}`))continue;
+                const rect=node.getBoundingClientRect();
+                const radius=value=>{
+                  const [x,y=x]=value.split(" ");
+                  const resolve=(token,size)=>parseFloat(token)*(token.endsWith("%")?size/100:1);
+                  return {x:resolve(x,rect.width),y:resolve(y,rect.height)};
+                };
+                shapes.push({left:rect.left-target.left,top:rect.top-target.top,width:rect.width,height:rect.height,radii:[style.borderTopLeftRadius,style.borderTopRightRadius,style.borderBottomRightRadius,style.borderBottomLeftRadius].map(radius)});
+              }
+              return {offsetX:target.left-Math.floor(target.left),offsetY:target.top-Math.floor(target.top),shapes};
+            });
+            const screenshotSize=await sharp(before).metadata();
+            await fs.writeFile(path.join(out,"authored-artwork-clipping.json"),JSON.stringify(clipping,null,2));
+            const contentPixels=async buffer=>{
+              const {data,info}=await sharp(buffer).raw().toBuffer({resolveWithObject:true});
+              assert.equal(info.width,screenshotSize.width,"appearance must preserve artwork width");
+              assert.equal(info.height,screenshotSize.height,"appearance must preserve artwork height");
+              const bytes=[];
+              for(let y=1;y<info.height-1;y++)for(let x=1;x<info.width-1;x++){
+                const px=x+.5-clipping.offsetX,py=y+.5-clipping.offsetY;
+                const opaque=clipping.shapes.every(shape=>{
+                  const right=shape.left+shape.width,bottom=shape.top+shape.height;
+                  return shape.radii.every((radius,index)=>{
+                    if(radius.x<=1||radius.y<=1)return true;
+                    const leftSide=index===0||index===3,topSide=index<2;
+                    const cx=leftSide?shape.left+radius.x:right-radius.x,cy=topSide?shape.top+radius.y:bottom-radius.y;
+                    if((leftSide?px>=cx:px<=cx)||(topSide?py>=cy:py<=cy))return true;
+                    return ((px-cx)/(radius.x-1))**2+((py-cy)/(radius.y-1))**2<=1;
+                  });
+                });
+                if(opaque)for(let channel=0;channel<info.channels;channel++)bytes.push(data[(y*info.width+x)*info.channels+channel]);
+              }
+              assert.ok(bytes.length>data.length*.9,"strict comparison must retain over 90% of artwork pixels");
+              return Buffer.from(bytes);
+            };
             const authoredPixels=await contentPixels(before);
             assert.ok(authoredPixels.equals(await contentPixels(light)),"real gallery artwork must retain its authored pixels when app appearance changes");
-            await page.getByRole("radio",{name:"Dark",exact:true}).filter({visible:true}).check();
+            await page.getByRole("switch",{name:"Dark mode",exact:true}).filter({visible:true}).check();
             assert.ok(authoredPixels.equals(await contentPixels(await artwork.screenshot(screenshotOptions))),"restoring dark must retain authored artwork");
           }
           if(width===390) {
@@ -103,8 +144,8 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             assert.equal(await page.locator("#hero-top-nav-mobile").evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(37, 31, 45)");
             await menu.screenshot({path:path.join(out,"gallery-mobile-navigation-dark.png")});
             const selector=menu.getByRole("group",{name:"Appearance",exact:true});
-            await selector.getByRole("radio",{name:"Light",exact:true}).check();
-            await selector.getByRole("radio",{name:"Dark",exact:true}).check();
+            await selector.getByRole("switch",{name:"Dark mode",exact:true}).uncheck();
+            await selector.getByRole("switch",{name:"Dark mode",exact:true}).check();
             await menu.getByRole("button",{name:"Close navigation",exact:true}).click();
           }
         }
@@ -126,7 +167,7 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             const sheet=page.getByRole("dialog",{name:"Menu",exact:true});
             await sheet.waitFor();
             assert.equal(await sheet.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(37, 31, 45)");
-            await sheet.getByRole("radio",{name:"Dark",exact:true}).check();
+            await sheet.getByRole("switch",{name:"Dark mode",exact:true}).check();
             assert.ok((await sheet.getByRole("img",{name:"Envitefy",exact:true}).getAttribute("src")).includes("/brand/white-v1/"));
             await sheet.screenshot({path:path.join(out,"signed-out-mobile-menu-dark.png")});
             await sheet.getByRole("button",{name:"Close menu",exact:true}).click();

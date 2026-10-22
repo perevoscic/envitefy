@@ -2,6 +2,7 @@
 
 import { CalendarPlus } from "lucide-react";
 import { useCalendarAction } from "@/components/CalendarAction";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import { CALENDAR_PROVIDER_NAMES, type CalendarProvider } from "@/lib/calendar-preference";
 import { type CalendarHandoffEvent } from "@/utils/calendar-handoff";
 import { buildCalendarLinks } from "@/utils/calendar-links";
@@ -46,7 +47,7 @@ export default function CalendarHandoff({ handoff }: { handoff: CalendarHandoffE
             </div>
           </>
         ) : <p className="mt-4 leading-7">This calendar link is incomplete. Open the event invitation and choose Add to calendar again.</p>}
-        <p className="mt-8 text-center text-xs text-[#6b617d]">Envitefy</p>
+        <div className="mt-8 text-center"><EnvitefyWordmark scaled={false} appearance="fixed" className="text-xl" /></div>
       </section>
     </main>
   );

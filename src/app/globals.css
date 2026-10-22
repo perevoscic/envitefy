@@ -376,13 +376,51 @@
 }
 
 .flip-clock-perspective {
+  --flip-clock-surface: var(--card);
+  --flip-clock-ink: var(--foreground);
+  --flip-clock-border: var(--border);
   perspective: 1000px;
 }
 
+html.dark .flip-clock-perspective {
+  --flip-clock-surface: var(--background);
+  --flip-clock-ink: var(--foreground);
+  --flip-clock-border: var(--border);
+}
+
+.flip-clock-tile {
+  border-color: var(--flip-clock-border);
+  background: var(--flip-clock-surface);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--flip-clock-ink) 12%, transparent);
+}
+
+.flip-clock-upper {
+  border-color: var(--flip-clock-border);
+  background: color-mix(in srgb, var(--flip-clock-ink) 3%, transparent);
+}
+
+.flip-clock-lower {
+  background: color-mix(in srgb, var(--flip-clock-ink) 6%, transparent);
+}
+
+.flip-clock-seam,
+.flip-clock-hinge {
+  background: var(--flip-clock-border);
+}
+
 .flip-clock-face {
+  color: var(--flip-clock-ink);
   backface-visibility: hidden;
   transform-style: preserve-3d;
   transform-origin: center center;
+}
+
+.flip-clock-label {
+  color: var(--muted-foreground);
+}
+
+.flip-clock-dot {
+  background: var(--muted-foreground);
 }
 
 :root {

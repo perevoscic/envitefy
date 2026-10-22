@@ -1,5 +1,6 @@
 import { ActionGroup } from "../renderer/ActionRenderer";
 import EventDetailText from "@/components/EventDetailText";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import type { EventAction, EventSection } from "../schemas/eventBlueprint.schema";
 import { readItemText } from "./section-utils";
 
@@ -22,7 +23,7 @@ export function HeroSection({
           ) : (
             <div className="flex min-h-72 items-center justify-center bg-[linear-gradient(135deg,var(--event-page-primary),var(--event-page-secondary))] p-8 text-center text-white">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.24em] opacity-80">Envitefy</p>
+                <EnvitefyWordmark scaled={false} tone="light" appearance="fixed" className="text-xl opacity-80" />
                 <p className="mt-4 font-[var(--event-page-heading-font)] text-4xl font-black leading-tight">
                   {section.title || "Event page"}
                 </p>

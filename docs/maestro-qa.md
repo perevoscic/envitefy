@@ -10,6 +10,16 @@ An optional website fixture mode creates twelve synthetic non-admin accounts and
 
 ## Revised closed-test plan — October 17, 2026
 
+### Current activity priority — October 22
+
+The owner clarified that the project’s primary goal is actual app use by all eleven eligible accounts at separate times during the day. Use the saved [activity plan](../output/maestro/closed-test/manual-20261022-1792673679293/activity-plan.json) and [activity ledger](../output/maestro/closed-test/manual-20261022-1792673679293/activity-ledger.json). Today has a morning session, a noon return and a 6 PM return in America/Chicago. The two later returns are scheduled in this chat as `envitefy-11-account-activity-today`, bounded to October 22; later days need their own dated plan.
+
+Each accessible profile signs in through the Play app, reads its existing workshop, resumes its private draft and inspects Preview where available, and reads another authorized QA account’s existing workshop. Count activity only after exact identity and successful Maestro UI evidence. Keep actual per-account timestamps, completed actions, event/owner IDs, source flow snapshots, stdout/JUnit, screenshots and diagnostics. Existing morning draft-reopen evidence is recorded with its original timestamps and provenance; anonymous HTTP checks are excluded from account activity counts.
+
+The runner is `node output/maestro/closed-test/manual-20261022-1792673679293/activity-run.mjs morning` (or `midday` / `evening` in its actual time window). An explicit alias list limits a resume. `--pause-on-mfa` leaves a verified owner challenge open for live code assistance. Unattended activity saves the exact account’s challenge and closes only that OAuth tab when safe so other accessible profiles continue. Do not request SMS codes repeatedly. A failed field edit or preview preserves earlier browsing activity and does not stop other independent cases.
+
+Intentional editing, explicit saving and publication keep their existing source/identity/same-record checks and evidence. Reuse existing IDs. The activity runner browses existing records; the separate Day 5 Description/save/publication case remains unresolved. Preserve all original workshops, drafts and confirmed defects. Automated sessions do not establish human feedback, continuous Play participation or an observed Play Console engagement metric. Keep the computer and desktop app running for local scheduled work ([official scheduling documentation](https://learn.chatgpt.com/docs/automations)).
+
 The plan has two workstreams: human closed testing with enrollment evidence, and Maestro engineering checks. Continue useful engineering QA with the eleven existing app accounts while QA11 is deferred. A tester's human participation, Play enrollment, installation and app activity each need their own evidence.
 
 For personal developer accounts created after November 13, 2023, Google's production-access rule is at least twelve testers continuously opted in to a closed test for the preceding fourteen days. Our suggested session tasks and durations are our test design. [Official requirements](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en).
@@ -311,3 +321,17 @@ Minimal Day 5 note/save/reopen, publication checkpoint and guest-role collectors
 
 The [Day 5 report](../output/maestro/closed-test/scheduled-20261020-21/day-5-report.html), [summary](../output/maestro/closed-test/scheduled-20261020-21/day-5-summary.json) and [resume checkpoint](../output/maestro/closed-test/scheduled-20261020-21/day-5-resume.json) retain exact existing event/owner IDs, logs, JUnit, screenshots, flow digests and remaining checks. Restore Envitefy loading and Chrome diagnostics on the existing AVD while preserving its data, then reverify QA12 before saving or publishing. The one-time Day 5 automation was deleted after this interrupted session; a later date requires a newly authorized dated session. Automated activity does not establish human participation or Play continuity.
 <!-- envitefy-day4-20261020:end -->
+
+<!-- envitefy-manual-20261022:start -->
+
+## October 22 manual continuation
+
+The owner authorized testing QA01–QA10 and QA12 now; QA11 remains deferred. This is a new manual run with actual October 22 timestamps, separate from the retired October 20–21 schedules. The current [testing index](../output/maestro/closed-test/manual-20261022-1792673679293/index.html), [account state](../output/maestro/closed-test/manual-20261022-1792673679293/summary.json), [observations](../output/maestro/closed-test/manual-20261022-1792673679293/observations.json) and [owner checkpoint](../output/maestro/closed-test/manual-20261022-1792673679293/owner-actions.json) preserve source snapshots/digests, stdout/JUnit, screenshots, expected/observed values, Android/browser diagnostics and earlier passes. The run is still in progress.
+
+The saved AVD and Play installation of `com.envitefy.app` 1.0.3 (5) were preserved. Play connectivity recovered after a network refresh, and Chrome updated through Google Play from 134.0.6998.135 to 156.0.8078.47. Subsequent native Chrome and Android system not-responding dialogs remain tool/access evidence; their relationship to Envitefy is unconfirmed. No app/browser data or Google account was removed.
+
+At this checkpoint, exact Envitefy identities, healthy owner history, matching saved draft source facts and native Drafts-sidebar resume passed for QA02–QA05 and QA12. Original workshop ownership was also rechecked through authenticated reads for QA02–QA05. Anonymous original-workshop HTTP rechecks returned 200 for all eleven profiles and still showed the known five-hour time mismatch; QA05 retained its title mismatch. These HTTP checks do not establish signed-in Android coverage for the remaining accounts. The false private-draft deletion notice remains `DRAFT-GUEST-DELETED-NOTICE-001`.
+
+QA12's Day 5 Description edit remains unverified: the clipped label produced a false visibility assertion, and tested gestures did not bring the actual textarea into view. No explicit event Save or Publish ran. A Tab-key calibration inserted eight spaces into an empty Arrival field; they were erased and the empty value verified before leaving, without saving. Other accounts' independent checks continue without treating that failed selector as a confirmed app defect. QA06 currently requires the fresh Google code requested for the recovery phone ending in 39; its exact checkpoint is saved. Earlier MFA and QA01's account-limit observations remain historical until individually rechecked. Camera remains unavailable. Human feedback and continuous Play participation are not established by these automated checks.
+
+<!-- envitefy-manual-20261022:end -->

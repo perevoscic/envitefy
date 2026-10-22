@@ -80,13 +80,13 @@ export default function ResetPasswordPageClient() {
       <section className="w-full max-w-md rounded-2xl bg-white/80 backdrop-blur-lg border border-white/60 p-8 shadow-xl">
         <Link href="/" className="mb-6 block text-center">
           <EnvitefyBrandImage
-            src="/logo.png"
+            src={ENVITEFY_BRAND_ASSETS.wordmark.color}
             whiteSrc={ENVITEFY_BRAND_ASSETS.wordmark.white}
             alt="Envitefy logo"
             width={156}
-            height={64}
+            height={48}
             priority
-            className="mx-auto"
+            className="mx-auto h-auto w-[156px] max-w-full"
           />
         </Link>
         <p className="text-sm text-muted-foreground text-center mb-6">

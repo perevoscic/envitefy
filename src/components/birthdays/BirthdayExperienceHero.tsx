@@ -11,6 +11,7 @@ import {
   Ticket,
 } from "lucide-react";
 import type { BirthdayExperienceProfile } from "@/data/birthday-experience-profiles.mjs";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 
 export type BirthdayExperienceTheme = {
   id: string;
@@ -524,7 +525,7 @@ export default function BirthdayExperienceHero({
             <HeroMedia theme={theme} className="absolute inset-0 h-full rounded-none shadow-none" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/82 via-black/30 to-transparent" />
             <div className="relative flex min-h-[620px] max-w-[70%] items-end p-9 sm:p-14"><HeroCopy theme={theme} event={event} inverse onRsvpClick={onRsvpClick} /></div>
-            <div className="absolute right-6 top-6 text-right text-[10px] font-black uppercase tracking-[0.2em] text-white"><span className="block text-3xl tracking-[-0.06em]">ENVITEFY</span>Celebration issue</div>
+            <div className="absolute right-6 top-6 text-right text-[10px] font-black uppercase tracking-[0.2em] text-white"><div className="normal-case"><EnvitefyWordmark scaled={false} tone="light" appearance="fixed" className="text-3xl" /></div>Celebration issue</div>
           </div>
         </section>
       );

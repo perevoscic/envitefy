@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { ENVITEFY_BRAND_ASSETS } from "../../../brand-assets.ts";
 import type { PhoneUIDesign } from "@/lib/admin/ad-studio/types";
 
 function escapeXml(value: string): string {
@@ -13,10 +16,15 @@ function fit(value: string, maxLength: number): string {
   return text.length > maxLength ? `${text.slice(0, Math.max(0, maxLength - 1)).trim()}…` : text;
 }
 
-export function renderPhoneUiSvg(design: PhoneUIDesign): string {
+export async function renderPhoneUiSvg(design: PhoneUIDesign): Promise<string> {
   const width = 420;
   const height = 860;
   const tokens = design.themeTokens;
+  // Only server callers create this portable SVG; saved campaigns keep their embedded asset.
+  const source = await readFile(path.join(process.cwd(), "public", ENVITEFY_BRAND_ASSETS.wordmark.color));
+  const sharp = (await import("sharp")).default;
+  const wordmark = await sharp(source).png().toBuffer();
+  const wordmarkDataUri = `data:image/png;base64,${wordmark.toString("base64")}`;
   return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="phoneBg" x1="0" x2="1" y1="0" y2="1">
@@ -27,7 +35,7 @@ export function renderPhoneUiSvg(design: PhoneUIDesign): string {
   <rect width="${width}" height="${height}" rx="46" fill="#020617"/>
   <rect x="18" y="18" width="${width - 36}" height="${height - 36}" rx="36" fill="url(#phoneBg)"/>
   <rect x="150" y="34" width="120" height="20" rx="10" fill="#020617" fill-opacity="0.78"/>
-  <text x="44" y="88" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="900" fill="${tokens.primary}">Envitefy</text>
+  <image x="44" y="66" width="116" height="32" preserveAspectRatio="xMinYMid meet" href="${wordmarkDataUri}"/>
   <rect x="44" y="118" width="332" height="216" rx="28" fill="${tokens.surface}" stroke="#E2E8F0"/>
   <text x="68" y="164" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="800" fill="${tokens.primary}">${escapeXml(fit(design.eventPageCard.subtitle, 28))}</text>
   <text x="68" y="214" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="900" fill="${tokens.text}">${escapeXml(fit(design.eventPageCard.title, 18))}</text>

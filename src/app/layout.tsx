@@ -4,6 +4,9 @@ import { getServerSession } from "next-auth";
 import Providers from "./providers";
 import AppShell from "./AppShell";
 import "./globals.css";
+// Shared chrome must be styled before the dynamically loaded sidebar mounts.
+import "@/components/navigation/navigation-appearance.module.css";
+import "@/components/appearance-selector.module.css";
 import { authOptions } from "@/lib/auth";
 import { ENVITEFY_SOCIAL_LINKS } from "@/lib/envitefy-social-links";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";

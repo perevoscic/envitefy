@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { ENVITEFY_BRAND_ASSETS } from "../../src/lib/brand-assets.ts";
 import { resolveRenderDimensions } from "./storyboard-generator.mjs";
 
 let canvasPromise = null;
@@ -141,7 +142,7 @@ async function drawSocialPostLayout({
   ctx.fillStyle = overlay;
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-  const wordmarkPath = path.join(projectRoot, "public", "brand", "envitefy-wordmark.png");
+  const wordmarkPath = path.join(projectRoot, "public", ENVITEFY_BRAND_ASSETS.wordmark.color);
   if (await exists(wordmarkPath)) {
     const wordmark = await loadImage(wordmarkPath);
     const logoWidth = canvasWidth * (isLandscape ? 0.22 : 0.34);

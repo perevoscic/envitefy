@@ -58,9 +58,9 @@ import {
 } from "react";
 import { useEventCache } from "@/app/event-cache-context";
 import sidebarBrandIcon from "../../public/brand/e-only.png";
-import sidebarBrandWordmark from "../../public/brand/envitefy-wordmark.png";
+import sidebarBrandWordmark from "../../public/brand/wordmark-v2/envitefy-wordmark.webp";
 import whiteSidebarBrandIcon from "../../public/brand/white-v1/e-only.png";
-import whiteSidebarBrandWordmark from "../../public/brand/white-v1/envitefy-wordmark.png";
+import whiteSidebarBrandWordmark from "../../public/brand/wordmark-v2/envitefy-wordmark-white.webp";
 import AppearanceSelector from "@/components/AppearanceSelector";
 import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
 import appearanceStyles from "@/components/navigation/navigation-appearance.module.css";
@@ -1121,27 +1121,27 @@ function FooterProfileMenu({
 
               <div className="nav-chrome-divider mx-2 my-1 h-px" />
 
-              <div className="flex items-center justify-between gap-3 px-3 py-2 text-sm text-[var(--nav-chrome-ink)]">
-                <span>Appearance</span>
-                <AppearanceSelector compact />
-              </div>
-
               <div className="px-1.5 pb-3 pt-3">
                 <EnvitefySocialLinks placement="menu" />
               </div>
               <div className="nav-chrome-divider mx-2 my-1 h-px" />
-              <button
-                type="button"
-                onClick={() => {
-                  void secureSignOut("/");
-                }}
-                className={SIDEBAR_SUBMENU_ENTRY_CLASS}
-              >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-red-50 text-red-400 shadow-[0_10px_20px_rgba(103,88,160,0.08)] transition-transform group-hover:scale-105">
-                  <LogOut size={16} />
-                </span>
-                <span className="text-[13px] font-medium text-red-400">Log out</span>
-              </button>
+              <div data-account-menu-actions className="grid grid-cols-2 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void secureSignOut("/");
+                  }}
+                  className={SIDEBAR_SUBMENU_ENTRY_CLASS}
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-red-50 text-red-400 shadow-[0_10px_20px_rgba(103,88,160,0.08)] transition-transform group-hover:scale-105">
+                    <LogOut size={16} />
+                  </span>
+                  <span className="text-[13px] font-medium text-red-400">Log out</span>
+                </button>
+                <div className="flex min-h-11 items-center justify-center border-l border-[var(--nav-chrome-border)]">
+                  <AppearanceSelector compact />
+                </div>
+              </div>
             </div>
           </div>
         ) : null}
@@ -1272,6 +1272,7 @@ export default function LeftSidebar() {
         data-app-navigation="sidebar"
         data-sidebar-state={viewModel.isCompact ? "collapsed" : "expanded"}
         data-sidebar-pinned={sidebar.desktopPinned}
+        data-account-menu-open={viewModel.menuOpen}
         width={viewModel.sidebarWidth}
         onPointerEnter={(event) => {
           if (!viewModel.isDesktop || event.pointerType !== "mouse") return;
@@ -1337,7 +1338,7 @@ export default function LeftSidebar() {
             style={{ width: viewModel.isDesktop ? SIDEBAR_WIDTH_REM : "100%" }}
           >
             <div className="nav-chrome-sidebar-surface absolute inset-0 z-[1] flex h-full flex-col">
-              <div className={`relative z-10 flex h-[116px] shrink-0 items-start pt-[calc(1.25rem+env(safe-area-inset-top,0px))] lg:pt-5 ${viewModel.isCompact ? "px-[17px]" : "px-6"}`}>
+              <div data-sidebar-background className={`relative z-10 flex h-[116px] shrink-0 items-start pt-[calc(1.25rem+env(safe-area-inset-top,0px))] lg:pt-5 ${viewModel.isCompact ? "px-[17px]" : "px-6"}`}>
                 <Link
                   href="/"
                   onClick={viewModel.goHomeFromSidebar}
@@ -1374,7 +1375,7 @@ export default function LeftSidebar() {
                 )}
               </div>
 
-              <div className="flex min-h-0 flex-1 flex-col">
+              <div data-sidebar-background className="flex min-h-0 flex-1 flex-col">
                 <div className="relative min-h-0 flex-1 overflow-clip">
                   <div
                     className={`${SIDEBAR_PANEL_CLASS} !px-3 z-[5]`}
@@ -1612,6 +1613,8 @@ export default function LeftSidebar() {
                   </div>
                 </div>
               </div>
+
+              <div className={appearanceStyles.accountBackdrop} aria-hidden="true" />
 
               <FooterProfileMenu
                 isOpen={viewModel.isOpen}

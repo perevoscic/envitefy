@@ -110,8 +110,12 @@ export function adaptiveEmailDocument(html: string): string {
     .replace(/\/email\/envitefy-wordmark-email\.png/g, EMAIL_WHITE_ASSETS.wordmark)
     .replace(/\/email\/social-(instagram|facebook|youtube|tiktok|reddit)\.png/g, "/email/white-v1/matte/social-$1.png");
   out = adaptiveEmailBody(out);
-  out = out.replace(/<img\b[^>]*white-v1\/matte\/envitefy-wordmark-email\.png[^>]*>/gi, img =>
-    `<div class="email-brand-band" style="padding:20px;background-color:#251F2D;border-radius:12px;"><img src="${img.match(/src="([^"]+)\/email\//)?.[1] || "https://envitefy.com"}${EMAIL_WHITE_ASSETS.symbol}" width="36" height="36" alt="Envitefy logo" style="display:block;margin:0 auto 12px;border:0;" />${img}</div>`);
+  out = out.replace(/<img\b[^>]*>/gi, img => {
+    const source = img.match(/\bsrc="([^"]+)"/i)?.[1] || "";
+    if (!source.endsWith(EMAIL_WHITE_ASSETS.wordmark)) return img;
+    const base = source.slice(0, -EMAIL_WHITE_ASSETS.wordmark.length) || "https://envitefy.com";
+    return `<div class="email-brand-band" style="padding:20px;background-color:#251F2D;border-radius:12px;"><img src="${base}${EMAIL_WHITE_ASSETS.symbol}" width="36" height="36" alt="Envitefy logo" style="display:block;margin:0 auto 12px;border:0;" />${img}</div>`;
+  });
   out = out.replace(/class="footer-shell([^"]*)"/g, 'class="footer-shell email-footer-band$1"');
   out = out.replace(/<[a-z][^>]*class="[^"]*email-(?:brand|footer)-band[^>]*>/gi, tag => {
     const withBackground = tag.replace(/\sbgcolor="[^"]*"/gi, "").replace(/\bstyle="([^"]*)"/i,

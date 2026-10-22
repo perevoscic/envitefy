@@ -55,7 +55,8 @@ export default function EnvitefyWordmark({
               }),
         }}
       >
-        envitefy
+        {/* These inline runs let vi and fy meet at their serif edges without overlap. */}
+        env<span style={{ marginLeft: "0.005em" }}>itef</span><span>y</span>
       </span>
     </span>
   );

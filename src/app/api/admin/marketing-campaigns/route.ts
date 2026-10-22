@@ -15,6 +15,7 @@ import {
 } from "@/lib/admin/marketing-campaigns";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 import { spawnBackgroundNodeScript } from "@/lib/admin/spawn-background";
+import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
 
 const MAX_REFERENCE_IMAGES = 8;
 const MAX_REFERENCE_IMAGE_BYTES = 25 * 1024 * 1024;
@@ -25,14 +26,16 @@ const REFERENCE_IMAGE_TYPES = new Map([
 ]);
 const BUILT_IN_BRAND_ASSETS = {
   wordmark: {
-    sourceParts: ["public", "brand", "envitefy-wordmark.png"],
-    fileName: "envitefy-wordmark-brand-reference.png",
+    sourceParts: ["public", ...ENVITEFY_BRAND_ASSETS.wordmark.color.split("/").filter(Boolean)],
+    fileName: "envitefy-wordmark-brand-reference.webp",
     role: "brand-wordmark",
+    mimeType: "image/webp",
   },
   "app-icon": {
     sourceParts: ["public", "icons", "apple-touch-icon-120.png"],
     fileName: "envitefy-app-icon-brand-reference.png",
     role: "brand-app-icon",
+    mimeType: "image/png",
   },
 } as const;
 
@@ -139,7 +142,7 @@ async function saveBuiltInBrandAssets(runDir: string, values: unknown) {
       path: relativePath,
       originalName: asset.fileName,
       role: asset.role,
-      mimeType: "image/png",
+      mimeType: asset.mimeType,
       size: fileStat.size,
     });
   }

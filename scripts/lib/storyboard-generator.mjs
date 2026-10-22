@@ -1,4 +1,5 @@
 import path from "node:path";
+import { ENVITEFY_BRAND_ASSETS } from "../../src/lib/brand-assets.ts";
 
 export const DEFAULT_FRAME_COUNT = 10;
 export const DEFAULT_CAMERA_FORMAT = "vertical";
@@ -17,7 +18,7 @@ export const DEFAULT_LOCATION_LOCK =
 export const DEFAULT_BACKGROUND_ANCHORS =
   "home kitchen or living room, clean counter, window light, phone, laptop only when needed for search or email proof, birthday context only on digital screens";
 export const DEFAULT_SCREEN_LOCK =
-  "the same clean Envitefy mobile event page, modern white interface, simple typography, the exact Envitefy wordmark in the header matching public/brand/envitefy-wordmark.png, and the exact Envitefy app icon matching public/icons/apple-touch-icon-120.png anywhere a launcher icon, favicon, avatar, or small app badge appears";
+  `the same clean Envitefy mobile event page, modern white interface, simple typography, the exact Envitefy wordmark in the header matching public${ENVITEFY_BRAND_ASSETS.wordmark.color}, with v and i just touching and f and y just touching without overlap, and the exact Envitefy app icon matching public/icons/apple-touch-icon-120.png anywhere a launcher icon, favicon, avatar, or small app badge appears`;
 export const DEFAULT_COMPOSITION =
   "varied candid vertical ad frames mixing home movement, phone notification proof, browser search, product entry, two-handed or flat-phone product proof, reaction, and final digital live-card result";
 export const DEFAULT_MOOD = "focused, modern, warm, premium";

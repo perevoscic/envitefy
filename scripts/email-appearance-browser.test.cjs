@@ -3,6 +3,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const { chromium } = require("playwright");
+const { spawnSync } = require("node:child_process");
+const sharp = require("sharp");
 const fixtures = require("./lib/email-appearance-fixtures.cjs");
 
 test("all email families render accessible text and white assets in light/dark inboxes", { timeout: 120_000 }, async () => {
@@ -14,7 +16,7 @@ test("all email families render accessible text and white assets in light/dark i
     await context.route("https://**/*", route => {
       const url = new URL(route.request().url());
       const local = path.resolve("public", `.${url.pathname}`);
-      if (url.hostname === "envitefy.com" && url.pathname.startsWith("/email/") && fs.existsSync(local)) return route.fulfill({ body: fs.readFileSync(local), contentType: local.endsWith(".png") ? "image/png" : "image/webp" });
+      if (url.hostname === "envitefy.com" && url.pathname.startsWith("/email/") && fs.existsSync(local)) return route.fulfill({ body: fs.readFileSync(local), contentType: local.endsWith(".png") ? "image/png" : local.endsWith(".gif") ? "image/gif" : "image/webp" });
       return route.abort();
     });
     const results = [];
@@ -45,7 +47,7 @@ test("all email families render accessible text and white assets in light/dark i
         return failures;
       });
       assert.deepEqual(failures, [], `${fixture.name} (${mode}) text contrast`);
-      const assets = await page.locator('img[src*="white-v1"]').evaluateAll(images => images.map(image => ({ src: image.src, loaded: image.complete && image.naturalWidth > 0 })));
+      const assets = await page.locator('img[src*="/email/white-v1/"],img[src*="/email/wordmark-v2/"]').evaluateAll(images => images.map(image => ({ src: image.src, loaded: image.complete && image.naturalWidth > 0 })));
       assert.ok(assets.length >= 7, `${fixture.name}: emblem, wordmark and five social icons`);
       assert.ok(assets.every(asset => asset.loaded), `${fixture.name}: all brand assets load`);
       for (const width of [320, 375, 600]) {
@@ -54,7 +56,12 @@ test("all email families render accessible text and white assets in light/dark i
         const overflowing = overflow ? await page.evaluate(() => [...document.querySelectorAll("body *")].map(node => ({ tag: node.tagName, className: node.className, text: node.textContent.trim().slice(0, 40), width: node.getBoundingClientRect().width, x: node.getBoundingClientRect().x })).filter(node => node.width + node.x > innerWidth + 1).slice(-12)) : [];
         assert.equal(overflow, false, `${fixture.name} (${mode}, ${width}px) horizontal overflow: ${JSON.stringify(overflowing)}`);
       }
-      if (["standard-marketing", "features-oct26", "magazine-1", "sendSignupConfirmationEmail"].includes(fixture.name)) await page.screenshot({ path: path.join(output, `${fixture.name}-${mode}.png`), fullPage: true });
+      if (["standard-marketing", "features-oct26", "magazine-1", "sendSignupConfirmationEmail"].includes(fixture.name)) {
+        const filename = path.join(output, `${fixture.name}-${mode}.webp`);
+        const encoded = spawnSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", "-i", "pipe:0", "-c:v", "libwebp", "-q:v", "85", "-compression_level", "6", filename], { input: await page.screenshot({ fullPage: true }) });
+        assert.equal(encoded.status, 0, encoded.stderr?.toString());
+        assert.equal((await sharp(filename).metadata()).format, "webp");
+      }
       results.push({ name: fixture.name, mode, assets: assets.length, textContrast: "pass" });
       await page.close();
     }

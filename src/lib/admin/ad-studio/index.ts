@@ -348,7 +348,7 @@ async function writeDeterministicAssets({
   const assetsDir = path.join(runDir, "deterministic-assets");
   await fs.mkdir(assetsDir, { recursive: true });
   const invitationSvg = renderInvitationSvg(campaign.invitationDesign);
-  const phoneUiSvg = renderPhoneUiSvg(campaign.phoneUiDesign);
+  const phoneUiSvg = await renderPhoneUiSvg(campaign.phoneUiDesign);
   const invitationFile = "deterministic-assets/invitation.svg";
   const phoneUiFile = "deterministic-assets/phone-ui.svg";
   await fs.writeFile(path.join(runDir, invitationFile), invitationSvg, "utf8");

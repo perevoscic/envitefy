@@ -758,8 +758,7 @@ export default function HeroTopNav({
                       );
                     })}
 
-                    <div className="mt-3 flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-sm">
-                      <span>Appearance</span>
+                    <div className="mt-3 flex min-h-11 w-full items-center justify-end px-4 py-2 text-sm">
                       <AppearanceSelector compact />
                     </div>
 

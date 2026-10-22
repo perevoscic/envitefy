@@ -7,10 +7,10 @@ export const ENVITEFY_BRAND_ASSETS = {
     emailWhiteMatte: "/email/white-v1/matte/e-only.png",
   },
   wordmark: {
-    color: "/brand/envitefy-wordmark.png",
-    white: "/brand/white-v1/envitefy-wordmark.png",
-    emailColor: "/email/envitefy-wordmark-email.png",
-    emailWhite: "/email/white-v1/envitefy-wordmark-email.png",
-    emailWhiteMatte: "/email/white-v1/matte/envitefy-wordmark-email.png",
+    color: "/brand/wordmark-v2/envitefy-wordmark.webp",
+    white: "/brand/wordmark-v2/envitefy-wordmark-white.webp",
+    emailColor: "/email/wordmark-v2/envitefy-wordmark-email.gif",
+    emailWhite: "/email/wordmark-v2/envitefy-wordmark-email-white.gif",
+    emailWhiteMatte: "/email/wordmark-v2/matte/envitefy-wordmark-email.gif",
   },
 } as const;

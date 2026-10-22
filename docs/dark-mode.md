@@ -1,12 +1,18 @@
 # Application and email appearance
 
-The application offers a segmented **Light**, **Dark**, and **Device** toggle in
-Settings, with compact icon controls in navigation menus and headers. Device is
-the default and uses the existing internal `system` preference. The toggle uses
-native radio controls for keyboard navigation and respects reduced motion.
+The application offers a small sliding sun/moon **Light / Dark** switch in
+Settings, navigation menus and headers. Its visible track is 56 by 28 pixels,
+inside a 44-pixel-high touch target. It has a soft top shadow and a lavender glow
+in dark appearance. Colors and shadows use the application theme tokens.
+New browsers automatically follow device appearance through the internal `system`
+preference, without a separate System or Device control. The switch reflects the
+resolved appearance; toggling it selects an explicit light or dark preference.
+Keyboard activation and reduced motion remain supported.
+Account menus place Log out and the switch in two equal columns in the bottom
+row, without a visible Appearance label. Accessible switch and group names remain.
 The browser preference is stored as `envitefy:appearance:v1`; it is not an account
 setting and does not modify event records. Explicit choices override device
-changes, and Device responds to device changes. Other tabs synchronize through
+changes; browsers without an override respond to device changes. Other tabs synchronize through
 the storage event. Restricted storage falls back to the current tab's memory.
 
 ## Palette and ownership
@@ -14,6 +20,11 @@ the storage event. Restricted storage falls back to the current tab's memory.
 `src/themes/registry.ts` is the source of application semantic colors. The initial
 bootstrap and the React provider consume the same registry. CSS modules and
 Tailwind semantic utilities consume those roles rather than a separate palette.
+The root layout imports both shared navigation and switch CSS modules directly.
+Their styles must arrive with the persistent layout stylesheet instead of relying
+on the dynamically loaded sidebar's CSS chunk. Isolated Bun fixtures cannot
+verify that Next stylesheet-delivery path; the navigation suite also compiles
+through Next's CSS loaders and extraction plugin, and guards the root imports.
 
 | Role | Dark color |
 | --- | --- |
@@ -46,9 +57,14 @@ authored design. Theme changes must not remount editors or request artwork.
 
 ## White branding
 
-The locked wordmark retains its geometry and existing white treatment. Approved
-white emblem, wordmark and Instagram/Facebook/YouTube/TikTok/Reddit assets have
-versioned URLs under `brand/white-v1` and `email/white-v1`. Original URLs remain
+The canonical wordmark joins the v–i and f–y serif edges just enough to touch,
+without overlapping their letter bodies. Every current app placement, new email,
+ad and export uses the shared component or `ENVITEFY_BRAND_ASSETS` registry.
+Wordmark images are rendered from the same component and bundled font under
+`brand/wordmark-v2`; email GIF derivatives under `email/wordmark-v2` support inboxes
+without WebP. Prepared app logos load directly, bypassing the Next image optimizer.
+Approved white emblem and Instagram/Facebook/YouTube/TikTok/Reddit assets retain
+their versioned URLs under `brand/white-v1` and `email/white-v1`. Original URLs remain
 unchanged because delivered email and ad renders still reference them. Email
 matte variants use `#251F2D` behind the white glyphs. Light application views and
 authored event branding keep their existing readable variants. Other companies'

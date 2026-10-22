@@ -69,7 +69,7 @@ function load(relative, cache = new Map()) {
   }).outputText;
   if (path.basename(file) === "EventOwnerTools.tsx") code += "\nexports.TestProductViewer = OwnerProductViewer;";
   function require(name) {
-    if (name.endsWith(".png")) return { __esModule: true, default: { src: "/brand/envitefy-wordmark.png", width: 450, height: 120 } };
+    if (/\.(?:png|webp)$/.test(name)) return { __esModule: true, default: { src: "/brand/envitefy-wordmark.png", width: 450, height: 120 } };
     if (name.endsWith(".module.css")) {
       return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
     }

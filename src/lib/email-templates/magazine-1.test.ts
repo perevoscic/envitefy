@@ -11,7 +11,7 @@ test("renderMagazineEmail rewrites loopback origins to envitefy.com", () => {
     html,
     /https:\/\/envitefy\.com\/api\/blob\/event-media\/system\/email-assets\/envitefy-magazine-1\.webp/i,
   );
-  assert.match(html, /https:\/\/envitefy\.com\/email\/white-v1\/matte\/envitefy-wordmark-email\.png/i);
+  assert.match(html, /https:\/\/envitefy\.com\/email\/wordmark-v2\/matte\/envitefy-wordmark-email\.gif/i);
   assert.match(
     html,
     /https:\/\/envitefy\.com\/api\/blob\/event-media\/system\/email-assets\/ava-james-garden-vows\.webp/i,

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
+import { ENVITEFY_BRAND_ASSETS } from "../src/lib/brand-assets.ts";
 import {
   DEFAULT_CHARACTER_LOCK,
   DEFAULT_CONTINUITY_CONTRACT,
@@ -48,8 +49,8 @@ test("normalizeSceneSpec defaults to the Envitefy lock values", () => {
   assert.match(DEFAULT_NEGATIVE_PROMPT, /no extra tabletop planning props/i);
   assert.match(DEFAULT_NEGATIVE_PROMPT, /no offline props for the delay/i);
   assert.match(DEFAULT_NEGATIVE_PROMPT, /no party-decor clutter/i);
-  assert.match(spec.screenLock.value, /envitefy-wordmark-email\.png/i);
-  assert.match(spec.screenLock.value, /favicon\.png/i);
+  assert.ok(spec.screenLock.value.includes(`public${ENVITEFY_BRAND_ASSETS.wordmark.color}`));
+  assert.match(spec.screenLock.value, /apple-touch-icon-120\.png/i);
 });
 
 test("normalizeSceneSpec scrubs gymnastics drift from birthday campaigns unless explicitly requested", () => {
@@ -149,8 +150,8 @@ test("buildFallbackFramePlan emits the sectioned lock prompt format", () => {
   assert.match(frames[0].prompt, /PROP LOCK:/);
   assert.match(frames[0].prompt, /LOCATION LOCK:/);
   assert.match(frames[0].prompt, /SCREEN LOCK:/);
-  assert.match(frames[0].prompt, /envitefy-wordmark-email\.png/i);
-  assert.match(frames[0].prompt, /favicon\.png/i);
+  assert.ok(frames[0].prompt.includes(`public${ENVITEFY_BRAND_ASSETS.wordmark.color}`));
+  assert.match(frames[0].prompt, /apple-touch-icon-120\.png/i);
   assert.match(frames[0].prompt, /COMPOSITION:\nphone and flyer in the foreground, mother midground, bright lobby in the background\./);
   assert.match(frames[0].prompt, /MOOD:\ncurious, focused, premium\./);
   assert.match(frames[0].prompt, /notices the flyer/);

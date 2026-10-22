@@ -2,12 +2,63 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { createRequire } from "node:module";
 import test from "node:test";
 import { chromium } from "playwright";
 
 const out = path.resolve("output/dark-ui-browser");
 const pink = "rgb(242, 198, 222)";
 const surface = "rgb(37, 31, 45)";
+const require = createRequire(import.meta.url);
+
+async function assertCompactToggle(scope,isDark,label) {
+  const toggle=scope.getByRole("switch",{name:"Dark mode",exact:true});
+  assert.equal(await toggle.isChecked(),isDark,`${label} switch reflects the resolved appearance`);
+  const geometry=await toggle.evaluate(element=>{
+    const measure=node=>{const rect=node.getBoundingClientRect();return {left:rect.left,top:rect.top,width:rect.width,height:rect.height};};
+    const spans=[...element.querySelectorAll("span")];
+    const track=spans.find(node=>{const rect=node.getBoundingClientRect();return Math.abs(rect.width-56)<.1&&Math.abs(rect.height-28)<.1;});
+    const thumb=spans.find(node=>{const rect=node.getBoundingClientRect();return Math.abs(rect.width-24)<.1&&Math.abs(rect.height-24)<.1;});
+    const icons=[...element.querySelectorAll("svg")].map(icon=>{
+      let opacity=1;for(let node=icon;node&&node!==element;node=node.parentElement)opacity*=Number(getComputedStyle(node).opacity);
+      return {kind:icon.classList.contains("lucide-sun")?"sun":icon.classList.contains("lucide-moon")?"moon":"other",opacity,...measure(icon)};
+    });
+    return {hit:measure(element),track:track&&measure(track),thumb:thumb&&{...measure(thumb),color:getComputedStyle(thumb).backgroundColor},icons};
+  });
+  assert.ok(geometry.hit.width>=44&&geometry.hit.height>=44,`${label} retains a 44px hit area`);
+  assert.ok(geometry.track,`${label} receives its 56x28 CSS module track`);
+  assert.ok(geometry.thumb,`${label} receives its 24px CSS module thumb`);
+  const visibleIcons=geometry.icons.filter(icon=>icon.opacity>.99);
+  assert.deepEqual(visibleIcons.map(icon=>icon.kind),[isDark?"sun":"moon"],`${label} shows one theme icon rather than stacked icons`);
+  assert.ok(visibleIcons.every(icon=>icon.width===14&&icon.height===14),`${label} uses the compact 14px icon`);
+  assert.ok(geometry.thumb.color.match(/[\d.]+/g).slice(0,3).every(channel=>Number(channel)>=230),`${label} keeps its white thumb`);
+  assert.equal(geometry.thumb.left>geometry.track.left+geometry.track.width/2,isDark,`${label} thumb moves to the selected side`);
+  return geometry;
+}
+
+async function assertAccountFooter(account,label) {
+  await assertCompactToggle(account,true,label);
+  const geometry=await account.evaluate(panel=>{
+    const toggle=panel.querySelector('[role="switch"][aria-label="Dark mode"]');
+    const logout=[...panel.querySelectorAll("button")].find(button=>button.textContent.trim()==="Log out");
+    const row=logout?.closest("[data-account-menu-actions]");
+    if(!logout||!row?.contains(toggle))return null;
+    const rect=element=>{const box=element.getBoundingClientRect();return {left:box.left,right:box.right,top:box.top,bottom:box.bottom,centerY:box.top+box.height/2};};
+    const rowRect=rect(row);
+    const earlier=[...panel.querySelectorAll("a,button")].filter(element=>!row.contains(element)&&element.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}));
+    return {logout:rect(logout),toggle:rect(toggle),row:rowRect,columns:getComputedStyle(row).gridTemplateColumns.split(" ").map(parseFloat),earlierBottom:Math.max(...earlier.map(element=>rect(element).bottom))};
+  });
+  assert.ok(geometry,`${label} puts Log out and the toggle in one footer row`);
+  assert.equal(geometry.columns.length,2,`${label} uses two footer columns`);
+  assert.ok(Math.abs(geometry.columns[0]-geometry.columns[1])<=1,`${label} uses equal footer columns`);
+  assert.ok(Math.abs(geometry.logout.centerY-geometry.toggle.centerY)<=1,`${label} aligns the footer controls horizontally`);
+  assert.ok(geometry.logout.right<=geometry.toggle.left,`${label} puts Log out on the left and the toggle on the right`);
+  assert.ok(geometry.earlierBottom<=geometry.row.top+1,`${label} keeps the shared row below the other account links`);
+  const visibleAppearance=await account.getByText("Appearance",{exact:true}).evaluateAll(elements=>elements.filter(element=>{
+    const rect=element.getBoundingClientRect();return rect.width>1&&rect.height>1&&element.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
+  }).length);
+  assert.equal(visibleAppearance,0,`${label} has no visible Appearance word`);
+}
 
 test("actual signed-in sidebar and navbar stay dark with pink menus across desktop/mobile and event tones", {timeout:120000}, async()=>{
   execSync("bun scripts/build-dark-ui-fixture.mjs",{timeout:60000,stdio:"pipe"});
@@ -16,7 +67,7 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
   const failures=[];const evidence=[];const errors=[];
   try {
     const context=await browser.newContext({colorScheme:"dark",reducedMotion:"reduce",viewport:{width:1440,height:1080}});
-    await context.addInitScript(()=>{localStorage.setItem("sidebar:desktop-pinned","1");localStorage.setItem("sidebar:collapsed","1");localStorage.setItem("envitefy:appearance:v1","dark");});
+    await context.addInitScript(()=>{localStorage.setItem("sidebar:desktop-pinned","1");localStorage.setItem("sidebar:collapsed","1");});
     await context.route("**/*",async route=>{
       const url=new URL(route.request().url());
       if(url.hostname!=="navigation.test")return route.abort();
@@ -46,6 +97,14 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
       const sidebar=page.locator('[data-app-navigation="sidebar"]');
       await sidebar.getByRole("button",{name:"Snap a Flyer",exact:true}).waitFor({timeout:10000});
       await page.waitForFunction(()=>document.querySelector('[data-app-navigation="sidebar"]')?.getAttribute("data-sidebar-state")==="expanded");
+      if(tone==="default"){
+        assert.equal(await page.locator("html").getAttribute("data-appearance-preference"),"system");
+        assert.equal(await page.evaluate(()=>localStorage.getItem("envitefy:appearance:v1")),null,"navigation starts with the device preference");
+        await page.emulateMedia({colorScheme:"light"});
+        await page.locator('html[data-theme="general-light"]').waitFor();
+        await page.emulateMedia({colorScheme:"dark"});
+        await page.locator('html[data-theme="general-dark"]').waitFor();
+      }
       await check(`${tone} expanded sidebar`,sidebar,"backgroundColor",surface);
       const rootItem=sidebar.getByRole("button",{name:"Snap a Flyer",exact:true});
       await check(`${tone} sidebar menu text`,rootItem.locator(".nav-chrome-menu-label"),"color",pink);
@@ -90,6 +149,7 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
       await check(`${tone} sidebar account panel`,account,"backgroundColor",surface);
       await check(`${tone} sidebar profile text`,account.getByRole("link",{name:"Profile",exact:true}).locator("span").last(),"color",pink);
       await check(`${tone} sidebar profile icon`,account.getByRole("link",{name:"Profile",exact:true}).locator("svg"),"color",pink);
+      await assertAccountFooter(account,`${tone} desktop sidebar account footer`);
       await snapshot(`${tone}-desktop-sidebar-account`);
       await sidebar.getByRole("button",{name:"Account menu for Casey Example",exact:true}).click();
 
@@ -99,6 +159,7 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
       await check(`${tone} navbar profile panel`,topProfile,"backgroundColor",surface);
       await check(`${tone} navbar profile text`,topProfile.getByRole("link",{name:"Profile",exact:true}),"color",pink);
       await check(`${tone} navbar profile icon`,topProfile.getByRole("link",{name:"Profile",exact:true}).locator("svg"),"color",pink);
+      await assertAccountFooter(topProfile,`${tone} desktop navbar account footer`);
       evidence.push({label:`${tone} navbar profile cascade`,diagnostic:await topProfile.getByRole("link",{name:"Profile",exact:true}).evaluate(el=>{
         const matched=[];
         const visit=rules=>{for(const rule of rules){if(rule.selectorText){try{if(el.matches(rule.selectorText)&&rule.style.getPropertyValue("color"))matched.push({selector:rule.selectorText,color:rule.style.getPropertyValue("color"),priority:rule.style.getPropertyPriority("color")});}catch{}}else if(rule.cssRules){if(rule.media&&!matchMedia(rule.conditionText).matches)continue;visit(rule.cssRules);}}};
@@ -132,6 +193,7 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
       await account.getByRole("link",{name:"Profile",exact:true}).waitFor();
       await check(`${tone} mobile profile panel`,account,"backgroundColor",surface);
       await check(`${tone} mobile profile text`,account.getByRole("link",{name:"Profile",exact:true}).locator("span").last(),"color",pink);
+      await assertAccountFooter(account,`${tone} mobile sidebar account footer`);
       await snapshot(`${tone}-mobile-profile`);
       // Each iteration starts from a fresh page, with a pinned desktop rail.
       await context.addInitScript(()=>localStorage.setItem("sidebar:desktop-pinned","1"));
@@ -140,5 +202,58 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
     assert.deepEqual(errors,[]);
     assert.deepEqual(failures,[],"actual navigation must use dark panels and consistent light-pink menu text/icons");
     await context.close();
+  }finally{await browser.close();}
+});
+
+test("Next CSS compilation delivers persistent navigation styles and the compact theme switch",{timeout:60000},async()=>{
+  const layout=await fs.readFile("src/app/layout.tsx","utf8");
+  for(const module of ["navigation/navigation-appearance","appearance-selector"]){
+    assert.ok(layout.includes(`import "@/components/${module}.module.css"`),`${module} remains in the persistent root CSS bundle`);
+  }
+  const directory=path.resolve("output/next-navigation-browser");
+  await fs.mkdir(directory,{recursive:true});
+  const entry=path.join(directory,"entry.tsx");
+  await fs.writeFile(entry,`import React from "react";import {createRoot} from "react-dom/client";
+import ThemeProvider from "../../src/components/AppearanceProvider";
+import AppearanceSelector from "../../src/components/AppearanceSelector";
+import navigationStyles from "../../src/components/navigation/navigation-appearance.module.css";
+createRoot(document.getElementById("root")!).render(<ThemeProvider><div data-next-navigation className={navigationStyles.chrome+" nav-chrome-sidebar-surface"}><AppearanceSelector compact/></div></ThemeProvider>);`);
+  const compiled=require("next/dist/compiled/webpack/webpack");compiled.init();
+  const webpack=compiled.webpack;
+  const {getCssModuleLoader}=require("next/dist/build/webpack/config/blocks/css/loaders/modules");
+  const {getPostCssPlugins}=require("next/dist/build/webpack/config/blocks/css/plugins");
+  const ExtractCss=require("next/dist/build/webpack/plugins/mini-css-extract-plugin").default;
+  const span=require("next/dist/trace").trace("next-navigation-css-regression");
+  const postcss=require("postcss");
+  const plugins=await getPostCssPlugins(process.cwd(),undefined,false,false);
+  const lazyPostcss=async()=>({postcss,postcssWithPlugins:postcss(plugins)});
+  await new Promise((resolve,reject)=>{
+    const compiler=webpack({mode:"development",target:"web",devtool:false,entry,output:{path:directory,filename:"entry.js"},
+      resolve:{extensions:[".tsx",".ts",".js"],alias:{"@":path.resolve("src")}},
+      module:{rules:[{test:/\.[jt]sx?$/,exclude:/node_modules/,use:path.resolve("scripts/lib/create-guest-ts-loader.cjs")},
+        {test:/\.module\.css$/,use:getCssModuleLoader({isClient:true,isServer:false,hasAppDir:true,isAppDir:true,isDevelopment:true,assetPrefix:"",experimental:{useLightningcss:false}},lazyPostcss)}]},
+      plugins:[new ExtractCss({filename:"entry.css"}),{apply(compiler){compiler.hooks.compilation.tap("NextCssTrace",compilation=>webpack.NormalModule.getCompilationHooks(compilation).loader.tap("NextCssTrace",context=>{context.currentTraceSpan=span;}));}}]});
+    compiler.run((error,stats)=>compiler.close(()=>error||stats?.hasErrors()?reject(error||new Error(stats.toString({all:false,errors:true}))):resolve()));
+  });
+  span.stop();
+  const [script,css]=await Promise.all([fs.readFile(path.join(directory,"entry.js"),"utf8"),fs.readFile(path.join(directory,"entry.css"),"utf8")]);
+  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE});
+  try{
+    const page=await browser.newPage({colorScheme:"light",reducedMotion:"reduce",viewport:{width:390,height:300}});
+    const errors=[];page.on("pageerror",error=>errors.push(error.message));
+    await page.route("https://next-navigation.test/**",route=>route.fulfill(route.request().url().endsWith("entry.js")?{contentType:"application/javascript",body:script}:{contentType:"text/html",body:`<!doctype html><html><head><style>*,*::before,*::after{box-sizing:border-box}body{margin:0}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}</style><style>${css}</style></head><body><div id="root"></div><script src="/entry.js"></script></body></html>`}));
+    await page.goto("https://next-navigation.test/");
+    const navigation=page.locator("[data-next-navigation]");
+    await navigation.waitFor();
+    await page.locator('html[data-theme="general-light"]').waitFor();
+    await assertCompactToggle(navigation,false,"Next-compiled light switch");
+    assert.equal(await page.locator("html").getAttribute("data-appearance-preference"),"system");
+    await page.screenshot({path:path.join(directory,"light.png")});
+    await page.emulateMedia({colorScheme:"dark"});
+    await page.locator('html[data-theme="general-dark"]').waitFor();
+    await assertCompactToggle(navigation,true,"Next-compiled dark switch");
+    assert.equal(await navigation.evaluate(element=>getComputedStyle(element).backgroundColor),surface,"Next delivers the dark navigation module");
+    await page.screenshot({path:path.join(directory,"dark.png")});
+    assert.deepEqual(errors,[]);
   }finally{await browser.close();}
 });

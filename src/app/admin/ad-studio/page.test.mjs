@@ -100,6 +100,34 @@ test("deterministic invitation and phone UI rendering are separate from image ge
   assert.match(compositor, /renderPhoneUiCompositeBuffer/);
 });
 
+test("deterministic phone exports embed the current logo and render without external assets", async () => {
+  const { renderPhoneUiSvg } = await import("../../../lib/admin/ad-studio/renderers/phone-ui-renderer.ts");
+  const { ENVITEFY_BRAND_ASSETS } = await import("../../../lib/brand-assets.ts");
+  const sharp = (await import("sharp")).default;
+  const svg = await renderPhoneUiSvg({
+    themeTokens: {
+      background: "#FFFFFF", surface: "#FFFFFF", primary: "#67459E",
+      primaryText: "#FFFFFF", text: "#302738", muted: "#655A70",
+    },
+    eventPageCard: { title: "Alex's celebration", subtitle: "You're invited", date: "Nov 7", time: "2 PM", location: "The Garden Pavilion" },
+    ctaButtonText: "RSVP",
+    rsvpModule: { label: "Guests", yesCount: 12, maybeCount: 0 },
+    locationCard: { label: "Location", address: "123 Garden Lane" },
+    shareModule: { label: "Share", shareText: "Invite friends" },
+  });
+  const canonical = await sharp(fs.readFileSync(path.join(repoRoot, "public", ENVITEFY_BRAND_ASSETS.wordmark.color))).png().toBuffer();
+  assert.ok(svg.includes(`data:image/png;base64,${canonical.toString("base64")}`));
+  assert.doesNotMatch(svg, /<text[^>]*>Envitefy<\/text>/);
+  const { data, info } = await sharp(Buffer.from(svg))
+    .extract({ left: 44, top: 66, width: 116, height: 32 })
+    .removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  let logoPixels = 0;
+  for (let offset = 0; offset < data.length; offset += info.channels) {
+    if (data[offset + 2] > data[offset] + 15 || data[offset + 2] > data[offset + 1] + 15) logoPixels++;
+  }
+  assert.ok(logoPixels > 100, `Expected the blue/violet logo to render in the header; found ${logoPixels} pixels`);
+});
+
 test("identity continuity uses cropped host references, not full prior frames", () => {
   const imageAgent = readSource("src/lib/admin/ad-studio/agents/image-generation-agent.ts");
   const frameDirector = readSource("src/lib/admin/ad-studio/agents/frame-director-agent.ts");

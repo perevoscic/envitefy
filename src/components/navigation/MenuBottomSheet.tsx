@@ -216,8 +216,7 @@ export default function MenuBottomSheet({
                           {link.label}
                         </Link>
                       ))}
-                      <div className="mt-3 flex min-h-11 items-center justify-between gap-3 rounded-2xl px-4 py-2 text-left text-sm">
-                        <span>Appearance</span>
+                      <div className="mt-3 flex min-h-11 items-center justify-end rounded-2xl px-4 py-2 text-left text-sm">
                         <AppearanceSelector compact />
                       </div>
                     </div>
