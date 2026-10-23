@@ -161,7 +161,12 @@ export function EventEditorSection({
     <div className={styles.section}>
       <div className={styles.sectionHeader}>
         {showBack && onBack && (
-          <button type="button" className={styles.sectionBack} aria-label="Back to details" onClick={onBack}>
+          <button
+            type="button"
+            className={styles.sectionBack}
+            aria-label="Back to details"
+            onClick={onBack}
+          >
             <ChevronLeft size={20} aria-hidden="true" />
           </button>
         )}
