@@ -21,6 +21,32 @@ const { buildAppearanceBootstrap, normalizeAppearance, resolveAppearance } = loa
 
 const appearanceSwitch = (scope) => scope.getByRole("switch", { name: "Dark mode", exact: true });
 
+async function assertPreviewControlContrast(controls) {
+  const measurements = await controls.evaluateAll((elements) => elements.filter((element) => element.checkVisibility()).map((element) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 1;
+    const context = canvas.getContext("2d");
+    const rgba = (color) => {
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      return [...context.getImageData(0, 0, 1, 1).data].map((value, index) => index === 3 ? value / 255 : value);
+    };
+    const blend = (top, bottom) => top.slice(0, 3).map((value, index) => value * top[3] + bottom[index] * (1 - top[3]));
+    const ancestors = [];
+    for (let node = element; node; node = node.parentElement) ancestors.unshift(node);
+    const background = ancestors.reduce((color, node) => blend(rgba(getComputedStyle(node).backgroundColor), color), [255, 255, 255]);
+    const foreground = rgba(getComputedStyle(element).color);
+    foreground[3] *= ancestors.reduce((opacity, node) => opacity * Number(getComputedStyle(node).opacity), 1);
+    const luminance = (channels) => channels.map((value) => value / 255).map((value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+    const light = luminance(background);
+    const ink = luminance(blend(foreground, background));
+    return { name: element.getAttribute("aria-label") || element.textContent.trim(), ratio: (Math.max(light, ink) + 0.05) / (Math.min(light, ink) + 0.05), minimum: element.textContent.trim() ? 4.5 : 3 };
+  }));
+  assert.ok(measurements.length > 0, "preview controls must be visible");
+  for (const result of measurements) assert.ok(result.ratio >= result.minimum, `${result.name} contrast ${result.ratio.toFixed(2)}:1 must reach ${result.minimum}:1`);
+}
+
 async function assertAppearanceLayout(page) {
   const group = page.getByRole("group", { name: "Appearance", exact: true });
   assert.equal(await group.getByRole("switch", { name: "Dark mode", exact: true }).count(), 1);
@@ -135,6 +161,39 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     await appearanceSwitch(page).check();
     await frame.locator('html[data-theme="general-dark"]').waitFor();
     assert.deepEqual(await frame.locator("#iframe-input").evaluate((el) => ({ color: getComputedStyle(el).color, placeholder: getComputedStyle(el, "::placeholder").color })), frameOriginal);
+    const preview = page.getByRole("region", { name: "Authored iframe preview", exact: true });
+    const desktopControls = preview.locator('header button, header a');
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('[aria-label="Authored iframe preview"]')).backgroundColor === "rgb(233, 244, 246)");
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('[aria-label="Authored iframe preview"]')).color === "rgb(242, 234, 250)");
+    assert.equal(await frame.locator("#iframe-paper").evaluate((element) => getComputedStyle(element).color), "rgb(242, 234, 250)", "the regression includes pale inherited app ink over light event paper");
+    await assertPreviewControlContrast(desktopControls);
+    await preview.screenshot({ path: path.join(output, "event-controls-dark-app-light-paper.png") });
+    await page.getByText("Change event paper", { exact: true }).click();
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('[aria-label="Authored iframe preview"]')).backgroundColor === "rgb(24, 38, 49)");
+    await assertPreviewControlContrast(desktopControls);
+    await appearanceSwitch(page).uncheck();
+    await assertPreviewControlContrast(desktopControls);
+    await page.getByText("Change event paper", { exact: true }).click();
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('[aria-label="Authored iframe preview"]')).backgroundColor === "rgb(233, 244, 246)");
+    await assertPreviewControlContrast(desktopControls);
+    await appearanceSwitch(page).check();
+    await page.setViewportSize({ width: 375, height: 812 });
+    const moreActions = frame.getByRole("button", { name: "More event actions", exact: true });
+    await moreActions.waitFor();
+    for (let paper = 0; paper < 2; paper++) {
+      if (paper) {
+        await page.getByText("Change event paper", { exact: true }).click();
+        await page.waitForFunction(() => getComputedStyle(document.querySelector('[aria-label="Authored iframe preview"]')).backgroundColor === "rgb(24, 38, 49)");
+      }
+      await assertPreviewControlContrast(moreActions);
+      await moreActions.click();
+      await assertPreviewControlContrast(frame.getByRole("group", { name: "Event actions", exact: true }).locator("button"));
+      await moreActions.press("Escape");
+      assert.equal(await moreActions.getAttribute("aria-expanded"), "false");
+      assert.equal(await moreActions.evaluate((element) => element.ownerDocument.activeElement === element), true);
+    }
+    await page.setViewportSize({ width: 1200, height: 900 });
+    await page.getByText("Change event paper", { exact: true }).click();
     await appearanceSwitch(page).uncheck();
     await frame.locator('html[data-theme="general-light"]').waitFor();
     assert.equal(await frame.locator("html").evaluate((el) => el.style.getPropertyValue("--mobile-chrome-top-clouds").trim()), await page.locator("html").evaluate((el) => getComputedStyle(el).getPropertyValue("--mobile-chrome-top-clouds").trim()));

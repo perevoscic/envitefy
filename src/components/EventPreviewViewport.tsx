@@ -235,14 +235,20 @@ export default function EventPreviewViewport({
   const closeClassName =
     "inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-current/15 bg-transparent text-inherit transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current";
   const mount = !src ? frameDocument?.getElementById("event-preview-content") : null;
+  // Outer page containers can inherit app ink that does not match the authored paper.
+  const darkPaper = isDarkEventPageColor(String(background.backgroundColor || ""));
+  const toolbarColor = darkPaper ? "#ffffff" : "#242424";
   const floatingSurfaceStyle = floatingToolbar
-    ? preserveNavigation && isDarkEventPageColor(String(background.backgroundColor || ""))
+    ? preserveNavigation && darkPaper
       ? {
           backgroundColor: "rgba(250, 249, 255, 0.94)",
           color: "#38246b",
           borderColor: "rgba(107, 70, 206, 0.2)",
         }
-      : { backgroundColor: `color-mix(in srgb, ${background.backgroundColor || "#f8f8f7"} 88%, transparent)` }
+      : {
+          backgroundColor: `color-mix(in srgb, ${background.backgroundColor || "#f8f8f7"} 88%, transparent)`,
+          color: toolbarColor,
+        }
     : undefined;
 
   return (
@@ -254,7 +260,7 @@ export default function EventPreviewViewport({
       {!preserveNavigation && (fullscreen || onClose) ? <OwnerPreviewMobileTopbarSuppressor /> : null}
       <header
         data-floating-event-toolbar={floatingToolbar || undefined}
-        style={{ color: isDarkEventPageColor(String(background.backgroundColor || "")) ? "#ffffff" : background.color }}
+        style={{ color: floatingToolbar ? toolbarColor : darkPaper ? "#ffffff" : background.color }}
         className={`z-10 ${preserveNavigation ? "pointer-events-none absolute inset-x-0 top-[calc(var(--app-mobile-topbar-offset,6rem)+0.5rem)] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:flex lg:justify-center lg:top-[max(0.5rem,env(safe-area-inset-top))]" : `${nativeMobile ? "pointer-events-none absolute inset-x-0 top-0" : "relative shrink-0"} grid pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] ${actions ? "grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_1fr]" : "grid-cols-[1fr_auto_1fr]"}`} items-center gap-2 px-3 sm:px-5`}
       >
         {preserveNavigation ? null : actions ? <div className="pointer-events-auto">{actions}</div> : <div aria-hidden="true" />}
