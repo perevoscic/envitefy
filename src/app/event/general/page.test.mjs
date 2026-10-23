@@ -1,41 +1,20 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
-import { createRequire } from "node:module";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import ts from "typescript";
+import loadTs from "../../../../scripts/lib/event-messages-test-loader.cjs";
 
-const nativeRequire = createRequire(import.meta.url);
 function load(file, mocks = {}, cache = new Map()) {
-  const absolute = path.resolve(file);
-  if (cache.has(absolute)) return cache.get(absolute).exports;
-  const module = { exports: {} };
-  cache.set(absolute, module);
-  if (absolute.endsWith(".json")) {
-    module.exports = JSON.parse(readFileSync(absolute, "utf8"));
-    return module.exports;
-  }
-  const source = ts.transpileModule(readFileSync(absolute, "utf8"), {
-    fileName: absolute,
-    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true, target: ts.ScriptTarget.ES2022 },
-  }).outputText;
-  function require(name) {
-    if (Object.hasOwn(mocks, name)) return mocks[name];
-    if (name === "lucide-react") return new Proxy({}, { get: () => () => null });
-    if (name.endsWith(".css")) return new Proxy({}, { get: (_, key) => String(key) });
-    if (!name.startsWith(".") && !name.startsWith("@/")) return nativeRequire(name);
-    const base = name.startsWith("@/") ? path.resolve("src", name.slice(2)) : path.resolve(path.dirname(absolute), name);
-    const target = [base, `${base}.ts`, `${base}.tsx`].find(existsSync);
-    assert.ok(target, name);
-    return load(target, mocks, cache);
-  }
-  new Function("require", "module", "exports", source)(require, module, module.exports);
-  return module.exports;
+  return loadTs(file, {
+    "lucide-react": new Proxy({}, { get: () => () => null }),
+    ...mocks,
+  }, cache);
 }
 const { GENERAL_EVENT_DESIGNS, getGeneralEventDesign } = load("src/lib/general-event-designs.ts");
 const { AVAILABLE_HOLIDAY_TEMPLATE_IDS } = load("src/assets/holiday-template-availability.ts");
+const { getHolidayBackground, getHolidayBackgroundChoice } = load("src/lib/holiday-backgrounds.ts");
 const { config } = load("src/components/event-templates/GeneralEventsTemplate.tsx");
 const Container = ({ children }) => React.createElement("div", null, children);
 const Empty = () => null;
@@ -69,12 +48,11 @@ test("General Events renders template links directly to the editor and preserves
   assert.doesNotMatch(markup, /\/chat|customize\/ai/);
 });
 
-test("choosing a template opens the real editor with its artwork, theme, and empty event facts", () => {
+test("choosing a template opens the real editor with its artwork, theme, and empty event facts", async (t) => {
   const representative = GENERAL_EVENT_DESIGNS.filter((design, index) => index < 22 || (index - 12) % 10 === 0);
-  for (const design of representative) {
-    let progress;
-    const Editor = load("src/app/event/general/customize/page.tsx", {
-      "next/navigation": { useRouter: () => ({}), useSearchParams: () => new URLSearchParams({ templateId: design.id }) },
+  let progress, selectedDesign;
+  const Editor = load("src/app/event/general/customize/page.tsx", {
+      "next/navigation": { useRouter: () => ({}), useSearchParams: () => new URLSearchParams({ templateId: selectedDesign.id }) },
       "next/image": ({ src, alt }) => React.createElement("img", { src, alt }),
       "@/components/EventCanvas": Container,
       "@/components/events/TemplateImageTone": Container,
@@ -91,21 +69,36 @@ test("choosing a template opens the real editor with its artwork, theme, and emp
       "@/components/UnsavedProgressProvider": { useProgressNavigation: () => ({ allowNavigation() {} }) },
       "@/hooks/useMobileDrawer": { useMobileDrawer: () => ({ mobileMenuOpen: true, previewTouchHandlers: {}, drawerTouchHandlers: {} }) },
       "@/utils/media-upload-client": { persistImageMediaValue() { throw new Error("Opening a template must not upload"); } },
-    }).default;
-    const markup = renderToStaticMarkup(React.createElement(Editor));
-    assert.equal(progress.snapshot.themeId, design.id);
-    assert.equal(progress.snapshot.data.hero, design.artwork);
-    if (design.occasion) {
-      assert.equal(progress.snapshot.data.creationCollection, "holidays-seasonal");
-      assert.equal(progress.snapshot.data.holidayOccasion, design.occasion);
-    }
-    for (const field of ["title", "date", "time", "city", "state", "venue", "details", "rsvpDeadline"]) {
-      assert.equal(progress.snapshot.data[field], "", `${design.id}: ${field}`);
-    }
-    assert.ok(Object.values(progress.snapshot.data.extra).every((value) => value === ""));
-    assert.ok(markup.includes(design.artwork));
-    assert.ok(markup.includes(design.theme.bg));
-    assert.doesNotMatch(markup, /Invalid Date|Chicago|Community Guild|organizer@email/);
+  }).default;
+  for (const design of representative) {
+    await t.test(design.id, () => {
+      selectedDesign = design;
+      const markup = renderToStaticMarkup(React.createElement(Editor));
+      assert.equal(progress.snapshot.themeId, design.id, "selected design identity");
+      assert.equal(progress.snapshot.data.hero, design.artwork, "selected artwork");
+      let expectedPalette = { backgroundColor: design.background, color: design.ink };
+      if (design.occasion) {
+        const background = getHolidayBackground(design.id);
+        assert.ok(background, "holiday template has an authored background");
+        assert.equal(progress.snapshot.data.creationCollection, "holidays-seasonal");
+        assert.equal(progress.snapshot.data.holidayOccasion, design.occasion);
+        assert.deepEqual(progress.snapshot.data.pageBackground, getHolidayBackgroundChoice(background.id, "template"), "the template background choice is retained for saving");
+        assert.ok(markup.includes(`data-holiday-background="${background.id}"`), "rendered background matches the saved preset");
+        expectedPalette = { backgroundColor: background.page, color: background.ink };
+      } else {
+        assert.equal(progress.snapshot.data.pageBackground, undefined, "ordinary templates do not gain holiday backgrounds");
+        assert.ok(markup.includes(design.theme.bg), `rendered theme includes ${design.theme.bg}`);
+      }
+      assert.deepEqual(progress.snapshot.theme.bgStyle, expectedPalette, "saved palette matches the selected background");
+      const page = markup.match(/<div\b[^>]*data-event-page-design="[^"]*"[^>]*>/)?.[0];
+      assert.ok(page?.includes(`background-color:${expectedPalette.backgroundColor};color:${expectedPalette.color}`), "page renders the selected background and ink");
+      for (const field of ["title", "date", "time", "city", "state", "venue", "details", "rsvpDeadline"]) {
+        assert.equal(progress.snapshot.data[field], "", `${field} stays empty`);
+      }
+      assert.ok(Object.values(progress.snapshot.data.extra).every((value) => value === ""), "extra event facts stay empty");
+      assert.ok(markup.includes(design.artwork), "selected artwork is rendered");
+      assert.doesNotMatch(markup, /Invalid Date|Chicago|Community Guild|organizer@email/);
+    });
   }
 });
 
@@ -145,7 +138,7 @@ test("themed General editor retains authored ink on dark palettes instead of app
   }
 });
 
-test("General editor design changes and recovery retain imported facts and custom artwork", () => {
+test("General editor design changes and recovery retain imported facts, custom artwork, and legacy holiday palettes", () => {
   const [first, second, third] = GENERAL_EVENT_DESIGNS;
   const states = [];
   let stateIndex = 0, hydration, progress;
@@ -214,4 +207,23 @@ test("General editor design changes and recovery retain imported facts and custo
   render();
   assert.equal(progress.snapshot.themeId, first.id);
   assert.deepEqual(progress.snapshot.data, { ...recovered.data, bodyDesignId: first.id }, "switching a design retains the host's uploaded artwork and facts while updating its design identity");
+
+  for (const occasion of ["new-years-day", "halloween"]) {
+    const design = GENERAL_EVENT_DESIGNS.find((item) => item.occasion === occasion);
+    assert.ok(design, `${occasion}: delivered legacy template`);
+    const legacy = {
+      ...progress.snapshot,
+      themeId: design.id,
+      data: { ...progress.snapshot.data, bodyDesignId: design.id, creationCollection: "holidays-seasonal", holidayOccasion: occasion },
+    };
+    delete legacy.data.pageBackground;
+    hydration.restore(legacy);
+    const markup = renderToStaticMarkup(render());
+    assert.deepEqual(progress.snapshot.data, legacy.data, `${design.id}: recovery retains saved facts and custom artwork without adding a background choice`);
+    assert.deepEqual(progress.snapshot.theme.bgStyle, { backgroundColor: design.background, color: design.ink }, `${design.id}: legacy pages retain their original authored palette`);
+    assert.ok(markup.includes(design.theme.bg), `${design.id}: original theme class stays active`);
+    const page = markup.match(/<div\b[^>]*data-event-page-design="[^"]*"[^>]*>/)?.[0];
+    assert.ok(page?.includes(`background-color:${design.background};color:${design.ink}`), `${design.id}: original background and ink are rendered`);
+    assert.doesNotMatch(markup, /data-holiday-background=/, `${design.id}: recovery does not activate a newly recommended preset`);
+  }
 });
