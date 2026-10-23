@@ -1200,7 +1200,6 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                                 Public event URL
                                 <input
                                   type="url"
-                                  aria-describedby="link-import-guidance"
                                   value={url}
                                   onChange={(event) => {
                                     invalidate();
