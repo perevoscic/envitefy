@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout, { OriginalWeddingHero } from "./WeddingHeroLayout";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
@@ -247,14 +249,14 @@ export default function GildedWedding({ theme, event }: Props) {
         <div className="absolute bottom-4 right-4 w-16 h-16 border-b-4 border-r-4 border-[#D4AF37] z-20"></div>
 
         {/* Hero Background Image */}
-        <div className="absolute top-0 left-0 w-full h-[700px] z-0 pointer-events-none">
+        <OriginalWeddingHero><div className="absolute top-0 left-0 w-full h-[700px] z-0 pointer-events-none">
           <img
             src={heroImage}
             alt="Venue"
             className="template-hero-image w-full h-full object-cover opacity-20 sepia-[.3]"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#FDFBF7]/10 via-white/50 to-white"></div>
-        </div>
+        </div></OriginalWeddingHero>
 
         {/* Nav */}
         <nav className="relative z-30 pt-12 pb-8 flex justify-center gap-12 text-[10px] uppercase tracking-[0.3em] text-[#8C7B75]">
@@ -270,7 +272,7 @@ export default function GildedWedding({ theme, event }: Props) {
         </nav>
 
         {/* Hero Content */}
-        <header className="flex-1 flex flex-col items-center justify-center text-center px-8 pb-16 relative z-30">
+        <WeddingHeroLayout theme={theme} event={event} image={heroImage}><header className="flex-1 flex flex-col items-center justify-center text-center px-8 pb-16 relative z-30">
           <div className="mb-8 w-px h-16 bg-[#D4AF37]"></div>
           <p className="uppercase tracking-[0.2em] text-xs text-[#8C7B75] mb-6">
             The honour of your presence is requested at the marriage of
@@ -296,7 +298,7 @@ export default function GildedWedding({ theme, event }: Props) {
           <p className="text-sm uppercase tracking-[0.2em] text-[#2C2420] mt-8">
             {location}
           </p>
-        </header>
+        </header></WeddingHeroLayout>
 
         {/* Info Section */}
         <section

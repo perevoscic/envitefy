@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useEffect, useState } from "react";
@@ -133,7 +135,7 @@ export default function EtherealClassic({ theme, event }: Props) {
         )}
       </nav>
 
-      <header className="relative h-screen w-full overflow-hidden flex items-center justify-center">
+      <WeddingHeroLayout theme={theme} event={event}><header className="relative h-screen w-full overflow-hidden flex items-center justify-center">
         <div
           className="template-hero-image absolute inset-0 bg-cover bg-center bg-fixed"
           style={{
@@ -165,7 +167,7 @@ export default function EtherealClassic({ theme, event }: Props) {
         >
           <ChevronDown size={32} />
         </button>
-      </header>
+      </header></WeddingHeroLayout>
 
       <section id="story" className="py-24 px-6 max-w-4xl mx-auto text-center">
         <Heart className="mx-auto text-rose-300 w-8 h-8 mb-8" />

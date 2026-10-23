@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useState } from "react";
@@ -85,7 +87,7 @@ export default function RusticBoho({ theme, event }: Props) {
         id="home"
         className="relative z-10 px-4 pt-8 md:pt-12 max-w-6xl mx-auto"
       >
-        <div className="grid md:grid-cols-12 gap-8 items-center">
+        <WeddingHeroLayout theme={theme} event={event} image={mainImage} description={event.story}><div className="grid md:grid-cols-12 gap-8 items-center">
           <div className="md:col-span-7 grid grid-cols-2 gap-4 h-[500px] md:h-[600px]">
             <div className="space-y-4 pt-12">
               <div className="h-3/5 w-full bg-white p-2 rounded-t-[100px] rounded-b-2xl shadow-sm rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
@@ -155,7 +157,7 @@ export default function RusticBoho({ theme, event }: Props) {
           </div>
 
 
-        </div>
+        </div></WeddingHeroLayout>
       </main>
 
       <section

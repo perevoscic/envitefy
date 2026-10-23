@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 
@@ -62,7 +64,7 @@ export default function BauhausWedding({ theme, event }: Props) {
       className="min-h-screen bg-[#F0F0F0] font-sans p-4 flex flex-col items-center justify-center gap-8"
       style={{ fontFamily: theme.fonts.body }}
     >
-      <div className="w-full max-w-2xl bg-[#EAEAEA] aspect-[3/4] md:aspect-square relative overflow-hidden shadow-2xl">
+      <WeddingHeroLayout theme={theme} event={event} image={event.customHeroImage}><div className="w-full max-w-2xl bg-[#EAEAEA] aspect-[3/4] md:aspect-square relative overflow-hidden shadow-2xl">
         {/* Top Left Red Block */}
         <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-[#D93025] z-10 flex items-end p-8">
           <span className="text-white text-4xl font-bold">SAVE</span>
@@ -108,7 +110,7 @@ export default function BauhausWedding({ theme, event }: Props) {
             {coupleInitials}
           </h1>
         </div>
-      </div>
+      </div></WeddingHeroLayout>
 
       {/* Story Section */}
       {event.story && (

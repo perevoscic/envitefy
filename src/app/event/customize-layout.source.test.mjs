@@ -60,7 +60,7 @@ test("event customize previews fill the responsive workspace", () => {
   }
 });
 
-test("native category pages share section and layout controls with generated and uploaded pages", () => {
+test("native and custom editors keep section management separate from hero layout", () => {
   const workspace = readFileSync(new URL("../../components/events/EventEditorWorkspace.tsx", import.meta.url), "utf8");
   assert.match(workspace, /<EventSectionPalette\s*\/>/);
   assert.match(workspace, /<EventPageLayoutPicker/);
@@ -69,7 +69,15 @@ test("native category pages share section and layout controls with generated and
   assert.match(custom, /<EventSectionPalette\s*\/>/);
   assert.match(custom, /<CustomEventLayoutPicker/);
   const native = readFileSync(new URL("../../components/events/EventPageLayoutPicker.tsx", import.meta.url), "utf8");
-  assert.match(native, /<CustomEventLayoutPicker[\s\S]*mode="sections"/);
+  assert.match(native, /<EventHeroLayoutPicker/);
+  assert.doesNotMatch(native, /CustomEventLayoutPicker|Template layout|original section arrangement|mode="sections"/);
+  const customPicker = readFileSync(new URL("../../components/events/custom/CustomEventLayoutPicker.tsx", import.meta.url), "utf8");
+  assert.match(customPicker, /<EventHeroLayoutPicker/);
+  assert.doesNotMatch(customPicker, /EVENT_DESIGN_LAYOUT_OPTIONS|Section layout|Sections in two columns|Information cards in two columns/);
+  const picker = readFileSync(new URL("../../components/events/EventHeroLayoutPicker.tsx", import.meta.url), "utf8");
+  assert.match(picker, /EVENT_HERO_LAYOUT_PRESETS/);
+  assert.doesNotMatch(picker, /<(?:select|input|textarea)\b/, "hero layout consists of premade thumbnail buttons");
+  assert.doesNotMatch(picker, /EVENT_DESIGN_LAYOUT_OPTIONS|Section layout|Sections in two columns|Information cards in two columns/);
 });
 
 test("the common workspace reserves one desktop column and switches mounted views on mobile", () => {

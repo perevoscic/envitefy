@@ -1,5 +1,5 @@
 "use client";
-import { EventSectionEditorClose as EditorClose } from "./EventSectionEditorContext";
+import { EventSectionEditorClose as EditorClose, EventSectionEditorBusy } from "./EventSectionEditorContext";
 import {
   EventPageCompositionProvider,
   useEventPageComposition,
@@ -8,6 +8,8 @@ import {
 import { EventEditorInput } from "./EventEditorFields";
 import { EventPageReadOnlyProvider } from "./EventPageReadOnlyContext";
 import EventArrivalMap from "./custom/EventArrivalMap";
+import EventSectionExtrasEditor from "./EventSectionExtrasEditor";
+import EventSectionExtrasContent from "./EventSectionExtrasContent";
 
 import {
   closestCenter,
@@ -122,6 +124,7 @@ function InformationSectionEditor({ id, fallback }: { id: string; fallback: Reac
         onChange={(body) => update({ body })}
         maxLength={12000}
       />
+      <EventSectionExtrasEditor key={section.id} value={section} onChange={update} />
     </>
   );
 }
@@ -141,7 +144,12 @@ function AddInformationSection({
       className={styles.informationChoice}
       disabled={builder.sectionLimitReached || (composition?.value?.sections.length || 0) >= 20}
       onClick={() => {
-        const content = { title: preset?.title || "Information", body: "" };
+        const kind = preset && "kind" in preset ? preset.kind : undefined;
+        const content: EventInformationSectionContent = {
+          title: preset?.title || "Information",
+          body: "",
+          ...(kind === "photos" ? { kind, photos: [] } : kind === "links" ? { kind, links: [] } : {}),
+        };
         if (builder.createSection) {
           const section = builder.createSection(content);
           if (section) builder.add(section, index);
@@ -159,7 +167,7 @@ function AddInformationSection({
     >
       <Plus size={18} aria-hidden="true" />
       <span>
-        {preset?.title || "Custom section"}
+        {preset?.title || "Other"}
         <small>{preset?.description || "Add your own heading and information"}</small>
       </span>
     </button>
@@ -231,7 +239,8 @@ export function EventSectionBuilderProvider({
     { kind: "add"; index: number } | { kind: "edit" | "beside"; section: EventSectionOption } | null
   >(null);
   const [dragLabel, setDragLabel] = useState("");
-  const [notice, setNotice] = useState("");
+  const [sectionBusy, setSectionBusy] = useState(false);
+  const [notice, setNotice] = useState<{ message: string } | null>(null);
   const [undo, setUndo] = useState<Array<EventSectionLayout | undefined>>([]);
   const dialog = useRef<HTMLDialogElement>(null);
   const focusReturn = useRef<HTMLElement | null>(null);
@@ -245,7 +254,14 @@ export function EventSectionBuilderProvider({
   const register = useCallback((next: EventSectionOption[]) => {
     setEntries((previous) => (JSON.stringify(previous) === JSON.stringify(next) ? previous : next));
   }, []);
-  const close = useCallback(() => setPanel(null), []);
+  const close = useCallback(() => {
+    if (!sectionBusy) setPanel(null);
+  }, [sectionBusy]);
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(null), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
   const rememberFocus = useCallback(() => {
     if (!dialog.current?.open)
       focusReturn.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -305,9 +321,9 @@ export function EventSectionBuilderProvider({
       );
       const label =
         [...catalog, ...entries].find((item) => item.id === action.id)?.label || "Section";
-      setNotice(
-        `${label} ${action.type === "remove" ? "removed from page" : action.type === "add" ? "added" : action.type === "resize" ? "width updated" : action.type === "pair" ? "placed beside section" : action.type === "unpair" ? "moved to its own row" : "moved"}.`,
-      );
+      setNotice({
+        message: `${label} ${action.type === "remove" ? "removed from page" : action.type === "add" ? "added" : action.type === "resize" ? "width updated" : action.type === "pair" ? "placed beside section" : action.type === "unpair" ? "moved to its own row" : "moved"}.`,
+      });
       if (action.type === "remove")
         requestAnimationFrame(() => undoButton.current?.focus({ preventScroll: true }));
     },
@@ -406,7 +422,7 @@ export function EventSectionBuilderProvider({
       </DndContext>
       {notice ? (
         <div className={styles.notice}>
-          <span role="status">{notice}</span>
+          <span role="status">{notice.message}</span>
           {undo.length ? (
             <button
               ref={undoButton}
@@ -415,13 +431,21 @@ export function EventSectionBuilderProvider({
                 const previous = undo[undo.length - 1];
                 setUndo((history) => history.slice(0, -1));
                 onChange(previous);
-                setNotice("Section change undone.");
+                setNotice({ message: "Section change undone." });
               }}
             >
               <RotateCcw size={16} aria-hidden="true" />
               Undo
             </button>
           ) : null}
+          <button
+            type="button"
+            className={styles.noticeDismiss}
+            aria-label="Dismiss notification"
+            onClick={() => setNotice(null)}
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
         </div>
       ) : null}
       <dialog
@@ -441,7 +465,7 @@ export function EventSectionBuilderProvider({
                 ? `Place beside ${panel.section.label}`
                 : "Add section"}
           </h2>
-          <button type="button" onClick={close} aria-label="Close section panel">
+          <button type="button" onClick={close} disabled={sectionBusy} aria-label="Close section panel">
             <X size={20} />
           </button>
         </div>
@@ -506,17 +530,19 @@ export function EventSectionBuilderProvider({
               <InformationSectionChoices index={panel.index} />
             </>
           ) : panel?.kind === "edit" ? (
-            <EditorClose.Provider value={close}>
-              <InformationSectionEditor
-                id={panel.section.id}
-                fallback={renderEditor(panel.section.editorId || panel.section.id)}
-              />
-            </EditorClose.Provider>
+            <EventSectionEditorBusy.Provider value={setSectionBusy}>
+              <EditorClose.Provider value={close}>
+                <InformationSectionEditor
+                  id={panel.section.id}
+                  fallback={renderEditor(panel.section.editorId || panel.section.id)}
+                />
+              </EditorClose.Provider>
+            </EventSectionEditorBusy.Provider>
           ) : null}
         </div>
         {panel?.kind === "edit" ? (
           <div className={styles.dialogFooter}>
-            <button type="button" onClick={close}>
+            <button type="button" onClick={close} disabled={sectionBusy}>
               Done
             </button>
             <span>Save progress when you’re ready.</span>
@@ -587,7 +613,7 @@ export function EventSectionPalette() {
       <p>Add sections or use Place beside to share a row. Drag handles to reorder.</p>
       <div className={styles.paletteItems}>
         <span className={styles.paletteLabel} aria-hidden="true">
-          On your page
+          Already on your page
         </span>
         <ol className={styles.sectionList} aria-label="Page section order">
           {current.map((section, index) => (
@@ -809,6 +835,7 @@ export function EventSectionCanvas({
           <section data-event-section={section.id} className={styles.information}>
             <h2>{section.title}</h2>
             <p>{section.body}</p>
+            <EventSectionExtrasContent value={section} />
             {section.map && <EventArrivalMap map={section.map} />}
           </section>
         ),

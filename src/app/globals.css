@@ -1346,25 +1346,27 @@ html[data-event-page-color] [data-app-main-content="true"] {
   background-color: var(--event-editor-chrome-color, var(--event-page-chrome-color)) !important;
 }
 
-@media (max-width: 1023px) {
-  /* Mobile controls replace the preview below navigation. Continue that same
-     controls surface through the notch and navbar inset without recoloring the
-     event paper; closing controls restores the registered paper immediately. */
+/* Settings use the shared app aurora, while Preview keeps its authored paper. */
+@media (max-width: 767px) {
   html[data-event-page-color]:has(
     [data-event-page-editor][data-mobile-editing="true"][data-embedded="false"]
   ) {
-    --event-editor-chrome-color: #faf8ff;
+    --event-editor-chrome-color: transparent;
+    --event-editor-app-background: block;
   }
+}
 
-  html.dark[data-event-page-color]:has(
-    [data-event-page-editor][data-mobile-editing="true"][data-embedded="false"]
+@media (min-width: 768px) {
+  html[data-event-page-color]:has(
+    [data-event-page-editor][data-editing="true"][data-embedded="false"]
   ) {
-    --event-editor-chrome-color: var(--surface);
+    --event-editor-chrome-color: transparent;
+    --event-editor-app-background: block;
   }
 }
 
 html[data-event-page-color] [data-app-main-content="true"] > [data-project-gradient-background="true"] {
-  display: none;
+  display: var(--event-editor-app-background, none);
 }
 
 html[data-event-page-color] [data-app-mobile-topbar="app"] .nav-chrome-glass-header {

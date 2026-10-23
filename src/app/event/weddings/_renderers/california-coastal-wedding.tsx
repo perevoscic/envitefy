@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
@@ -167,7 +169,7 @@ export default function CaliforniaCoastalWedding({ theme, event }: Props) {
       </nav>
 
       {/* Hero */}
-      <header className="relative h-screen w-full overflow-hidden flex flex-col justify-end p-8 md:p-16">
+      <WeddingHeroLayout theme={theme} event={event} image={heroImage}><header className="relative h-screen w-full overflow-hidden flex flex-col justify-end p-8 md:p-16">
         <div className="absolute inset-0 z-0">
           <img
             src={heroImage}
@@ -200,7 +202,7 @@ export default function CaliforniaCoastalWedding({ theme, event }: Props) {
         <div className="absolute bottom-10 right-10 text-white animate-bounce hidden md:block">
           <ArrowDown size={32} />
         </div>
-      </header>
+      </header></WeddingHeroLayout>
 
       {/* The Vibe / Aesthetic */}
       <section id="vibe" className="py-24 px-6 bg-[#F5F2EB]">

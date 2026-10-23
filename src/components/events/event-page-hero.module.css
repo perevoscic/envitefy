@@ -1,0 +1,60 @@
+.container { width: 100%; min-width: 0; container-type: inline-size; }
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(20px, 4cqi, 44px);
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: clamp(16px, 4cqi, 40px);
+  align-items: center;
+}
+.artwork {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+.artwork > * {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  clip-path: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  aspect-ratio: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: inherit !important;
+}
+.artwork img {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  object-fit: var(--hero-image-fit) !important;
+  object-position: center var(--hero-image-y) !important;
+}
+.hero[data-image-shape="square"] .artwork,
+.hero[data-image-shape="circle"] .artwork { aspect-ratio: 1; max-width: 720px; justify-self: center; }
+.hero[data-image-shape="circle"] .artwork { border-radius: 50%; }
+.hero[data-image-shape="portrait"] .artwork,
+.hero[data-image-shape="arch"] .artwork { aspect-ratio: 3 / 4; max-width: 600px; justify-self: center; }
+.hero[data-image-shape="arch"] .artwork { border-radius: 50% 50% 0 0; }
+.copy { min-width: 0; overflow-wrap: anywhere; }
+.copy > * { width: auto; max-width: 100%; margin-inline: 0; }
+.copy h1 { text-align: inherit !important; }
+.hero[data-title-align="left"] .copy, .hero[data-title-align="left"] .copy :is(h1, [class*="copy"]) { text-align: left !important; }
+.hero[data-title-align="center"] .copy, .hero[data-title-align="center"] .copy :is(h1, [class*="copy"]) { text-align: center !important; }
+.hero[data-title-align="right"] .copy, .hero[data-title-align="right"] .copy :is(h1, [class*="copy"]) { text-align: right !important; }
+.copy > * { text-align: inherit; }
+.hero[data-image-position="top"][data-title-position="above"] .copy { order: -1; }
+.hero[data-image-position="right"] .copy { order: -1; }
+@container (min-width: 650px) {
+  .hero[data-image-position="left"], .hero[data-image-position="right"] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

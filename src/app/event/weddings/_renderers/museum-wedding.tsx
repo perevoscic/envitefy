@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
@@ -130,7 +132,7 @@ export default function MuseumWedding({ theme, event }: Props) {
       {/* Main Exhibition Area */}
       <main>
         {/* Title Block with Hero Image */}
-        <section className="min-h-[90vh] flex flex-col justify-end p-6 border-b border-black relative overflow-hidden">
+        <WeddingHeroLayout theme={theme} event={event} image={heroImage} description={event.story}><section className="min-h-[90vh] flex flex-col justify-end p-6 border-b border-black relative overflow-hidden">
           <img
             src={heroImage}
             className="template-hero-image absolute inset-0 w-full h-full object-cover grayscale opacity-20 z-0"
@@ -156,7 +158,7 @@ export default function MuseumWedding({ theme, event }: Props) {
               </div>
             </div>
           </div>
-        </section>
+        </section></WeddingHeroLayout>
 
         {/* Gallery Grid */}
         <section id="location" className="grid md:grid-cols-2 border-b border-black">

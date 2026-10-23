@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -266,7 +268,7 @@ export default function IndustrialWedding({ theme, event }: Props) {
       {/* Main Content */}
       <main className="flex-1 md:ml-64">
         {/* Hero with Visible Image */}
-        <header className="h-[85vh] relative border-b border-[#404040]">
+        <WeddingHeroLayout theme={theme} event={event} image={heroImage}><header className="h-[85vh] relative border-b border-[#404040]">
           <img
             src={heroImage}
             className="template-hero-image w-full h-full object-cover opacity-80 grayscale contrast-125"
@@ -285,7 +287,7 @@ export default function IndustrialWedding({ theme, event }: Props) {
               {names}
             </h2>
           </div>
-        </header>
+        </header></WeddingHeroLayout>
 
         {/* Marquee */}
         <div className="border-b border-[#404040] py-4 overflow-hidden whitespace-nowrap bg-[#cd7f32] text-[#1a1a1a]">

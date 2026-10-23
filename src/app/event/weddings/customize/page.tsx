@@ -2969,7 +2969,15 @@ const renderDesignEditor = () => (
   // --- Main App Structure ---
 
   return (
-    <EventEditorWorkspace sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "schedule": renderScheduleEditor, "story": renderStoryEditor, "photos": renderPhotosEditor, "thingsToDo": renderThingsToDoEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, "travel": renderTravelEditor, "party": renderPartyEditor, details: renderStoryEditor }} artwork={data.images.hero} editor={editor} templatesHref={"/event/weddings"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+    <EventEditorWorkspace onBackWithinControls={(toMainMenu) => {
+      if ((activeView === "travel" || toMainMenu) && travelSubView !== "main") {
+        setTravelSubView("main");
+        if (!toMainMenu) return true;
+      }
+      if (activeView === "main" || activeView === "images") return false;
+      setActiveView("main");
+      return true;
+    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "schedule": renderScheduleEditor, "story": renderStoryEditor, "photos": renderPhotosEditor, "thingsToDo": renderThingsToDoEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, "travel": renderTravelEditor, "party": renderPartyEditor, details: renderStoryEditor }} artwork={data.images.hero} editor={editor} templatesHref={"/event/weddings"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
         ref={previewRef}
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide scroll-smooth bg-[#f0f2f5] flex justify-center"

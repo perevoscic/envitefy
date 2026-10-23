@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout, { OriginalWeddingHero } from "./WeddingHeroLayout";
 import { Camera } from "lucide-react";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { EventData, ThemeConfig } from "./content-sections";
@@ -47,7 +49,7 @@ export default function NewspaperWedding({ theme, event }: Props) {
       style={{ fontFamily: theme.fonts.body }}
     >
       <div className="max-w-4xl w-full mx-auto bg-white p-6 md:p-12 shadow-xl border border-neutral-200">
-        <div className="h-64 bg-neutral-100 mb-4 grayscale flex items-center justify-center border border-neutral-300 overflow-hidden">
+        <OriginalWeddingHero><div className="h-64 bg-neutral-100 mb-4 grayscale flex items-center justify-center border border-neutral-300 overflow-hidden">
           {heroImage ? (
             <img
               src={heroImage}
@@ -57,8 +59,8 @@ export default function NewspaperWedding({ theme, event }: Props) {
           ) : (
             <Camera className="w-12 h-12 opacity-20" />
           )}
-        </div>
-        <header className="border-b-4 border-black pb-4 mb-4 text-center">
+        </div></OriginalWeddingHero>
+        <WeddingHeroLayout theme={theme} event={event} image={heroImage}><header className="border-b-4 border-black pb-4 mb-4 text-center">
           <div className="flex justify-between items-center border-b border-black pb-2 mb-2 text-xs uppercase font-sans font-bold tracking-[0.18em]">
             <span>Vol. 1</span>
             <span>The Daily Union</span>
@@ -70,7 +72,7 @@ export default function NewspaperWedding({ theme, event }: Props) {
           >
             The Gazette
           </h1>
-        </header>
+        </header></WeddingHeroLayout>
 
         <div className="grid md:grid-cols-12 gap-8">
           <div data-celebration-section className="md:col-span-8">

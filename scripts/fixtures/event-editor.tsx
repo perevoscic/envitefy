@@ -12,6 +12,7 @@ import { useEventHistoryClient } from "../../src/lib/event-history-client";
 import EventCustomEditor from "../../src/components/events/custom/EventCustomEditor";
 import Birthdays from "../../src/app/event/birthdays/customize/page";
 import General from "../../src/app/event/general/customize/page";
+import Weddings from "../../src/app/event/weddings/customize/page";
 import Gymnastics from "../../src/app/event/gymnastics/customize/page";
 import TemplateEditorProvider from "../../src/components/templates/TemplateEditorContext";
 import SimpleTemplateView from "../../src/components/SimpleTemplateView";
@@ -70,6 +71,7 @@ function LifecycleEditor() {
   const eventId = search.get("edit") || undefined;
   const client = useEventHistoryClient();
   const [ready, setReady] = useState(!eventId);
+  const [activeSection, setActiveSection] = useState("main");
   const [data, setData] = useState({
     title: "School field trip",
     description: "Bring water.",
@@ -100,6 +102,12 @@ function LifecycleEditor() {
   return (
     <EventEditorWorkspace
       editor={editor}
+      embedded={search.get("embed") === "1"}
+      onBackWithinControls={() => {
+        if (activeSection === "main") return false;
+        setActiveSection("main");
+        return true;
+      }}
       preview={
         <article>
           <h2>{data.title}</h2>
@@ -114,6 +122,8 @@ function LifecycleEditor() {
       }
       controls={
         <EventEditorSections
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
           sections={[
             {
               id: "details",
@@ -186,6 +196,8 @@ function App() {
         <Gymnastics />
       ) : mode === "manual" ? (
         <General />
+      ) : mode === "wedding" ? (
+        <Weddings />
       ) : mode === "upload" || mode === "create" ? (
         <EventCustomEditor initialPage={search.has("edit") ? undefined : customPage} />
       ) : (

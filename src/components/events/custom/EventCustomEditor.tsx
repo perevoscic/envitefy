@@ -16,6 +16,7 @@ import {
 } from "@/components/events/EventEditorFields";
 import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
 import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly } from "@/components/events/EventSectionBuilder";
+import EventSectionExtrasEditor from "@/components/events/EventSectionExtrasEditor";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import {
   applyCustomEventWording,
@@ -518,12 +519,25 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
         if (id === "overview") return <EventEditorInput label="Welcome message" type="textarea" value={d.description} onChange={(value) => updateDetail("description", value)} />;
         if (id === "registry") return <>{d.registryLinks.map((link, index) => <div key={index}><EventEditorInput label="Link label" value={link.label} onChange={(label) => updateDetail("registryLinks", d.registryLinks.map((item, i) => i === index ? { ...item, label } : item))} /><EventEditorInput label="Link URL" value={link.url} onChange={(url) => updateDetail("registryLinks", d.registryLinks.map((item, i) => i === index ? { ...item, url } : item))} /></div>)}</>;
         const index = Number(id.slice(8)), section = d.sections[index];
-        return section ? <><EventEditorInput label="Section heading" value={section.title} maxLength={180} onChange={(title) => updateDetail("sections", d.sections.map((item, i) => i === index ? { ...item, title } : item))} /><EventEditorInput label="Section content" type="textarea" value={section.body} maxLength={6000} onChange={(body) => updateDetail("sections", d.sections.map((item, i) => i === index ? { ...item, body } : item))} /></> : null;
+        const updateSection = (patch: Partial<CustomEventDetails["sections"][number]>) =>
+          setPage((current) => current ? {
+            ...current,
+            details: {
+              ...current.details,
+              sections: current.details.sections.map((item, i) => i === index ? { ...item, ...patch } : item),
+            },
+          } : current);
+        return section ? <><EventEditorInput label="Section heading" value={section.title} maxLength={180} onChange={(title) => updateSection({ title })} /><EventEditorInput label="Section content" type="textarea" value={section.body} maxLength={6000} onChange={(body) => updateSection({ body })} /><EventSectionExtrasEditor key={id} value={section} onChange={updateSection} /></> : null;
       }}>
     <EventEditorWorkspace
       editor={editor}
       customUrlMenu={false}
       revealControls={activeSection}
+      onBackWithinControls={() => {
+        if (activeSection === "main") return false;
+        setActiveSection("main");
+        return true;
+      }}
       templatesHref={customEventGalleryHref(page.category)}
       notices={
         Object.keys(fieldErrors).length > 0 ? (
@@ -804,16 +818,28 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
               {
                 id: "layout",
                 title: "Layout",
-                description: "Choose an arrangement for your page.",
+                description: "Adjust the hero image and title.",
                 icon: <PanelsTopLeft size={20} />,
                 tool: true,
+                action: page.design.hero ? (
+                  <button
+                    type="button"
+                    data-section-reset
+                    onClick={() => setPage((current) => current ? {
+                      ...current,
+                      design: { ...current.design, hero: undefined },
+                    } : current)}
+                  >
+                    Reset
+                  </button>
+                ) : undefined,
                 content: (
                   <CustomEventLayoutPicker
                     page={page}
-                    onChange={(layout) =>
+                    onChange={(hero) =>
                       setPage((current) =>
                         current
-                          ? { ...current, design: { ...current.design, layout } }
+                          ? { ...current, design: { ...current.design, hero } }
                           : current,
                       )
                     }

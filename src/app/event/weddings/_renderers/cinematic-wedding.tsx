@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -116,7 +118,7 @@ export default function CinematicWedding({ theme, event }: Props) {
       </ResponsiveEventNavigation>
 
       {/* Hero */}
-      <header className="h-screen relative flex flex-col justify-between p-8 md:p-12 overflow-hidden">
+      <WeddingHeroLayout theme={theme} event={event} image={heroImage}><header className="h-screen relative flex flex-col justify-between p-8 md:p-12 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
             src={heroImage}
@@ -170,7 +172,7 @@ export default function CinematicWedding({ theme, event }: Props) {
             </div>
           </div>
         </div>
-      </header>
+      </header></WeddingHeroLayout>
 
       {/* Content Scroller */}
       <section

@@ -301,6 +301,58 @@ test("the shared guest renderer keeps every layout, facts, artwork, and safe lin
   }
 });
 
+test("custom guests see ordered photos and safe resource links while hidden and legacy sections retain their content", () => {
+  const Empty = () => null;
+  const Page = loader({
+    "next/link": ({ children, ...props }) => React.createElement("a", props, children),
+    "@/components/GuestRsvpModal": Empty,
+    "@/components/event-templates/EventGuestActions": Empty,
+    "@/components/branding/EnvitefyEventBranding": Empty,
+  })("src/components/events/custom/CustomEventPageContent.tsx").default;
+  const input = example();
+  input.details.sections = [
+    { title: "Event photos", body: "Two memories.", kind: "photos", photos: [
+      { url: "/api/blob/event-media/first.webp", caption: "Arrival <script>untrusted</script>" },
+      { url: "//outside.test/unsafe.webp", caption: "Unsafe image" },
+      { url: "https://example.com/second.webp", caption: "Friends & family" },
+    ] },
+    { title: "Useful resources", body: "Plan your visit.", kind: "links", links: [
+      { label: "Venue & directions", url: "https://example.com/venue" },
+      { label: "<em>Program</em>", url: "http://example.com/program" },
+      { label: "Finish this draft later", url: "" },
+      { label: "Unsafe link", url: "data:text/html,example" },
+    ] },
+    { title: "Original information", body: "Keep the original body." },
+    { title: "Hidden gallery", body: "Hidden information.", kind: "photos", photos: [
+      { url: "/api/blob/event-media/hidden.webp", caption: "Hidden photo" },
+    ] },
+  ];
+  input.details.sectionLayout = { version: 1, order: ["section:1", "section:0", "section:2", "section:3", "overview", "registry"], hidden: ["section:3"], added: [] };
+  const before = structuredClone(input);
+  const restored = custom.normalizeCustomEventPage(JSON.parse(JSON.stringify(input)));
+  assert.deepEqual(restored.details.sections[2], input.details.sections[2], "legacy heading/body has no new media fields");
+  assert.equal(restored.details.sections[3].photos[0].caption, "Hidden photo", "hidden gallery data is retained");
+  for (const layout of custom.EVENT_DESIGN_LAYOUTS) {
+    // The guest component also filters unsafe fields if it receives an unnormalized object.
+    for (const source of [input, restored]) {
+      const html = renderToStaticMarkup(React.createElement(Page, { page: { ...source, design: { ...source.design, layout } } }));
+      const photos = [...html.matchAll(/<figure\b[^>]*>[\s\S]*?<\/figure>/g)].map(([figure]) => figure);
+      assert.equal(photos.length, 2, layout);
+      assert.match(photos[0], /src="\/api\/blob\/event-media\/first.webp"/);
+      assert.match(photos[0], /<figcaption>Arrival &lt;script&gt;untrusted&lt;\/script&gt;<\/figcaption>/);
+      assert.match(photos[1], /src="https:\/\/example.com\/second.webp"/);
+      assert.match(photos[1], /<figcaption>Friends &amp; family<\/figcaption>/);
+      assert.match(html, /<a href="https:\/\/example.com\/venue" target="_blank" rel="noopener noreferrer">Venue &amp; directions<\/a>/);
+      assert.match(html, /<a href="http:\/\/example.com\/program" target="_blank" rel="noopener noreferrer">&lt;em&gt;Program&lt;\/em&gt;<\/a>/);
+      assert.ok(html.indexOf("Useful resources") < html.indexOf("Event photos"), layout);
+      assert.ok(html.indexOf("Event photos") < html.indexOf("Original information"), layout);
+      assert.match(html, /<h2>Original information<\/h2><p>Keep the original body\.<\/p>/);
+      assert.doesNotMatch(html, /Hidden gallery|Hidden information|hidden\.webp|Hidden photo|Finish this draft later|Unsafe image|Unsafe link|outside\.test|data:text\/html|<script>|<em>/);
+    }
+  }
+  assert.deepEqual(input, before, "guest rendering leaves pending content and retained sections untouched");
+});
+
 const generationLoad = loader({
   "@/lib/studio/openai": {
     generateInvitationImageWithOpenAi: async () => {

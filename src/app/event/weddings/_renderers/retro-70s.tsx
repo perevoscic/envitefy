@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
@@ -103,7 +105,7 @@ export default function Retro70s({ theme, event }: Props) {
         </ResponsiveEventNavigation>
       </nav>
 
-      <header className="min-h-screen flex flex-col items-center justify-center p-4 relative pt-24">
+      <WeddingHeroLayout theme={theme} event={event} image={event.customHeroImage}><header className="min-h-screen flex flex-col items-center justify-center p-4 relative pt-24">
         <div className="relative w-full max-w-4xl aspect-[4/3] md:aspect-[16/9] flex items-center justify-center">
           <div className="absolute inset-0 border-[3px] border-[#386641] rounded-[50%] animate-[spin_10s_linear_infinite] opacity-20 hidden md:block w-[120%] h-[120%] left-[-10%] top-[-10%] border-dashed"></div>
 
@@ -135,7 +137,7 @@ export default function Retro70s({ theme, event }: Props) {
             </div>
           </div>
         </div>
-      </header>
+      </header></WeddingHeroLayout>
 
       <div className="bg-[#386641] text-[#FEFAE0] py-4 overflow-hidden border-y-4 border-[#BC4749] rotate-[-1deg] scale-105 z-20 relative">
         <div className="animate-[marquee_20s_linear_infinite] whitespace-nowrap font-black text-2xl uppercase flex gap-8">

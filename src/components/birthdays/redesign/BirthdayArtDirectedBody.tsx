@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import EventPageSections from "@/components/events/EventPageSections";
 import { useEventPageComposition } from "@/components/events/EventPageCompositionContext";
+import { hasEventPageBodyComposition } from "@/lib/event-page-composition";
 import { getCelebrationDirection } from "@/components/templates/celebration-materials";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
@@ -29,7 +30,7 @@ export default function BirthdayArtDirectedBody({ id, blocks }: Props) {
       </div>
     );
   }
-  if (composition?.onChange || composition?.value)
+  if (composition?.onChange || hasEventPageBodyComposition(composition?.value))
     return (
       <EventPageSections
         sections={Object.entries(blocks)

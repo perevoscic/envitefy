@@ -19,6 +19,8 @@ import styles from "./custom-event.module.css";
 import EventWeatherSection from "./EventWeatherSection";
 import EventArrivalMap from "./EventArrivalMap";
 import { EventSectionCanvas } from "@/components/events/EventSectionBuilder";
+import EventPageHero from "@/components/events/EventPageHero";
+import EventSectionExtrasContent from "@/components/events/EventSectionExtrasContent";
 
 export default function CustomEventPageContent({
   page,
@@ -57,6 +59,31 @@ export default function CustomEventPageContent({
         minute: "2-digit",
       })
     : "";
+  const intro = (
+    <>
+      {d.host && <p className={styles.host}>Hosted by {d.host}</p>}
+      {(date || time) && (
+        <p className={styles.when}>{[date, time && d.endTime ? `${time} – ${new Date(`2000-01-01T${d.endTime}:00Z`).toLocaleTimeString("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit" })}${d.endDate && d.endDate !== d.date ? ` (${d.endDate})` : ""}` : time].filter(Boolean).join(" · ")}</p>
+      )}
+      {(d.venue || d.location) && (
+        <p>{[d.venue, d.location !== d.venue ? d.location : ""].filter(Boolean).join(" · ")}</p>
+      )}
+      {d.rsvpEnabled && (
+        <button
+          type="button"
+          className={styles.primary}
+          disabled={!eventId}
+          onClick={() => setRsvpOpen(true)}
+        >
+          RSVP
+        </button>
+      )}
+      {d.weather?.enabled && (
+        <EventWeatherSection eventId={eventId} date={d.date} time={d.time}
+          location={d.location || d.venue} units={d.weather.units} />
+      )}
+    </>
+  );
   const vars = {
     "--event-page": design.colors.page,
     "--event-surface": design.colors.surface,
@@ -81,36 +108,22 @@ export default function CustomEventPageContent({
           <Link href={`/events/${encodeURIComponent(eventId)}/manage`}>Host dashboard</Link>
         </nav>
       )}
-      <header className={`${styles.hero} ${titleAboveDetails ? styles.heroWithTitle : ""}`}>
-        {titleAboveDetails && title}
-        <div className={styles.artwork}>
-          <img src={page.artwork} alt={design.description} />
-        </div>
-        <div className={styles.intro}>
-          {!titleAboveDetails && title}
-          {d.host && <p className={styles.host}>Hosted by {d.host}</p>}
-          {(date || time) && (
-            <p className={styles.when}>{[date, time && d.endTime ? `${time} – ${new Date(`2000-01-01T${d.endTime}:00Z`).toLocaleTimeString("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit" })}${d.endDate && d.endDate !== d.date ? ` (${d.endDate})` : ""}` : time].filter(Boolean).join(" · ")}</p>
-          )}
-          {(d.venue || d.location) && (
-            <p>{[d.venue, d.location !== d.venue ? d.location : ""].filter(Boolean).join(" · ")}</p>
-          )}
-          {d.rsvpEnabled && (
-            <button
-              type="button"
-              className={styles.primary}
-              disabled={!eventId}
-              onClick={() => setRsvpOpen(true)}
-            >
-              RSVP
-            </button>
-          )}
-          {d.weather?.enabled && (
-            <EventWeatherSection eventId={eventId} date={d.date} time={d.time}
-              location={d.location || d.venue} units={d.weather.units} />
-          )}
-        </div>
-      </header>
+      <EventPageHero
+        value={design.hero}
+        artwork={<img src={page.artwork} alt={design.description} />}
+        copy={<div className={styles.heroCopy}>{title}{intro}</div>}
+      >
+        <header className={`${styles.hero} ${titleAboveDetails ? styles.heroWithTitle : ""}`}>
+          {titleAboveDetails && title}
+          <div className={styles.artwork}>
+            <img src={page.artwork} alt={design.description} />
+          </div>
+          <div className={styles.intro}>
+            {!titleAboveDetails && title}
+            {intro}
+          </div>
+        </header>
+      </EventPageHero>
       <EventSectionCanvas className={styles.content} layout={d.sectionLayout} sections={customEventSectionOrder(d).map((key) => {
           let content: ReactNode;
           if (key === "overview") content = d.description ? (
@@ -142,6 +155,7 @@ export default function CustomEventPageContent({
               <h2>{section.title}</h2>
               <p>{section.body}</p>
               {section.map && d.arrivalMapEnabled !== false && <EventArrivalMap map={section.map} />}
+              <EventSectionExtrasContent value={section} />
             </section>
           ) : null; }
           return { id: key, label: key === "overview" ? "Welcome & overview" : key === "registry" ? "Registry" : d.sections[Number(key.slice(8))]?.title || "Information", content };

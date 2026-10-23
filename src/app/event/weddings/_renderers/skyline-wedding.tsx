@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
@@ -61,7 +63,7 @@ export default function SkylineWedding({ theme, event }: Props) {
   return (
     <div className="min-h-screen bg-slate-900 text-white font-sans selection:bg-orange-500 selection:text-white">
       {/* Hero */}
-      <header className="relative h-screen flex flex-col justify-end p-8 md:p-16 overflow-hidden">
+      <WeddingHeroLayout theme={theme} event={event} image={heroImage}><header className="relative h-screen flex flex-col justify-end p-8 md:p-16 overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 z-0">
           <img
@@ -95,7 +97,7 @@ export default function SkylineWedding({ theme, event }: Props) {
             </p>
           </div>
         </div>
-      </header>
+      </header></WeddingHeroLayout>
 
       {/* Venue Info */}
       <section className="py-24 px-8 bg-slate-900">

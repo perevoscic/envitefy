@@ -10,7 +10,7 @@ import sharp from "sharp";
 const loadTs = createRequire(import.meta.url)("./lib/event-messages-test-loader.cjs");
 const appearanceBootstrap = loadTs("src/lib/appearance.ts").buildAppearanceBootstrap();
 
-test("published custom Event Page edits save changes to the same live page and cancel through unsaved protection", { timeout: 120000 }, async () => {
+test("published custom Event Page edits save changes to the same live page and Back retains unsaved protection", { timeout: 120000 }, async () => {
   execFileSync(process.env.BUN_EXECUTABLE || (process.platform === "win32" ? path.join(process.env.APPDATA, "npm/node_modules/bun/bin/bun.exe") : "bun"), ["scripts/build-category-custom-design-fixture.mjs"], { stdio: "pipe" });
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
   const origin = "http://localhost:43131";
@@ -60,7 +60,7 @@ test("published custom Event Page edits save changes to the same live page and c
       });
       const open = async (ready = false) => {
         await page.goto(`${origin}/editor?editor=1&edit=${eventId}${ready ? "&ready=1" : ""}`);
-        await page.getByRole("button", { name: "Cancel", exact: true }).waitFor();
+        await page.getByRole("button", { name: "Back", exact: true }).waitFor();
         const edit = page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true });
         await edit.waitFor();
         assert.equal(await page.getByRole("region", { name: "Event page preview panel", exact: true }).isVisible(), true, "published page opens before its editing controls");
@@ -72,7 +72,7 @@ test("published custom Event Page edits save changes to the same live page and c
       };
       const toolbar = page.getByRole("group", { name: "Editor view", exact: true });
       const save = page.getByRole("button", { name: "Save changes", exact: true });
-      const cancel = page.getByRole("button", { name: "Cancel", exact: true });
+      const back = page.getByRole("button", { name: "Back", exact: true });
       const title = page.locator("#event-field-title");
       const preview = page.getByRole("region", { name: "Event page preview panel", exact: true });
       const tools = page.getByRole("group", { name: "Page tools", exact: true });
@@ -87,8 +87,36 @@ test("published custom Event Page edits save changes to the same live page and c
         await page.getByRole("button", { name }).click();
       };
       const checkActions = async () => {
+        const actions = page.getByRole("group", { name: "Save event", exact: true });
+        assert.equal(await toolbar.count(), 1, "one mounted view toggle serves both editor views");
+        assert.equal(await toolbar.evaluate((element) => element.closest('[aria-label="Save event"]') !== null && element.closest("footer") !== null), true, "the view toggle belongs to the bottom action bar");
+        await page.mouse.move(0, 0);
+        await actions.evaluate(async (element) => Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished.catch(() => {}))));
+        const buttons = await actions.getByRole("button").evaluateAll((elements) => elements.map((button) => {
+          const { x, y, width, height } = button.getBoundingClientRect();
+          const style = getComputedStyle(button);
+          return { label: button.textContent.trim(), x, y, width, height, radius: Math.max(...[style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomLeftRadius, style.borderBottomRightRadius].map(parseFloat)), border: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth].reduce((sum, value) => sum + parseFloat(value), 0), background: style.backgroundColor, role: button.getAttribute("role"), pressed: button.getAttribute("aria-pressed"), selected: button.getAttribute("aria-selected") };
+        }));
+        assert.equal(buttons[0].label, "Back");
+        assert.match(buttons[1].label, /^(Edit|Preview)$/);
+        assert.deepEqual(buttons.slice(2).map((button) => button.label), await save.count() ? ["Save changes"] : [], "published pages retain conditional Save changes after navigation actions");
+        for (const [index, button] of buttons.entries()) {
+          assert.equal(button.radius, 0, `${button.label} has square corners`);
+          assert.notEqual(button.role, "tab", `${button.label} remains an action button`);
+          assert.equal(button.pressed, null, `${button.label} does not claim a selected tool state`);
+          assert.equal(button.selected, null, `${button.label} does not claim a selected tab state`);
+          if (button.label === "Save changes") {
+            assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(button.background), "Save changes keeps its filled primary surface");
+          } else {
+            assert.equal(button.border, 0, `${button.label} uses the borderless top-toolbar treatment`);
+            assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(button.background), `${button.label} has a transparent idle surface`);
+          }
+          assert.ok(button.height >= 44 && button.width >= 44, `${button.label} retains a 44px touch target`);
+          assert.ok(Math.abs(button.y - buttons[0].y) < 1, `${button.label} shares the bottom row`);
+          if (index) assert.ok(button.x >= buttons[index - 1].x + buttons[index - 1].width - 1, `${button.label} does not overlap the preceding action`);
+        }
         for (const name of ["Preview →", "Save draft", "Publish", "Publish changes"]) {
-          assert.equal(await toolbar.getByRole("button", { name, exact: true }).count(), 0, name);
+          assert.equal(await actions.getByRole("button", { name, exact: true }).count(), 0, name);
         }
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       };
@@ -106,15 +134,34 @@ test("published custom Event Page edits save changes to the same live page and c
         assert.equal(write.body.data.customEventPage.details.title, expectedTitle);
         assert.equal(write.body.data.publicSlug, publicSlug);
       };
+      const assertMainEditMenu = async (expectedTitle, expectedWrites = 0) => {
+        assert.equal(await page.getByRole("button", { name: /^Event details/ }).isVisible(), true, "Back returns to the main Edit menu");
+        assert.equal(await toolbar.getByRole("button", { name: "Preview", exact: true }).isVisible(), true, "local Back keeps the editor open");
+        assert.equal(await title.isVisible(), false, "Back closes the underlying details submenu too");
+        assert.equal(await title.inputValue(), expectedTitle, "Back retains pending content");
+        assert.deepEqual(await tools.getByRole("button").evaluateAll((buttons) => buttons.map((button) => button.getAttribute("aria-pressed"))), ["false", "false", "false"], "Back clears the active page tool");
+        assert.equal(await page.getByRole("dialog").count(), 0, "local Back never asks to discard changes");
+        assert.deepEqual(await page.evaluate(() => window.navigations || []), [], "local Back stays on the current event");
+        assert.equal(writes.length, expectedWrites, "local Back never saves the event or URL");
+      };
 
-      // Both views start clean, and Cancel returns without saving or preparing wording.
+      // Back traverses the clean editor hierarchy before leaving the page preview.
       for (const ready of [false, true]) {
         await open(ready);
         await checkActions();
         assert.equal(await save.count(), 0);
-        const cancelBox = await cancel.boundingBox();
-        assert.ok(cancelBox.height >= 44);
-        await cancel.focus();
+        if (!ready) {
+          await back.click();
+          await assertMainEditMenu(initial.details.title);
+          await back.click();
+          await toolbar.getByRole("button", { name: "Edit", exact: true }).waitFor();
+          assert.equal(await preview.isVisible(), true, "main-menu Back returns to the clean page preview");
+          assert.equal(await page.getByRole("dialog").count(), 0);
+          assert.deepEqual(await page.evaluate(() => window.navigations || []), []);
+        }
+        const backBox = await back.boundingBox();
+        assert.ok(backBox.height >= 44);
+        await back.focus();
         await page.keyboard.press("Enter");
         await assertNavigation();
         assert.equal(await page.getByRole("dialog").count(), 0);
@@ -143,6 +190,7 @@ test("published custom Event Page edits save changes to the same live page and c
       };
       for (const appearance of ["light", "dark"]) {
         await setAppearance(appearance);
+        await checkActions();
         const rail = await tools.evaluate((element) => {
           const style = getComputedStyle(element);
           return { background: style.backgroundColor, radius: parseFloat(style.borderRadius) };
@@ -185,13 +233,28 @@ test("published custom Event Page edits save changes to the same live page and c
           await assertActiveTool(name);
           await assertPendingState();
         }
-        const urlInput = page.getByRole("textbox", { name: "Custom URL", exact: true });
+        const urlInput = page.locator("[data-custom-event-url] input");
         assert.equal(await urlInput.inputValue(), "pending-field-trip-address", "switching tools retains an unsaved URL value");
         assert.equal(await urlInput.evaluate((element) => element === window.savedEventUrlNode), true, "switching tools retains the mounted URL field");
         await page.getByRole("button", { name: "Back to details", exact: true }).click();
+        await assertMainEditMenu("Pending title while using page tools");
         await assertActiveTool(null);
         await openSection(/^Event details/);
         await assertPendingState();
+        for (const name of ["Page sections", "Layout", "Custom URL"]) {
+          await tools.getByRole("button", { name, exact: true }).click();
+          await assertActiveTool(name);
+          await toolbar.getByRole("button", { name: "Preview", exact: true }).click();
+          await toolbar.getByRole("button", { name: "Edit", exact: true }).click();
+          await assertActiveTool(name);
+          assert.equal(await title.inputValue(), "Pending title while using page tools", "Preview/Edit retains the active tool and its underlying pending fields");
+          await back.click();
+          await assertMainEditMenu("Pending title while using page tools");
+          assert.equal(await urlInput.inputValue(), "pending-field-trip-address", "shared-tool Back retains pending URL text");
+          assert.equal(await urlInput.evaluate((element) => element === window.savedEventUrlNode), true, "shared-tool Back retains the mounted URL field");
+          await openSection(/^Event details/);
+          await assertPendingState();
+        }
         await page.screenshot({ path: `output/category-custom-design/published-tools-${appearance}-${width}.png` });
       }
       await title.fill(initial.details.title);
@@ -219,21 +282,49 @@ test("published custom Event Page edits save changes to the same live page and c
       await save.waitFor({ state: "hidden" });
       assert.equal(await save.count(), 0, "Reverting a change hides Save changes");
       await openSection(/^Layout/);
-      await page.getByRole("button", { name: "Choose Banner layout", exact: true }).click();
+      await page.getByRole("button", { name: "Choose Circle portrait hero layout", exact: true }).click();
       await save.waitFor();
-      await page.getByRole("button", { name: "Choose Split layout", exact: true }).click();
+      const resetLayout = page.getByRole("button", { name: "Reset", exact: true });
+      const layoutHeading = page.getByRole("heading", { name: "Layout", exact: true });
+      assert.equal(await resetLayout.evaluate((node) => node.parentElement.querySelector("h2")?.textContent), "Layout", "custom Reset shares the Layout heading row");
+      const resetLayoutBox = await resetLayout.boundingBox();
+      const layoutHeadingBox = await layoutHeading.boundingBox();
+      assert.ok(resetLayoutBox.x >= layoutHeadingBox.x + layoutHeadingBox.width - 1, "custom Reset sits beside Layout");
+      assert.ok(Math.abs(resetLayoutBox.y + resetLayoutBox.height / 2 - layoutHeadingBox.y - layoutHeadingBox.height / 2) < 1, "custom Reset aligns with Layout");
+      await page.getByRole("button", { name: "Choose Circle portrait hero layout", exact: true }).click();
       await save.waitFor({ state: "hidden" });
-      assert.equal(await save.count(), 0, "View changes alone do not dirty saved content");
+      assert.equal(await resetLayout.count(), 0, "clicking the selected custom preset deselects it and hides Reset");
+      await page.getByRole("button", { name: "Choose Circle portrait hero layout", exact: true }).click();
+      await save.waitFor();
+      await resetLayout.click();
+      await save.waitFor({ state: "hidden" });
+      assert.equal(await save.count(), 0, "Resetting hero layout restores the saved authored design");
 
       await openSection(/^Event details/);
       await title.fill("Trip with unsaved edits");
-      await cancel.click();
+      await back.click();
+      await assertMainEditMenu("Trip with unsaved edits");
+      await save.waitFor();
+      await back.click();
+      await toolbar.getByRole("button", { name: "Edit", exact: true }).waitFor();
+      assert.equal(await page.getByRole("dialog").count(), 0, "returning to preview does not request a discard");
+      assert.deepEqual(await page.evaluate(() => window.navigations || []), []);
+      assert.equal(writes.length, 0);
+      await save.waitFor();
+      await back.click();
       const dialog = page.getByRole("dialog");
       await dialog.getByRole("button", { name: "Keep editing", exact: true }).click();
       assert.equal(await title.inputValue(), "Trip with unsaved edits");
       assert.deepEqual(await page.evaluate(() => window.navigations || []), []);
       assert.equal(writes.length, 0);
-      await cancel.click();
+      await toolbar.getByRole("button", { name: "Edit", exact: true }).click();
+      await openSection(/^Event details/);
+      assert.equal(await title.isVisible(), true, "Keep editing allows the preserved subsection to reopen");
+      assert.equal(await title.inputValue(), "Trip with unsaved edits");
+      await back.click();
+      await assertMainEditMenu("Trip with unsaved edits");
+      await back.click();
+      await back.click();
       await dialog.getByRole("button", { name: "Discard and leave", exact: true }).click();
       await assertNavigation();
       assert.equal(writes.length, 0, "Discard does not write over the published event");
@@ -257,7 +348,12 @@ test("published custom Event Page edits save changes to the same live page and c
       // Save and leave keeps the selected destination and saves published changes once.
       await open();
       await title.fill("Changes saved while leaving");
-      await cancel.click();
+      await back.click();
+      await assertMainEditMenu("Changes saved while leaving", 2);
+      await back.click();
+      await toolbar.getByRole("button", { name: "Edit", exact: true }).waitFor();
+      assert.equal(await page.getByRole("dialog").count(), 0);
+      await back.click();
       await dialog.getByRole("button", { name: "Save and leave", exact: true }).click();
       await assertNavigation();
       assert.equal(writes.length, 3);

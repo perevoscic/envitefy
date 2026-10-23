@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useEffect, useState } from "react";
 import { Star, GlassWater, Music, Utensils } from "lucide-react";
@@ -54,7 +56,7 @@ export default function NoirLuxury({ theme, event }: Props) {
       <div className="fixed inset-4 border border-[#D4AF37]/20 pointer-events-none z-50 mix-blend-screen"></div>
       <div className="fixed inset-6 border border-[#D4AF37]/10 pointer-events-none z-50 mix-blend-screen"></div>
 
-      <header className="min-h-screen flex items-center justify-center relative px-8">
+      <WeddingHeroLayout theme={theme} event={event} image={event.customHeroImage}><header className="min-h-screen flex items-center justify-center relative px-8">
         {event.customHeroImage && (
           <img src={event.customHeroImage} alt="Wedding artwork" className="template-hero-image absolute inset-0 h-full w-full object-cover opacity-60" />
         )}
@@ -92,7 +94,7 @@ export default function NoirLuxury({ theme, event }: Props) {
             <span>{city}</span>
           </div>
         </div>
-      </header>
+      </header></WeddingHeroLayout>
 
       <section className="grid md:grid-cols-2 min-h-[80vh] border-t border-[#D4AF37]/20">
         <BioCard

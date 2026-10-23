@@ -144,12 +144,14 @@ export function EventEditorSection({
   title,
   onBack,
   showBack = true,
+  action,
   headerAction,
   children,
 }: {
   title: string;
   onBack?: () => void;
   showBack?: boolean;
+  action?: ReactNode;
   headerAction?: ReactNode;
   children: ReactNode;
 }) {
@@ -159,11 +161,12 @@ export function EventEditorSection({
     <div className={styles.section}>
       <div className={styles.sectionHeader}>
         {showBack && onBack && (
-          <button type="button" aria-label="Back to details" onClick={onBack}>
+          <button type="button" className={styles.sectionBack} aria-label="Back to details" onClick={onBack}>
             <ChevronLeft size={20} aria-hidden="true" />
           </button>
         )}
         <h2>{title}</h2>
+        {action}
         {headerAction}
       </div>
       {children}
@@ -228,6 +231,7 @@ export function EventEditorSections({
     description: string;
     icon?: ReactNode;
     tool?: boolean;
+    action?: ReactNode;
     content: ReactNode;
   }[];
   activeSection?: string;
@@ -282,6 +286,7 @@ export function EventEditorSections({
           <EventEditorSection
             title={section.title}
             onBack={() => select("main")}
+            action={section.action}
             headerAction={headerAction}
           >
             {section.content}

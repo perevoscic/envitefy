@@ -1,5 +1,6 @@
 "use client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
+import EventPageHero from "@/components/events/EventPageHero";
 import { type CSSProperties, type ReactNode, useState } from "react";
 import CalendarAction from "@/components/CalendarAction";
 import { buildCalendarLinks } from "@/utils/calendar-links";
@@ -69,13 +70,10 @@ export default function BabyShowerDesignHero({
       if (!(error instanceof Error && error.name === "AbortError")) setShareMessage(url);
     }
   };
-  return (
-    <TemplateImageTone color={design.colors.accent} enabled={filterEnabled}>
-<header className={styles.hero} data-baby-scene={design.id}>
-      <div className={styles.art}>
+  const artwork = <div className={styles.art}>
         <img src={heroImage} alt={design.subject} className={`template-hero-image ${styles.image}`} />
-      </div>
-      <div className={styles.copy}>
+      </div>;
+  const copy = <div className={styles.copy}>
         <p className={styles.eyebrow}>You’re invited · Baby shower</p>
         <p className={styles.headline}>{design.sample.headline}</p>
         <h1 className={styles.title} data-size={fontSize} style={fontFamily ? { fontFamily } : undefined}>
@@ -83,8 +81,8 @@ export default function BabyShowerDesignHero({
         </h1>
         {momName && <p className={styles.dedication}>With love for {momName} and the little one</p>}
         {ownerActions && <div className={styles.ownerActions}>{ownerActions}</div>}
-      </div>
-      <div className={styles.facts}>
+      </div>;
+  const facts = <div className={styles.facts}>
         <div className={styles.when}>
           {dateLabel && (calendar && !thumbnail ? <CalendarAction links={calendar} className={styles.calendar}>
             {(label) => <>{dateLabel}<small>{label}</small></>}
@@ -93,8 +91,14 @@ export default function BabyShowerDesignHero({
         </div>
         {location && <p className={styles.where}>{thumbnail ? location : <a href={buildGoogleMapsDirectionsHref(location)} target="_blank" rel="noreferrer">{location}<small>Get directions</small></a>}</p>}
         {!thumbnail && <div className={styles.share}><button type="button" onClick={share}>Share invitation</button>{shareMessage && <p role="status">{shareMessage}</p>}</div>}
-      </div>
+      </div>;
+  return (
+    <TemplateImageTone color={design.colors.accent} enabled={filterEnabled}>
+    <EventPageHero artwork={artwork} copy={<>{copy}{facts}</>}>
+<header className={styles.hero} data-baby-scene={design.id}>
+      {artwork}{copy}{facts}
     </header>
+    </EventPageHero>
 </TemplateImageTone>
   );
 }

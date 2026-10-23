@@ -19,19 +19,22 @@ const expectedTitles = [
   "Things to do",
   "FAQs",
   "Contact host",
-  "Event updates",
+  "Photo gallery",
+  "Links",
 ];
 const titlesFor = (sections) => availableEventInformationPresets(sections).map(({ title }) => title);
 
-test("offers the twelve informational headings without prefilled event facts or functional sections", () => {
+test("offers text, photo and link starters without prefilled event content", () => {
   assert.deepEqual(titlesFor([]), expectedTitles);
-  assert.equal(new Set(presets.map(({ title }) => title)).size, 12);
+  assert.equal(new Set(presets.map(({ title }) => title)).size, 13);
   for (const preset of presets) {
     assert.equal(typeof preset.description, "string");
     assert.ok(preset.description.trim(), `${preset.title} explains what the host can add`);
     assert.ok(!Object.hasOwn(preset, "body"), `${preset.title} does not supply guest-visible facts`);
-    assert.doesNotMatch(preset.title, /rsvp|registry|photo|map|live score|sign.?up/i);
+    assert.doesNotMatch(preset.title, /rsvp|registry|map|live score|sign.?up/i);
   }
+  assert.equal(presets.find(({ title }) => title === "Photo gallery").kind, "photos");
+  assert.equal(presets.find(({ title }) => title === "Links").kind, "links");
 });
 
 test("existing native identities retain their editor even when their displayed heading changes", () => {
@@ -44,7 +47,7 @@ test("existing native identities retain their editor even when their displayed h
     { id: "announcements", label: "Latest news" },
   ];
   assert.deepEqual(titlesFor(sections), expectedTitles.filter((title) => ![
-    "Schedule", "Venue & directions", "Parking & arrival", "Travel & hotels", "Things to do", "Event updates",
+    "Schedule", "Venue & directions", "Parking & arrival", "Travel & hotels", "Things to do",
   ].includes(title)));
 });
 
@@ -100,5 +103,12 @@ test("related names and functional tools do not hide independent informational s
     { id: "roster", label: "Team Roster" },
     { id: "section:9", label: "Schedule a call with the host" },
   ];
-  assert.deepEqual(titlesFor(sections), expectedTitles);
+  assert.deepEqual(titlesFor(sections), expectedTitles.filter((title) => title !== "Photo gallery"));
+});
+
+test("existing photo galleries and resource links retain their existing editor", () => {
+  assert.deepEqual(titlesFor([
+    { id: "photos", label: "Our memories" },
+    { id: "section:2", label: "Useful links" },
+  ]), expectedTitles.filter((title) => !["Photo gallery", "Links"].includes(title)));
 });

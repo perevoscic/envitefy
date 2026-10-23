@@ -1454,7 +1454,11 @@ const handleGalleryUpload = useCallback(
   }
 
   return (
-    <EventEditorWorkspace sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "partyDetails": renderPartyDetailsEditor, "hosts": renderHostsEditor, "photos": renderPhotosEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, details: renderPartyDetailsEditor }} artwork={data.images.hero} editor={editor} templatesHref={isAnniversaryDesign ? "/event/anniversaries" : "/event/birthdays"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+    <EventEditorWorkspace onBackWithinControls={() => {
+      if (activeView === "main" || activeView === "images") return false;
+      setActiveView("main");
+      return true;
+    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "partyDetails": renderPartyDetailsEditor, "hosts": renderHostsEditor, "photos": renderPhotosEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, details: renderPartyDetailsEditor }} artwork={data.images.hero} editor={editor} templatesHref={isAnniversaryDesign ? "/event/anniversaries" : "/event/birthdays"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
         ref={previewRef}
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"

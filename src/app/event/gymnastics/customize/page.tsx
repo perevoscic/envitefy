@@ -2070,7 +2070,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 />
                 <EditorMenuRow
                   title="Layout"
-                  value={tools.layout ? `${tools.layout.charAt(0).toUpperCase()}${tools.layout.slice(1)}` : "Template layout"}
+                  value="Hero image and title"
                   icon={<PanelsTopLeft size={18} />}
                   onClick={() => tools.openTool("layout")}
                 />
@@ -3115,12 +3115,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     if (isEmbed) {
       return wrapSectionBuilder(
-        <EventEditorWorkspace editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} controls={sidebarPanel} compositionMenu="inline" />
+        <EventEditorWorkspace onBackWithinControls={() => {
+          if (activeView === "main" || activeView === "images") return false;
+          setActiveView("main");
+          return true;
+        }} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} controls={sidebarPanel} compositionMenu="inline" />
       );
     }
 
     return wrapSectionBuilder(
-      <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
+      <EventEditorWorkspace onBackWithinControls={() => {
+        if (activeView === "main" || activeView === "images") return false;
+        setActiveView("main");
+        return true;
+      }} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
  pageEditing viewLabels={{ page: "Close settings", controls: "Page settings" }}
  preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"

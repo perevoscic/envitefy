@@ -1,5 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
+import EventPageHero from "@/components/events/EventPageHero";
+import { useEventPageComposition } from "@/components/events/EventPageCompositionContext";
 import { resolveFootballHeroTitle } from "@/lib/football-team-name";
 import { getFootballDesign, resolveFootballHero } from "./footballDesigns";
 import { getGymMeetTitleTypography } from "./titleTypography";
@@ -43,7 +47,8 @@ export default function FootballHero({
   const theme = activeImportedTheme(importedTheme);
   const typography = getGymMeetTitleTypography(templateId as GymMeetTemplateId);
   const src = importedArtworkSrc(importedTheme, heroSrc, design.hero) || resolveFootballHero(templateId, heroSrc);
-  const cinematic = !theme && design.layout === "cinematic";
+  const hero = useEventPageComposition()?.value?.hero;
+  const cinematic = !hero && !theme && design.layout === "cinematic";
   const poster = design.layout === "poster";
   const editorial = design.layout === "editorial";
   const customImage = src !== design.hero;
@@ -115,6 +120,7 @@ export default function FootballHero({
     </div>
   );
   return (
+    <EventPageHero artwork={artwork} copy={<>{actions}{artworkAction}{copy}</>}>
     <header
       className={`relative isolate overflow-hidden ${design.headerClass}`}
       style={{ color: theme?.colors.ink || (cinematic ? "#ffffff" : design.ink), ...(theme ? { background: theme.colors.page } : {}) }}
@@ -149,5 +155,6 @@ export default function FootballHero({
         </div>
       )}
     </header>
+    </EventPageHero>
   );
 }

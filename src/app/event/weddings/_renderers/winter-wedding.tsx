@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -250,7 +252,7 @@ export default function WinterWedding({ theme, event }: Props) {
       </nav>
 
       {/* Hero */}
-      <header className="relative flex min-h-[100svh] flex-col overflow-hidden bg-[#1A2F25] md:h-screen md:min-h-0 md:flex-row md:items-start md:justify-start md:p-12 md:pt-28">
+      <WeddingHeroLayout theme={theme} event={event} image={heroImage}><header className="relative flex min-h-[100svh] flex-col overflow-hidden bg-[#1A2F25] md:h-screen md:min-h-0 md:flex-row md:items-start md:justify-start md:p-12 md:pt-28">
         <div className="relative z-0 h-[58svh] w-full shrink-0 md:absolute md:inset-0 md:h-auto">
           <img
             src={heroImage}
@@ -278,7 +280,7 @@ export default function WinterWedding({ theme, event }: Props) {
             <ChevronDown className="animate-bounce text-white/50" />
           </div>
         </div>
-      </header>
+      </header></WeddingHeroLayout>
 
       {/* Our Story */}
       <section

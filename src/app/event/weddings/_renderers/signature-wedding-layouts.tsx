@@ -591,6 +591,9 @@ function Page({
   return (
     <div className="min-h-screen w-full overflow-hidden" style={{ fontFamily: theme.fonts.body }}>
       <EventPageNativeSections
+        heroArtwork={<img src={heroFor(theme, event)} alt="Wedding event artwork" className="template-hero-image" />}
+        heroCopy={<div style={{ fontFamily: theme.fonts.headline }}><h1 className="text-4xl leading-tight sm:text-6xl">{titleFor(event)}</h1><Meta event={event} />{event.tagline && <p className="mt-5">{event.tagline}</p>}</div>}
+        heroStyle={{ background: supplementalBackground, color: supplementalForeground || pickTextColor(supplementalBackground) }}
         guestTools={event.guestTools}
         supplementalSections={Supplemental({
           theme,

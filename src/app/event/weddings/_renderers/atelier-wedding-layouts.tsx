@@ -1,6 +1,7 @@
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import type { CSSProperties, ReactNode } from "react";
 import EventPageSections from "@/components/events/EventPageSections";
+import EventPageHero from "@/components/events/EventPageHero";
 import styles from "./atelier-wedding-layouts.module.css";
 import {
   buildWeddingLocationHref,
@@ -369,7 +370,7 @@ function Hero({
       );
       break;
   }
-  return <header className={styles.hero}>{composition}</header>;
+  return <EventPageHero artwork={art} copy={invitation}><header className={styles.hero}>{composition}</header></EventPageHero>;
 }
 
 function Details({ layout, event }: { layout: AtelierWeddingLayoutId; event: EventData }) {

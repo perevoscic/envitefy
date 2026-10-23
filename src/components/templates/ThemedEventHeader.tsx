@@ -1,5 +1,8 @@
+"use client";
+
 import { Children, type CSSProperties, type ReactNode } from "react";
 import type { TemplateArtwork } from "@/components/events/TemplateArtworkThumbnail";
+import EventPageHero from "@/components/events/EventPageHero";
 import styles from "./themed-event-header.module.css";
 import "@/components/birthdays/redesign/birthday-fonts.css";
 
@@ -40,10 +43,11 @@ export default function ThemedEventHeader({
   children: ReactNode;
   fontFamily?: string;
 }) {
-  if (!design) return <>{children}</>;
   const [artwork, ...copy] = Children.toArray(children);
+  if (!design) return <EventPageHero artwork={artwork} copy={copy}>{children}</EventPageHero>;
   const layout = design.editorLayout || compositionLayouts[design.composition];
   return (
+    <EventPageHero artwork={artwork} copy={copy}>
     <div className={styles.shell}>
       <div
         className={styles.header}
@@ -73,5 +77,6 @@ export default function ThemedEventHeader({
         </div>
       </div>
     </div>
+    </EventPageHero>
   );
 }

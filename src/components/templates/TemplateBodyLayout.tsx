@@ -1,6 +1,7 @@
 "use client";
 import { Children, type CSSProperties, Fragment, isValidElement, type ReactNode } from "react";
 import { useEventPageComposition } from "@/components/events/EventPageCompositionContext";
+import { hasEventPageBodyComposition } from "@/lib/event-page-composition";
 import EventPageSections, { eventPageSectionEntries } from "@/components/events/EventPageSections";
 import { celebrationMaterialStyle, getCelebrationDirection } from "./celebration-materials";
 import materialStyles from "./celebration-materials.module.css";
@@ -135,7 +136,7 @@ export default function TemplateBodyLayout({
         flow: presentation?.flow || ("invitation" as const),
       }
     : presentation;
-  const composed = Boolean(composition?.onChange || composition?.value);
+  const composed = Boolean(composition?.onChange || hasEventPageBodyComposition(composition?.value));
   const items: BodySection[] =
     sections ||
     (composed
@@ -150,7 +151,7 @@ export default function TemplateBodyLayout({
     (item) => item.content !== null && item.content !== undefined && item.content !== false,
   );
   if (!activePresentation) {
-    if (composition?.onChange || composition?.value)
+    if (composed)
       return (
         <EventPageSections
           sections={sections || eventPageSectionEntries(children)}

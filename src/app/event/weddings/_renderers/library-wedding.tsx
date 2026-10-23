@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
@@ -136,7 +138,7 @@ export default function LibraryWedding({ theme, event }: Props) {
       ></div>
 
       {/* The book-cover title and portrait have separate space so copy never hides the couple. */}
-      <header className="relative z-10 overflow-hidden bg-[#211815]">
+      <WeddingHeroLayout theme={theme} event={event} image={heroImage}><header className="relative z-10 overflow-hidden bg-[#211815]">
         <figure
           data-library-photo
           className="relative mx-auto h-[56svh] min-h-[360px] max-w-[1500px] overflow-hidden border-y border-[#D4C5B0]/25"
@@ -185,7 +187,7 @@ export default function LibraryWedding({ theme, event }: Props) {
         </div>
 
 
-      </header>
+      </header></WeddingHeroLayout>
 
       {/* Chapter I: The Story */}
       <section className="max-w-2xl mx-auto px-8 py-24 text-justify relative z-10">

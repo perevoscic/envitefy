@@ -1362,7 +1362,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     return (
       <EventSectionBuilderProvider composition={{ value: editor.composition, onChange: editor.setComposition }} layout={sectionLayout} catalog={sectionCatalog} renderEditor={renderSectionEditor}
         onChange={(next) => setData((previous) => ({ ...previous, sectionLayout: next }))}>
-      <EventEditorWorkspace notices={creationError ? <p role="alert">{creationError}</p> : undefined} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, "section": renderSectionEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/football-season"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
+      <EventEditorWorkspace onBackWithinControls={() => {
+        if (activeView === "main" || activeView === "images") return false;
+        setActiveView("main");
+        return true;
+      }} notices={creationError ? <p role="alert">{creationError}</p> : undefined} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, "section": renderSectionEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/football-season"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
  customUrlMenu={false}
  preview={<EventCanvas
             className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"

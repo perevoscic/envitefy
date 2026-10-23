@@ -1,5 +1,6 @@
 "use client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
+import EventPageHero from "@/components/events/EventPageHero";
 import { useRef, type CSSProperties, type ReactNode } from "react";
 import HeroImageDragOverlay from "@/components/events/HeroImageDragOverlay";
 import InlineEditableText from "@/components/events/InlineEditableText";
@@ -47,19 +48,11 @@ export default function GymnasticsScene({
   const imageRef = useRef<HTMLImageElement>(null);
   const artworkSrc = importedArtworkSrc(model.importedTheme, model.heroImage, design.artwork);
   const pageText = useGymnasticsPageText(model.gymnasticsPageText, onPageTextChange);
-  return (
-    <TemplateImageTone color={design.accent} enabled={model.heroImageFilterEnabled !== false}>
-      <header
-        className={styles.scene}
-        data-design={design.id}
-        data-body={design.bodyStyle}
-        data-title-size={model.titleSize}
-      >
-        <div className={styles.masthead}>
+  const masthead = <div className={styles.masthead}>
           <span>{pageText("mastheadLeft", "Gymnastics meet")}</span>
           <span>{pageText("mastheadRight", model.season || "A day to remember")}</span>
-        </div>
-        <figure
+        </div>;
+  const artwork = <figure
           className={styles.artwork}
           style={{
             isolation: "isolate",
@@ -108,8 +101,8 @@ export default function GymnasticsScene({
               {heroImageAction}
             </div>
           ) : null}
-        </figure>
-
+        </figure>;
+  const copy = <>
         <div className={styles.headline}>
           {host ? (
             <p className={styles.eyebrow}>{pageText("hostByline", `${host} presents`)}</p>
@@ -196,7 +189,19 @@ export default function GymnasticsScene({
           <span>{pageText("signoffLeft", host || "Gymnastics")}</span>
           <span>{pageText("signoffRight", model.headerLocation || "See you at the meet")}</span>
         </div>
+      </>;
+  return (
+    <TemplateImageTone color={design.accent} enabled={model.heroImageFilterEnabled !== false}>
+      <EventPageHero artwork={artwork} copy={<>{masthead}{copy}</>}>
+      <header
+        className={styles.scene}
+        data-design={design.id}
+        data-body={design.bodyStyle}
+        data-title-size={model.titleSize}
+      >
+        {masthead}{artwork}{copy}
       </header>
+      </EventPageHero>
     </TemplateImageTone>
   );
 }

@@ -1,4 +1,6 @@
-/** Informational starters use the same editable heading/body as a custom section. */
+import type { EventSectionExtras } from "./event-section-extras";
+
+/** Section starters share editable headings and optional typed photo/link content. */
 export const EVENT_INFORMATION_SECTION_PRESETS = [
   { title: "Schedule", description: "Times and the order of events", matches: ["schedule", "wedding-schedule", "atelier-schedule"] },
   { title: "Venue & directions", description: "Where to go and how to get there", matches: ["venue", "venue-details", "directions", "location"] },
@@ -11,11 +13,12 @@ export const EVENT_INFORMATION_SECTION_PRESETS = [
   { title: "Things to do", description: "Local activities and places to explore", matches: ["things-to-do", "attractions", "around town"] },
   { title: "FAQs", description: "Answers to common guest questions", matches: ["faq", "frequently asked questions"] },
   { title: "Contact host", description: "Who to contact with questions", matches: ["contact", "contacts", "host contact"] },
-  { title: "Event updates", description: "News and reminders for guests", matches: ["updates", "announcements"] },
+  { title: "Photo gallery", description: "Share photos from your event", matches: ["photos", "gallery", "photo-gallery"], kind: "photos" },
+  { title: "Links", description: "Useful websites and resources", matches: ["useful links", "resources"], kind: "links" },
 ] as const;
 
 export type EventInformationSectionPreset = (typeof EVENT_INFORMATION_SECTION_PRESETS)[number];
-export type EventInformationSectionContent = { title: string; body: string };
+export type EventInformationSectionContent = { title: string; body: string } & EventSectionExtras;
 
 const sectionKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 

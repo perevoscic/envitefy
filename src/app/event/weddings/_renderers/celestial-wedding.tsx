@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout, { OriginalWeddingHero } from "./WeddingHeroLayout";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
@@ -192,19 +194,19 @@ export default function CelestialWedding({ theme, event }: Props) {
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[#435078] blur-[150px] opacity-20 pointer-events-none"></div>
 
       {/* Hero Background Image */}
-      <div className="fixed inset-0 z-0">
+      <OriginalWeddingHero><div className="fixed inset-0 z-0">
         <img
           src={heroImage}
           alt="Starry Sky"
           className="template-hero-image w-full h-full object-cover opacity-30 mix-blend-screen"
         />
         <div className="absolute inset-0 bg-[#0B1026]/60"></div>
-      </div>
+      </div></OriginalWeddingHero>
 
       {/* Content Container */}
       <main className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center">
         {/* Hero */}
-        <div className="min-h-[80vh] flex flex-col items-center justify-center border-b border-[#E2D8C0]/20 mb-20">
+        <WeddingHeroLayout theme={theme} event={event} image={heroImage}><div className="min-h-[80vh] flex flex-col items-center justify-center border-b border-[#E2D8C0]/20 mb-20">
           <div className="mb-8 animate-pulse text-[#D4AF37]">
             <Star size={24} fill="#D4AF37" />
           </div>
@@ -244,7 +246,7 @@ export default function CelestialWedding({ theme, event }: Props) {
               {locationParts.venue}
             </div>
           </div>
-        </div>
+        </div></WeddingHeroLayout>
 
         {/* Story */}
         <section className="py-20">

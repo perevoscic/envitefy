@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Link2, ListPlus, PanelsTopLeft, Pencil, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, Eye, Link2, ListPlus, PanelsTopLeft, Pencil, Save, X } from "lucide-react";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 import type { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { eventEditorActions } from "@/lib/event-editor";
@@ -26,21 +26,31 @@ type Drawer = Pick<
   | "drawerTouchHandlers"
 >;
 
-export function EventEditorActions({ editor }: { editor: EventPageEditorSession }) {
+export function EventEditorActions({
+  editor,
+  children,
+  onBack,
+}: {
+  editor: EventPageEditorSession;
+  children?: ReactNode;
+  onBack?: () => void;
+}) {
   const actions = eventEditorActions(editor.published, editor.dirty);
   const disabled = editor.busy || !editor.ready;
   return (
     <div className={styles.actions} role="group" aria-label="Save event">
-      <button type="button" disabled={disabled} onClick={editor.cancel}>
-        <X size={17} aria-hidden="true" />
-        Cancel
+      <button type="button" disabled={disabled} onClick={onBack || editor.cancel}>
+        <ArrowLeft size={17} aria-hidden="true" />
+        Back
       </button>
+      {children}
       {actions.showDraft && (
         <button
           type="button"
           disabled={disabled}
           onClick={() => void editor.saveDraft().catch(() => {})}
         >
+          <Save size={17} aria-hidden="true" />
           {editor.authenticated ? "Save draft" : "Save and continue"}
         </button>
       )}
@@ -52,6 +62,7 @@ export function EventEditorActions({ editor }: { editor: EventPageEditorSession 
           onClick={() => void editor.saveChanges().catch(() => {})}
         >
           {editor.busy ? "Saving…" : actions.primaryLabel}
+          {!editor.published && <ExternalLink size={17} aria-hidden="true" />}
         </button>
       )}
     </div>
@@ -61,7 +72,6 @@ export function EventEditorActions({ editor }: { editor: EventPageEditorSession 
 type EventEditorTool = "sections" | "layout" | "url";
 type EventEditorTools = {
   openTool: (tool: EventEditorTool) => void;
-  layout?: string;
   canEditUrl?: boolean;
 };
 const EventEditorToolsContext = createContext<EventEditorTools | null>(null);
@@ -93,6 +103,7 @@ export default function EventEditorWorkspace({
   customUrlMenu = true,
   pageEditing = false,
   viewLabels,
+  onBackWithinControls,
 }: {
   editor: EventPageEditorSession;
   preview: ReactNode;
@@ -113,6 +124,8 @@ export default function EventEditorWorkspace({
   /** The canvas stays editable when its settings panel is hidden. */
   pageEditing?: boolean;
   viewLabels?: { page: string; controls: string };
+  /** Return true after going back within the controls; shared tools request the main menu. */
+  onBackWithinControls?: (toMainMenu?: boolean) => boolean;
 }) {
   const nativeBuilder = useEventSectionBuilder();
   const panelRef = useRef<HTMLElement>(null);
@@ -170,6 +183,35 @@ export default function EventEditorWorkspace({
     drawer?.dismissMobileMenu();
     requestAnimationFrame(() => previewRef.current?.focus({ preventScroll: true }));
   };
+  const focusControlsMenu = () => {
+    requestAnimationFrame(() => {
+      if (!panelRef.current) return;
+      panelRef.current.scrollTop = 0;
+      panelRef.current.focus({ preventScroll: true });
+    });
+  };
+  const closeTool = () => {
+    setTool(null);
+    onBackWithinControls?.(true);
+    focusControlsMenu();
+  };
+  const goBack = () => {
+    if (currentEditing) {
+      if (tool) {
+        closeTool();
+        return;
+      }
+      if (onBackWithinControls?.()) {
+        focusControlsMenu();
+        return;
+      }
+      if (!embedded) {
+        showPage();
+        return;
+      }
+    }
+    editor.cancel();
+  };
   const inlineHeader = typeof controls === "function";
   const viewActions = !embedded && (
     <div className={styles.views} role="group" aria-label="Editor view">
@@ -181,8 +223,14 @@ export default function EventEditorWorkspace({
           aria-label={pageEditing ? viewLabels?.page || "Close settings" : undefined}
           title={pageEditing ? viewLabels?.page || "Close settings" : undefined}
         >
-          {pageEditing ? <X size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
-          {!pageEditing && (viewLabels?.page || "Preview")}
+          {pageEditing ? (
+            <X size={17} aria-hidden="true" />
+          ) : (
+            <>
+              <Eye size={17} aria-hidden="true" />
+              {viewLabels?.page || "Preview"}
+            </>
+          )}
         </button>
       ) : (
         <button type="button" onClick={showEditing}>
@@ -219,22 +267,9 @@ export default function EventEditorWorkspace({
       )}
       {notices}
       <div className={styles.body}>
-        {!embedded && (
+        {!embedded && pageEditing && (
           <header className={styles.header}>
-            {!pageEditing && (
-              <button
-                type="button"
-                className={styles.mobileCancel}
-                disabled={editor.busy || !editor.ready}
-                onClick={editor.cancel}
-              >
-                <X size={17} aria-hidden="true" />
-                Cancel
-              </button>
-            )}
-            {(!inlineHeader || !currentEditing || (mobile && !pageEditing)) &&
-              !settingsInFooter &&
-              viewActions}
+            {(!inlineHeader || !currentEditing) && !settingsInFooter && viewActions}
           </header>
         )}
         <div
@@ -283,7 +318,7 @@ export default function EventEditorWorkspace({
                         active={tool === "layout"}
                         title="Layout"
                         icon={<PanelsTopLeft size={20} />}
-                        desc="Choose an arrangement for your sections."
+                        desc="Arrange your hero image and title."
                         onClick={() => setTool("layout")}
                       />
                     </>
@@ -313,7 +348,18 @@ export default function EventEditorWorkspace({
                             ? "Layout"
                             : "Page sections"
                       }
-                      onBack={() => setTool(null)}
+                      onBack={closeTool}
+                      action={panel === "layout" && editor.composition?.hero ? (
+                        <button
+                          type="button"
+                          data-section-reset
+                          onClick={() => editor.setComposition?.((previous) =>
+                            previous ? { ...previous, hero: undefined } : previous,
+                          )}
+                        >
+                          Reset
+                        </button>
+                      ) : undefined}
                     >
                       {panel === "url" ? (
                         <EventUrlEditor
@@ -343,20 +389,23 @@ export default function EventEditorWorkspace({
                   editor.setComposition && sectionEditors
                     ? {
                         openTool: setTool,
-                        layout: editor.composition?.layout,
                         canEditUrl: Boolean(editor.urlEditor),
                       }
                     : null
                 }
               >
-                {typeof controls === "function" ? controls(viewActions) : controls}
+                {typeof controls === "function"
+                  ? controls(pageEditing ? viewActions : null)
+                  : controls}
               </EventEditorToolsContext.Provider>
             </div>
           </div>
         </aside>
         <footer className={styles.footer} data-bottom-settings={settingsInFooter}>
-          {viewActions}
-          <EventEditorActions editor={editor} />
+          {pageEditing && viewActions}
+          <EventEditorActions editor={editor} onBack={goBack}>
+            {!pageEditing && viewActions}
+          </EventEditorActions>
         </footer>
       </div>
       {children}

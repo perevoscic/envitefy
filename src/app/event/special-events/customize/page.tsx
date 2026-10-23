@@ -7,6 +7,7 @@ import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
+import ThemedEventHeader from "@/components/templates/ThemedEventHeader";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
@@ -1550,7 +1551,11 @@ export default function SpecialEventsCustomizePage() {
   );
 
   return (
-    <EventEditorWorkspace sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "sponsors": renderSponsorsEditor, "rsvp": renderRsvpEditor }} artwork={data.hero} editor={editor} templatesHref={"/event/special-events"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+    <EventEditorWorkspace onBackWithinControls={() => {
+      if (activeView === "main" || activeView === "images") return false;
+      setActiveView("main");
+      return true;
+    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "sponsors": renderSponsorsEditor, "rsvp": renderRsvpEditor }} artwork={data.hero} editor={editor} templatesHref={"/event/special-events"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
         style={{
@@ -1568,6 +1573,7 @@ export default function SpecialEventsCustomizePage() {
             }}
           >
             <div className="relative z-10">
+              <ThemedEventHeader>
               <TemplateImageTone enabled={data.heroImageFilterEnabled !== false} color={currentTheme.accent || currentTheme.bg}>
 <div className="relative w-full aspect-video">
                 {data.hero ? (
@@ -1606,6 +1612,7 @@ export default function SpecialEventsCustomizePage() {
                 </div>
               </div>
 
+              </ThemedEventHeader>
               {/* Venue Section - Above Details */}
               <EventPageSections>
 {(data.venue || data.address || data.city) && (

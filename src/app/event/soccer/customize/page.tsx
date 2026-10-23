@@ -8,6 +8,7 @@ import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
+import ThemedEventHeader from "@/components/templates/ThemedEventHeader";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
 import EventCanvas from "@/components/EventCanvas";
@@ -1299,7 +1300,11 @@ const rawTextClass = currentTheme?.text || "";
     }
 
     return (
-      <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/soccer"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+      <EventEditorWorkspace onBackWithinControls={() => {
+        if (activeView === "main" || activeView === "images") return false;
+        setActiveView("main");
+        return true;
+      }} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/soccer"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
@@ -1312,6 +1317,7 @@ const rawTextClass = currentTheme?.text || "";
               className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${textClass} transition-all duration-500 relative z-0`}
             >
               <div className="relative z-10">
+                <ThemedEventHeader>
                 <TemplateImageTone enabled={data.heroImageFilterEnabled !== false} color={currentTheme.accent || currentTheme.bg}>
 <div className="relative w-full aspect-video">
                   {data.hero ? (
@@ -1398,6 +1404,7 @@ const rawTextClass = currentTheme?.text || "";
                   </div>
                 </div>
 
+                </ThemedEventHeader>
                 <EventPageSections>
 <section
                   id="details"

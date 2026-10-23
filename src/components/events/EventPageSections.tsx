@@ -2,6 +2,7 @@
 import { Children, Fragment, isValidElement, type ReactNode } from "react";
 import { EventSectionCanvas, type EventSectionEntry } from "./EventSectionBuilder";
 import { useEventPageComposition } from "./EventPageCompositionContext";
+import { hasEventPageBodyComposition } from "@/lib/event-page-composition";
 import styles from "./event-page-sections.module.css";
 
 function text(node: ReactNode): string {
@@ -106,7 +107,7 @@ export default function EventPageSections({
           editorId: section.editorId || section.id,
         }))
     : eventPageSectionEntries(children);
-  if (!composition || (!composition.onChange && !composition.value))
+  if (!composition || (!composition.onChange && !hasEventPageBodyComposition(composition.value)))
     return (
       <>
         {children ??

@@ -140,6 +140,50 @@ test("guest rendering keeps saved order, hidden data, links and safe text in eve
   }
 });
 
+test("native galleries and resource links retain guest order, escaped text and hidden-section behavior", () => {
+  const raw = {
+    version: 1,
+    sections: [
+      { id: "info:photos", title: "Event photos", body: "Two memories.", kind: "photos", photos: [
+        { url: "/api/blob/event-media/first.webp", caption: "Arrival <script>untrusted</script>" },
+        { url: "javascript:alert(1)", caption: "Unsafe image" },
+        { url: "https://example.com/second.webp", caption: "Friends & family" },
+      ] },
+      { id: "info:links", title: "Useful resources", body: "Plan your visit.", kind: "links", links: [
+        { label: "Venue & directions", url: "https://example.com/venue" },
+        { label: "<em>Program</em>", url: "http://example.com/program" },
+        { label: "Finish this draft later", url: "" },
+        { label: "Unsafe link", url: "javascript:alert(1)" },
+      ] },
+      { id: "info:legacy", title: "Original information", body: "Keep the original body." },
+      { id: "info:hidden", title: "Hidden gallery", body: "Hidden information.", kind: "photos", photos: [
+        { url: "/api/blob/event-media/hidden.webp", caption: "Hidden photo" },
+      ] },
+    ],
+    sectionLayout: { version: 1, order: ["info:links", "info:photos", "info:legacy", "info:hidden"], hidden: ["info:hidden"], added: [] },
+  };
+  const before = structuredClone(raw);
+  const restored = normalizeEventPageComposition(JSON.parse(JSON.stringify(raw)));
+  assert.deepEqual(restored.sections[2], raw.sections[2], "legacy heading/body has no new media fields");
+  assert.equal(restored.sections[3].photos[0].caption, "Hidden photo", "hidden gallery data is retained");
+  for (const layout of EVENT_DESIGN_LAYOUTS) {
+    const html = renderToStaticMarkup(h(EventPageCompositionProvider, { value: { ...restored, layout } }, h(Body)));
+    const photos = [...html.matchAll(/<figure\b[^>]*>[\s\S]*?<\/figure>/g)].map(([figure]) => figure);
+    assert.equal(photos.length, 2, layout);
+    assert.match(photos[0], /src="\/api\/blob\/event-media\/first.webp"/);
+    assert.match(photos[0], /<figcaption>Arrival &lt;script&gt;untrusted&lt;\/script&gt;<\/figcaption>/);
+    assert.match(photos[1], /src="https:\/\/example.com\/second.webp"/);
+    assert.match(photos[1], /<figcaption>Friends &amp; family<\/figcaption>/);
+    assert.match(html, /<a href="https:\/\/example.com\/venue" target="_blank" rel="noopener noreferrer">Venue &amp; directions<\/a>/);
+    assert.match(html, /<a href="http:\/\/example.com\/program" target="_blank" rel="noopener noreferrer">&lt;em&gt;Program&lt;\/em&gt;<\/a>/);
+    assert.ok(html.indexOf("Useful resources") < html.indexOf("Event photos"), layout);
+    assert.ok(html.indexOf("Event photos") < html.indexOf("Original information"), layout);
+    assert.match(html, /<h2>Original information<\/h2><p>Keep the original body\.<\/p>/);
+    assert.doesNotMatch(html, /Hidden gallery|Hidden information|hidden\.webp|Hidden photo|Finish this draft later|Unsafe image|Unsafe link|javascript:|<script>|<em>/);
+  }
+  assert.deepEqual(raw, before, "rendering and normalization leave the input untouched");
+});
+
 test("old pages retain original markup and template drafts retain composition separately from category fields", () => {
   const original = h("main", { className: "original-design" }, nativeSections());
   assert.equal(
@@ -154,6 +198,39 @@ test("old pages retain original markup and template drafts retain composition se
   assert.deepEqual(draft.data.eventPageComposition, composition);
   assert.deepEqual(draft.data.partyDetails, snapshot.data.partyDetails);
   assert.deepEqual(draft.data.age, "6");
+});
+
+test("a public hero-only choice preserves the native body containers and supplemental sections", () => {
+  const hero = require("./event-hero-layout.ts").DEFAULT_EVENT_HERO_LAYOUT;
+  const main = h("main", { className: "native-two-column-body" }, h("div", { className: "native-section-wrapper" }, nativeSections()));
+  const supplemental = h("section", { className: "native-supplemental" }, "Original extra information.");
+  const page = h(NativeBody, {
+    heroArtwork: h("img", { src: "/test/hero.webp", alt: "" }),
+    heroCopy: h("h1", null, "Your event"),
+    supplemental,
+  }, h("header", null, h("h1", null, "Your event")), main);
+  const html = renderToStaticMarkup(h(EventPageCompositionProvider, { value: { version: 1, sections: [], hero } }, page));
+  assert.match(html, /data-event-hero=""/);
+  assert.ok(html.includes(renderToStaticMarkup(main)), "native main and its nested section containers remain exact");
+  assert.ok(html.includes(renderToStaticMarkup(supplemental)), "native supplemental markup remains exact");
+  assert.ok(!html.includes("data-section-row="), "a hero choice does not add the composed body canvas");
+});
+
+test("hero-only signature wedding choices preserve every native body section, including Ivory Lace's nested article sections", () => {
+  const hero = require("./event-hero-layout.ts").DEFAULT_EVENT_HERO_LAYOUT;
+  const theme = { colors: { primary: "#332447", secondary: "#c29c53", background: "#f8f0e3" }, fonts: { headline: "Georgia", body: "Arial" }, decorations: { heroImage: "/test/wedding.webp" } };
+  const event = { headlineTitle: "Anna & Lee", story: "Our original story.", schedule: [{ title: "Ceremony", time: "2 PM", location: "Garden" }], travel: "Use the north entrance." };
+  const layouts = [...fs.readFileSync(path.resolve("src/app/event/weddings/_renderers/signature-wedding-layouts.tsx"), "utf8").matchAll(/case "([^"]+)":/g)].map((match) => match[1]);
+  const sections = (html) => [...html.matchAll(/<section\b[^>]*>[\s\S]*?<\/section>/g)].map((match) => match[0]);
+  for (const layout of layouts) {
+    const page = h(Signature, { theme, event, layout });
+    const original = renderToStaticMarkup(page);
+    const html = renderToStaticMarkup(h(EventPageCompositionProvider, { value: { version: 1, sections: [], hero } }, page));
+    assert.match(html, /data-event-hero=""/, layout);
+    assert.deepEqual(sections(html), sections(original), `${layout}: native body section markup remains exact`);
+    assert.ok(html.includes("Our original story.") && html.includes("Ceremony"), `${layout}: nested story and program remain visible`);
+    assert.ok(!html.includes("data-section-row="), `${layout}: no composed body canvas`);
+  }
 });
 
 test("signature wedding bodies retain the hero and expose native sections with stable editable identities", () => {

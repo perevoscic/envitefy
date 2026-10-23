@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import React from "react";
@@ -106,7 +108,7 @@ export default function ModernEditorial({ theme, event }: Props) {
         </span>
       </div>
 
-      <section className="min-h-screen grid grid-cols-1 md:grid-cols-2">
+      <WeddingHeroLayout theme={theme} event={event} image={theme.decorations?.heroImage}><section className="min-h-screen grid grid-cols-1 md:grid-cols-2">
         <div className="relative h-[60vh] md:h-screen bg-neutral-900 overflow-hidden">
           {theme.decorations?.heroImage && (
             <img
@@ -141,7 +143,7 @@ export default function ModernEditorial({ theme, event }: Props) {
             <ArrowRight className="hidden group-hover:block w-8 h-8" />
           </a>
         </div>
-      </section>
+      </section></WeddingHeroLayout>
 
       <div className="bg-black text-white py-4 overflow-hidden whitespace-nowrap">
         <div className="animate-marquee inline-block">

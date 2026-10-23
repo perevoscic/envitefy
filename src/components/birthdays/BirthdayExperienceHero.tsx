@@ -1,4 +1,8 @@
+"use client";
+
 import BirthdayScene, { hasBirthdayScene } from "./redesign/BirthdayScene";
+import EventPageHero from "@/components/events/EventPageHero";
+import { useEventPageComposition } from "@/components/events/EventPageCompositionContext";
 import { BirthdayCalendarDate, BirthdayVenueLink, BirthdayShareControl } from "./BirthdayGuestActions";
 import type { CSSProperties, ReactNode } from "react";
 import {
@@ -356,7 +360,7 @@ export default function BirthdayExperienceHero({
   onRsvpClick,
   preview = false,
 }: BirthdayExperienceHeroProps) {
-  if (hasBirthdayScene(theme.id)) return <BirthdayScene theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} preview={preview} />;
+  const hero = useEventPageComposition()?.value?.hero;
   const profile = theme.experience;
   const isDark = profile.tone === "dark";
   const style = {
@@ -371,6 +375,17 @@ export default function BirthdayExperienceHero({
   const shared = `relative isolate w-full overflow-hidden ${preview ? "min-h-[800px]" : "min-h-[620px]"}`;
   const copyPadding = preview ? "p-12" : "px-6 py-16 sm:px-10 lg:px-16 lg:py-24";
   const actionNode = actions ? <div className="absolute right-4 top-4 z-40">{actions}</div> : null;
+
+  if (hero) return (
+    <section style={style}>
+      {actions}
+      <EventPageHero
+        artwork={<img src={theme.decorations?.heroImage || theme.heroImage} alt="Birthday event artwork" className="template-hero-image" />}
+        copy={<HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} />}
+      />
+    </section>
+  );
+  if (hasBirthdayScene(theme.id)) return <BirthdayScene theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} preview={preview} />;
 
   switch (profile.composition) {
     case "poster-stage":

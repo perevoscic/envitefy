@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -277,7 +279,7 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
       </ResponsiveEventNavigation>
 
       {/* Hero */}
-      <header className="relative flex min-h-[90svh] flex-col overflow-hidden bg-white md:min-h-[90vh] md:flex-row md:items-center md:justify-start md:px-[6vw] md:py-12">
+      <WeddingHeroLayout theme={theme} event={event} image={heroImage}><header className="relative flex min-h-[90svh] flex-col overflow-hidden bg-white md:min-h-[90vh] md:flex-row md:items-center md:justify-start md:px-[6vw] md:py-12">
         {/* Background Image */}
         <div className="relative z-0 h-[55svh] w-full shrink-0 md:absolute md:inset-0 md:h-auto">
           <img
@@ -311,7 +313,7 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
             <span>{dateInfo.year}</span>
           </div>
         </div>
-      </header>
+      </header></WeddingHeroLayout>
 
       {/* Welcome Section */}
       <section className="py-20 px-8 text-center max-w-4xl mx-auto">

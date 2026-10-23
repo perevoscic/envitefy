@@ -1220,7 +1220,11 @@ const renderDesignEditor = () => (
   };
 
   return (
-    <EventEditorWorkspace sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "babyDetails": renderBabyDetailsEditor, "momDetails": renderMomDetailsEditor, "hosts": renderHostsEditor, "photos": renderPhotosEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, details: renderBabyDetailsEditor }} artwork={data.images.hero} editor={editor} templatesHref={isBridal ? "/bridal-showers/templates" : "/event/baby-showers"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+    <EventEditorWorkspace onBackWithinControls={() => {
+      if (activeView === "main" || activeView === "images") return false;
+      setActiveView("main");
+      return true;
+    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "babyDetails": renderBabyDetailsEditor, "momDetails": renderMomDetailsEditor, "hosts": renderHostsEditor, "photos": renderPhotosEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, details: renderBabyDetailsEditor }} artwork={data.images.hero} editor={editor} templatesHref={isBridal ? "/bridal-showers/templates" : "/event/baby-showers"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
         ref={previewRef}
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"

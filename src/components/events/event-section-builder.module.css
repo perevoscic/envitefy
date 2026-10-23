@@ -490,6 +490,19 @@
   color: #653ab0;
   padding: 4px 8px;
 }
+.notice .noticeDismiss {
+  width: 44px;
+  padding: 0;
+  border-radius: 8px;
+  color: inherit;
+}
+.noticeDismiss:hover {
+  background: #653ab012;
+}
+.noticeDismiss:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
 @media (max-width: 767px) {
   .grip {
     display: none !important;

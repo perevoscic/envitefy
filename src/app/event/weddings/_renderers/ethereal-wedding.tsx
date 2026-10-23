@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useEffect, useState } from "react";
@@ -163,7 +165,7 @@ export default function EtherealWedding({ theme, event }: Props) {
       </nav>
 
       {/* Hero */}
-      <header className="relative h-screen w-full overflow-hidden flex items-center justify-center">
+      <WeddingHeroLayout theme={theme} event={event} image={heroImage}><header className="relative h-screen w-full overflow-hidden flex items-center justify-center">
         <div
           className="template-hero-image absolute inset-0 bg-cover bg-center"
           style={{
@@ -191,7 +193,7 @@ export default function EtherealWedding({ theme, event }: Props) {
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-bounce">
           <ChevronDown size={24} className="text-slate-600" />
         </div>
-      </header>
+      </header></WeddingHeroLayout>
 
       {/* Quote Section */}
       <section id="story" className="py-32 px-6 text-center max-w-3xl mx-auto">

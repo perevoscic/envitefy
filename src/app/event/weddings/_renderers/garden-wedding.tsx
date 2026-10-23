@@ -1,3 +1,5 @@
+
+import WeddingHeroLayout from "./WeddingHeroLayout";
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
@@ -176,7 +178,7 @@ export default function GardenWedding({ theme, event }: Props) {
       <div className="fixed bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-green-100 rounded-full blur-[120px] opacity-40 pointer-events-none"></div>
 
       {/* Hero with Full Background Image */}
-      <header className="relative h-screen flex flex-col items-center justify-center p-6">
+      <WeddingHeroLayout theme={theme} event={event} image={heroImage}><header className="relative h-screen flex flex-col items-center justify-center p-6">
         <div className="absolute inset-0 z-0">
           <img
             src={heroImage}
@@ -204,7 +206,7 @@ export default function GardenWedding({ theme, event }: Props) {
         <div className="absolute bottom-10 animate-bounce text-slate-800 z-10">
           <ArrowDown size={32} strokeWidth={1} />
         </div>
-      </header>
+      </header></WeddingHeroLayout>
 
       {/* Quote */}
       <section className="py-24 px-8 text-center relative z-10">

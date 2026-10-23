@@ -4,6 +4,8 @@ import { normalizeEventGuestActions, type EventGuestActionVisibility } from "./e
 import { colorContrast } from "./color-contrast";
 import { normalizeEventSectionLayout, type EventSectionLayout } from "./event-section-layout";
 import { GALLERY_FONT_PAIRS, LIBRARY_FONT_PAIRS, type GalleryFontPairId } from "./font-library";
+import { normalizeEventHeroLayout, type EventHeroLayout } from "./event-hero-layout";
+import { normalizeEventSectionExtras, type EventSectionExtras } from "./event-section-extras";
 
 export const CUSTOM_EVENT_CATEGORIES = {
   general: "General Events",
@@ -64,6 +66,7 @@ export type EventCustomDesign = {
   name: string;
   description: string;
   layout: (typeof EVENT_DESIGN_LAYOUTS)[number];
+  hero?: EventHeroLayout;
   font: keyof typeof EVENT_DESIGN_FONTS;
   colors: { page: string; surface: string; ink: string; accent: string };
 };
@@ -88,7 +91,7 @@ export type CustomEventDetails = Record<(typeof EVENT_DETAIL_FIELDS)[number], st
   sectionOrder?: string[];
   sectionLayout?: EventSectionLayout;
   rsvpEnabled: boolean;
-  sections: Array<{ title: string; body: string; map?: EventArrivalMap }>;
+  sections: Array<{ title: string; body: string; map?: EventArrivalMap } & EventSectionExtras>;
   registryLinks: Array<{ label: string; url: string }>;
 };
 export type CustomEventPage = {
@@ -224,11 +227,13 @@ export function normalizeEventCustomDesign(value: unknown): EventCustomDesign | 
     palette.ink = ink;
   }
   if (colorContrast(palette.accent, "#ffffff") < 4.5) palette.accent = "#57406d";
+  const hero = normalizeEventHeroLayout(raw.hero);
   return {
     version: 1,
     name: raw.name.trim(),
     description: raw.description.trim(),
     layout: raw.layout as EventCustomDesign["layout"],
+    ...(hero ? { hero } : {}),
     font: raw.font as EventCustomDesign["font"],
     colors: palette,
   };
@@ -290,7 +295,7 @@ export function normalizeCustomEventDetails(value: unknown): CustomEventDetails 
           return null;
         const map = row.map == null ? undefined : normalizeArrivalMap(row.map);
         if (map === null) return null;
-        details.sections.push({ title: row.title, body: row.body, ...(map ? { map } : {}) });
+        details.sections.push({ title: row.title, body: row.body, ...(map ? { map } : {}), ...normalizeEventSectionExtras(row) });
       } else {
         const url = safeEventLink(row.url);
         if ((row.url !== "" && !url) || typeof row.label !== "string" || row.label.length > 180)
