@@ -10,6 +10,20 @@ An optional website fixture mode creates twelve synthetic non-admin accounts and
 
 ## Revised closed-test plan — October 17, 2026
 
+### Manual activity session — October 23
+
+The owner authorized another session now on October 23. The new [dated plan](../output/maestro/closed-test/manual-20261023-1792762913181/activity-plan.json), [ledger](../output/maestro/closed-test/manual-20261023-1792762913181/activity-ledger.json) and [report](../output/maestro/closed-test/manual-20261023-1792762913181/index.html) are separate from the closed October 22 schedule. QA01–QA10 and QA12 are eligible; QA11 remains deferred. This is one manual session, with no new scheduled return or imported activity from another date.
+
+Run the exercised browsing actions on the preserved Google Play installations: verify exact identity, read the owned workshop, resume the exact existing draft and inspect Preview/return when a draft is mapped, then read another QA workshop. QA01 has two planned workshop actions; the other ten profiles have four each, for 42 planned action types. Count only actual completed Maestro actions from this date. Keep one shared UI lock across both devices, preserve data and prior findings, and record exact MFA/tool/action blockers without erasing passes. No new records, content saves, publication, invitations, messages, RSVPs or camera checks are part of this session. Separate Day 3 and Day 5 engineering cases remain unresolved.
+
+<!-- envitefy-manual-20261023:result -->
+
+October 23 completed this manual automated browsing session for all eleven eligible accounts: QA01–QA10 and QA12, with 42/42 planned action types verified. QA01 completed two workshop reads on its preserved Play-installed secondary device; the other ten profiles completed the owned-workshop read, exact private-draft reopen, owner Preview/return and another-account workshop read on the primary device. Actual verified action timestamps range from 2026-10-23T13:59:30.080Z to 2026-10-23T15:16:33.840Z. Google verification for QA06, QA07 and QA09 was completed with owner-provided fresh codes. Earlier native, diagnostic and selector failures remain in the ledger and observations.
+
+The [completion manifest](../output/maestro/closed-test/manual-20261023-1792762913181/session-completion.json), [evidence audit](../output/maestro/closed-test/manual-20261023-1792762913181/activity-evidence-audit.json) and [current finding rechecks](../output/maestro/closed-test/manual-20261023-1792762913181/activity-findings.json) retain owner/event IDs, expected versus saved/displayed facts, flow digests, successful JUnit, stdout, screenshots and Android/browser diagnostics. All eleven original workshops still show the confirmed five-hour mismatch; QA05 still displays Invitefy instead of Envitefy. Existing finding IDs are reused and their underlying parsing/conversion causes remain unconfirmed. This session did not save content or publish. QA11 remains deferred; separate Day 3/Day 5 engineering checks, camera testing and human/Play continuity remain unverified. No new schedule was created.
+
+<!-- /envitefy-manual-20261023:result -->
+
 ### Current activity priority — October 22
 
 The owner clarified that the project’s primary goal is actual app use by all eleven eligible accounts at separate times during the day. The saved [activity plan](../output/maestro/closed-test/manual-20261022-1792673679293/activity-plan.json) and [activity ledger](../output/maestro/closed-test/manual-20261022-1792673679293/activity-ledger.json) preserve the October 22 morning, noon and 6 PM windows in America/Chicago. This authorization ended at local midnight; later days need their own dated plan.
