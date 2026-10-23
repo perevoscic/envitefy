@@ -11,6 +11,21 @@ const pink = "rgb(242, 198, 222)";
 const surface = "rgb(37, 31, 45)";
 const require = createRequire(import.meta.url);
 
+async function assertSidebarBrand(sidebar,kind,appearance,label,{loaded=true}={}) {
+  const images=sidebar.locator('a[aria-label="Envitefy home"] img:visible');
+  assert.equal(await images.count(),1,`${label} shows exactly one brand image`);
+  if(loaded)await images.evaluate(image=>image.decode());
+  const image=await images.evaluate(image=>({src:image.getAttribute("src"),width:image.width,height:image.height,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight}));
+  const expected=kind==="symbol"?`/brand/${appearance==="dark"?"white-v1/":""}e-only.png`:`/brand/wordmark-v2/envitefy-wordmark${appearance==="dark"?"-white":""}.webp`;
+  assert.equal(image.src,expected,`${label} uses the ${appearance} ${kind}`);
+  assert.equal(image.width,kind==="symbol"?44:196,`${label} retains the intended logo width`);
+  if(kind==="symbol")assert.equal(image.height,44,`${label} keeps the symbol inside its square box`);
+  if(loaded){
+    assert.ok(image.naturalWidth>0&&image.naturalHeight>0,`${label} loads its own artwork`);
+    if(kind==="symbol")assert.deepEqual([image.naturalWidth,image.naturalHeight],[256,165],`${label} decodes the actual e symbol`);
+  }
+}
+
 async function assertCompactToggle(scope,isDark,label) {
   const toggle=scope.getByRole("switch",{name:"Dark mode",exact:true});
   assert.equal(await toggle.isChecked(),isDark,`${label} switch reflects the resolved appearance`);
@@ -106,6 +121,35 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
       await check(`${label} Create event text`,create.locator(".nav-chrome-menu-label"),"color",pink);
       await check(`${label} Create event icon`,create.locator("svg").first(),"color",pink);
     };
+    let releaseSymbols;
+    const symbolGate=new Promise(resolve=>{releaseSymbols=resolve;});
+    await page.route("**/e-only.png",async route=>{await symbolGate;await route.fallback();});
+    const symbolRequests=Promise.all([
+      page.waitForRequest(request=>new URL(request.url()).pathname==="/brand/e-only.png"),
+      page.waitForRequest(request=>new URL(request.url()).pathname==="/brand/white-v1/e-only.png"),
+    ]);
+    await page.goto("https://navigation.test/navigation?screen=navigation",{waitUntil:"domcontentloaded"});
+    const pendingSidebar=page.locator('[data-app-navigation="sidebar"]');
+    await page.waitForFunction(()=>document.querySelector('[data-app-navigation="sidebar"]')?.getAttribute("data-sidebar-state")==="expanded");
+    await assertSidebarBrand(pendingSidebar,"wordmark","dark","expanded while symbol downloads are pending");
+    await symbolRequests;
+    const symbol=pendingSidebar.locator('[data-sidebar-brand="symbol"] img').last();
+    const symbolNode=await symbol.elementHandle();
+    const originalSymbolSource=await symbol.getAttribute("src");
+    assert.equal(await pendingSidebar.locator('[data-sidebar-brand="wordmark"] img').count(),2,"both appearance wordmarks stay mounted separately from the symbols");
+    await pendingSidebar.getByRole("button",{name:"Collapse sidebar",exact:true}).click();
+    await page.mouse.move(1000,700);await page.mouse.click(1000,700);
+    await page.waitForFunction(()=>document.querySelector('[data-app-navigation="sidebar"]')?.getAttribute("data-sidebar-state")==="collapsed");
+    await assertSidebarBrand(pendingSidebar,"symbol","dark","collapsed while symbol downloads are pending",{loaded:false});
+    assert.equal(await pendingSidebar.locator('[data-sidebar-brand="wordmark"]').isHidden(),true,"the loaded wordmark cannot paint inside the collapsed symbol box");
+    assert.equal(await symbol.evaluate((image,previous)=>image===previous,symbolNode),true,"collapse retains the symbol's own image node");
+    assert.equal(await symbol.getAttribute("src"),originalSymbolSource,"collapse never changes the symbol image source");
+    await snapshot("symbol-download-pending");
+    releaseSymbols();
+    await assertSidebarBrand(pendingSidebar,"symbol","dark","collapsed after the symbol finishes loading");
+    await page.unroute("**/e-only.png");
+    await pendingSidebar.getByRole("button",{name:"Keep sidebar open",exact:true}).click();
+    await page.mouse.move(1000,700);
     for(const tone of ["default","dark"]){
       await page.setViewportSize({width:1440,height:1080});
       await page.goto(`https://navigation.test/navigation?screen=navigation&tone=${tone}`);
@@ -113,10 +157,12 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
       await sidebar.getByRole("button",{name:"Snap a Flyer",exact:true}).waitFor({timeout:10000});
       await page.waitForFunction(()=>document.querySelector('[data-app-navigation="sidebar"]')?.getAttribute("data-sidebar-state")==="expanded");
       if(tone==="default"){
+        await assertSidebarBrand(sidebar,"wordmark","dark","expanded dark sidebar");
         assert.equal(await page.locator("html").getAttribute("data-appearance-preference"),"system");
         assert.equal(await page.evaluate(()=>localStorage.getItem("envitefy:appearance:v1")),null,"navigation starts with the device preference");
         await page.emulateMedia({colorScheme:"light"});
         await page.locator('html[data-theme="general-light"]').waitFor();
+        await assertSidebarBrand(sidebar,"wordmark","light","expanded light sidebar");
         await page.emulateMedia({colorScheme:"dark"});
         await page.locator('html[data-theme="general-dark"]').waitFor();
       }
@@ -191,6 +237,12 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
       await page.waitForFunction(()=>document.querySelector('[data-app-navigation="sidebar"]')?.getAttribute("data-sidebar-state")==="collapsed");
       await check(`${tone} collapsed sidebar`,sidebar,"backgroundColor",surface);
       await check(`${tone} collapsed icon`,sidebar.getByRole("button",{name:"Snap a Flyer",exact:true}).locator("svg").first(),"color",pink);
+      await assertSidebarBrand(sidebar,"symbol","dark",`${tone} collapsed dark sidebar`);
+      await page.emulateMedia({colorScheme:"light"});
+      await page.locator('html[data-theme="general-light"]').waitFor();
+      await assertSidebarBrand(sidebar,"symbol","light",`${tone} collapsed light sidebar`);
+      await page.emulateMedia({colorScheme:"dark"});
+      await page.locator('html[data-theme="general-dark"]').waitFor();
       await snapshot(`${tone}-desktop-collapsed`);
 
       await page.setViewportSize({width:390,height:844});
@@ -204,6 +256,12 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
       await check(`${tone} mobile drawer`,sidebar,"backgroundColor",surface);
       await check(`${tone} mobile menu text`,sidebar.getByRole("button",{name:"Snap a Flyer",exact:true}).locator(".nav-chrome-menu-label"),"color",pink);
       await check(`${tone} mobile menu icon`,sidebar.getByRole("button",{name:"Snap a Flyer",exact:true}).locator("svg").first(),"color",pink);
+      await assertSidebarBrand(sidebar,"wordmark","dark",`${tone} mobile dark drawer`);
+      await page.emulateMedia({colorScheme:"light"});
+      await page.locator('html[data-theme="general-light"]').waitFor();
+      await assertSidebarBrand(sidebar,"wordmark","light",`${tone} mobile light drawer`);
+      await page.emulateMedia({colorScheme:"dark"});
+      await page.locator('html[data-theme="general-dark"]').waitFor();
       await snapshot(`${tone}-mobile-drawer`);
       await sidebar.getByRole("button",{name:"Account menu for Casey Example",exact:true}).click();
       await account.getByRole("link",{name:"Profile",exact:true}).waitFor();
