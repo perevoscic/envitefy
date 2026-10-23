@@ -166,7 +166,9 @@ export default function ScrollHandoffContainer({
 
   const mergedClassName = [
     "overflow-y-auto",
-    "overscroll-contain",
+    // Allow native chaining to the bounded settings pane, including when this
+    // wrapper grows with its content and has no scroll range of its own.
+    "overscroll-auto",
     "[-webkit-overflow-scrolling:touch]",
     className ?? "",
   ]

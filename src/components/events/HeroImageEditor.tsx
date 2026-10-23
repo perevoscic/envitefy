@@ -3,6 +3,7 @@
 import { ImagePlus, RotateCcw } from "lucide-react";
 import { useRef, useState } from "react";
 import type { HeroImageSettings } from "@/lib/hero-image-settings";
+import { useEventPageReadOnly } from "./EventPageReadOnlyContext";
 import HeroImageAdjustments from "./HeroImageAdjustments";
 
 type Props = {
@@ -16,7 +17,10 @@ type Props = {
   onSettingsChange?: (settings: HeroImageSettings) => void;
 };
 
-export function useHeroImagePicker(onChange: Props["onChange"], options: Pick<Props, "prepareImage" | "onBusyChange"> = {}) {
+export function useHeroImagePicker(
+  onChange: Props["onChange"],
+  options: Pick<Props, "prepareImage" | "onBusyChange"> = {},
+) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -90,6 +94,8 @@ export default function HeroImageEditor({
   onSettingsChange,
 }: Props) {
   const picker = useHeroImagePicker(onChange, { prepareImage, onBusyChange });
+  const readOnly = useEventPageReadOnly();
+  if (readOnly) return null;
   return (
     <div className={className} data-hero-image-control>
       <div className="flex flex-wrap items-center gap-2">

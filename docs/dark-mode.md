@@ -8,8 +8,9 @@ New browsers automatically follow device appearance through the internal `system
 preference, without a separate System or Device control. The switch reflects the
 resolved appearance; toggling it selects an explicit light or dark preference.
 Keyboard activation and reduced motion remain supported.
-Account menus place Log out and the switch in two equal columns in the bottom
-row, without a visible Appearance label. Accessible switch and group names remain.
+Account menus place the switch on the left and Log out on the right in two equal
+columns in the bottom row, without a visible Appearance label. Accessible switch
+and group names remain.
 The browser preference is stored as `envitefy:appearance:v1`; it is not an account
 setting and does not modify event records. Explicit choices override device
 changes; browsers without an override respond to device changes. Other tabs synchronize through
@@ -47,6 +48,10 @@ keyboard focus. Event-page frost rules apply only in light appearance; changing
 the event's palette cannot turn application navigation pale in dark appearance.
 Native browser bars use a solid `#181818` in dark application views. Event-owned
 browser colors retain their existing registration/disposal lifecycle.
+
+The login transition uses a plum background with pink and lavender light, a raised
+plum wordmark panel and white shimmering lettering in dark appearance. The light
+transition keeps its existing lavender wash. Both respect reduced motion.
 
 `data-appearance-scope="authored"` protects gallery artwork, event pages, sign-up
 designs and Live Card artwork. Application dark utility compatibility selectors

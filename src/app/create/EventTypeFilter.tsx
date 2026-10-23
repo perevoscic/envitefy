@@ -1,9 +1,11 @@
 "use client";
 
-import { CalendarDays, Check, ChevronDown, Gift, House, Landmark, PartyPopper, Trophy } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Check, ChevronDown, Gift, House, Landmark, PartyPopper, Trophy } from "lucide-react";
+import Image from "next/image";
 import { type ReactNode, useRef, useState } from "react";
 import type { CreateGuess } from "@/lib/create/create-intent";
-import { availableEventTypeGroups } from "@/lib/create/event-type-groups";
+import { availableEventTypeGroups, eventTypeGroupExamples, type EventTypeGroup } from "@/lib/create/event-type-groups";
+import EventTypeExamples from "./EventTypeExamples";
 import styles from "./create-workspace.module.css";
 
 const groupIcons = {
@@ -14,6 +16,34 @@ const groupIcons = {
   gatherings: CalendarDays,
   sports: Trophy,
 };
+
+// Existing Envitefy artwork introduces each group without choosing a template.
+const groupPreviews = {
+  celebrations: {
+    artwork: "/studio/birthday.webp",
+    position: "70% center",
+  },
+  holidays: {
+    artwork: "/templates/signup/holidays/christmas/wrapped-with-care.webp",
+    position: "center",
+  },
+  home: {
+    artwork: "/studio/housewarming.webp",
+    position: "center",
+  },
+  religious: {
+    artwork: "/templates/event-pages/v2/religious-events/buddhist-vesak-lotus-water-detail.webp",
+    position: "center",
+  },
+  gatherings: {
+    artwork: "/templates/signup/photographic/general/monthly-meetup.webp",
+    position: "center",
+  },
+  sports: {
+    artwork: "/studio/game-day.webp",
+    position: "center 70%",
+  },
+} satisfies Record<EventTypeGroup, { artwork: string; position: string }>;
 
 export default function EventTypeFilter({ choices, value, onChange, children, search, compact = false }: {
   choices: CreateGuess[];
@@ -29,7 +59,7 @@ export default function EventTypeFilter({ choices, value, onChange, children, se
   const label = groups.find((group) => group.id === value)?.label || "All";
 
   const select = (key: string) => {
-    onChange(key);
+    onChange(key === value ? "all" : key);
     setExpanded(false);
     trigger.current?.focus({ preventScroll: true });
   };
@@ -74,25 +104,48 @@ export default function EventTypeFilter({ choices, value, onChange, children, se
         data-expanded={expanded}
       >
         <div className={styles.typeFilterClip}>
-          <div className={styles.typeFilterPanel}>
-            <button type="button" className={styles.typeFilterAll} aria-pressed={value === "all"} onClick={() => select("all")}>
-              All event types
-              {value === "all" && <Check aria-hidden="true" />}
-            </button>
-            <div className={styles.typeFilterGroups}>
+          <div className={styles.typeFilterPanel} data-event-type-filter-panel>
+            <div className={styles.typeFilterGroups} data-event-type-filter-groups>
               {groups.map((group) => {
                 const Icon = groupIcons[group.id];
+                const preview = groupPreviews[group.id];
+                const selected = value === group.id;
+                const examplesId = `creation-type-group-${group.id}-examples`;
+                const examples = eventTypeGroupExamples(choices, group.id);
                 return (
                   <button
                     key={group.id}
                     type="button"
                     className={styles.typeFilterChoice}
-                    aria-pressed={value === group.id}
+                    aria-label={group.label}
+                    aria-describedby={examplesId}
+                    aria-pressed={selected}
+                    title={selected ? "Select again to show all categories" : undefined}
+                    data-event-type-group={group.id}
                     onClick={() => select(group.id)}
                   >
-                    <Icon aria-hidden="true" />
-                    <span>{group.label}</span>
-                    {value === group.id && <Check aria-hidden="true" />}
+                    <span className={styles.typeFilterArtwork} aria-hidden="true">
+                      {expanded && (
+                        <Image
+                          src={preview.artwork}
+                          alt=""
+                          width={264}
+                          height={224}
+                          loading="eager"
+                          sizes="(max-width: 639px) 88px, (max-width: 1100px) 104px, 132px"
+                          style={{ objectPosition: preview.position }}
+                          data-event-type-group-artwork
+                        />
+                      )}
+                      <span className={styles.typeFilterIcon}><Icon aria-hidden="true" /></span>
+                    </span>
+                    <span className={styles.typeFilterDetails}>
+                      <span className={styles.typeFilterTitle} data-event-type-group-title>{group.label}</span>
+                      <EventTypeExamples id={examplesId} examples={examples} expanded={expanded} />
+                    </span>
+                    <span className={styles.typeFilterIndicator} aria-hidden="true">
+                      {selected ? <Check /> : <ArrowUpRight />}
+                    </span>
                   </button>
                 );
               })}

@@ -2,8 +2,10 @@
 
 import type { CSSProperties } from "react";
 import { TemplateThumbnailPreview } from "@/components/events/TemplateThumbnail";
+import { HolidayBackgroundDecoration } from "@/components/events/HolidayPageBackground";
 import type { PublicTemplate } from "@/lib/public-template-catalog";
 import { getSignupDesign, SIGNUP_DESIGN_PALETTES } from "@/lib/signup-designs";
+import { getHolidayBackground } from "@/lib/holiday-backgrounds";
 import { SIGNUP_FONT_PAIRS } from "@/lib/signup-themes";
 import SignupDesignOrnament from "./SignupDesignOrnament";
 import styles from "./signup-thumbnail.module.css";
@@ -15,7 +17,8 @@ export default function SignupTemplatePreview({
   template: Pick<PublicTemplate, "id" | "name" | "heroImage">;
 }) {
   const design = getSignupDesign(template.id);
-  const colors = SIGNUP_DESIGN_PALETTES[design?.palette || "slate"];
+  const background = getHolidayBackground(design?.id);
+  const colors = background || SIGNUP_DESIGN_PALETTES[design?.palette || "slate"];
   const font = SIGNUP_FONT_PAIRS.find((pair) => pair.id === (design?.fontPair || "modern"));
   const style = {
     "--thumb-page": colors.page,
@@ -33,7 +36,9 @@ export default function SignupTemplatePreview({
         data-composition={design?.composition || "studio"}
         data-reverse={design?.reverse || undefined}
         data-font={design?.fontPair || "modern"}
+        data-holiday-background={background?.id}
       >
+        {background && <HolidayBackgroundDecoration background={background} compact />}
         <div className={styles.artwork}>
           <img src={template.heroImage} alt="" loading="lazy" decoding="async" />
         </div>

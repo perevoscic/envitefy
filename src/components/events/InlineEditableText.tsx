@@ -1,7 +1,8 @@
 "use client";
 
 import { Check, Pencil, RotateCcw, X } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { useEventPageReadOnly } from "./EventPageReadOnlyContext";
 import styles from "./inline-editable-text.module.css";
 
 /** Edits update parent memory immediately; saving the event remains a separate action. */
@@ -30,15 +31,16 @@ export default function InlineEditableText({
   const input = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const pencil = useRef<HTMLButtonElement>(null);
   const descriptionId = useId();
+  const readOnly = useEventPageReadOnly();
   useEffect(() => {
-    if (editing) {
+    if (editing && !readOnly) {
       input.current?.focus();
       input.current?.select();
     }
-  }, [editing]);
+  }, [editing, readOnly]);
 
   const text = value ?? fallback;
-  if (!onChange) return renderText ? renderText(text) : text;
+  if (!onChange || readOnly) return renderText ? renderText(text) : text;
 
   const finish = () => {
     setEditing(false);
@@ -83,7 +85,11 @@ export default function InlineEditableText({
           }
         }}
       />
-      {description && <span id={descriptionId} className={styles.description}>{description}</span>}
+      {description && (
+        <span id={descriptionId} className={styles.description}>
+          {description}
+        </span>
+      )}
       <span className={styles.actions}>
         <button
           type="button"

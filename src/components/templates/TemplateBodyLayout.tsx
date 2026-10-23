@@ -1,7 +1,7 @@
 "use client";
 import { Children, type CSSProperties, Fragment, isValidElement, type ReactNode } from "react";
-import EventPageSections, { eventPageSectionEntries } from "@/components/events/EventPageSections";
 import { useEventPageComposition } from "@/components/events/EventPageCompositionContext";
+import EventPageSections, { eventPageSectionEntries } from "@/components/events/EventPageSections";
 import { celebrationMaterialStyle, getCelebrationDirection } from "./celebration-materials";
 import materialStyles from "./celebration-materials.module.css";
 import styles from "./template-body-layout.module.css";
@@ -46,6 +46,7 @@ export type BodyPresentation = {
   borderRadius?: string;
   spacing?: "airy" | "compact" | "balanced";
   surfaceTone?: "paper" | "dark" | "tinted";
+  preserveSurfaceShape?: boolean;
 };
 
 export type BodySection = { id: string; content: ReactNode; label?: string; editorId?: string };
@@ -206,6 +207,7 @@ export default function TemplateBodyLayout({
       data-body-radius={activePresentation.borderRadius}
       data-body-spacing={activePresentation.spacing}
       data-body-tone={activePresentation.surfaceTone}
+      data-body-authored-shape={activePresentation.preserveSurfaceShape || undefined}
       data-celebration-design={direction && design ? `${design.category}/${design.id}` : undefined}
       data-celebration-heading={direction?.heading}
     >

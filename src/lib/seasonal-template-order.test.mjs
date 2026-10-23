@@ -28,14 +28,15 @@ const { orderSeasonalTemplates: order, holidayWindows, localGalleryDay, seasonal
 const dates = (id, year) => holidayWindows(collections.find((c) => c.id === id).date, year).map(({ start, end }) => [start, end].map((day) => new Date(day * 86400000).toISOString().slice(0, 10)));
 const templates = collections.flatMap((collection) => collection.designs.map((design) => ({ id: `holidays--${collection.id}--${design.slug}`, occasion: collection.id })));
 
-test("all eleven federal holidays and the requested seasonal/cultural collections have ten distinct designs", () => {
+test("all eleven federal holidays and the requested seasonal/cultural collections plan sixty distinct designs", () => {
   assert.equal(collections.length, 44);
   assert.equal(collections.filter((c) => c.kind === "Federal holidays").length, 11);
   for (const id of ["corn-maze", "trunk-or-treat", "memorial-day", "july-fourth", "summer-camp", "hanukkah", "kwanzaa", "lunar-new-year", "eid-al-fitr", "eid-al-adha", "diwali"]) assert.ok(collections.some((c) => c.id === id), id);
-  assert.equal(new Set(templates.map((item) => item.id)).size, 440);
+  assert.equal(templates.length, 2640);
+  assert.equal(new Set(templates.map((item) => item.id)).size, 2640);
   for (const collection of collections) {
-    assert.equal(collection.designs.length, 10, collection.id);
-    assert.equal(new Set(collection.designs.map((d) => d.scene)).size, 10, collection.id);
+    assert.equal(collection.designs.length, 60, collection.id);
+    assert.equal(new Set(collection.designs.map((d) => d.scene)).size, 60, collection.id);
   }
 });
 
@@ -98,8 +99,8 @@ test("original order, unavailable/invalid local dates, subsets and evergreen des
 
 test("available designs enter both galleries with distinct artwork; pending designs stay inaccessible", () => {
   const { getPublicTemplates, getPublicTemplate } = load("src/lib/public-template-catalog.ts");
-  const { SIGNUP_DESIGNS } = load("src/lib/signup-designs.ts");
-  const { GENERAL_EVENT_DESIGNS } = load("src/lib/general-event-designs.ts");
+  const { SIGNUP_DESIGNS, getSignupDesign } = load("src/lib/signup-designs.ts");
+  const { GENERAL_EVENT_DESIGNS, getGeneralEventDesign } = load("src/lib/general-event-designs.ts");
   const { createEmptySignupTemplateForm } = load("src/lib/signup-starters.ts");
   const { AVAILABLE_HOLIDAY_TEMPLATE_IDS: available } = load("src/assets/holiday-template-availability.ts");
   const artwork = JSON.parse(readFileSync("docs/holiday-template-artwork.json", "utf8")).assets;
@@ -115,11 +116,20 @@ test("available designs enter both galleries with distinct artwork; pending desi
     assert.equal(pages.length, count, collection.id);
     assert.equal(new Set(forms.map((t) => t.heroImage)).size, count, "each design has its own artwork");
     const recipes = forms.map((form) => SIGNUP_DESIGNS.find((design) => design.id === form.id));
-    assert.equal(new Set(recipes.map((design) => design.composition)).size, count, "layouts vary within each collection");
-    for (const form of forms) assert.deepEqual(getPublicTemplate("signup-forms", form.id), form, "direct editor lookup stays stable");
+    const signature = design => JSON.stringify([
+      design.composition, design.palette, design.reverse,
+      ["menu", "botanical", "journal", "invitation", "scrapbook"].includes(design.composition) ? design.motif : null,
+    ]);
+    assert.equal(new Set(recipes.map(signature)).size, count, "complete signup art directions vary within each collection");
+    for (const form of forms) {
+      assert.ok(existsSync(path.join("public", form.heroImage)), `${form.id}: published artwork exists`);
+      assert.deepEqual(getPublicTemplate("signup-forms", form.id), form, "direct editor lookup stays stable");
+    }
   }
   for (const template of templates.filter((t) => !available.includes(t.id))) {
     assert.equal(getPublicTemplate("signup-forms", template.id), undefined, "unfinished signup designs have no direct entry");
+    assert.equal(getSignupDesign(template.id), undefined, "unfinished signup recipes cannot be selected directly");
+    assert.equal(getGeneralEventDesign(template.id), undefined, "unfinished page recipes cannot be selected directly");
     assert.ok(!GENERAL_EVENT_DESIGNS.some((design) => design.id === template.id));
     assert.ok(!SIGNUP_DESIGNS.some((design) => design.id === template.id));
   }

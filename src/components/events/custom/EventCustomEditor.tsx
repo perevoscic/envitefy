@@ -1,7 +1,7 @@
 "use client";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
-import { CloudSun, MapPinned } from "lucide-react";
+import { CloudSun, Link2, ListPlus, MapPinned, PanelsTopLeft } from "lucide-react";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import { readEventResponse } from "@/lib/event-response";
 import { isEventDraft } from "@/lib/event-draft-access";
@@ -507,11 +507,12 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       initialEntries={customEventSectionOrder(d).filter((id) => id === "overview" ? Boolean(d.description.trim()) : id === "registry" ? d.registryLinks.length > 0 : true).map((id) => ({ id, label: sectionName(id) }))}
       onChange={(sectionLayout) => setPage((current) => current ? { ...current, details: { ...current.details, sectionLayout } } : current)}
       catalog={customEventSectionOrder(d).map((id) => ({ id, label: sectionName(id) }))}
-      createSection={() => {
+      sectionLimitReached={d.sections.length >= 20}
+      createSection={(content) => {
         if (d.sections.length >= 20) return undefined;
         const id = `section:${d.sections.length}`;
-        setPage((current) => current ? { ...current, details: { ...current.details, sections: [...current.details.sections, { title: "Information", body: "" }] } } : current);
-        return { id, label: "Information" };
+        setPage((current) => current ? { ...current, details: { ...current.details, sections: [...current.details.sections, content] } } : current);
+        return { id, label: content.title };
       }}
       renderEditor={(id) => {
         if (id === "overview") return <EventEditorInput label="Welcome message" type="textarea" value={d.description} onChange={(value) => updateDetail("description", value)} />;
@@ -602,7 +603,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
               {
                 id: "design",
                 title: "Design",
-                description: "Photos, layout, typography and colors.",
+                description: "Photos, typography and colors.",
                 content: (
                   <>
                     <div className={styles.group}>
@@ -631,16 +632,6 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                           ? "Your selected image is saved when you choose Save changes."
                           : "Your selected image is saved when you choose Save draft or Publish."}
                       </p>
-                      <CustomEventLayoutPicker
-                        page={page}
-                        onChange={(layout) =>
-                          setPage((current) =>
-                            current
-                              ? { ...current, design: { ...current.design, layout } }
-                              : current,
-                          )
-                        }
-                      />
                       <fieldset className={styles.field}>
                         <legend>Typography</legend>
                         <FontPairingSelect
@@ -787,6 +778,8 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                 id: "sections",
                 title: "Page sections",
                 description: "Arrange and edit guest information.",
+                icon: <ListPlus size={20} />,
+                tool: true,
                 content: (
                   <>
                     <EventSectionPalette />
@@ -809,16 +802,45 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                 ),
               },
               {
-                id: "link",
-                title: "Custom URL",
-                description: "Choose your shareable web address.",
+                id: "layout",
+                title: "Layout",
+                description: "Choose an arrangement for your page.",
+                icon: <PanelsTopLeft size={20} />,
+                tool: true,
                 content: (
-                  <EventUrlEditor eventId={savedId.current} historyClient={eventHistoryClient} disabled={busy} onBusyChange={setBusy} onUpdated={update => {
-                    existing.current = { ...existing.current, publicSlug: update.publicSlug };
-                    setSavedPublicSlug(update.publicSlug);
-                  }} />
+                  <CustomEventLayoutPicker
+                    page={page}
+                    onChange={(layout) =>
+                      setPage((current) =>
+                        current
+                          ? { ...current, design: { ...current.design, layout } }
+                          : current,
+                      )
+                    }
+                  />
                 ),
               },
+              ...(editor.urlEditor
+                ? [{
+                    id: "link",
+                    title: "Custom URL",
+                    description: "Choose your shareable web address.",
+                    icon: <Link2 size={20} />,
+                    tool: true,
+                    content: (
+                      <EventUrlEditor
+                        eventId={savedId.current}
+                        historyClient={eventHistoryClient}
+                        disabled={busy}
+                        onBusyChange={setBusy}
+                        onUpdated={(update) => {
+                          existing.current = { ...existing.current, publicSlug: update.publicSlug };
+                          setSavedPublicSlug(update.publicSlug);
+                        }}
+                      />
+                    ),
+                  }]
+                : []),
             ]}
           />
         </fieldset>

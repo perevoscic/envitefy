@@ -40,7 +40,7 @@ test("unified creation retains sources, recommends native templates and protects
   const fixtureNow = "2026-10-22T17:00:00.000Z";
   await page.clock.setFixedTime(new Date(fixtureNow));
   page.setDefaultTimeout(10000);
-  const base = "http://localhost:43139", errors = [], extracts = [], forbidden = [];
+  const base = "http://localhost:43139", errors = [], extracts = [], forbidden = [], renderedPublicAssets = new Set();
   let restricted = false;
   let restrictedCategories = ["birthdays"];
   let allowedProducts = ["snap", "live_card", "event_page", "signup_form"];
@@ -181,10 +181,14 @@ test("unified creation retains sources, recommends native templates and protects
     if (["image", "font"].includes(req.resourceType())) {
       // Render the checked-in artwork for visual QA while keeping every provider offline.
       const publicRoot = path.resolve("public");
-      const asset = path.resolve(publicRoot, `.${decodeURIComponent(url.pathname)}`);
-      if (asset.startsWith(`${publicRoot}${path.sep}`) && fs.existsSync(asset) && fs.statSync(asset).isFile()) {
+      const sourceUrl = url.origin === base && url.pathname === "/_next/image" && url.searchParams.has("url") ? new URL(url.searchParams.get("url"), base) : url;
+      const asset = path.resolve(publicRoot, `.${decodeURIComponent(sourceUrl.pathname)}`);
+      if (sourceUrl.origin === base && asset.startsWith(`${publicRoot}${path.sep}`) && fs.existsSync(asset) && fs.statSync(asset).isFile()) {
         const contentType = { ".webp": "image/webp", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".svg": "image/svg+xml", ".ttf": "font/ttf", ".woff2": "font/woff2" }[path.extname(asset).toLowerCase()];
-        if (contentType) return route.fulfill({ contentType, body: fs.readFileSync(asset) });
+        if (contentType) {
+          renderedPublicAssets.add(sourceUrl.pathname);
+          return route.fulfill({ contentType, body: fs.readFileSync(asset) });
+        }
       }
       return route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="750"><rect width="600" height="750" fill="#eee8f3"/></svg>' });
     }
@@ -214,7 +218,11 @@ test("unified creation retains sources, recommends native templates and protects
     await page.evaluate(async () => { await document.fonts.ready; window.scrollTo(0, 0); });
     await page.screenshot({ path: path.join(output, name), fullPage: true });
   };
-  const openHeadline = async () => { await page.locator("[data-native-birthday] [data-event-page-editor]").waitFor(); if (!await page.getByLabel("Venue", { exact: true }).count()) await page.getByRole("button", { name: /^Headline/ }).click(); };
+  const openEditorControls = async () => {
+    const edit = page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true });
+    if (await edit.isVisible()) await edit.click();
+  };
+  const openHeadline = async () => { await page.locator("[data-native-birthday] [data-event-page-editor]").waitFor(); await openEditorControls(); if (!await page.getByLabel("Venue", { exact: true }).count()) await page.getByRole("button", { name: /^Headline/ }).click(); };
   const templates = page.getByRole("region", { name: "Matching event designs" });
   const sourceShortcuts = page.getByRole("region", { name: "Your event templates", exact: true });
   const inspiration = page.getByRole("complementary", { name: "Event page design inspiration", includeHidden: true });
@@ -230,6 +238,16 @@ test("unified creation retains sources, recommends native templates and protects
     const value = id ? await window.__creationBrowser.readCreationIntake("unified-host", id) : null;
     return value ? { id: value.id, phase: value.phase, title: value.information?.details.title, venue: value.information?.details.venue, notes: value.source.text, file: value.source.files[0]?.name, fileBytes: value.source.files[0]?.size, sourceText: value.sourceText } : null;
   });
+  const readCurrentIntake = () => page.evaluate(() => window.__creationBrowser.readCreationIntake("unified-host", new URL(location.href).searchParams.get("intake")));
+  const assertScratchGallery = async context => {
+    assert.equal(await templates.getByRole("combobox", { name: "Event type", exact: true }).count(), 0, context + ": the chosen category needs no repeated selector");
+    assert.equal(await templates.getByRole("combobox", { name: "Holiday or occasion", exact: true }).count(), 0, context + ": the chosen occasion needs no repeated selector");
+    assert.equal(await templates.getByText("Your event", { exact: true }).count(), 0, context + ": the repeated event summary is absent");
+    assert.equal(await templates.getByText("Add your event details in the editor after choosing a design.", { exact: true }).count(), 0, context + ": the repeated summary guidance is absent");
+    assert.equal(await page.locator("[data-unified-create] header p").filter({ hasText: /^Design$/ }).count(), 0, context + ": the standalone Design label is absent");
+    await page.waitForFunction(() => document.querySelector("[data-unified-create] h1") === document.activeElement);
+    assert.equal(await page.getByRole("heading", { level: 1, name: "Choose your design", exact: true }).evaluate(element => element === document.activeElement), true, context + ": gallery navigation focuses the main heading");
+  };
   const openCreate = async query => {
     await page.goto(`${base}/create${query || ""}`);
     await page.locator("[data-unified-create]").waitFor();
@@ -390,6 +408,202 @@ test("unified creation retains sources, recommends native templates and protects
     // calendar tests advance beyond the browser intake's seven-day lifetime.
     await page.evaluate(() => window.__creationBrowser.clearCreationIntakes("unified-host"));
     if (process.env.UNIFIED_CREATE_CHROME_QA === "1") return;
+    await t.test("mobile category gestures lift the panel before exploring and return through the first category", async () => {
+      const scroller = page.locator("[data-category-scroller]");
+      const readsBefore = extracts.length, writesBefore = forbidden.length;
+      const geometry = [];
+      const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const readPosition = () => page.evaluate(() => {
+        const panel = document.querySelector("[data-category-panel]");
+        const list = document.querySelector("[data-category-scroller]");
+        const navbar = document.querySelector('[data-app-mobile-topbar="app"]');
+        const rect = list.getBoundingClientRect();
+        const panelTop = panel.getBoundingClientRect().top;
+        const dockTop = (navbar?.getClientRects().length ? navbar.getBoundingClientRect().bottom : 0) + 12;
+        return { width: innerWidth, height: innerHeight, outer: scrollY, inner: list.scrollTop,
+          innerMax: list.scrollHeight - list.clientHeight, panelTop, dockTop,
+          dockY: Math.max(0, scrollY + panelTop - dockTop),
+          documentMax: document.documentElement.scrollHeight - innerHeight,
+          bounds: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom } };
+      });
+      const moveMouseIntoList = async () => {
+        const { bounds, height } = await readPosition();
+        await page.mouse.move((bounds.left + bounds.right) / 2, Math.min(bounds.bottom - 20, height - 36));
+      };
+      const resetPosition = async () => {
+        await scroller.evaluate(element => { element.scrollTop = 0; window.scrollTo({ top: 0, behavior: "instant" }); });
+        await settle();
+      };
+      const cdp = await page.context().newCDPSession(page);
+      let fingerX = 0, fingerY = 0, touching = false;
+      const startTouch = async () => {
+        const { bounds, height } = await readPosition();
+        fingerX = (bounds.left + bounds.right) / 2;
+        fingerY = Math.min(bounds.bottom - 20, height - 36);
+        assert.ok(fingerY > bounds.top + 20, "the trusted gesture starts over the visible category list");
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: fingerX, y: fingerY, id: 1 }] });
+        touching = true;
+      };
+      const moveTouch = async deltaY => {
+        const startY = fingerY, steps = Math.max(4, Math.ceil(Math.abs(deltaY) / 32));
+        for (let step = 1; step <= steps; step++) {
+          fingerY = startY + deltaY * step / steps;
+          assert.ok(fingerY > 0 && fingerY < 900, "the trusted swipe stays inside the mobile viewport");
+          await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: fingerX, y: fingerY, id: 1 }] });
+        }
+        await settle();
+      };
+      const endTouch = async () => {
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        touching = false;
+        await settle();
+      };
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
+      try {
+        for (const width of [320, 390]) {
+          await page.setViewportSize({ width, height: 900 });
+          await openCreate("?chrome=1");
+          await page.waitForFunction(() => document.querySelector("[data-category-scroller]").getAttribute("data-page-handoff") === "true");
+          await page.evaluate(async () => {
+            await document.fonts.ready;
+            window.__categoryTrustedTouches = [];
+            for (const type of ["touchstart", "touchmove", "touchend"]) {
+              document.addEventListener(type, event => window.__categoryTrustedTouches.push({ type, trusted: event.isTrusted }), { passive: true });
+            }
+          });
+          await resetPosition();
+          const initial = await readPosition();
+          assert.ok(initial.dockY > 120 && initial.documentMax >= initial.dockY - 2, width + "px has enough document space to lift the panel beneath navigation: " + JSON.stringify(initial));
+
+          await startTouch();
+          await moveTouch(-70);
+          const lifted = await readPosition();
+          assert.ok(lifted.outer > initial.outer + 40, width + "px an upward swipe first lifts the page: " + JSON.stringify(lifted));
+          assert.ok(lifted.panelTop < initial.panelTop - 40 && lifted.panelTop > lifted.dockTop + 20, width + "px the panel is still approaching navigation");
+          assert.equal(lifted.inner, 0, width + "px categories stay at the first item while the panel rises");
+          await endTouch();
+
+          // Cross the docking point, then reverse through the first category
+          // without lifting the finger. Neither handoff may need another swipe.
+          await startTouch();
+          await moveTouch(-(lifted.dockY - lifted.outer + 160));
+          const explored = await readPosition();
+          assert.ok(Math.abs(explored.outer - explored.dockY) <= 3 && Math.abs(explored.panelTop - explored.dockTop) <= 3, width + "px the panel stops beneath the actual navbar: " + JSON.stringify(explored));
+          assert.ok(explored.inner >= 130, width + "px the same swipe spends its remaining movement inside categories: " + JSON.stringify(explored));
+          await moveTouch(explored.inner + 100);
+          const returned = await readPosition();
+          assert.ok(returned.inner <= 1, width + "px reversing reaches the first category before moving the page");
+          assert.ok(returned.outer < explored.outer - 70 && returned.panelTop > returned.dockTop + 70, width + "px the same gesture continues down the page after the first category: " + JSON.stringify(returned));
+          await endTouch();
+          const touches = await page.evaluate(() => window.__categoryTrustedTouches);
+          assert.ok(touches.filter(event => event.type === "touchmove").length >= 8 && touches.every(event => event.trusted), width + "px exercises trusted browser touch input");
+          assert.equal(await templates.count(), 0, width + "px dragging over category buttons opens no design");
+
+          await resetPosition();
+          await moveMouseIntoList();
+          await page.mouse.wheel(0, 80);
+          await settle();
+          const wheelLifted = await readPosition();
+          assert.ok(wheelLifted.outer >= 75 && wheelLifted.inner <= 1, width + "px wheel input also gives the outer page priority");
+          await page.mouse.wheel(0, wheelLifted.dockY - wheelLifted.outer + 200);
+          await settle();
+          const wheelExplored = await readPosition();
+          assert.ok(Math.abs(wheelExplored.outer - wheelExplored.dockY) <= 3 && Math.abs(wheelExplored.inner - 200) <= 4, width + "px a single wheel event hands its remainder to categories: " + JSON.stringify(wheelExplored));
+          await page.mouse.wheel(0, -120);
+          await settle();
+          const innerReturned = await readPosition();
+          assert.ok(Math.abs(innerReturned.outer - wheelExplored.outer) <= 2 && Math.abs(innerReturned.inner - 80) <= 4, width + "px downward motion keeps the page docked while categories remain above");
+          await page.mouse.wheel(0, -(innerReturned.inner + 100));
+          await settle();
+          const wheelReturned = await readPosition();
+          assert.ok(wheelReturned.inner <= 1 && Math.abs(wheelReturned.outer - (wheelExplored.outer - 100)) <= 4, width + "px downward remainder returns to the page in the same wheel event: " + JSON.stringify(wheelReturned));
+          geometry.push({ initial, lifted, explored, returned, wheelLifted, wheelExplored, innerReturned, wheelReturned });
+          await page.screenshot({ path: path.join(output, `source-mobile-category-handoff-${width}.png`) });
+
+          if (width === 390) {
+            await page.waitForTimeout(450);
+            await page.getByRole("button", { name: "Open event type search", exact: true }).click();
+            await page.getByRole("searchbox", { name: "Search event types", exact: true }).fill("Wedding");
+            await page.waitForFunction(() => document.querySelectorAll("[data-creation-event-type]").length === 1);
+            await resetPosition();
+            const filtered = await readPosition();
+            assert.ok(filtered.innerMax <= 1, "one matching category needs no inner scrolling");
+            await moveMouseIntoList();
+            await page.mouse.wheel(0, filtered.dockY + 100);
+            await settle();
+            const filteredDocked = await readPosition();
+            assert.ok(filteredDocked.outer >= filtered.dockY - 3 && filteredDocked.inner <= 1, "a short filtered list still lets the outer page reach navigation");
+            await page.mouse.wheel(0, -100);
+            await settle();
+            assert.ok((await readPosition()).outer < filteredDocked.outer - 70, "a short list never traps downward movement");
+
+            await page.evaluate(() => {
+              const header = document.querySelector('[data-app-mobile-topbar="app"]');
+              const replacement = header.cloneNode(true);
+              replacement.style.paddingBottom = "28px";
+              header.replaceWith(replacement);
+            });
+            await resetPosition();
+            const replacedHeader = await readPosition();
+            assert.ok(replacedHeader.dockTop >= filteredDocked.dockTop + 19, "the replacement navbar has a different docking height");
+            await moveMouseIntoList();
+            await page.mouse.wheel(0, replacedHeader.dockY + 100);
+            await settle();
+            const redocked = await readPosition();
+            assert.ok(Math.abs(redocked.panelTop - redocked.dockTop) <= 3, "a replaced navbar continues to define the category docking position: " + JSON.stringify(redocked));
+            geometry.push({ replacedHeader, redocked });
+          }
+        }
+        await page.setViewportSize({ width: 390, height: 900 });
+        await page.emulateMedia({ reducedMotion: "no-preference" });
+        await openCreate("?chrome=1");
+        await page.keyboard.press("Escape");
+        await resetPosition();
+        const beforeFlick = await readPosition();
+        await page.evaluate(top => window.scrollTo({ top, behavior: "instant" }), beforeFlick.dockY);
+        await settle();
+        await startTouch();
+        await moveTouch(-120);
+        const flickDragged = await readPosition();
+        await endTouch();
+        await page.waitForTimeout(120);
+        const flickCoasting = await readPosition();
+        assert.ok(flickCoasting.inner > flickDragged.inner + 25, "a trusted flick retains momentum after the finger lifts");
+        assert.ok(Math.abs(flickCoasting.outer - flickCoasting.dockY) <= 3, "momentum keeps the category panel docked");
+        await startTouch();
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
+        touching = false;
+        await settle();
+        const flickStopped = await readPosition();
+        await page.waitForTimeout(200);
+        assert.ok(Math.abs((await readPosition()).inner - flickStopped.inner) <= 1, "a new touch immediately stops momentum");
+        assert.equal(await templates.count(), 0, "a trusted flick and stop over category buttons select no design");
+        geometry.push({ flickDragged, flickCoasting, flickStopped });
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        for (const width of [768, 1440]) {
+          await page.setViewportSize({ width, height: 1000 });
+          await openCreate("?chrome=1");
+          await resetPosition();
+          const nativeBefore = await readPosition();
+          assert.equal(await scroller.getAttribute("data-page-handoff"), null, width + "px a roomy category layout retains native scrolling");
+          await moveMouseIntoList();
+          await page.mouse.wheel(0, 220);
+          await page.waitForFunction(() => document.querySelector("[data-category-scroller]").scrollTop > 100);
+          const nativeAfter = await readPosition();
+          assert.ok(Math.abs(nativeAfter.outer - nativeBefore.outer) <= 2 && nativeAfter.inner > 100, width + "px retains native category scrolling without lifting the page");
+        }
+        assert.equal(extracts.length, readsBefore, "scrolling and filtering read no event source");
+        assert.equal(forbidden.length, writesBefore, "scrolling and filtering generate or save nothing");
+        assert.deepEqual(errors, [], "mobile handoffs produce no browser errors");
+        fs.writeFileSync(path.join(output, "source-mobile-category-handoff-geometry.json"), JSON.stringify(geometry, null, 2));
+      } finally {
+        if (touching) await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] }).catch(() => {});
+        await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: false }).catch(() => {});
+        await cdp.detach();
+      }
+    });
+    if (process.env.UNIFIED_CREATE_SCROLL_QA === "1") return;
     await page.setViewportSize({ width: 1440, height: 1000 });
     await openCreate();
     assert.equal(await modes.getByRole("button").count(), 3);
@@ -431,12 +645,67 @@ test("unified creation retains sources, recommends native templates and protects
       const total = await manualCards.count(), readsBefore = extracts.length;
       const savedBefore = await page.evaluate(async () => (await window.__creationBrowser.listCreationIntakes("unified-host")).length);
       assert.equal(await filter.getAttribute("aria-label"), "Filter event types: All");
-      assert.deepEqual((await panel.getByRole("button", { includeHidden: true }).allTextContents()).map(label => label.trim()), ["All event types", "Celebrations", "Holidays & seasonal", "Home & property", "Religious & cultural", "Gatherings & more", "Sports & teams"], "the dropdown contains All and the six available broad groups");
+      assert.deepEqual(await panel.getByRole("button", { includeHidden: true }).evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label") || button.textContent.trim())), ["Celebrations", "Holidays & seasonal", "Home & property", "Religious & cultural", "Gatherings & more", "Sports & teams"], "the dropdown contains only the six available broad groups with concise accessible names");
       assert.equal(await filter.getAttribute("aria-expanded"), "false");
       assert.equal(await panel.getAttribute("aria-hidden"), "true");
       assert.equal(await panel.evaluate(element => !!element.closest("[inert]")), true, "closed choices cannot receive focus");
-      assert.equal(await manualTypes.getByRole("button", { name: "All event types", exact: true }).count(), 0);
-      for (const width of [320, 390, 1440]) {
+      assert.equal(await panel.getByRole("button", { name: "All event types", exact: true, includeHidden: true }).count(), 0, "the panel omits the redundant All event types chip");
+      const assertArtworkMenu = async context => {
+        await panel.evaluate(async () => { await document.fonts.ready; await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
+        const layout = await panel.evaluate(element => {
+          const surface = element.querySelector("[data-event-type-filter-panel]");
+          const grid = element.querySelector("[data-event-type-filter-groups]");
+          const page = element.closest("[data-unified-create]");
+          const pageStyle = getComputedStyle(page);
+          const workspaceWidth = page.clientWidth - parseFloat(pageStyle.paddingLeft) - parseFloat(pageStyle.paddingRight);
+          return { workspaceWidth, exampleLineLimit: innerWidth <= 639 ? 3 : 2, columns: getComputedStyle(grid).gridTemplateColumns.split(" ").length, radius: parseFloat(getComputedStyle(surface).borderTopLeftRadius) };
+        });
+        assert.equal(layout.columns, layout.workspaceWidth > 760 ? 2 : 1, context + " uses the available workspace for thumbnail columns: " + JSON.stringify(layout));
+        assert.ok(layout.radius >= 20, context + " retains the rounded menu panel");
+        const entries = await panel.locator("[data-event-type-group]").evaluateAll(buttons => buttons.map(button => {
+          const bounds = button.getBoundingClientRect();
+          const artwork = button.querySelector("[data-event-type-group-artwork]");
+          const imageBounds = artwork.getBoundingClientRect();
+          const label = button.getAttribute("aria-label");
+          const examples = button.querySelector("[data-event-type-group-examples]");
+          const exampleBounds = examples.getBoundingClientRect(), exampleStyle = getComputedStyle(examples);
+          const title = button.querySelector("[data-event-type-group-title]");
+          const range = document.createRange(); range.selectNodeContents(title);
+          const visibleTextBounds = [title.parentElement.getBoundingClientRect(), exampleBounds];
+          return { label, text: button.textContent.trim(), examples: examples.textContent.trim(), describedByExamples: button.getAttribute("aria-describedby") === examples.id, width: bounds.width, height: bounds.height,
+            exampleHeight: exampleBounds.height, exampleLineHeight: parseFloat(exampleStyle.lineHeight), exampleClamp: exampleStyle.getPropertyValue("-webkit-line-clamp"), exampleOverflow: exampleStyle.overflow, exampleScrollHeight: examples.scrollHeight, exampleClientHeight: examples.clientHeight,
+            imageWidth: imageBounds.width, imageHeight: imageBounds.height, imageAlt: artwork.getAttribute("alt"),
+            loaded: artwork.complete && artwork.naturalWidth > 0, source: artwork.currentSrc,
+            fits: button.scrollWidth <= button.clientWidth + 1 && imageBounds.left >= bounds.left && imageBounds.right <= bounds.right + 1 && imageBounds.top >= bounds.top && imageBounds.bottom <= bounds.bottom + 1,
+            textFits: [...range.getClientRects(), ...visibleTextBounds].every(rect => rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 && rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1) };
+        }));
+        assert.equal(entries.length, 6, context + " offers every approved broad group");
+        const expectedExamples = {
+          "Celebrations": "Birthday · Wedding · Baby shower · Graduation · Anniversary · Bridal shower · Gender reveal",
+          "Holidays & seasonal": "Christmas · Halloween · Thanksgiving · Easter · New Year’s Eve · Valentine’s Day · July Fourth · Mother’s Day",
+          "Home & property": "Housewarming · Open house",
+          "Religious & cultural": "Baptism · First Communion · Bar/Bat Mitzvah · Iftar · Confirmation · Aqiqah · Puja · Langar",
+          "Gatherings & more": "Meetup · Picnic · Potluck · Game night · Book club · Networking · Garden party · Community gathering",
+          "Sports & teams": "Football · Basketball · Baseball · Gymnastics · Volleyball · Softball · Tennis · Swimming",
+        };
+        assert.ok(entries.every(entry => {
+          const expected = expectedExamples[entry.label].split(" · ");
+          const shown = entry.examples.split(" · ");
+          return entry.examples.length > 0 && !/\.{3}|…/.test(entry.examples) && shown.length <= expected.length && entry.examples === expected.slice(0, shown.length).join(" · ");
+        }), context + " shows only complete permitted event names in their familiar order: " + JSON.stringify(entries.map(entry => ({ label: entry.label, examples: entry.examples }))));
+        assert.ok(entries.every(entry => entry.exampleClamp === "none" && entry.exampleOverflow === "hidden" && entry.exampleScrollHeight <= entry.exampleClientHeight + 1 && entry.exampleLineHeight > 0 && entry.exampleHeight <= entry.exampleLineHeight * layout.exampleLineLimit + 1), context + " fits complete names within " + layout.exampleLineLimit + " lines without clipped text or ellipses: " + JSON.stringify(entries.map(entry => ({ label: entry.label, height: entry.exampleHeight, lineHeight: entry.exampleLineHeight, clamp: entry.exampleClamp, scrollHeight: entry.exampleScrollHeight, clientHeight: entry.exampleClientHeight }))));
+        assert.ok(entries.every(entry => entry.describedByExamples), context + " makes the event type examples available as each group's accessible description");
+        assert.ok(entries.every(entry => entry.width >= 44 && entry.height >= 44 && entry.fits && entry.textFits), context + " thumbnails and copy fit their usable targets: " + JSON.stringify(entries));
+        assert.ok(entries.every(entry => entry.imageAlt === "" && entry.loaded && entry.text.length > entry.label.length), context + " shows original decorative artwork and event type examples without changing the accessible name: " + JSON.stringify(entries));
+        assert.ok(entries.every(entry => {
+          const requestUrl = new URL(entry.source);
+          const sourceUrl = requestUrl.pathname === "/_next/image" ? new URL(requestUrl.searchParams.get("url"), base) : requestUrl;
+          return sourceUrl.origin === base && renderedPublicAssets.has(sourceUrl.pathname);
+        }), context + " renders checked-in artwork rather than the offline image fallback: " + JSON.stringify(entries.map(entry => ({ label: entry.label, source: entry.source }))));
+        const expectedArtwork = layout.workspaceWidth <= 380 ? [72, 84] : layout.workspaceWidth <= 760 ? [88, 88] : layout.workspaceWidth <= 1000 ? [104, 96] : [132, 112];
+        assert.ok(entries.every(entry => Math.abs(entry.imageWidth - expectedArtwork[0]) <= 1 && Math.abs(entry.imageHeight - expectedArtwork[1]) <= 1), context + " sizes thumbnails to the workspace: " + JSON.stringify(entries));
+      };
+      for (const width of [320, 390, 1024, 1440]) {
         await page.setViewportSize({ width, height: 1000 });
         const collapsedPicker = await categoryPicker.boundingBox();
         const toolbarBounds = await toolbar.boundingBox(), modeBounds = await modes.boundingBox();
@@ -452,8 +721,11 @@ test("unified creation retains sources, recommends native templates and protects
         const panelBounds = await panel.boundingBox(), expandedPicker = await categoryPicker.boundingBox();
         assert.ok(panelBounds && expandedPicker && collapsedPicker && expandedPicker.y > collapsedPicker.y + 60, width + "px filter expansion pushes categories down");
         assert.ok(panelBounds.y + panelBounds.height <= expandedPicker.y + 1, width + "px grouped filters do not cover categories");
+        await page.waitForFunction(() => Array.from(document.querySelectorAll("[data-event-type-group-artwork]")).every(image => image.complete && image.naturalWidth > 0));
+        await assertArtworkMenu(width + "px category menu");
+        assert.equal(await panel.locator('[data-event-type-group][aria-pressed="true"]').count(), 0, "All leaves every broad group unselected");
         await capture("category-filters-open-" + width + ".png");
-        await panel.getByRole("button", { name: "All event types", exact: true }).focus();
+        await panel.getByRole("button", { name: "Celebrations", exact: true }).focus();
         await page.keyboard.press("Escape");
         assert.equal(await filter.getAttribute("aria-expanded"), "false");
         assert.equal(await filter.evaluate(element => element === document.activeElement), true, "Escape restores the filter trigger");
@@ -464,9 +736,50 @@ test("unified creation retains sources, recommends native templates and protects
         assert.equal(await filter.evaluate(element => element === document.activeElement), true, "selecting a filter restores the trigger");
         assert.deepEqual((await manualCards.evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label")))).sort(), ["Birthday", "Wedding", "Anniversary", "Baby shower", "Bridal shower", "Gender reveal", "Graduation"].sort(), "Celebrations keeps all allowed celebration types in the scrolling list");
         await filter.click();
-        await panel.getByRole("button", { name: "All event types", exact: true }).click();
-        assert.equal(await manualCards.count(), total, "All restores the available list");
+        assert.equal(await panel.getByRole("button", { name: "Celebrations", exact: true }).getAttribute("aria-pressed"), "true", "reopening the menu identifies the selected thumbnail entry");
+        await panel.getByRole("button", { name: "Celebrations", exact: true }).click();
+        assert.equal(await filter.getAttribute("aria-label"), "Filter event types: All", "choosing the selected group restores All");
+        assert.equal(await filter.getAttribute("aria-expanded"), "false", "clearing a group closes the menu");
+        assert.equal(await filter.evaluate(element => element === document.activeElement), true, "clearing a group restores trigger focus");
+        assert.equal(await manualCards.count(), total, "clearing the selected group restores the full available list");
         await assertNoOverflow("Category toolbar and filters at " + width + "px");
+      }
+      const setMenuAppearance = preference => page.evaluate(preference => { const key = "envitefy:appearance:v1"; localStorage.setItem(key, preference); window.dispatchEvent(new StorageEvent("storage", { key, newValue: preference })); }, preference);
+      const menuColors = [];
+      for (const appearance of ["light", "dark"]) {
+        await setMenuAppearance(appearance);
+        await page.waitForFunction(appearance => document.documentElement.dataset.theme === "general-" + appearance, appearance);
+        for (const width of [390, 1440]) {
+          await page.setViewportSize({ width, height: 1000 });
+          await filter.click();
+          await assertArtworkMenu(appearance + " menu at " + width + "px");
+          await assertNoOverflow(appearance + " thumbnail category menu at " + width + "px");
+          const colors = await panel.locator("[data-event-type-filter-panel]").evaluate(element => {
+            const background = getComputedStyle(element).backgroundColor;
+            const canvas = document.createElement("canvas"); canvas.width = canvas.height = 1;
+            const context = canvas.getContext("2d"); context.fillStyle = background; context.fillRect(0, 0, 1, 1);
+            return { background, alpha: context.getImageData(0, 0, 1, 1).data[3] / 255, ink: getComputedStyle(element.querySelector("[data-event-type-group]")).color };
+          });
+          assert.ok(colors.alpha > 0.5 && colors.alpha < 1, appearance + " menu at " + width + "px uses a slightly transparent panel surface: " + JSON.stringify(colors));
+          if (width === 1440) menuColors.push(colors);
+          await capture("category-filters-" + appearance + "-" + width + ".png");
+          await page.keyboard.press("Escape");
+        }
+      }
+      assert.notDeepEqual(menuColors[0], menuColors[1], "the thumbnail menu follows the shared light/dark appearance");
+      await setMenuAppearance("light");
+      await page.waitForFunction(() => document.documentElement.dataset.theme === "general-light");
+      const parentStyle = await page.locator("#root").evaluate(parent => { const previous = parent.getAttribute("style"); parent.style.paddingLeft = "320px"; parent.style.boxSizing = "border-box"; return previous; });
+      try {
+        for (const width of [1024, 1440]) {
+          await page.setViewportSize({ width, height: 1000 });
+          await filter.click();
+          await assertArtworkMenu(width + "px category menu beside a 320px sidebar");
+          await assertNoOverflow(width + "px thumbnail category menu beside a sidebar");
+          await page.keyboard.press("Escape");
+        }
+      } finally {
+        await page.locator("#root").evaluate((parent, previous) => { if (previous === null) parent.removeAttribute("style"); else parent.setAttribute("style", previous); }, parentStyle);
       }
       assert.equal(extracts.length, readsBefore);
       assert.equal(await page.evaluate(async () => (await window.__creationBrowser.listCreationIntakes("unified-host")).length), savedBefore, "filtering creates no browser intake");
@@ -498,18 +811,32 @@ test("unified creation retains sources, recommends native templates and protects
         assert.equal(await filter.getAttribute("aria-label"), "Filter event types: " + group.name);
         assert.deepEqual(await labels(), group.labels.sort(), group.name + " displays every allowed member in the main list");
         if (group.name === "Holidays & seasonal") {
-          for (const width of [320, 390, 480, 640, 768, 1024, 1440]) {
+          for (const width of [320, 390, 480, 640, 768, 1024, 1440, 390]) {
             await page.setViewportSize({ width, height: 1000 });
             await page.evaluate(() => document.fonts.ready);
+            await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
             const rowFit = await manualTypes.locator("[data-holiday-occasion]").evaluateAll(buttons => buttons.map(button => {
               const row = button.parentElement.getBoundingClientRect();
               const control = button.getBoundingClientRect();
               const label = button.querySelector(":scope > span");
               const text = label.getBoundingClientRect();
-              return { name: button.getAttribute("aria-label"), rowHeight: row.height, controlHeight: control.height, labelHeight: text.height, fits: control.height <= row.height + 1 && text.top >= row.top - 1 && text.bottom <= row.bottom + 1 && label.scrollWidth <= label.clientWidth + 1 && button.scrollWidth <= button.clientWidth + 1 };
+              const range = document.createRange();
+              range.selectNodeContents(label);
+              const ink = range.getBoundingClientRect();
+              const style = getComputedStyle(button);
+              const arrow = button.querySelector("svg").getBoundingClientRect();
+              const mobile = getComputedStyle(label).whiteSpace === "nowrap";
+              const fitted = !!button.style.getPropertyValue("--category-fit-size");
+              const rightGap = arrow.left - parseFloat(style.columnGap) - ink.right;
+              return { name: button.getAttribute("aria-label"), rowHeight: row.height, controlHeight: control.height, labelHeight: text.height, mobile, fitted, rightGap,
+                singleLine: Array.from(range.getClientRects()).every(rect => Math.abs(rect.top - ink.top) <= 1),
+                fits: control.height <= row.height + 1 && text.top >= row.top - 1 && text.bottom <= row.bottom + 1 && label.scrollWidth <= label.clientWidth + 1 && button.scrollWidth <= button.clientWidth + 1 };
             }));
             assert.equal(rowFit.length, 44);
             assert.ok(rowFit.every(row => row.fits), width + "px all holiday labels fit their rows: " + JSON.stringify(rowFit.filter(row => !row.fits)));
+            assert.ok(rowFit.filter(row => row.mobile).every(row => row.singleLine), `${width}px mobile holiday names stay on one line: ${JSON.stringify(rowFit.filter(row => row.mobile && !row.singleLine))}`);
+            assert.ok(rowFit.filter(row => row.mobile && row.fitted).every(row => row.rightGap >= -1 && row.rightGap <= 2), `${width}px fitted names use the available width: ${JSON.stringify(rowFit.filter(row => row.mobile && row.fitted && (row.rightGap < -1 || row.rightGap > 2)))}`);
+            if (width <= 390) assert.ok(rowFit.some(row => row.name === "Martin Luther King Jr. Day" && row.fitted), `${width}px fits the long name using its measured width`);
             await assertNoOverflow("Holiday group at " + width + "px");
             if (width === 1440 || width === 390) {
               await manualTypes.locator('[data-holiday-occasion="christmas"]').scrollIntoViewIfNeeded();
@@ -529,13 +856,14 @@ test("unified creation retains sources, recommends native templates and protects
         await search.press("Escape");
         assert.deepEqual(await labels(), group.labels.sort(), "clearing search restores the selected broad group");
       }
-      await filter.click(); await panel.getByRole("button", { name: "All event types", exact: true }).click();
+      await filter.click(); await panel.getByRole("button", { name: "Sports & teams", exact: true }).click();
       assert.equal(await manualCards.count(), total);
       assert.equal(extracts.length, readsBefore);
       assert.equal(await page.evaluate(async () => (await window.__creationBrowser.listCreationIntakes("unified-host")).length), savedBefore, "group selection and search create no browser intake");
       assert.equal(forbidden.length, 0, "group selection and search request no provider or event save");
       assert.deepEqual(errors, [], "expanded holiday names retain unique React keys across All and group searches");
     });
+    if (process.env.UNIFIED_CREATE_MENU_QA === "1") return;
 
     await t.test("All and Holidays start at the nearest named occasion for the visitor's local day without selecting or saving an event", async () => {
       const filter = manualTypes.locator('[data-category-toolbar] [aria-controls="creation-type-filters"]');
@@ -667,7 +995,7 @@ test("unified creation retains sources, recommends native templates and protects
         assert.ok(longInput.x + longInput.width <= longSearch.x + longSearch.width + 1 && longIcon.x + longIcon.width <= longToggle.x, width + "px long filter keeps the search field and icons inside the control");
         await capture("category-search-open-group-" + width + ".png");
         if (await searchToggle.getAttribute("aria-expanded") === "true") await searchToggle.click();
-        await filter.click(); await filterPanel.getByRole("button", { name: "All event types", exact: true }).click();
+        await filter.click(); await filterPanel.getByRole("button", { name: "Holidays & seasonal", exact: true }).click();
         await searchToggle.click(); await search.fill("birthday"); await searchToggle.click();
         assert.equal(await search.inputValue(), "", "Close clears the query");
         assert.equal(await searchToggle.evaluate(element => element === document.activeElement), true);
@@ -866,6 +1194,16 @@ test("unified creation retains sources, recommends native templates and protects
         await openCreate();
         await page.waitForTimeout(900);
         assert.equal(await categoryScroller.evaluate(element => element.scrollTop), 0, "reduced motion leaves the first item at its starting row");
+        if (width === 390) {
+          await categoryScroller.evaluate(element => {
+            const panel = element.closest("[data-category-panel]");
+            const navbar = document.querySelector('[data-app-mobile-topbar="app"]');
+            const inset = (navbar?.getClientRects().length ? navbar.getBoundingClientRect().bottom : 0) + 12;
+            window.scrollTo({ top: Math.max(0, scrollY + panel.getBoundingClientRect().top - inset), behavior: "instant" });
+          });
+          await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          assert.equal(await categoryScroller.evaluate(element => element.scrollTop), 0, "docking the mobile panel preserves the first category");
+        }
         const before = await manualCards.first().boundingBox();
         await categoryScroller.hover(); await page.mouse.wheel(0, 220);
         await page.waitForFunction(() => document.querySelector("[data-category-scroller]").scrollTop > 50);
@@ -922,6 +1260,64 @@ test("unified creation retains sources, recommends native templates and protects
       assert.equal(extracts.length, 0, "category scrolling and appearance read no source");
       assert.equal(forbidden.length, 0);
     });
+    await t.test("upload examples fit phones and sidebar workspaces without creating a separate selection step", async () => {
+      const readsBefore = extracts.length;
+      const geometry = [];
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await openCreate("?chrome=1");
+      await mode("Upload").click();
+      const fan = page.locator("[data-upload-document-fan]");
+      const chooseFiles = page.getByRole("button", { name: "Choose files", exact: true });
+      await fan.waitFor();
+      assert.equal(await fan.getAttribute("aria-hidden"), "true", "sample documents remain decorative rather than an extra step for screen readers");
+      assert.equal(await fan.locator("a, button, input, select, textarea, [tabindex]").count(), 0, "example documents add no competing interactive controls");
+      assert.equal(await fan.locator("[data-upload-document-example]").count(), 4, "the fan illustrates the four familiar document types");
+      await page.getByText("Birthday flyers · Wedding invitations · Football schedules · Meet packets", { exact: true }).waitFor();
+      const sourceAssets = await fan.locator("img").evaluateAll(images => images.map(image => image.getAttribute("src")));
+      const originalStyle = await page.locator("#root").getAttribute("style");
+      try {
+        for (const appearance of ["light", "dark"]) {
+          await page.evaluate(preference => {
+            const key = "envitefy:appearance:v1";
+            localStorage.setItem(key, preference);
+            window.dispatchEvent(new StorageEvent("storage", { key, newValue: preference }));
+          }, appearance);
+          await page.waitForFunction(preference => document.documentElement.dataset.theme === `general-${preference}`, appearance);
+          for (const { width, height, inset = 0 } of [{ width: 320, height: 800 }, { width: 390, height: 844 }, { width: 1440, height: 1000 }, { width: 1024, height: 1000, inset: 320 }]) {
+            await page.setViewportSize({ width, height });
+            await page.locator("#root").evaluate((element, inset) => { element.style.paddingLeft = `${inset}px`; element.style.boxSizing = "border-box"; }, inset);
+            await page.evaluate(async () => { await document.fonts.ready; window.scrollTo(0, 0); });
+            await page.waitForFunction(() => Array.from(document.querySelectorAll("[data-upload-document-fan] img")).every(image => image.complete && image.naturalWidth > 0));
+            const context = `${appearance} upload at ${width}px${inset ? " beside a sidebar" : ""}`;
+            await assertNoOverflow(context);
+            const bounds = await fan.evaluate(element => {
+              const measure = target => { const rect = target.getBoundingClientRect(); return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height }; };
+              return { workspace: measure(element.closest("[data-unified-create]")), fan: measure(element), documents: Array.from(element.querySelectorAll("[data-upload-document-example]")).map(measure) };
+            });
+            const action = await chooseFiles.boundingBox();
+            assert.ok(bounds.fan.width > 0 && bounds.fan.height > 0, `${context}: examples retain visible space`);
+            for (const document of bounds.documents) {
+              assert.ok(document.width > 0 && document.height > 0 && document.left >= bounds.workspace.left - 1 && document.right <= bounds.workspace.right + 1, `${context}: rotated examples stay inside the workspace: ${JSON.stringify(bounds)}`);
+            }
+            assert.ok(action && action.height >= 44, `${context}: choosing files retains a usable touch target`);
+            if (width <= 390) assert.ok(action.y >= bounds.fan.bottom && action.y + action.height <= height, `${context}: the upload action follows the fan and fits the first phone viewport: ${JSON.stringify(action)}`);
+            assert.deepEqual(await fan.locator("img").evaluateAll(images => images.map(image => image.getAttribute("src"))), sourceAssets, `${context}: shared appearance preserves original example artwork`);
+            await chooseFiles.focus();
+            assert.equal(await chooseFiles.evaluate(element => document.activeElement === element), true, `${context}: keyboard users can reach the primary action`);
+            geometry.push({ appearance, width, height, inset, ...bounds, action });
+            await capture(`upload-document-fan-${appearance}-${width}${inset ? "-sidebar" : ""}.png`);
+          }
+        }
+      } finally {
+        await page.locator("#root").evaluate((element, previous) => { if (previous === null) element.removeAttribute("style"); else element.setAttribute("style", previous); }, originalStyle);
+        await page.evaluate(() => { const key = "envitefy:appearance:v1"; localStorage.setItem(key, "light"); window.dispatchEvent(new StorageEvent("storage", { key, newValue: "light" })); });
+        await page.setViewportSize({ width: 1440, height: 1000 });
+        await openCreate();
+      }
+      fs.writeFileSync(path.join(output, "upload-document-fan-geometry.json"), JSON.stringify(geometry, null, 2));
+      assert.equal(extracts.length, readsBefore, "viewing examples, changing appearance and resizing start no source parsing");
+      assert.equal(forbidden.length, 0, "upload examples never generate or persist an event");
+    });
     await mode("Upload").click();
     assert.equal(await mode("Upload").getAttribute("aria-pressed"), "true", "Upload remains available explicitly");
     await page.getByRole("button", { name: "Choose files", exact: true }).waitFor();
@@ -963,19 +1359,23 @@ test("unified creation retains sources, recommends native templates and protects
     assert.equal(await manualTypes.getByRole("button", { name: "Bridal shower", exact: true }).count(), 1);
     await manualTypes.getByRole("button", { name: "Bridal shower", exact: true }).focus();
     await page.keyboard.press("Enter"); await templates.waitFor();
-    assert.equal(await templates.getByRole("combobox", { name: "Event type", exact: true }).inputValue(), "bridal-showers:");
+    assert.equal((await readCurrentIntake()).guess.category, "bridal-showers");
+    await assertScratchGallery("Bridal shower keyboard selection");
     assert.equal(extracts.length, 0, "Bridal selection retains its actual category without provider work");
     assert.equal(await modes.count(), 0, "source method controls leave the design-selection workspace");
     assert.deepEqual(errors, [], "combined Baby/Bridal preferences never produce duplicate React keys");
     await click("Back to your information");
+    await manualTypes.waitFor();
     await click("Birthday"); await templates.waitFor();
+    assert.equal((await readCurrentIntake()).guess.category, "birthdays", "Back returns to category choices before selecting a different category");
+    await assertScratchGallery("Birthday selection");
     assert.equal(extracts.length, 0, "manual type selection reads no source and starts no AI work");
     assert.equal(forbidden.length, 0);
     for (const width of [320, 390]) { await page.setViewportSize({ width, height: 900 }); await assertNoOverflow(`Template cards at ${width}px`); }
     await capture("templates-390.png");
     await page.setViewportSize({ width: 1440, height: 1000 }); await capture("templates-desktop.png");
 
-    await t.test("Christmas and Halloween directly open their ten matching designs and retain the chosen occasion without an inferred date", async () => {
+    await t.test("Christmas and Halloween directly open their available matching designs and retain the chosen occasion without an inferred date", async () => {
       const readsBefore = extracts.length;
       for (const holiday of [{ id: "christmas", name: "Christmas" }, { id: "halloween", name: "Halloween" }]) {
         await openCreate();
@@ -985,14 +1385,16 @@ test("unified creation retains sources, recommends native templates and protects
         assert.equal(await manualCards.count(), 44, "Holidays lists each supported occasion directly");
         await manualTypes.locator('[data-holiday-occasion="' + holiday.id + '"]').click();
         await templates.waitFor();
-        assert.equal(await templates.getByRole("combobox", { name: "Event type", exact: true }).inputValue(), "holidays-seasonal:", "the base category remains compatible with the existing gallery");
-        const occasion = templates.getByRole("combobox", { name: "Holiday or occasion", exact: true });
-        assert.equal(await occasion.locator("option").count(), 45);
-        assert.equal(await occasion.inputValue(), holiday.id, "clicking " + holiday.name + " selects its own collection immediately");
-        await page.waitForFunction(() => document.querySelectorAll("[data-template-masonry-card]").length === 10);
-        assert.ok((await templates.locator("[data-template-masonry-card]").evaluateAll(cards => cards.map(card => card.getAttribute("data-template-masonry-card")))).every(id => id.startsWith("holidays--" + holiday.id + "--")));
+        const selected = await readCurrentIntake();
+        assert.equal(selected.guess.category, "holidays-seasonal", "the base category remains compatible with the existing gallery");
+        assert.equal(selected.guess.occasion, holiday.id, "clicking " + holiday.name + " selects its own collection immediately");
+        await assertScratchGallery(holiday.name + " selection");
         const links = await page.evaluate(id => window.__creationBrowser.getCreationTemplates({ category: "holidays-seasonal", sport: null, occasion: id }).map(template => template.href), holiday.id);
-        assert.equal(links.length, 10);
+        assert.ok(links.length >= 10, "the original designs remain available alongside reviewed additions");
+        await page.waitForFunction(({ count, prefix }) => {
+          const cards = [...document.querySelectorAll("[data-template-masonry-card]")];
+          return cards.length > 0 && cards.length <= count && cards.every(card => card.getAttribute("data-template-masonry-card").startsWith(prefix));
+        }, { count: links.length, prefix: "holidays--" + holiday.id + "--" });
         for (const href of links) {
           const url = new URL(href, base);
           assert.equal(url.searchParams.get("collection"), "holidays-seasonal");
@@ -1016,18 +1418,30 @@ test("unified creation retains sources, recommends native templates and protects
         assert.equal(retained.information?.details?.date || "", "", "choosing " + holiday.name + " never assigns an event date");
         await openCreate("?intake=" + encodeURIComponent(holidayIntake) + "&step=templates"); await templates.waitFor();
         await page.reload(); await templates.waitFor();
-        assert.equal(await templates.getByRole("combobox", { name: "Holiday or occasion", exact: true }).inputValue(), holiday.id);
-        assert.equal(await templates.locator("[data-template-masonry-card]").count(), 10);
+        assert.equal((await readCurrentIntake()).guess.occasion, holiday.id);
+        await assertScratchGallery(holiday.name + " restored gallery");
+        const restoredIds = await templates.locator("[data-template-masonry-card]").evaluateAll(cards => cards.map(card => card.getAttribute("data-template-masonry-card")));
+        assert.ok(restoredIds.length > 0 && restoredIds.length <= links.length, "the restored gallery retains available designs and automatic batching");
+        assert.ok(restoredIds.every(id => id.startsWith("holidays--" + holiday.id + "--")));
       }
       assert.equal(extracts.length, readsBefore, "holiday selection starts no extraction or generation");
       assert.equal(forbidden.length, 0, "holiday selection prepares a browser intake without saving or publishing an event");
       assert.deepEqual(errors, [], "holiday occasion keys remain distinct from other category rows");
-      await templates.getByRole("combobox", { name: "Event type", exact: true }).selectOption("birthdays:");
+      await click("Back to your information");
+      await manualTypes.waitFor();
+      await manualTypes.getByRole("button", { name: "Birthday", exact: true }).click();
+      await templates.waitFor();
+      assert.equal((await readCurrentIntake()).guess.category, "birthdays", "the category picker remains available after restoring a holiday gallery");
     });
 
     await t.test("scratch creation keeps the original responsive gymnastics mosaic and loads designs while scrolling", async () => {
       const beforeScratchReads = extracts.length;
-      await templates.getByRole("combobox", { name: "Event type", exact: true }).selectOption("sports:gymnastics");
+      await click("Back to your information");
+      await manualTypes.waitFor();
+      await manualTypes.getByRole("button", { name: "Gymnastics", exact: true }).click();
+      await templates.waitFor();
+      assert.equal((await readCurrentIntake()).guess.sport, "gymnastics");
+      await assertScratchGallery("Gymnastics selection");
       const masonry = templates.locator("[data-template-masonry-grid]");
       const cards = masonry.locator("[data-template-masonry-card]");
       await cards.first().waitFor();
@@ -1248,7 +1662,8 @@ test("unified creation retains sources, recommends native templates and protects
         assert.equal(await manualTypes.locator("[data-holiday-occasion]").count(), 0, "accounts without a holiday grant receive no expanded holiday rows");
         const filter = manualTypes.locator('[data-category-toolbar] [aria-controls="creation-type-filters"]');
         const filterPanel = manualTypes.getByRole("region", { name: "Event type filters", exact: true, includeHidden: true });
-        assert.deepEqual((await filterPanel.getByRole("button", { includeHidden: true }).allTextContents()).map(label => label.trim()), ["All event types", "Sports & teams"], "only the group with server-approved types is offered");
+        assert.deepEqual(await filterPanel.getByRole("button", { includeHidden: true }).evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label") || button.textContent.trim())), ["Sports & teams"], "only the group with server-approved types is offered");
+        assert.equal(await filterPanel.locator("[data-event-type-group-examples]").textContent(), "Football · Gymnastics", "restricted group examples show only the account's permitted sports");
         await filter.click(); await filterPanel.getByRole("button", { name: "Sports & teams", exact: true }).click();
         assert.equal(await manualTypes.locator("[data-creation-event-type]").count(), 2);
         restrictedCategories = ["football"];
@@ -1257,12 +1672,14 @@ test("unified creation retains sources, recommends native templates and protects
         assert.equal(await manualTypes.locator("[data-creation-event-type]").count(), 1, "revocation removes an unavailable member immediately");
         assert.equal(await filter.getAttribute("aria-label"), "Filter event types: Sports & teams", "the group remains selected while an allowed sport remains");
         assert.equal(await manualTypes.getByRole("button", { name: "Football", exact: true }).count(), 1);
+        assert.equal(await filterPanel.locator("[data-event-type-group-examples]").textContent(), "Football", "revocation immediately removes the unavailable sport from the group's examples");
         restrictedCategories = ["birthdays"];
         await reloadAccess();
         await manualTypes.getByRole("button", { name: "Football", exact: true }).waitFor({ state: "detached" });
         await manualTypes.getByRole("button", { name: "Birthday", exact: true }).waitFor();
         assert.equal(await filter.getAttribute("aria-label"), "Filter event types: All", "revoking the final sport restores All");
-        assert.deepEqual((await filterPanel.getByRole("button", { includeHidden: true }).allTextContents()).map(label => label.trim()), ["All event types", "Celebrations"], "the unavailable Sports group disappears from the dropdown");
+        assert.deepEqual(await filterPanel.getByRole("button", { includeHidden: true }).evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label") || button.textContent.trim())), ["Celebrations"], "the unavailable Sports group disappears from the dropdown");
+        assert.equal(await filterPanel.locator("[data-event-type-group-examples]").textContent(), "Birthday", "the replacement group lists only its permitted celebration");
         restrictedCategories = ["gymnastics", "football"];
         await reloadAccess();
         await manualTypes.getByRole("button", { name: "Gymnastics", exact: true }).waitFor();
@@ -1380,7 +1797,8 @@ test("unified creation retains sources, recommends native templates and protects
         assert.equal(await manualTypes.getByRole("button", { name: "Bridal shower", exact: true }).count(), 1);
         assert.equal(await manualTypes.getByRole("button", { name: "Baby shower", exact: true }).count(), 0);
         await click("Bridal shower"); await templates.waitFor();
-        assert.equal(await templates.getByRole("combobox", { name: "Event type", exact: true }).inputValue(), "bridal-showers:");
+        assert.equal((await readCurrentIntake()).guess.category, "bridal-showers");
+        await assertScratchGallery("Bridal-only account selection");
         assert.deepEqual(errors, []);
       } finally { restricted = false; restrictedCategories = ["birthdays"]; }
     });
@@ -1402,7 +1820,8 @@ test("unified creation retains sources, recommends native templates and protects
       // Do not wait for the 250ms source debounce: switching methods must retain the newest input itself.
       await mode("Start from scratch").click();
       await manualTypes.getByRole("button", { name: "Birthday", exact: true }).click(); await templates.waitFor();
-      assert.equal(await templates.getByRole("combobox", { name: "Event type", exact: true }).inputValue(), "birthdays:");
+      assert.equal((await readCurrentIntake()).guess.category, "birthdays");
+      await assertScratchGallery("Switching to scratch from a retained source");
       await click("Back to your information"); await mode("Paste URL").click();
       assert.equal(await page.getByLabel("Public event URL", { exact: true }).inputValue(), "https://school.test/newest-source?keep=latest", "switching to scratch preserves the most recent URL before debounce");
       await waitForStored(() => page.evaluate(async () => (await window.__creationBrowser.listCreationIntakes("unified-host")).some(row => row.source.url === "https://school.test/newest-source?keep=latest")), "method-switch recovery with the latest source URL");
@@ -1425,7 +1844,7 @@ test("unified creation retains sources, recommends native templates and protects
         transfer.items.add(new File(["%PDF-1.4\nDropped source bytes\n%%EOF"], "dropped-packet.pdf", { type: "application/pdf" }));
         return transfer;
       });
-      await page.getByRole("heading", { name: "Drop your flyer or PDF here", exact: true }).locator("..").dispatchEvent("drop", { dataTransfer });
+      await page.locator("[data-upload-drop-zone]").dispatchEvent("drop", { dataTransfer });
       await dataTransfer.dispose();
       await waitForImportedEditor();
       assert.equal(extracts.length, beforeDrop + 1, "dropping a PDF starts one read without a submit action");
@@ -1544,6 +1963,7 @@ test("unified creation retains sources, recommends native templates and protects
       const readGeneral = () => page.evaluate(id => window.__creationBrowser.readCreationIntake("unified-host", id), id);
       const designs = await page.evaluate(() => window.__creationBrowser.getCreationTemplates({ category: "general", sport: null }).slice(0, 3));
       const openSection = async name => {
+        await openEditorControls();
         const back = page.getByRole("button", { name: "Back to details", exact: true });
         if (await back.isVisible()) await back.click();
         await page.getByRole("button", { name: new RegExp(`^${name}`) }).click();

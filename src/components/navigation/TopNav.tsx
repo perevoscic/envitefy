@@ -408,6 +408,9 @@ export function ProfileMenu({
         <div className="h-px w-full bg-gradient-to-r from-transparent via-[#ece9ff] to-transparent my-1"></div>
 
         <div data-account-menu-actions className="grid grid-cols-2 items-center gap-1">
+          <div className="flex min-h-11 items-center justify-center border-r border-[var(--nav-chrome-border)]">
+            <AppearanceSelector compact />
+          </div>
           <button
             type="button"
             onClick={() => {
@@ -431,9 +434,6 @@ export function ProfileMenu({
             </svg>
             <span>Log out</span>
           </button>
-          <div className="flex min-h-11 items-center justify-center border-l border-[var(--nav-chrome-border)]">
-            <AppearanceSelector compact />
-          </div>
         </div>
       </div>
     </div>

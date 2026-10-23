@@ -2,6 +2,8 @@
   container-type: inline-size;
 }
 .cover {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 5cqw;
@@ -13,6 +15,7 @@
 }
 .artwork {
   position: relative;
+  z-index: 1;
   min-height: 0;
   overflow: hidden;
 }
@@ -24,6 +27,7 @@
 }
 .caption {
   position: relative;
+  z-index: 1;
   min-width: 0;
 }
 .eyebrow {

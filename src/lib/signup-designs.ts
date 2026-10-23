@@ -452,23 +452,66 @@ const artworkById = new Map(
     ]),
 );
 const holidayCompositions = ["panorama", "botanical", "gazette", "journal", "poster", "invitation", "scrapbook", "menu", "studio", "ticket"] as const satisfies readonly SignupComposition[];
+type HolidaySignupRecipe = Pick<SignupDesign, "composition" | "palette" | "motif" | "reverse">;
+const holidayRecipeCache = new Map<string, readonly HolidaySignupRecipe[]>();
+const motifCompositions: readonly SignupComposition[] = ["menu", "botanical", "journal", "invitation", "scrapbook"];
+
+function holidayRecipeSignature(recipe: HolidaySignupRecipe): string {
+  return [recipe.composition, recipe.palette, recipe.reverse,
+    motifCompositions.includes(recipe.composition) ? recipe.motif : ""].join("/");
+}
+
+/** Keep the first ten recipes frozen; additions use distinct complete art directions. */
+function holidaySignupRecipe(index: number, palettes: readonly Palette[]): HolidaySignupRecipe {
+  const key = palettes.join("/");
+  let recipes = holidayRecipeCache.get(key);
+  if (!recipes) {
+    const authored: HolidaySignupRecipe[] = holidayCompositions.map((composition, slot) => ({
+      composition,
+      palette: palettes[slot % palettes.length],
+      motif: (["sprig", "stitch", "diamond"] as const)[slot % 3],
+      reverse: slot === 4 || slot === 9,
+    }));
+    const signatures = new Set(authored.map(holidayRecipeSignature));
+    // Iterate families before secondary motif variations so neighboring additions
+    // offer different layouts, type and board treatments throughout the gallery.
+    for (const motif of ["sprig", "star", "sun", "diamond", "stitch", "orbit"] as const) {
+      for (const palette of palettes) {
+        for (const reverse of [false, true]) {
+          for (const composition of Object.keys(SIGNUP_COMPOSITIONS) as SignupComposition[]) {
+            const recipe = { composition, palette, motif, reverse };
+            const signature = holidayRecipeSignature(recipe);
+            if (!signatures.has(signature)) {
+              authored.push(recipe);
+              signatures.add(signature);
+            }
+          }
+        }
+      }
+    }
+    recipes = authored;
+    holidayRecipeCache.set(key, recipes);
+  }
+  return recipes[index % recipes.length];
+}
+
 export const HOLIDAY_SIGNUP_DESIGNS: readonly SignupDesign[] = HOLIDAY_COLLECTIONS.flatMap((collection) =>
-  collection.designs.map((design, index) => {
-    const composition = holidayCompositions[index];
-    return {
-      id: `holidays--${collection.id}--${design.slug}`,
+  collection.designs.flatMap((design, index): SignupDesign[] => {
+    const id = `holidays--${collection.id}--${design.slug}`;
+    if (!isHolidayTemplateAvailable(id)) return [];
+    const recipe = holidaySignupRecipe(index, collection.palettes);
+    const { composition } = recipe;
+    return [{
+      id,
       name: `${collection.name} · ${design.name}`,
       coverTitle: design.name,
       coverLabel: collection.name,
       artwork: `/templates/signup/holidays/${collection.id}/${design.slug}.webp`,
-      composition,
-      palette: collection.palettes[index % collection.palettes.length],
-      motif: (["sprig", "stitch", "diamond"] as const)[index % 3],
-      reverse: index === 4 || index === 9,
+      ...recipe,
       fontPair: SIGNUP_COMPOSITIONS[composition].font,
       board: SIGNUP_COMPOSITIONS[composition].board,
-    };
-  }).filter((design) => isHolidayTemplateAvailable(design.id)),
+    }];
+  }),
 );
 export const SIGNUP_DESIGNS: readonly SignupDesign[] = [...Object.entries(RECIPES).flatMap(
   ([group, recipes]) =>

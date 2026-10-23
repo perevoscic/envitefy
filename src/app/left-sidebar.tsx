@@ -1125,6 +1125,9 @@ function FooterProfileMenu({
               </div>
               <div className="nav-chrome-divider mx-2 my-1 h-px" />
               <div data-account-menu-actions className="grid grid-cols-2 items-center gap-1">
+                <div className="flex min-h-11 items-center justify-center border-r border-[var(--nav-chrome-border)]">
+                  <AppearanceSelector compact />
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -1137,9 +1140,6 @@ function FooterProfileMenu({
                   </span>
                   <span className="text-[13px] font-medium text-red-400">Log out</span>
                 </button>
-                <div className="flex min-h-11 items-center justify-center border-l border-[var(--nav-chrome-border)]">
-                  <AppearanceSelector compact />
-                </div>
               </div>
             </div>
           </div>
@@ -1425,9 +1425,7 @@ export default function LeftSidebar() {
                   >
                     <AdminNavigationPanel pathname={pathname} onBack={viewModel.backToRoot} />
                   </div>
-
-
-
+                  {!UNIFIED_CREATION_ENABLED ? <>
                   <div
                     className={`${SIDEBAR_LIST_PANEL_CLASS} z-[10]`}
                     style={panelStyle(
@@ -1471,6 +1469,7 @@ export default function LeftSidebar() {
                       onOpenOther={() => {}}
                     />
                   </div>
+                  </> : null}
 
                   <div
                     className={`${SIDEBAR_LIST_PANEL_CLASS} z-[15]`}

@@ -156,6 +156,8 @@ test("account grants and access requests remain server-only in runtime schema an
 });
 test("approval and preference selection commit atomically, while stale review rolls back", async () => {
   const approved = serverHarness();
+  await approved.server.ensureCreationAccessSchema();
+  approved.calls.length = 0;
   await approved.server.reviewCreationAccessRequest("request", "approved", "admin@example.com");
   const transaction = approved.calls.filter((call) => !call.sql.startsWith("CREATE TABLE"));
   assert.equal(transaction[0].sql, "BEGIN");
@@ -263,7 +265,8 @@ test("a previous account's cached grant snapshot is unavailable on the first ren
   const cached = access.resolveCreationAccess();
   const render = (email, status = "authenticated") => {
     let stateIndex = 0, refIndex = 0;
-    const states = [cached, false, ""], refs = [0, "previous-access-signature", "owner@example.com"];
+    const states = [{ identity: "owner@example.com", access: cached }, false, { identity: "", message: "" }];
+    const refs = [0, null, "owner@example.com", { identity: "owner@example.com", signature: JSON.stringify(cached) }];
     const hook = loadTs("src/hooks/useCreationAccess.ts", {
       react: { useState: () => [states[stateIndex++], () => {}], useRef: () => ({ current: refs[refIndex++] }), useEffect: () => {}, useCallback: (callback) => callback },
       "next-auth/react": { useSession: () => ({ status, data: { user: { email } } }) },

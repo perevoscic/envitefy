@@ -3,6 +3,7 @@
 
 Does not generate images or overwrite completed generation/review records.
 """
+import argparse
 import json
 import re
 from pathlib import Path
@@ -567,20 +568,55 @@ Shared Cake | A homemade celebration cake with no text beside a plain graduation
 Summer Sendoff | A small outdoor table with lemonade, flowers and a folded gown nearby
 """)
 
+def expanded_collections():
+    """Append separately commissioned scenes without altering the original 440."""
+    source_path = ROOT / "scripts/data/holiday-expansion-scenes.json"
+    source = json.loads(source_path.read_text())
+    assert source["version"] == 1
+    assert source["additionsPerCollection"] == 50
+    additions = source["collections"]
+    assert set(additions) == {c["id"] for c in COLLECTIONS}
+    expanded = []
+    for c in COLLECTIONS:
+        extra = additions[c["id"]]
+        assert len(extra) == 50, (c["id"], len(extra))
+        assert all(set(d) == {"slug", "name", "scene"} for d in extra)
+        assert all(re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", d["slug"]) for d in extra)
+        assert all(d["name"].strip() and d["scene"].strip() for d in extra)
+        designs = [*c["designs"], *extra]
+        assert len({d["slug"] for d in designs}) == 60, c["id"]
+        assert len({d["name"] for d in designs}) == 60, c["id"]
+        assert len({d["scene"] for d in designs}) == 60, c["id"]
+        expanded.append({**c, "designs": designs})
+    return expanded
+
+
+def write_or_check(path, content, check):
+    if check:
+        assert path.exists() and path.read_text() == content, f"Rebuild required: {path.relative_to(ROOT)}"
+    else:
+        path.write_text(content)
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true", help="Validate sources and generated files without writing them")
+    parser.add_argument("--revise-pending", action="store_true", help="Apply an explicitly requested revision to artwork that has not been installed or published")
+    args = parser.parse_args()
     assert len(COLLECTIONS) == 44
     assert len({c["id"] for c in COLLECTIONS}) == len(COLLECTIONS)
+    collections = expanded_collections()
     registry = ROOT / "src/lib/holiday-collections.ts"
-    registry.write_text('import type { HolidayCollection } from "./holiday-collection-types";\n\n'
-                         '// Curated source: scripts/build-holiday-collections.py. Dates guide discovery only.\n'
-                         'export const HOLIDAY_COLLECTIONS = ' + json.dumps(COLLECTIONS, indent=2, ensure_ascii=False)
-                         + ' as const satisfies readonly HolidayCollection[];\n\n'
-                         'export type HolidayCollectionId = (typeof HOLIDAY_COLLECTIONS)[number]["id"];\n')
+    registry_content = ('import type { HolidayCollection } from "./holiday-collection-types";\n\n'
+                        '// Curated sources: scripts/build-holiday-collections.py and scripts/data/holiday-expansion-scenes.json. Dates guide discovery only.\n'
+                        'export const HOLIDAY_COLLECTIONS = ' + json.dumps(collections, indent=2, ensure_ascii=False)
+                        + ' as const satisfies readonly HolidayCollection[];\n\n'
+                        'export type HolidayCollectionId = (typeof HOLIDAY_COLLECTIONS)[number]["id"];\n')
     plan_path = ROOT / "docs/holiday-template-artwork.json"
     old = json.loads(plan_path.read_text()) if plan_path.exists() else {}
     previous = {a["id"]: a for a in old.get("assets", [])}
     assets = []
-    for c in COLLECTIONS:
+    for c in collections:
         for i, d in enumerate(c["designs"]):
             id = f'holidays--{c["id"]}--{d["slug"]}'
             prompt = (f'Use case: photorealistic-natural. Create one landscape 1536x1024 photograph for a {c["name"]} '
@@ -598,12 +634,36 @@ def main():
                          output=f'public/templates/signup/holidays/{c["id"]}/{d["slug"]}.webp',
                          legacyPath=f'/templates/signup/holidays/{c["id"]}/{d["slug"]}.webp', status="pending")
             if id in previous:
-                assert previous[id]["prompt"] == prompt, f"Review prompt changes before replacing {id}"
-                asset.update(previous[id])
+                unchanged = previous[id]["prompt"] == prompt
+                revisable = (args.revise_pending and previous[id]["status"] == "pending"
+                             and not (ROOT / previous[id]["output"]).exists())
+                assert unchanged or revisable, f"Review prompt changes before replacing {id}"
+                if unchanged:
+                    asset.update(previous[id])
             assets.append(asset)
-    plan_path.write_text(json.dumps(dict(provider="OpenAI", initialGeneration="built-in image_gen", approvedFallback="OpenAI API, gpt-image-2, medium quality", direction="Natural documentary photography",
-                                        collections=len(COLLECTIONS), designsPerCollection=10, assets=assets), indent=2, ensure_ascii=False) + "\n")
-    print(f"Prepared {len(COLLECTIONS)} collections and {len(assets)} distinct artwork prompts")
+    assert len(assets) == 2640
+    assert len({a["id"] for a in assets}) == len(assets)
+    assert len({a["output"] for a in assets}) == len(assets)
+    assert len({a["prompt"] for a in assets}) == len(assets)
+    removed = set(previous) - {a["id"] for a in assets}
+    assert not removed or (args.revise_pending and all(
+        previous[id]["status"] == "pending" and not (ROOT / previous[id]["output"]).exists()
+        for id in removed
+    )), "Installed or published artwork may not disappear"
+    # Retain historical metadata and all per-asset provenance. The old API
+    # fallback approval covered the initial collection only; this expansion is
+    # explicitly commissioned through the built-in image_gen tool.
+    plan = {**old, "provider": "OpenAI", "direction": "Natural documentary photography",
+            "collections": len(collections), "designsPerCollection": 60, "assets": assets,
+            "expansion": dict(source="scripts/data/holiday-expansion-scenes.json", additionsPerCollection=50,
+                              requestedAssets=2200, provider="OpenAI built-in image_gen",
+                              initialStatus="pending", generationAndVisualReviewRequired=True)}
+    if "approvedFallback" in plan:
+        plan["approvedFallbackScope"] = "Historical original 440 designs only. The 2200-design expansion uses built-in image_gen."
+    write_or_check(registry, registry_content, args.check)
+    write_or_check(plan_path, json.dumps(plan, indent=2, ensure_ascii=False) + "\n", args.check)
+    verb = "Validated" if args.check else "Prepared"
+    print(f"{verb} {len(collections)} collections and {len(assets)} distinct artwork prompts; generation and review status is preserved per asset")
 
 
 if __name__ == "__main__":

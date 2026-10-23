@@ -68,3 +68,30 @@ export function availableEventTypeGroups(choices: CreateGuess[]) {
   const available = new Set(choices.map(eventTypeGroup));
   return EVENT_TYPE_GROUPS.filter((group) => available.has(group.id));
 }
+
+const featuredTypes: Record<EventTypeGroup, readonly string[]> = {
+  celebrations: ["birthdays", "weddings", "baby-showers", "graduations", "anniversaries", "bridal-showers", "gender-reveal"],
+  holidays: ["christmas", "halloween", "thanksgiving", "easter", "new-years-eve", "valentines-day", "july-fourth", "mothers-day"],
+  home: ["housewarming", "open-house"],
+  religious: [],
+  gatherings: ["general"],
+  sports: ["football", "basketball", "soccer", "baseball", "gymnastics", "volleyball", "softball", "tennis", "swimming"],
+};
+
+/** Familiar catalog examples, limited to the event types this account can choose. */
+export function eventTypeGroupExamples(choices: CreateGuess[], group: EventTypeGroup): string[] {
+  const priority = featuredTypes[group];
+  const rank = (choice: CreateGuess) => {
+    const index = priority.indexOf(choice.occasion || choice.sport || choice.category);
+    return index < 0 ? priority.length : index;
+  };
+  const members = expandEventTypeChoices(choices.filter((choice) => eventTypeGroup(choice) === group))
+    .sort((a, b) => rank(a) - rank(b));
+  const labels = members.flatMap((choice) => {
+    // These are supported designs within the parent category, not separate grants.
+    if (choice.category === "religious-events") return ["Baptism", "First Communion", "Bar/Bat Mitzvah", "Iftar", "Confirmation", "Aqiqah", "Puja", "Langar"];
+    if (choice.category === "general") return ["Meetup", "Picnic", "Potluck", "Game night", "Book club", "Networking", "Garden party", "Community gathering"];
+    return [eventTypeChoiceLabel(choice)];
+  });
+  return [...new Set(labels)].slice(0, 8);
+}

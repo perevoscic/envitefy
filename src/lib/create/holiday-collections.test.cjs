@@ -14,27 +14,35 @@ const { getCreationTemplates } = require("./template-selection.ts");
 const { customCategoryForGuess } = require("./create-intent.ts");
 const { getGeneralCreationDesigns } = require("./event-page-collections.ts");
 const { expandEventTypeChoices } = require("./event-type-groups.ts");
+const { AVAILABLE_HOLIDAY_TEMPLATE_IDS } = require("../../assets/holiday-template-availability.ts");
 
-test("Holidays & seasonal exposes only the 440 existing holiday designs", () => {
+test("Holidays & seasonal exposes only reviewed, available holiday designs", () => {
   const designs = getCreationTemplates({ category: "holidays-seasonal", sport: null });
-  assert.equal(designs.length, 440);
-  assert.equal(new Set(designs.map((design) => design.id)).size, 440);
+  assert.equal(designs.length, AVAILABLE_HOLIDAY_TEMPLATE_IDS.length);
+  assert.deepEqual(new Set(designs.map((design) => design.id)), new Set(AVAILABLE_HOLIDAY_TEMPLATE_IDS));
   assert.ok(designs.every((design) => design.id.startsWith("holidays--")));
   assert.ok(designs.every((design) => fs.existsSync(path.join("public", design.imageUrl))));
   assert.ok(designs.every((design) => design.href.includes("collection=holidays-seasonal")));
   assert.equal(customCategoryForGuess({ category: "holidays-seasonal", sport: null }), "general");
 });
 
-test("each holiday choice stays within its ten real designs and carries the occasion into the editor", () => {
+test("each holiday plans sixty designs and exposes only its ready designs with the occasion carried into the editor", () => {
   assert.equal(HOLIDAY_COLLECTIONS.length, 44);
+  assert.equal(HOLIDAY_COLLECTIONS.flatMap(collection => collection.designs).length, 2640);
   for (const collection of HOLIDAY_COLLECTIONS) {
+    assert.equal(collection.designs.length, 60, collection.id);
+    const available = AVAILABLE_HOLIDAY_TEMPLATE_IDS.filter(id => id.startsWith(`holidays--${collection.id}--`));
     const designs = getCreationTemplates({ category: "holidays-seasonal", sport: null, occasion: collection.id });
-    assert.equal(designs.length, 10, collection.id);
+    assert.equal(designs.length, available.length, collection.id);
+    assert.deepEqual(new Set(designs.map(design => design.id)), new Set(available), collection.id);
+    for (const original of collection.designs.slice(0, 10)) {
+      assert.ok(available.includes(`holidays--${collection.id}--${original.slug}`), `${collection.id}: original artwork remains available`);
+    }
     assert.ok(designs.every((design) => design.id.startsWith(`holidays--${collection.id}--`)), collection.id);
     assert.ok(designs.every((design) => new URL(design.href, "https://envitefy.local").searchParams.get("occasion") === collection.id));
     assert.deepEqual(getGeneralCreationDesigns("holidays-seasonal", collection.id).map((design) => design.id), designs.map((design) => design.id));
   }
-  assert.equal(getCreationTemplates({ category: "general", sport: null }).length, 452);
+  assert.equal(getCreationTemplates({ category: "general", sport: null }).length, 12 + AVAILABLE_HOLIDAY_TEMPLATE_IDS.length);
   assert.equal(getGeneralCreationDesigns("holidays-seasonal", "invalid-occasion").length, 0);
 });
 

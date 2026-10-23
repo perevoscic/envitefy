@@ -1095,6 +1095,16 @@ export async function incrementUserSharesSent(params: {
 
 async function ensureUsersHasFeatureVisibilityColumn(): Promise<void> {
   await ensureOnce("users_feature_visibility_column", async () => {
+    // ADD COLUMN IF NOT EXISTS still locks users exclusively. Check the catalog
+    // first so a cold preferences read cannot block authenticated user lookups.
+    const ready = await query<{ ready: boolean }>(`
+      select exists (
+        select 1 from pg_attribute
+        where attrelid = to_regclass('public.users')
+          and attname = 'feature_visibility' and not attisdropped
+      ) as ready
+    `);
+    if (ready.rows[0]?.ready) return;
     await query(`
       alter table users add column if not exists feature_visibility jsonb;
     `);

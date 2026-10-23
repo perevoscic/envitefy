@@ -1,19 +1,77 @@
-import type { CSSProperties, ReactNode } from "react";
-import type { ThemedEventDesign } from "@/lib/event-page-themed-designs";
+import { Children, type CSSProperties, type ReactNode } from "react";
+import type { TemplateArtwork } from "@/components/events/TemplateArtworkThumbnail";
 import styles from "./themed-event-header.module.css";
 import "@/components/birthdays/redesign/birthday-fonts.css";
 
-/** The same authored artwork/title composition is used by editors and published pages. */
-export default function ThemedEventHeader({ design, children, fontFamily }: {
-  design?: ThemedEventDesign;
+export type ThemedEventHeaderDesign = Pick<
+  TemplateArtwork,
+  "id" | "composition" | "background" | "ink" | "accent" | "font"
+> & {
+  editorLayout?: "split" | "banner" | "poster" | "editorial" | "spotlight" | "minimal" | "cards";
+  bodyPresentation?: {
+    alignment?: "left" | "center";
+    spacing?: "airy" | "compact" | "balanced";
+    borderRadius?: string;
+  };
+};
+
+const compositionLayouts: Record<
+  TemplateArtwork["composition"],
+  NonNullable<ThemedEventHeaderDesign["editorLayout"]>
+> = {
+  editorial: "split",
+  arch: "spotlight",
+  oval: "minimal",
+  postcard: "cards",
+  poster: "poster",
+  framed: "editorial",
+  organic: "split",
+  panorama: "banner",
+  journal: "editorial",
+};
+
+/** Keep the original mounted artwork and editable copy inside authored, responsive slots. */
+export default function ThemedEventHeader({
+  design,
+  children,
+  fontFamily,
+}: {
+  design?: ThemedEventHeaderDesign;
   children: ReactNode;
   fontFamily?: string;
 }) {
   if (!design) return <>{children}</>;
-  return <div className={styles.shell}><div className={styles.header} data-themed-event-header={design.id}
-    data-composition={design.composition} data-page-layout={design.editorLayout}
-    style={{ "--themed-page": design.background, "--themed-ink": design.ink,
-      "--themed-accent": design.accent, fontFamily: fontFamily || design.font } as CSSProperties}>
-    {children}
-  </div></div>;
+  const [artwork, ...copy] = Children.toArray(children);
+  const layout = design.editorLayout || compositionLayouts[design.composition];
+  return (
+    <div className={styles.shell}>
+      <div
+        className={styles.header}
+        data-themed-event-header={design.id}
+        data-composition={design.composition}
+        data-page-layout={layout}
+        data-header-alignment={
+          design.bodyPresentation?.alignment ||
+          (layout === "poster" || layout === "spotlight" ? "center" : "left")
+        }
+        data-header-spacing={design.bodyPresentation?.spacing || "balanced"}
+        style={
+          {
+            "--themed-page": design.background,
+            "--themed-ink": design.ink,
+            "--themed-accent": design.accent,
+            "--themed-radius": design.bodyPresentation?.borderRadius || "1rem",
+            fontFamily: fontFamily || design.font,
+          } as CSSProperties
+        }
+      >
+        <div className={styles.artwork} data-themed-header-artwork="">
+          {artwork}
+        </div>
+        <div className={styles.copy} data-themed-header-copy="">
+          {copy}
+        </div>
+      </div>
+    </div>
+  );
 }

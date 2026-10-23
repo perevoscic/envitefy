@@ -1,4 +1,7 @@
 import type { CSSProperties } from "react";
+import { getHolidayBackground } from "@/lib/holiday-backgrounds";
+import { holidayBackgroundStyle } from "@/lib/holiday-background-style";
+import { HolidayBackgroundDecoration } from "./HolidayPageBackground";
 import { TemplateThumbnailPreview } from "./TemplateThumbnail";
 import styles from "./template-artwork-thumbnail.module.css";
 import "@/components/birthdays/redesign/birthday-fonts.css";
@@ -34,10 +37,12 @@ export default function TemplateArtworkThumbnail({
   design: TemplateArtwork;
   className?: string;
 }) {
+  const background = getHolidayBackground(design.id);
   const style = {
-    "--art-page": design.background,
-    "--art-ink": design.ink,
-    "--art-accent": design.accent,
+    ...(background ? holidayBackgroundStyle(background) : {}),
+    "--art-page": background?.page || design.background,
+    "--art-ink": background?.ink || design.ink,
+    "--art-accent": background?.accent || design.accent,
     "--art-font": design.font,
   } as CSSProperties;
   return (
@@ -48,6 +53,7 @@ export default function TemplateArtworkThumbnail({
         data-template-artwork={design.id}
         data-composition={design.composition}
       >
+        {background && <HolidayBackgroundDecoration background={background} compact />}
         <div className={styles.artwork}>
           <img src={design.artwork} alt="" loading="lazy" decoding="async" />
         </div>

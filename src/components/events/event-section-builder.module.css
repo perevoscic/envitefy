@@ -14,7 +14,7 @@
 :global(html.dark) :is(.palette p, .paletteLabel, .layoutHelp, .dialogFooter span, .choices small) { color: var(--app-muted-foreground); }
 :global(html.dark) :is(.dialogHeader, .sectionList li) { border-color: var(--app-border); }
 :global(html.dark) .choices button { background: var(--app-surface-alt); border-color: var(--app-border); }
-:global(html.dark) :is(.addButton, .dialogFooter button) { background: var(--app-primary); color: var(--app-primary-foreground); }
+:global(html.dark) .dialogFooter button { background: var(--app-primary); color: var(--app-primary-foreground); }
 :global(html.dark) .notice button { color: var(--app-primary); }
 :global(html.dark) .dialog { color-scheme: dark; }
 :global(html.dark) .dialogBody :is(input, textarea, select) { background: var(--app-field-background); color: var(--app-foreground); border-color: var(--app-input); }
@@ -121,14 +121,6 @@
 .grip {
   cursor: grab !important;
   min-width: 44px;
-}
-.addButton {
-  width: 100%;
-  border-radius: 12px;
-  background: #6c3fc1;
-  color: white;
-  font-weight: 600;
-  padding: 8px 12px;
 }
 .section {
   min-width: 0;
@@ -437,6 +429,40 @@
   margin-top: 4px;
   font-size: 11px;
   color: #69577a;
+}
+.informationChoices {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+.informationChoice {
+  min-width: 0;
+  width: 100%;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.informationChoices .informationChoice {
+  min-height: 56px;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+.informationChoice:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.limitNotice {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.palette button:focus-visible,
+.choices button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.choices button:hover:not(:disabled) {
+  border-color: currentColor;
 }
 .notice {
   position: fixed;

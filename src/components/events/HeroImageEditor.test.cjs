@@ -7,7 +7,7 @@ const code = ts.transpileModule(readFileSync(`${__dirname}/HeroImageEditor.tsx`,
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 
-function pickerHarness({ readError = false, decodeError = false, options = {} } = {}) {
+function pickerHarness({ readError = false, decodeError = false, options = {}, readOnly = false } = {}) {
   const states = [];
   const changes = [];
   let chooserCount = 0;
@@ -40,7 +40,7 @@ function pickerHarness({ readError = false, decodeError = false, options = {} } 
   }
   const module = { exports: {} };
   new Function("require", "module", "exports", "FileReader", "window", code)(
-    (name) => (name === "react" ? hooks : name === "lucide-react" || name === "./HeroImageAdjustments" ? {} : require(name)),
+    (name) => (name === "react" ? hooks : name === "./EventPageReadOnlyContext" ? { useEventPageReadOnly: () => readOnly } : name === "lucide-react" || name === "./HeroImageAdjustments" ? {} : require(name)),
     module,
     module.exports,
     FileReader,
@@ -93,22 +93,21 @@ test("unsupported or oversized files keep the current image and explain the prob
   }
 });
 
-test("the inline filter switch toggles without opening a chooser or changing the original image", () => {
+test("clean pages hide image editing without opening a chooser or changing the original image", () => {
+  const preview = pickerHarness({ readOnly: true });
+  assert.equal(preview.editor({ value: "/original.webp" }), null);
+  assert.equal(preview.chooserCount(), 0);
+  assert.deepEqual(preview.changes, []);
   const h = pickerHarness();
-  const values = [];
-  const findSwitch = (node) => {
-    if (!node || typeof node !== "object") return null;
-    if (node.props?.role === "switch") return node;
+  const flatten = (node) => {
+    if (!node || typeof node !== "object") return [];
     const children = node.props?.children;
-    return (Array.isArray(children) ? children : [children]).map(findSwitch).find(Boolean);
+    return [node, ...(Array.isArray(children) ? children : [children]).flatMap(flatten)];
   };
-  const on = findSwitch(h.editor({ onFilterChange: (enabled) => values.push(enabled) }));
-  assert.equal(on.props["aria-checked"], true);
-  on.props.onClick();
-  const off = findSwitch(h.editor({ filterEnabled: false, onFilterChange: (enabled) => values.push(enabled) }));
-  assert.equal(off.props["aria-checked"], false);
-  off.props.onClick();
-  assert.deepEqual(values, [false, true]);
+  const controls = flatten(h.editor({ value: "/original.webp" }));
+  assert.ok(controls.find(node => node.props?.["aria-label"] === "Change hero image"));
+  assert.ok(controls.find(node => node.props?.["aria-label"] === "Use template image"));
+  assert.equal(controls.find(node => node.props?.role === "switch"), undefined, "artwork colors stay original");
   assert.equal(h.chooserCount(), 0);
   assert.deepEqual(h.changes, []);
 });

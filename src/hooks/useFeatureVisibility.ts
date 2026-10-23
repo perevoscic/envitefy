@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   type DashboardLayout,
@@ -15,6 +15,7 @@ import {
   type SportPreferences,
   type SportPreferenceSuggestion,
 } from "@/lib/sports-preferences";
+import { invalidateFeatureVisibility, loadFeatureVisibility } from "@/lib/feature-visibility-client";
 
 type FeatureVisibilityState = {
   persona: UserPersona | null;
@@ -25,17 +26,6 @@ type FeatureVisibilityState = {
   sportPreferences: SportPreferences;
   sportPreferenceSuggestion: SportPreferenceSuggestion | null;
   quickAccess: QuickAccessKey[];
-};
-
-type FeatureVisibilityApiPayload = {
-  persona?: unknown;
-  personas?: unknown;
-  visibleTemplateKeys?: unknown;
-  dashboardLayout?: unknown;
-  defaultCreateIntent?: unknown;
-  sportPreferences?: unknown;
-  sportPreferenceSuggestion?: unknown;
-  quickAccess?: unknown;
 };
 
 const DEFAULT_STATE: FeatureVisibilityState = {
@@ -50,51 +40,31 @@ const DEFAULT_STATE: FeatureVisibilityState = {
 };
 
 const FEATURE_VISIBILITY_UPDATED_EVENT = "envitefy:feature-visibility-updated";
-let featureVisibilityRequest: Promise<FeatureVisibilityApiPayload> | null = null;
-let featureVisibilityIdentity = "";
-let featureVisibilityGeneration = 0;
-
-async function loadFeatureVisibility(): Promise<FeatureVisibilityApiPayload> {
-  if (featureVisibilityRequest) return featureVisibilityRequest;
-  const requestGeneration = featureVisibilityGeneration;
-  const request = (async () => {
-    const response = await fetch("/api/user/feature-visibility", {
-      credentials: "include",
-      cache: "no-store",
-    });
-    if (!response.ok) throw new Error("Could not load feature visibility");
-    const payload = (await response.json()) as FeatureVisibilityApiPayload;
-    if (requestGeneration !== featureVisibilityGeneration) return loadFeatureVisibility();
-    return payload;
-  })().finally(() => {
-    if (featureVisibilityRequest === request) featureVisibilityRequest = null;
-  });
-  featureVisibilityRequest = request;
-  return request;
-}
-
 export function notifyFeatureVisibilityChanged() {
   if (typeof window === "undefined") return;
-  featureVisibilityGeneration += 1;
-  featureVisibilityRequest = null;
+  invalidateFeatureVisibility();
   window.dispatchEvent(new Event(FEATURE_VISIBILITY_UPDATED_EVENT));
 }
 
 export function useFeatureVisibility() {
   const { data: session, status } = useSession();
-  const identity = session?.user?.email || "";
+  const identity = session?.user?.email || (session?.user as { id?: string } | undefined)?.id || "";
   const [loading, setLoading] = useState(true);
-  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
-  const [state, setState] = useState<FeatureVisibilityState>(DEFAULT_STATE);
-  const [error, setError] = useState("");
+  const [snapshot, setSnapshot] = useState<{ identity: string; value: FeatureVisibilityState } | null>(null);
+  const [failure, setFailure] = useState({ identity: "", message: "" });
+  const sequence = useRef(0);
+  const activeIdentity = useRef<string | null>(null);
+  activeIdentity.current = status === "authenticated" ? identity : null;
+  const hasLoadedPreferences = status === "authenticated" && snapshot?.identity === identity;
 
   const refresh = useCallback(async () => {
+    const current = ++sequence.current;
     if (status !== "authenticated") { setLoading(status === "loading"); return; }
     setLoading(true);
-    setError("");
+    setFailure({ identity, message: "" });
     try {
-      const json = await loadFeatureVisibility();
-      if (identity !== featureVisibilityIdentity) return;
+      const json = await loadFeatureVisibility(identity);
+      if (current !== sequence.current || identity !== activeIdentity.current) return;
       const resolved = resolveVisibility({
         persona: json?.persona,
         personas: json?.personas,
@@ -102,7 +72,7 @@ export function useFeatureVisibility() {
         defaultCreateIntent: json?.defaultCreateIntent,
         sportPreferences: json?.sportPreferences,
       });
-      setState({
+      setSnapshot({ identity, value: {
         persona: resolved.persona,
         personas: resolved.personas,
         visibleTemplateKeys: resolved.visibleTemplateKeys,
@@ -115,25 +85,20 @@ export function useFeatureVisibility() {
           typeof json.sportPreferenceSuggestion === "object"
             ? (json.sportPreferenceSuggestion as SportPreferenceSuggestion)
             : null,
-      });
-      setHasLoadedPreferences(true);
+      } });
     } catch {
-      // Retain the last successful preferences rather than revealing every category.
-      if (identity === featureVisibilityIdentity) setError("Could not load your workspace preferences. Please retry.");
+      if (current === sequence.current && identity === activeIdentity.current) {
+        setFailure({ identity, message: "Could not load your workspace preferences. Please retry." });
+      }
     } finally {
-      if (identity === featureVisibilityIdentity) setLoading(false);
+      if (current === sequence.current && identity === activeIdentity.current) setLoading(false);
     }
   }, [status, identity]);
 
   useEffect(() => {
-    if (featureVisibilityIdentity !== identity) {
-      featureVisibilityIdentity = identity;
-      featureVisibilityGeneration += 1;
-      featureVisibilityRequest = null;
-    }
-    setState(DEFAULT_STATE);
-    setHasLoadedPreferences(false);
+    setSnapshot((previous) => previous?.identity === identity && status === "authenticated" ? previous : null);
     void refresh();
+    return () => { sequence.current += 1; };
   }, [refresh]);
 
   useEffect(() => {
@@ -142,11 +107,26 @@ export function useFeatureVisibility() {
     return () => window.removeEventListener(FEATURE_VISIBILITY_UPDATED_EVENT, handleUpdated);
   }, [refresh]);
 
+  useEffect(() => {
+    if (status !== "authenticated" || hasLoadedPreferences || loading) return;
+    const recover = () => { if (document.visibilityState === "visible") void refresh(); };
+    window.addEventListener("online", recover);
+    window.addEventListener("focus", recover);
+    document.addEventListener("visibilitychange", recover);
+    return () => {
+      window.removeEventListener("online", recover);
+      window.removeEventListener("focus", recover);
+      document.removeEventListener("visibilitychange", recover);
+    };
+  }, [status, hasLoadedPreferences, loading, refresh]);
+
   return {
     loading,
     hasLoadedPreferences,
-    error,
-    ...state,
+    // A failed background refresh must not replace a usable account snapshot
+    // with a persistent warning. Initial failures retain the explicit retry UI.
+    error: !hasLoadedPreferences && failure.identity === identity ? failure.message : "",
+    ...(hasLoadedPreferences ? snapshot.value : DEFAULT_STATE),
     refresh,
   };
 }

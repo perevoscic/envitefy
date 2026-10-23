@@ -6,6 +6,7 @@ import {
   type EventPageCompositionRuntime,
 } from "./EventPageCompositionContext";
 import { EventEditorInput } from "./EventEditorFields";
+import { EventPageReadOnlyProvider } from "./EventPageReadOnlyContext";
 import EventArrivalMap from "./custom/EventArrivalMap";
 
 import {
@@ -60,6 +61,11 @@ import {
   type EventSectionLayout,
   type EventSectionChange,
 } from "@/lib/event-section-layout";
+import {
+  availableEventInformationPresets,
+  type EventInformationSectionContent,
+  type EventInformationSectionPreset,
+} from "@/lib/event-information-section-presets";
 import styles from "./event-section-builder.module.css";
 
 export type EventSectionOption = { id: string; label: string; editorId?: string };
@@ -74,7 +80,8 @@ type BuilderContext = {
   addAt: (index: number) => void;
   add: (section: EventSectionOption, index: number) => void;
   placeBeside: (section: EventSectionOption) => void;
-  createSection?: () => EventSectionOption | undefined;
+  createSection?: (content: EventInformationSectionContent) => EventSectionOption | undefined;
+  sectionLimitReached?: boolean;
 };
 const Builder = createContext<BuilderContext | null>(null);
 // Keyboard movement advances between whole sections, skipping the mouse drop gaps.
@@ -118,21 +125,29 @@ function InformationSectionEditor({ id, fallback }: { id: string; fallback: Reac
     </>
   );
 }
-function AddInformationSection({ index }: { index: number }) {
+function AddInformationSection({
+  index,
+  preset,
+}: {
+  index: number;
+  preset?: EventInformationSectionPreset;
+}) {
   const composition = useEventPageComposition();
   const builder = useEventSectionBuilder();
   if (!builder || (!composition?.onChange && !builder.createSection)) return null;
   return (
     <button
       type="button"
-      disabled={(composition?.value?.sections.length || 0) >= 20}
+      className={styles.informationChoice}
+      disabled={builder.sectionLimitReached || (composition?.value?.sections.length || 0) >= 20}
       onClick={() => {
+        const content = { title: preset?.title || "Information", body: "" };
         if (builder.createSection) {
-          const section = builder.createSection();
+          const section = builder.createSection(content);
           if (section) builder.add(section, index);
           return;
         }
-        const section = { id: `info:${crypto.randomUUID()}`, title: "Information", body: "" };
+        const section = { id: `info:${crypto.randomUUID()}`, ...content };
         composition?.onChange?.({
           version: 1,
           ...composition.value,
@@ -144,9 +159,32 @@ function AddInformationSection({ index }: { index: number }) {
     >
       <Plus size={18} aria-hidden="true" />
       <span>
-        Custom section<small>Add a heading and information</small>
+        {preset?.title || "Custom section"}
+        <small>{preset?.description || "Add your own heading and information"}</small>
       </span>
     </button>
+  );
+}
+function InformationSectionChoices({ index }: { index: number }) {
+  const builder = useEventSectionBuilder();
+  const composition = useEventPageComposition();
+  if (!builder || (!composition?.onChange && !builder.createSection)) return null;
+  const presets = availableEventInformationPresets([...builder.catalog, ...builder.entries]);
+  const limitReached = builder.sectionLimitReached || (composition?.value?.sections.length || 0) >= 20;
+  return (
+    <>
+      <div className={`${styles.choices} ${styles.informationChoices}`} role="group" aria-label="Predefined sections">
+        {presets.map((preset) => (
+          <AddInformationSection key={preset.title} index={index} preset={preset} />
+        ))}
+        <AddInformationSection index={index} />
+      </div>
+      {limitReached && (
+        <div className={styles.limitNotice} role="status">
+          You have reached the 20 custom section limit. You can still edit or restore existing sections.
+        </div>
+      )}
+    </>
   );
 }
 export { useSectionEditorClose } from "./EventSectionEditorContext";
@@ -159,7 +197,11 @@ export function EventSectionsReadOnly({
   readOnly?: boolean;
 }) {
   const builder = useContext(Builder);
-  return <Builder.Provider value={readOnly ? null : builder}>{children}</Builder.Provider>;
+  return (
+    <EventPageReadOnlyProvider readOnly={readOnly}>
+      <Builder.Provider value={readOnly ? null : builder}>{children}</Builder.Provider>
+    </EventPageReadOnlyProvider>
+  );
 }
 
 export function EventSectionBuilderProvider({
@@ -168,6 +210,7 @@ export function EventSectionBuilderProvider({
   catalog,
   renderEditor,
   createSection,
+  sectionLimitReached,
   initialEntries,
   composition,
   children,
@@ -176,7 +219,8 @@ export function EventSectionBuilderProvider({
   onChange: (layout: EventSectionLayout | undefined) => void;
   catalog: readonly EventSectionOption[];
   renderEditor: (id: string) => ReactNode;
-  createSection?: () => EventSectionOption | undefined;
+  createSection?: (content: EventInformationSectionContent) => EventSectionOption | undefined;
+  sectionLimitReached?: boolean;
   initialEntries?: EventSectionOption[];
   composition?: EventPageCompositionRuntime;
   children: ReactNode;
@@ -191,6 +235,7 @@ export function EventSectionBuilderProvider({
   const [undo, setUndo] = useState<Array<EventSectionLayout | undefined>>([]);
   const dialog = useRef<HTMLDialogElement>(null);
   const focusReturn = useRef<HTMLElement | null>(null);
+  const editedSectionId = useRef<string | null>(null);
   const undoButton = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const sensors = useSensors(
@@ -201,12 +246,14 @@ export function EventSectionBuilderProvider({
     setEntries((previous) => (JSON.stringify(previous) === JSON.stringify(next) ? previous : next));
   }, []);
   const close = useCallback(() => setPanel(null), []);
+  const rememberFocus = useCallback(() => {
+    if (!dialog.current?.open)
+      focusReturn.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }, []);
   useEffect(() => {
     const element = dialog.current;
     if (panel && element) {
       if (!element.open) {
-        focusReturn.current =
-          document.activeElement instanceof HTMLElement ? document.activeElement : null;
         element.showModal();
       } else if (!element.contains(document.activeElement)) {
         element.querySelector<HTMLElement>("input, textarea, select, button")?.focus();
@@ -214,6 +261,12 @@ export function EventSectionBuilderProvider({
     } else if (!panel && element?.open) {
       element.close();
       if (focusReturn.current?.isConnected) focusReturn.current.focus({ preventScroll: true });
+      else {
+        // A newly added preset leaves the choices list. Return to its mounted Edit action.
+        const editButton = [...document.querySelectorAll<HTMLButtonElement>("button[data-section-editor-id]")]
+          .find((button) => button.dataset.sectionEditorId === editedSectionId.current && button.getClientRects().length);
+        editButton?.focus({ preventScroll: true });
+      }
     }
   }, [panel]);
   const visible = useMemo(
@@ -261,13 +314,23 @@ export function EventSectionBuilderProvider({
     [layout, visible, onChange, catalog, entries],
   );
   const edit = useCallback(
-    (section: EventSectionOption) => setPanel({ kind: "edit", section }),
-    [],
+    (section: EventSectionOption) => {
+      rememberFocus();
+      editedSectionId.current = section.id;
+      setPanel({ kind: "edit", section });
+    },
+    [rememberFocus],
   );
-  const addAt = useCallback((index: number) => setPanel({ kind: "add", index }), []);
+  const addAt = useCallback((index: number) => {
+    rememberFocus();
+    setPanel({ kind: "add", index });
+  }, [rememberFocus]);
   const placeBeside = useCallback(
-    (section: EventSectionOption) => setPanel({ kind: "beside", section }),
-    [],
+    (section: EventSectionOption) => {
+      rememberFocus();
+      setPanel({ kind: "beside", section });
+    },
+    [rememberFocus],
   );
   const add = useCallback(
     (section: EventSectionOption, index: number) => {
@@ -289,8 +352,9 @@ export function EventSectionBuilderProvider({
       add,
       placeBeside,
       createSection,
+      sectionLimitReached,
     }),
-    [layout, catalog, entries, register, change, edit, addAt, add, placeBeside, createSection],
+    [layout, catalog, entries, register, change, edit, addAt, add, placeBeside, createSection, sectionLimitReached],
   );
   function onDragEnd(event: DragEndEvent) {
     setDragLabel("");
@@ -366,7 +430,7 @@ export function EventSectionBuilderProvider({
         ref={dialog}
         className={styles.dialog}
         aria-labelledby={titleId}
-        onCancel={close}
+        onCancel={(event) => { event.preventDefault(); close(); }}
         onClose={close}
       >
         <div className={styles.dialogHeader}>
@@ -420,25 +484,27 @@ export function EventSectionBuilderProvider({
               </div>
             </>
           ) : panel?.kind === "add" ? (
-            <div className={styles.choices}>
-              <AddInformationSection index={panel.index} />
-              {[
-                ...catalog,
-                ...entries.filter((entry) => !catalog.some((item) => item.id === entry.id)),
-              ].map((section) => (
-                <button type="button" key={section.id} onClick={() => add(section, panel.index)}>
-                  <Plus size={18} aria-hidden="true" />
-                  <span>
-                    {section.label}
-                    {visible.some((item) => item.id === section.id) ? (
-                      <small>Already on page · Edit</small>
-                    ) : layout?.hidden.includes(section.id) ? (
-                      <small>Restore section</small>
-                    ) : null}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <>
+              <div className={styles.choices}>
+                {[
+                  ...catalog,
+                  ...entries.filter((entry) => !catalog.some((item) => item.id === entry.id)),
+                ].map((section) => (
+                  <button type="button" key={section.id} onClick={() => add(section, panel.index)}>
+                    <Plus size={18} aria-hidden="true" />
+                    <span>
+                      {section.label}
+                      {visible.some((item) => item.id === section.id) ? (
+                        <small>Already on page · Edit</small>
+                      ) : layout?.hidden.includes(section.id) ? (
+                        <small>Restore section</small>
+                      ) : null}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <InformationSectionChoices index={panel.index} />
+            </>
           ) : panel?.kind === "edit" ? (
             <EditorClose.Provider value={close}>
               <InformationSectionEditor
@@ -519,14 +585,6 @@ export function EventSectionPalette() {
   return (
     <section className={styles.palette} aria-label="Page sections">
       <p>Add sections or use Place beside to share a row. Drag handles to reorder.</p>
-      <button
-        type="button"
-        className={styles.addButton}
-        onClick={() => builder.addAt(builder.entries.length)}
-      >
-        <Plus size={18} aria-hidden="true" />
-        Add section
-      </button>
       <div className={styles.paletteItems}>
         <span className={styles.paletteLabel} aria-hidden="true">
           On your page
@@ -539,6 +597,7 @@ export function EventSectionPalette() {
                 <button
                   type="button"
                   aria-label={`Edit ${section.label}`}
+                  data-section-editor-id={section.id}
                   onClick={() => builder.edit(section)}
                 >
                   <Pencil size={17} aria-hidden="true" />
@@ -570,18 +629,15 @@ export function EventSectionPalette() {
             </li>
           ))}
         </ol>
+        <span className={styles.paletteLabel}>Add to your page</span>
         {available.length > 0 && (
-          <>
-            <span className={styles.paletteLabel} aria-hidden="true">
-              More sections
-            </span>
-            <div className={styles.catalogGrid}>
-              {available.map((section) => (
-                <CatalogItem key={section.id} section={section} index={builder.entries.length} />
-              ))}
-            </div>
-          </>
+          <div className={styles.catalogGrid}>
+            {available.map((section) => (
+              <CatalogItem key={section.id} section={section} index={current.length} />
+            ))}
+          </div>
         )}
+        <InformationSectionChoices index={current.length} />
       </div>
     </section>
   );

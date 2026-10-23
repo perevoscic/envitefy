@@ -1,16 +1,17 @@
 "use client";
-import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
 
 import { CalendarPlus, Check, Link, Navigation, Share2, X } from "lucide-react";
 import { type ReactNode, useRef, useState } from "react";
 import CalendarAction from "@/components/CalendarAction";
+import { useEventPageReadOnly } from "@/components/events/EventPageReadOnlyContext";
+import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
 import { buildGoogleMapsDirectionsHref } from "@/lib/directions";
-import { resolvePublicEventShareUrl } from "@/lib/event-guest-planning";
 import {
   EVENT_GUEST_ACTIONS,
   type EventGuestActionId,
   type EventGuestActionVisibility,
 } from "@/lib/event-guest-actions";
+import { resolvePublicEventShareUrl } from "@/lib/event-guest-planning";
 import { buildCalendarLinks } from "@/utils/calendar-links";
 import styles from "./guest-actions.module.css";
 
@@ -55,7 +56,9 @@ export default function EventGuestActions({
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState(false);
   const templateEditor = useTemplateEditor();
+  const readOnly = useEventPageReadOnly();
   const [manualShareUrl, setManualShareUrl] = useState("");
+  const updateVisibility = readOnly ? undefined : onVisibilityChange;
   const destination = location || "";
   const validStart = start && !Number.isNaN(Date.parse(start));
   let links = calendarLinks;
@@ -79,7 +82,7 @@ export default function EventGuestActions({
   }
 
   const handleShare = async () => {
-    if (templateEditor) {
+    if (templateEditor && !readOnly) {
       await templateEditor.requestSave();
       return;
     }
@@ -121,7 +124,7 @@ export default function EventGuestActions({
   const hiddenActions = EVENT_GUEST_ACTIONS.filter(({ id }) => visibility[id] === false);
   const action = (id: EventGuestActionId, content: ReactNode) => {
     if (visibility[id] === false) return null;
-    if (!onVisibilityChange) return content;
+    if (!updateVisibility) return content;
     const label = EVENT_GUEST_ACTIONS.find((item) => item.id === id)!.label;
     return (
       <div className={styles.editableAction}>
@@ -133,7 +136,7 @@ export default function EventGuestActions({
           aria-label={`Remove ${label}`}
           title={`Remove ${label}`}
           onClick={() => {
-            onVisibilityChange({ ...visibility, [id]: false });
+            updateVisibility({ ...visibility, [id]: false });
             setMessage(`${label} removed. You can restore it below.`);
             if (id === "share") setManualShareUrl("");
             requestAnimationFrame(() =>
@@ -150,7 +153,7 @@ export default function EventGuestActions({
       </div>
     );
   };
-  if (hiddenActions.length === EVENT_GUEST_ACTIONS.length && !onVisibilityChange) return null;
+  if (hiddenActions.length === EVENT_GUEST_ACTIONS.length && !updateVisibility) return null;
 
   return (
     <section
@@ -190,11 +193,13 @@ export default function EventGuestActions({
                 </>
               )}
             </CalendarAction>
-          ) : onVisibilityChange ? (
+          ) : updateVisibility ? (
             <button type="button" className={buttonClass} aria-label="Add to calendar" disabled>
               <CalendarPlus size={16} aria-hidden="true" />
               <span className={styles.fullLabel}>Add to calendar</span>
-              <span className={styles.shortLabel} aria-hidden="true">To Calendar</span>
+              <span className={styles.shortLabel} aria-hidden="true">
+                To Calendar
+              </span>
             </button>
           ) : null,
         )}
@@ -214,11 +219,13 @@ export default function EventGuestActions({
                 Directions
               </span>
             </a>
-          ) : onVisibilityChange ? (
+          ) : updateVisibility ? (
             <button type="button" className={buttonClass} aria-label="Get directions" disabled>
               <Navigation size={16} aria-hidden="true" />
               <span className={styles.fullLabel}>Get directions</span>
-              <span className={styles.shortLabel} aria-hidden="true">Directions</span>
+              <span className={styles.shortLabel} aria-hidden="true">
+                Directions
+              </span>
             </button>
           ) : null,
         )}
@@ -242,7 +249,7 @@ export default function EventGuestActions({
           </button>,
         )}
       </div>
-      {onVisibilityChange && hiddenActions.length > 0 && (
+      {updateVisibility && hiddenActions.length > 0 && (
         <div className={styles.restoreActions} role="group" aria-label="Removed actions">
           {hiddenActions.map(({ id, restoreLabel }) => (
             <button
@@ -250,7 +257,7 @@ export default function EventGuestActions({
               type="button"
               data-restore-action={id}
               onClick={() => {
-                onVisibilityChange({ ...visibility, [id]: true });
+                updateVisibility({ ...visibility, [id]: true });
                 setMessage(`${restoreLabel} restored.`);
                 requestAnimationFrame(() =>
                   actionsRef.current

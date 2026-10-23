@@ -14,6 +14,23 @@
   display: grid;
   gap: 1.25rem;
 }
+/* Dark holiday paper keeps the signup itself on a readable, light surface. */
+.page[data-signup-background] {
+  background: transparent;
+}
+.page[data-signup-background] .composition:not([data-composition="poster"]):not([data-composition="marquee"]),
+.page[data-signup-background] .board {
+  background: var(--signup-surface);
+}
+.page[data-signup-background] .board {
+  padding: clamp(1rem, 3vw, 2rem);
+  border: 1px solid var(--signup-border);
+  border-radius: 0.75rem;
+}
+.page[data-signup-background] .formFooter {
+  color: var(--signup-page-text);
+  border-color: var(--signup-page-border);
+}
 .formFooter {
   margin-top: 0.75rem;
   padding: 1.5rem 1rem;

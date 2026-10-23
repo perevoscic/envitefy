@@ -300,7 +300,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       closeMobileMenu,
       dismissMobileMenu, previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer(true, "event-actions", true);
+    } = useMobileDrawer(false, "event-actions", true);
     const updateData = useCallback((field: string, value: any) => {
       setData((prev) => {
         const next = cloneState(prev || {});
@@ -1380,7 +1380,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
  controls={<><ImportedThemeArtwork syncOnly eventId={editEventId || editor.eventId} value={data.importedTheme} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} /><ScrollHandoffContainer className="min-h-full">
 
 
-            <div className="p-6 pt-4 md:pt-6">
+            <div data-event-editor-fields className="p-6 pt-4 md:pt-6">
               {(activeView === "main" || activeView === "images") && renderMainMenu()}
               {activeView === "headline" && renderHeadlineEditor}
 

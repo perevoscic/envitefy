@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { FontPairingSelect } from "@/components/design-panel/FontPairingSelect";
+import { HolidayBackgroundPicker } from "@/components/events/HolidayPageBackground";
 import { restoreSignupTheme } from "@/lib/signup-custom-theme";
 import { getSignupDesign, SIGNUP_DESIGN_PALETTES } from "@/lib/signup-designs";
+import { getHolidayBackground, getHolidayBackgroundChoice } from "@/lib/holiday-backgrounds";
 import {
   createSignupAppearance,
   getSignupTheme,
+  resolveSignupHolidayBackground,
   SIGNUP_FONT_PAIRS,
   SIGNUP_HEADER_LAYOUTS,
   signupContrast,
@@ -32,8 +35,11 @@ export default function SignupDesignPanel({
   const [redesignOpen, setRedesignOpen] = useState(false);
   const current = getSignupTheme(form.appearance?.themeId);
   const currentDesign = getSignupDesign(form.appearance?.designId);
+  const holidayBackground = getHolidayBackground(currentDesign?.id);
+  const selectedBackground = resolveSignupHolidayBackground(form.appearance);
   const currentColors =
     form.appearance?.customTheme?.colors ||
+    (selectedBackground ? { ...selectedBackground, soft: selectedBackground.surface } : undefined) ||
     (currentDesign ? SIGNUP_DESIGN_PALETTES[currentDesign.palette] : current);
   const appearance = form.appearance || {
     ...createSignupAppearance("clean-clear"),
@@ -63,7 +69,20 @@ export default function SignupDesignPanel({
         <button type="button" className={custom.redesign} onClick={() => setRedesignOpen(true)}>
           <Sparkles size={18} aria-hidden /> Redesign with Envitefy
         </button>
-        <fieldset className={styles.field}>
+        {holidayBackground && currentDesign ? (
+          <fieldset className={styles.field}>
+            <legend>Background</legend>
+            <HolidayBackgroundPicker
+              designId={currentDesign.id}
+              value={appearance.pageBackground}
+              onChange={(pageBackground) => change({
+                pageBackground: pageBackground || getHolidayBackgroundChoice(holidayBackground.id, "template"),
+                palette: "original",
+                accent: undefined,
+              })}
+            />
+          </fieldset>
+        ) : <fieldset className={styles.field}>
           <legend>Color palette</legend>
           <div className={styles.swatches}>
             {(["original", "soft", "ink"] as const).map((palette) => (
@@ -88,7 +107,7 @@ export default function SignupDesignPanel({
               </button>
             ))}
           </div>
-        </fieldset>
+        </fieldset>}
         <fieldset className={styles.field}>
           <legend>Typography</legend>
           <FontPairingSelect

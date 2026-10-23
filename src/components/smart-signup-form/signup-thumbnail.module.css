@@ -3,6 +3,8 @@
 }
 
 .thumbnail {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 5cqw;
@@ -15,6 +17,7 @@
 
 .artwork {
   position: relative;
+  z-index: 1;
   min-height: 0;
   overflow: hidden;
 }
@@ -28,6 +31,7 @@
 
 .caption {
   position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 4cqw;
@@ -176,4 +180,10 @@
 
 .thumbnail[data-composition="panorama"] .caption {
   padding: 6cqw;
+}
+
+/* Holiday thumbnails show the selected design's complete default paper. */
+.thumbnail[data-holiday-background] {
+  background: var(--thumb-page);
+  color: var(--thumb-ink);
 }

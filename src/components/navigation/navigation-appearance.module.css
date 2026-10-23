@@ -1,4 +1,15 @@
 /* Keep navigation chrome independent of event-owned colors and artwork. */
+@media (min-width: 1024px) {
+  /* Anchor section captions to the icon rail in both sidebar states. */
+  .chrome:global([data-app-navigation="sidebar"]) :global(.nav-chrome-sidebar-caption) {
+    inline-size: 3.5rem;
+    padding-inline: 0;
+    text-align: center;
+    white-space: nowrap;
+    letter-spacing: 0.08em;
+  }
+}
+
 .chrome :global([data-sidebar-background]) {
   filter: none;
   transition: filter 160ms ease;

@@ -2,7 +2,7 @@
 
 import { Camera, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type DragEvent, type KeyboardEvent, useCallback, useRef, useState } from "react";
+import { type DragEvent, type KeyboardEvent, useCallback, useId, useRef, useState } from "react";
 import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { cn } from "@/lib/utils";
 import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
@@ -21,13 +21,17 @@ const snapLaunchLabelClass =
 type SnapLaunchCardsProps = {
   processInPage?: boolean;
   uploadActionHref?: string;
+  variant?: "tiles" | "explained";
 };
 
 export default function SnapLaunchCards({
   processInPage = false,
   uploadActionHref = "/?action=upload",
+  variant = "tiles",
 }: SnapLaunchCardsProps) {
   const router = useRouter();
+  const descriptionId = useId();
+  const isExplained = variant === "explained";
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -45,9 +49,14 @@ export default function SnapLaunchCards({
   const routeSelectedFile = useCallback(
     async (selected: File[]) => {
       if (!selected.length) return;
-      if (selected.length > 5) { setError("Choose up to five files."); return; }
+      if (selected.length > 5) {
+        setError("Choose up to five files.");
+        return;
+      }
       const file = selected[0];
-      const validationError = selected.map(file => validateClientUploadFile(file, "attachment")).find(Boolean);
+      const validationError = selected
+        .map((file) => validateClientUploadFile(file, "attachment"))
+        .find(Boolean);
       if (validationError) {
         setError(validationError);
         return;
@@ -163,29 +172,51 @@ export default function SnapLaunchCards({
   return (
     <>
       <div
-        className="mx-auto mt-10 grid w-full max-w-[22rem] grid-cols-2 content-center justify-items-center gap-8 pb-10 text-center sm:max-w-[25rem] sm:gap-12 max-md:mt-8 max-md:gap-[clamp(0.9rem,2.2dvh,1.4rem)]"
+        className={
+          isExplained
+            ? appearance.actions
+            : "mx-auto mt-10 grid w-full max-w-[22rem] grid-cols-2 content-center justify-items-center gap-8 pb-10 text-center sm:max-w-[25rem] sm:gap-12 max-md:mt-8 max-md:gap-[clamp(0.9rem,2.2dvh,1.4rem)]"
+        }
         role="group"
         aria-label="Choose snap or upload"
       >
         <button
           type="button"
           onClick={openCameraPicker}
-          className={cn(
-            snapLaunchTileClass,
-            appearance.tile,
-            "text-[#9a9daa] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] hover:text-[#7f8290] active:scale-95",
-          )}
-          aria-label="Snap flyer"
+          className={
+            isExplained
+              ? cn(appearance.action, appearance.cameraAction)
+              : cn(
+                  snapLaunchTileClass,
+                  appearance.tile,
+                  "text-[#9a9daa] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] hover:text-[#7f8290] active:scale-95",
+                )
+          }
+          aria-label={isExplained ? "Snap a photo" : "Snap flyer"}
+          aria-describedby={isExplained ? `${descriptionId}-camera` : undefined}
         >
           <Camera
-            className={cn(snapLaunchIconClass, "group-hover:scale-105")}
+            className={
+              isExplained ? appearance.actionIcon : cn(snapLaunchIconClass, "group-hover:scale-105")
+            }
             strokeWidth={2}
             aria-hidden="true"
           />
-          <span className="relative mt-2 flex max-w-[6.75rem] justify-center sm:mt-4 sm:max-w-[8.5rem] max-h-[620px]:max-md:mt-1.5">
-            <span className={snapLaunchLabelClass}>
-              Snap flyer
+          <span
+            className={
+              isExplained
+                ? appearance.actionText
+                : "relative mt-2 flex max-w-[6.75rem] justify-center sm:mt-4 sm:max-w-[8.5rem] max-h-[620px]:max-md:mt-1.5"
+            }
+          >
+            <span className={isExplained ? appearance.actionLabel : snapLaunchLabelClass}>
+              {isExplained ? "Snap a photo" : "Snap flyer"}
             </span>
+            {isExplained ? (
+              <span id={`${descriptionId}-camera`} className={appearance.actionDescription}>
+                Use your camera
+              </span>
+            ) : null}
           </span>
         </button>
 
@@ -196,35 +227,59 @@ export default function SnapLaunchCards({
           onDrop={handleUploadDrop}
           onDragOver={handleUploadDragOver}
           onDragLeave={handleUploadDragLeave}
-          className={cn(
-            snapLaunchTileClass,
-            appearance.tile,
-            isDragging
-              ? "scale-95 text-[#5c5be5] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff]"
-              : "text-[#9a9daa] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] hover:text-[#7f8290] active:scale-95",
-          )}
-          aria-label="Upload file"
+          className={
+            isExplained
+              ? cn(appearance.action, isDragging && appearance.dragging)
+              : cn(
+                  snapLaunchTileClass,
+                  appearance.tile,
+                  isDragging
+                    ? "scale-95 text-[#5c5be5] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff]"
+                    : "text-[#9a9daa] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] hover:text-[#7f8290] active:scale-95",
+                )
+          }
+          aria-label={isExplained ? "Upload a file" : "Upload file"}
+          aria-describedby={isExplained ? `${descriptionId}-upload` : undefined}
         >
           <Upload
-            className={cn(
-              snapLaunchIconClass,
-              isDragging ? "scale-110" : "group-hover:scale-105",
-            )}
+            className={
+              isExplained
+                ? appearance.actionIcon
+                : cn(snapLaunchIconClass, isDragging ? "scale-110" : "group-hover:scale-105")
+            }
             strokeWidth={2}
             aria-hidden="true"
           />
-          <span className="relative mt-2 flex max-w-[6.75rem] justify-center sm:mt-4 sm:max-w-[8.5rem] max-h-[620px]:max-md:mt-1.5">
-            <span className={snapLaunchLabelClass}>
-              Upload file
+          <span
+            className={
+              isExplained
+                ? appearance.actionText
+                : "relative mt-2 flex max-w-[6.75rem] justify-center sm:mt-4 sm:max-w-[8.5rem] max-h-[620px]:max-md:mt-1.5"
+            }
+          >
+            <span className={isExplained ? appearance.actionLabel : snapLaunchLabelClass}>
+              {isExplained ? "Upload a file" : "Upload file"}
             </span>
-            {isDragging ? (
+            {isExplained ? (
+              <span id={`${descriptionId}-upload`} className={appearance.actionDescription}>
+                {isDragging ? "Drop it here" : "Choose or drop a file"}
+              </span>
+            ) : null}
+            {isDragging && !isExplained ? (
               <span className="absolute -bottom-1 left-0 right-0 h-[2px] rounded-full bg-current" />
             ) : null}
           </span>
         </button>
       </div>
       {error ? (
-        <p className="mx-auto -mt-4 mb-8 max-w-md text-center text-sm font-medium text-red-600">
+        <p
+          role="alert"
+          className={
+            isExplained
+              ? appearance.error
+              : "mx-auto -mt-4 mb-8 max-w-md text-center text-sm font-medium text-red-600"
+          }
+        >
           {error}
         </p>
       ) : null}

@@ -1,21 +1,21 @@
 "use client";
 
-import { Eye, Pencil, PanelsTopLeft, ListPlus, Link2, X } from "lucide-react";
-import { EventUrlEditor } from "./EventUrlEditor";
-import { EventEditorMenuCard, EventEditorSection } from "./EventEditorFields";
+import { Eye, Link2, ListPlus, PanelsTopLeft, Pencil, X } from "lucide-react";
+import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
+import type { useMobileDrawer } from "@/hooks/useMobileDrawer";
+import { eventEditorActions } from "@/lib/event-editor";
+import { EventEditorMenuCard, EventEditorSection, EventEditorToolsRow } from "./EventEditorFields";
 import { EventPageCompositionProvider } from "./EventPageCompositionContext";
+import EventPageLayoutPicker from "./EventPageLayoutPicker";
 import {
   EventSectionBuilderProvider,
   EventSectionPalette,
   EventSectionsReadOnly,
   useEventSectionBuilder,
 } from "./EventSectionBuilder";
-import EventPageLayoutPicker from "./EventPageLayoutPicker";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { useMobileDrawer } from "@/hooks/useMobileDrawer";
-import { eventEditorActions } from "@/lib/event-editor";
-import type { EventPageEditorSession } from "./useEventPageEditor";
+import { EventUrlEditor } from "./EventUrlEditor";
 import styles from "./event-editor.module.css";
+import type { EventPageEditorSession } from "./useEventPageEditor";
 
 type Drawer = Pick<
   ReturnType<typeof useMobileDrawer>,
@@ -32,6 +32,7 @@ export function EventEditorActions({ editor }: { editor: EventPageEditorSession 
   return (
     <div className={styles.actions} role="group" aria-label="Save event">
       <button type="button" disabled={disabled} onClick={editor.cancel}>
+        <X size={17} aria-hidden="true" />
         Cancel
       </button>
       {actions.showDraft && (
@@ -114,6 +115,8 @@ export default function EventEditorWorkspace({
   viewLabels?: { page: string; controls: string };
 }) {
   const nativeBuilder = useEventSectionBuilder();
+  const panelRef = useRef<HTMLElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<EventEditorTool | null>(null);
   const renderSectionEditor = (id: string) => {
     if (sectionEditors?.[id]) return sectionEditors[id]();
@@ -136,9 +139,11 @@ export default function EventEditorWorkspace({
                     : /rsvp|attendance/i.test(id)
                       ? "rsvp"
                       : "details";
-    return sectionEditors?.[alias]?.() || (typeof controls === "function" ? controls(null) : controls);
+    return (
+      sectionEditors?.[alias]?.() || (typeof controls === "function" ? controls(null) : controls)
+    );
   };
-  const [editing, setEditing] = useState(true);
+  const [editing, setEditing] = useState(embedded);
   const [mobile, setMobile] = useState(false);
   useEffect(() => {
     const query = window.matchMedia("(max-width: 767px)");
@@ -147,7 +152,7 @@ export default function EventEditorWorkspace({
     query.addEventListener("change", sync);
     return () => query.removeEventListener("change", sync);
   }, []);
-  const mobileEditing = drawer ? drawer.mobileMenuOpen : editing;
+  const mobileEditing = embedded || (drawer ? drawer.mobileMenuOpen : editing);
   const currentEditing = mobile ? mobileEditing : editing;
   useEffect(() => {
     if (editor.error || (revealControls && revealControls !== "main")) {
@@ -158,10 +163,12 @@ export default function EventEditorWorkspace({
   const showEditing = () => {
     setEditing(true);
     drawer?.openMobileMenu();
+    requestAnimationFrame(() => panelRef.current?.focus({ preventScroll: true }));
   };
   const showPage = () => {
     setEditing(false);
     drawer?.dismissMobileMenu();
+    requestAnimationFrame(() => previewRef.current?.focus({ preventScroll: true }));
   };
   const inlineHeader = typeof controls === "function";
   const viewActions = !embedded && (
@@ -179,7 +186,11 @@ export default function EventEditorWorkspace({
         </button>
       ) : (
         <button type="button" onClick={showEditing}>
-          {pageEditing ? <PanelsTopLeft size={17} aria-hidden="true" /> : <Pencil size={17} aria-hidden="true" />}
+          {pageEditing ? (
+            <PanelsTopLeft size={17} aria-hidden="true" />
+          ) : (
+            <Pencil size={17} aria-hidden="true" />
+          )}
           {viewLabels?.controls || "Edit"}
         </button>
       )}
@@ -194,6 +205,7 @@ export default function EventEditorWorkspace({
       data-mobile-editing={mobileEditing}
       data-embedded={embedded}
       data-bottom-settings={settingsInFooter}
+      data-page-editing={pageEditing}
     >
       {editor.error && (
         <p className={styles.error} role="alert">
@@ -207,11 +219,27 @@ export default function EventEditorWorkspace({
       )}
       {notices}
       <div className={styles.body}>
-        {(!inlineHeader || !currentEditing) && !settingsInFooter && (
-          <header className={styles.header}>{viewActions}</header>
+        {!embedded && (
+          <header className={styles.header}>
+            {!pageEditing && (
+              <button
+                type="button"
+                className={styles.mobileCancel}
+                disabled={editor.busy || !editor.ready}
+                onClick={editor.cancel}
+              >
+                <X size={17} aria-hidden="true" />
+                Cancel
+              </button>
+            )}
+            {(!inlineHeader || !currentEditing || (mobile && !pageEditing)) &&
+              !settingsInFooter &&
+              viewActions}
+          </header>
         )}
         <div
           className={styles.preview}
+          ref={previewRef}
           data-appearance-scope="authored"
           role="region"
           aria-label="Event page preview panel"
@@ -220,10 +248,14 @@ export default function EventEditorWorkspace({
           inert={editor.busy ? true : undefined}
           {...drawer?.previewTouchHandlers}
         >
-          <EventSectionsReadOnly readOnly={!currentEditing && !pageEditing}>{preview}</EventSectionsReadOnly>
+          <EventSectionsReadOnly readOnly={!currentEditing && !pageEditing}>
+            {preview}
+          </EventSectionsReadOnly>
         </div>
         <aside
           className={styles.panel}
+          ref={panelRef}
+          tabIndex={-1}
           aria-label="Event editing controls"
           {...drawer?.drawerTouchHandlers}
         >
@@ -232,49 +264,88 @@ export default function EventEditorWorkspace({
             data-inline-header={inlineHeader}
             inert={editor.busy ? true : undefined}
           >
-            {editor.setComposition && sectionEditors && !tool && compositionMenu === "cards" && (
-              <div className={styles.compositionMenu}>
-                <EventEditorMenuCard
-                  title="Page sections"
-                  icon={<ListPlus size={20} />}
-                  desc="Add, edit and move sections on your page."
-                  onClick={() => setTool("sections")}
-                />
-                <EventEditorMenuCard
-                  title="Layout"
-                  icon={<PanelsTopLeft size={20} />}
-                  desc="Choose an arrangement for your sections."
-                  onClick={() => setTool("layout")}
-                />
-              </div>
+            {compositionMenu === "cards" &&
+              ((editor.setComposition && sectionEditors) ||
+                (customUrlMenu && editor.urlEditor)) && (
+                <EventEditorToolsRow>
+                  {editor.setComposition && sectionEditors && (
+                    <>
+                      <EventEditorMenuCard
+                        compact
+                        active={tool === "sections"}
+                        title="Page sections"
+                        icon={<ListPlus size={20} />}
+                        desc="Add, edit and move sections on your page."
+                        onClick={() => setTool("sections")}
+                      />
+                      <EventEditorMenuCard
+                        compact
+                        active={tool === "layout"}
+                        title="Layout"
+                        icon={<PanelsTopLeft size={20} />}
+                        desc="Choose an arrangement for your sections."
+                        onClick={() => setTool("layout")}
+                      />
+                    </>
+                  )}
+                  {customUrlMenu && editor.urlEditor && (
+                    <EventEditorMenuCard
+                      compact
+                      active={tool === "url"}
+                      title="Custom URL"
+                      icon={<Link2 size={20} />}
+                      desc="Choose your shareable web address."
+                      onClick={() => setTool("url")}
+                    />
+                  )}
+                </EventEditorToolsRow>
+              )}
+            {(["sections", "layout", "url"] as const).map(
+              (panel) =>
+                ((panel === "url" && customUrlMenu && editor.urlEditor) ||
+                  (panel !== "url" && editor.setComposition && sectionEditors)) && (
+                  <div key={panel} hidden={tool !== panel} className={styles.toolPanel}>
+                    <EventEditorSection
+                      title={
+                        panel === "url"
+                          ? "Custom URL"
+                          : panel === "layout"
+                            ? "Layout"
+                            : "Page sections"
+                      }
+                      onBack={() => setTool(null)}
+                    >
+                      {panel === "url" ? (
+                        <EventUrlEditor
+                          eventId={editor.eventId}
+                          historyClient={editor.urlEditor?.historyClient}
+                          onUpdated={editor.urlEditor?.onUpdated}
+                          onBusyChange={editor.urlEditor?.onBusyChange}
+                          disabled={editor.busy}
+                        />
+                      ) : panel === "layout" ? (
+                        <EventPageLayoutPicker
+                          value={editor.composition}
+                          onChange={editor.setComposition!}
+                          artwork={artwork}
+                          title={title}
+                        />
+                      ) : (
+                        <EventSectionPalette />
+                      )}
+                    </EventEditorSection>
+                  </div>
+                ),
             )}
-            {customUrlMenu && editor.urlEditor && !tool && compositionMenu === "cards" && (
-              <EventEditorMenuCard title="Custom URL" icon={<Link2 size={20} />} desc="Choose your shareable web address." onClick={() => setTool("url")} />
-            )}
-            {tool && (tool === "url" || editor.setComposition) && (
-              <EventEditorSection
-                title={tool === "url" ? "Custom URL" : tool === "layout" ? "Layout" : "Page sections"}
-                onBack={() => setTool(null)}
-              >
-                {tool === "url" ? (
-                  <EventUrlEditor eventId={editor.eventId} historyClient={editor.urlEditor?.historyClient} onUpdated={editor.urlEditor?.onUpdated} onBusyChange={editor.urlEditor?.onBusyChange} disabled={editor.busy} />
-                ) : tool === "layout" ? (
-                  <EventPageLayoutPicker
-                    value={editor.composition}
-                    onChange={editor.setComposition!}
-                    artwork={artwork}
-                    title={title}
-                  />
-                ) : (
-                  <EventSectionPalette />
-                )}
-              </EventEditorSection>
-            )}
-            <div hidden={Boolean(tool)}>
+            <div hidden={Boolean(tool)} className={styles.menuContent}>
               <EventEditorToolsContext.Provider
                 value={
                   editor.setComposition && sectionEditors
-                    ? { openTool: setTool, layout: editor.composition?.layout, canEditUrl: Boolean(editor.urlEditor) }
+                    ? {
+                        openTool: setTool,
+                        layout: editor.composition?.layout,
+                        canEditUrl: Boolean(editor.urlEditor),
+                      }
                     : null
                 }
               >
@@ -284,7 +355,7 @@ export default function EventEditorWorkspace({
           </div>
         </aside>
         <footer className={styles.footer} data-bottom-settings={settingsInFooter}>
-          {settingsInFooter && viewActions}
+          {viewActions}
           <EventEditorActions editor={editor} />
         </footer>
       </div>

@@ -1,10 +1,11 @@
 "use client";
 
 import { ArrowDown, ArrowUpRight } from "lucide-react";
-import { type CSSProperties, type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CreateGuess } from "@/lib/create/create-intent";
 import { eventTypeChoiceKey, eventTypeChoiceLabel } from "@/lib/create/event-type-groups";
 import { categoryTitlePalette } from "./category-title-palettes";
+import { useCategoryScrollHandoff } from "./useCategoryScrollHandoff";
 import styles from "./category-scroll-picker.module.css";
 
 export default function CategoryScrollPicker({ choices, onSelect, query, introPlayed }: {
@@ -17,6 +18,7 @@ export default function CategoryScrollPicker({ choices, onSelect, query, introPl
   const list = useRef<HTMLUListElement>(null);
   const [active, setActive] = useState(0);
   const choiceKeys = choices.map(eventTypeChoiceKey).join(",");
+  useCategoryScrollHandoff(scroller, choiceKeys);
 
   const trackSelection = useCallback(() => {
     const viewport = scroller.current;
@@ -40,6 +42,48 @@ export default function CategoryScrollPicker({ choices, onSelect, query, introPl
     if (scroller.current) scroller.current.scrollTop = 0;
     setActive(0);
   }, [choiceKeys, query]);
+
+  useLayoutEffect(() => {
+    const viewport = scroller.current;
+    const items = list.current;
+    if (!viewport || !items) return;
+    let disposed = false;
+    let frame = 0;
+    const fitLabels = () => {
+      const buttons = Array.from(items.querySelectorAll<HTMLButtonElement>("[data-creation-event-type]"));
+      // Always measure from the authored size so widening can restore it.
+      for (const button of buttons) button.style.removeProperty("--category-fit-size");
+      const fits = buttons.map(button => {
+        const label = button.firstElementChild as HTMLElement;
+        if (getComputedStyle(label).whiteSpace !== "nowrap") return null;
+        const available = label.getBoundingClientRect().width;
+        const range = document.createRange();
+        range.selectNodeContents(label);
+        const natural = range.getBoundingClientRect().width;
+        if (available <= 0 || natural <= available) return null;
+        return { button, size: parseFloat(getComputedStyle(button).fontSize) * (available - 1) / natural };
+      });
+      for (const fit of fits) {
+        if (fit) fit.button.style.setProperty("--category-fit-size", `${fit.size}px`);
+      }
+    };
+    const scheduleFit = () => {
+      if (disposed) return;
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(fitLabels);
+    };
+    fitLabels();
+    const observer = new ResizeObserver(scheduleFit);
+    observer.observe(viewport);
+    void document.fonts.ready.then(scheduleFit);
+    document.fonts.addEventListener("loadingdone", scheduleFit);
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+      document.fonts.removeEventListener("loadingdone", scheduleFit);
+    };
+  }, [choiceKeys]);
 
   useEffect(() => {
     const viewport = scroller.current;

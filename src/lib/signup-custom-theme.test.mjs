@@ -1,38 +1,11 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import path from "node:path";
 import test from "node:test";
-import ts from "typescript";
 import sharp from "sharp";
+import loadTs from "../../scripts/lib/event-messages-test-loader.cjs";
 
-const nativeRequire = createRequire(import.meta.url);
 function loader(mocks = {}) {
   const cache = new Map();
-  function load(relative) {
-    const file = path.resolve(relative);
-    if (cache.has(file)) return cache.get(file).exports;
-    const module = { exports: {} };
-    cache.set(file, module);
-    const code = ts.transpileModule(readFileSync(file, "utf8"), {
-      compilerOptions: {
-        module: ts.ModuleKind.CommonJS,
-        target: ts.ScriptTarget.ES2022,
-        esModuleInterop: true,
-      },
-    }).outputText;
-    const require = (name) => {
-      if (name in mocks) return mocks[name];
-      if (!name.startsWith(".") && !name.startsWith("@/")) return nativeRequire(name);
-      const base = name.startsWith("@/")
-        ? path.resolve("src", name.slice(2))
-        : path.resolve(path.dirname(file), name);
-      return load([base, `${base}.ts`, `${base}.tsx`].find(existsSync));
-    };
-    new Function("require", "module", "exports", code)(require, module, module.exports);
-    return module.exports;
-  }
-  return load;
+  return (relative) => loadTs(relative, mocks, cache);
 }
 const load = loader();
 const custom = load("src/lib/signup-custom-theme.ts");

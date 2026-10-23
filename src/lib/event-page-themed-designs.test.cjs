@@ -14,6 +14,7 @@ for (const extension of [".ts", ".tsx"]) Module._extensions[extension] = (mod, f
 }).outputText, file);
 
 const manifest = require("../data/event-page-themed-designs.ts");
+const { AVAILABLE_HOLIDAY_TEMPLATE_IDS } = require("../assets/holiday-template-availability.ts");
 const registrySource = ts.transpileModule(fs.readFileSync(path.resolve("src/lib/event-page-themed-designs.ts"), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
 }).outputText;
@@ -52,9 +53,9 @@ test("General-backed collections never fall back to unrelated General designs be
       const expected = count === 60 ? designs.map((design) => design.id) : [];
       assert.deepEqual(collections.getGeneralCreationDesigns(collection.id).map((design) => design.id), expected, `${collection.id}: ${count} ready in gallery`);
       assert.deepEqual(selection.getCreationTemplates({ category: collection.id, sport: null }).map((design) => design.id), expected, `${collection.id}: ${count} ready in creation`);
-      assert.equal(collections.getGeneralCreationDesigns().length, 452, "the unscoped General catalog stays available");
-      assert.equal(collections.getGeneralCreationDesigns("general").length, 452, "explicit General retains its full catalog");
-      assert.equal(collections.getGeneralCreationDesigns("holidays-seasonal").length, 440, "the holiday catalog keeps its existing designs");
+      assert.equal(collections.getGeneralCreationDesigns().length, 12 + AVAILABLE_HOLIDAY_TEMPLATE_IDS.length, "the unscoped General catalog stays available");
+      assert.equal(collections.getGeneralCreationDesigns("general").length, 12 + AVAILABLE_HOLIDAY_TEMPLATE_IDS.length, "explicit General retains its full catalog");
+      assert.equal(collections.getGeneralCreationDesigns("holidays-seasonal").length, AVAILABLE_HOLIDAY_TEMPLATE_IDS.length, "the holiday catalog keeps every ready design");
     }
   }
 });

@@ -24,7 +24,7 @@ test("left sidebar renders personalized create navigation for signed-in accounts
   );
   assert.match(source, /featureVisibility\.hasLoadedPreferences\s*\? featureVisibility\.visibleTemplateKeys : EMPTY_TEMPLATE_KEYS/);
   const openCreate = source.slice(source.indexOf("const openCreateEventPage ="), source.indexOf("const openMyEventsPage ="));
-  // Create Event opens the Create page, which lists the categories as tiles.
+  // Create event opens the page that owns the category choices.
   assert.match(openCreate, /router\.push\("\/create"\)/);
   assert.match(source, /const createMenuItems = useMemo\(\s*\(\) => createMenuEntries\.filter\(\(item\) => !isSignupFormCreateHref\(item\.href\)\)/);
 });
@@ -42,7 +42,7 @@ test("left sidebar controller resets create panel state when create access disap
   );
 });
 
-test("event creation routes open Create Event and do not activate My Events", () => {
+test("event creation routes keep unified navigation at the root and do not activate My Events", () => {
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
   const viewSource = readSource("src/app/left-sidebar.tsx");
 
@@ -56,7 +56,15 @@ test("event creation routes open Create Event and do not activate My Events", ()
   );
   assert.match(
     controllerSource,
-    /if \(!hasCreateEventAccess \|\| !activeCreateItem\) return;\s*clearEventContext\(\);\s*setSidebarPage\("createEvent"\);/,
+    /!UNIFIED_CREATION_ENABLED && isCreateEventRoute\(normalizedPathname\) \? "createEvent" : "root"/,
+  );
+  assert.match(
+    controllerSource,
+    /if \(!hasCreateEventAccess \|\| !activeCreateItem\) return;\s*clearEventContext\(\);\s*setSidebarPage\(UNIFIED_CREATION_ENABLED \? "root" : "createEvent"\);/,
+  );
+  assert.match(
+    viewSource,
+    /\{!UNIFIED_CREATION_ENABLED \? <>[\s\S]*?<CreatePanel\s+title="Create Event"[\s\S]*?<CreatePanel\s+title="Other Events"[\s\S]*?<\/> : null\}/,
   );
   assert.match(
     controllerSource,

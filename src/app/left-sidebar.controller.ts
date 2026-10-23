@@ -353,7 +353,7 @@ export function useLeftSidebarController({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>(() =>
-    isCreateEventRoute(normalizedPathname) ? "createEvent" : "root",
+    !UNIFIED_CREATION_ENABLED && isCreateEventRoute(normalizedPathname) ? "createEvent" : "root",
   );
   const [showPastMyEvents, setShowPastMyEvents] = useState(false);
   const [showPastInvitedEvents, setShowPastInvitedEvents] = useState(false);
@@ -1061,7 +1061,7 @@ export function useLeftSidebarController({
   useEffect(() => {
     if (!hasCreateEventAccess || !activeCreateItem) return;
     clearEventContext();
-    setSidebarPage("createEvent");
+    setSidebarPage(UNIFIED_CREATION_ENABLED ? "root" : "createEvent");
   }, [activeCreateItem, clearEventContext, hasCreateEventAccess]);
 
   const openCompactEventsPage = useCallback(
@@ -1079,7 +1079,7 @@ export function useLeftSidebarController({
       setSidebarPage("root");
       return;
     }
-    // Create Event opens the Create page; its category list appears there as tiles.
+    // Category choices live on the Create page; keep the main sidebar available.
     clearEventContext();
     setForcedCreateActiveLabel(null);
     setSidebarPage("root");

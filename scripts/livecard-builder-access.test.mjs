@@ -81,6 +81,7 @@ function setup({ signedIn = true, admin = false, existing = {}, ownerId = "owner
     },
     "react/jsx-runtime": { jsx: (type, props) => ({ type, props }) },
     "./LiveCardBuilder": { default: "LiveCardBuilder" },
+    "./LiveCardIntro": { default: "LiveCardIntro" },
   };
   imports["@/lib/admin/require-admin"] = load("src/lib/admin/require-admin.ts", imports);
   return { imports, checks: () => checks, writes: () => writes };
@@ -106,16 +107,32 @@ test("AI, artwork and location endpoints require sign-in and throttle authentica
   }
 });
 
-test("all signed-in accounts can open and resume the guided builder", async () => {
+test("Live Card entry introduces the product and keeps builder entry explicit for all signed-in accounts", async () => {
   for (const options of [{ signedIn: false }, { admin: false }, { admin: true }]) {
     const context = setup(options);
     const page = load("src/app/live-cards/page.tsx", context.imports).default;
     if (options.signedIn !== false) {
-      const result = await page({ searchParams: Promise.resolve({ edit: "saved" }) });
-      assert.equal(result.props.initialEventId, "saved");
+      for (const params of [{}, { create: "0" }, { edit: "" }, { intake: "" }, { edit: " ", intake: " " }]) {
+        const result = await page({ searchParams: Promise.resolve(params) });
+        assert.equal(result.type, "LiveCardIntro");
+      }
+      for (const [params, eventId] of [
+        [{ create: "1" }, null],
+        [{ edit: "saved" }, "saved"],
+        [{ intake: "imported" }, null],
+        [{ create: ["1", "0"] }, null],
+        [{ edit: [" saved ", "another"] }, "saved"],
+        [{ intake: [" imported ", "another"] }, null],
+      ]) {
+        const result = await page({ searchParams: Promise.resolve(params) });
+        assert.equal(result.type, "LiveCardBuilder");
+        assert.equal(result.props.initialEventId, eventId);
+      }
       assert.equal(context.checks(), 0);
     } else {
-      await assert.rejects(page({ searchParams: Promise.resolve({}) }), /redirect:\//);
+      for (const params of [{}, { create: "1" }, { edit: "saved" }, { intake: "imported" }]) {
+        await assert.rejects(page({ searchParams: Promise.resolve(params) }), /redirect:\//);
+      }
     }
   }
 });

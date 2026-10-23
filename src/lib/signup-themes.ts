@@ -2,6 +2,11 @@ import type { CSSProperties } from "react";
 import { GALLERY_FONT_PAIRS, LIBRARY_FONT_PAIRS } from "./font-library";
 import { normalizeSignupCustomTheme } from "@/lib/signup-custom-theme";
 import { getSignupDesign, SIGNUP_DESIGN_PALETTES, type SignupDesign } from "@/lib/signup-designs";
+import {
+  getHolidayBackground,
+  getHolidayBackgroundChoice,
+  normalizeHolidayBackgroundChoice,
+} from "@/lib/holiday-backgrounds";
 import type {
   SignupAppearance,
   SignupFontPair,
@@ -178,11 +183,13 @@ export function createSignupAppearance(
 ): SignupAppearance {
   const theme = getSignupTheme(id) || SIGNUP_THEMES[0];
   const design = getSignupDesign(designId);
+  const background = getHolidayBackground(design?.id);
   return {
     version: 1,
     themeId: theme.id,
     themeRevision: 1,
     ...(design ? { designId: design.id } : {}),
+    ...(background ? { pageBackground: getHolidayBackgroundChoice(background.id, "template") } : {}),
     palette: "original",
     fontPair: design?.fontPair || theme.fontPair,
     headerLayout: design ? "designed" : theme.headerLayout,
@@ -201,7 +208,14 @@ export function normalizeSignupAppearance(value: unknown): SignupAppearance | nu
   if (!theme) return null;
   const design = typeof raw.designId === "string" ? getSignupDesign(raw.designId) : undefined;
   const base = createSignupAppearance(theme.id, design?.id || "");
+  delete base.pageBackground;
   const customTheme = normalizeSignupCustomTheme(raw.customTheme);
+  const savedBackground = !customTheme && design
+    ? normalizeHolidayBackgroundChoice(raw.pageBackground)
+    : undefined;
+  const pageBackground = savedBackground && getHolidayBackground(design?.id, savedBackground)?.id === savedBackground.presetId
+    ? savedBackground
+    : undefined;
   const position =
     raw.imagePosition && typeof raw.imagePosition === "object"
       ? (raw.imagePosition as Record<string, unknown>)
@@ -211,6 +225,9 @@ export function normalizeSignupAppearance(value: unknown): SignupAppearance | nu
   return {
     ...base,
     designId: customTheme ? undefined : design?.id,
+    // Do not inherit the new-template default while loading an existing form.
+    // An absent/invalid choice intentionally retains its original palette.
+    ...(pageBackground ? { pageBackground } : {}),
     ...(customTheme ? { customTheme } : {}),
     palette: raw.palette === "soft" || raw.palette === "ink" ? raw.palette : "original",
     fontPair: SIGNUP_FONT_PAIRS.some((pair) => pair.id === raw.fontPair)
@@ -274,7 +291,22 @@ export function resolveSignupThemeStyle(form: SignupForm): CSSProperties {
   const theme = getSignupTheme(appearance?.themeId) || SIGNUP_THEMES[0];
   const design = getSignupDesign(appearance?.designId);
   const customColors = appearance?.customTheme?.colors;
-  const colors = customColors || (design ? SIGNUP_DESIGN_PALETTES[design.palette] : theme);
+  const background = resolveSignupHolidayBackground(appearance);
+  const backgroundSurface = background && signupContrast(background.surface, "#FFFFFF") > signupContrast(background.surface, "#000000")
+    ? "#FFFDF7"
+    : background?.surface;
+  const surfaceInk = background && backgroundSurface && signupContrast(background.ink, backgroundSurface) >= 4.5
+    ? background.ink
+    : "#252421";
+  const backgroundColors = background ? {
+    page: background.page,
+    surface: backgroundSurface!,
+    soft: `color-mix(in srgb, ${background.secondary} 15%, ${backgroundSurface})`,
+    ink: surfaceInk,
+    accent: background.accent,
+    secondary: background.secondary,
+  } : undefined;
+  const colors = customColors || backgroundColors || (design ? SIGNUP_DESIGN_PALETTES[design.palette] : theme);
   const font =
     SIGNUP_FONT_PAIRS.find((pair) => pair.id === appearance?.fontPair) || SIGNUP_FONT_PAIRS[0];
   const custom = appearance?.accent;
@@ -284,41 +316,60 @@ export function resolveSignupThemeStyle(form: SignupForm): CSSProperties {
       : appearance?.palette === "ink"
         ? colors.ink
         : colors.accent;
+  const readableSurfaces = customColors
+    ? [customColors.page, customColors.surface, customColors.soft]
+    : backgroundColors ? [backgroundColors.surface] : [];
   const accentText =
-    customColors &&
-    [customColors.page, customColors.surface, customColors.soft].some(
+    readableSurfaces.some(
       (color) => signupContrast(accent, color) < 4.5,
     )
       ? colors.ink
       : accent;
   return {
-    "--signup-page": appearance
-      ? appearance.palette === "soft"
+    // Form controls use this paper color too. Keep their surface light while
+    // the page wrapper renders the independently selected holiday background.
+    "--signup-page": backgroundColors ? backgroundColors.surface : appearance
+      ? !background && appearance.palette === "soft"
         ? colors.soft
         : colors.page
       : form.header?.backgroundColor || "#F5F5F4",
     "--signup-surface":
       customColors?.surface ||
+      backgroundColors?.surface ||
       (design ? SIGNUP_DESIGN_PALETTES[design.palette].surface : "#FFFFFF"),
     "--signup-text": appearance ? colors.ink : "#222D40",
     "--signup-muted":
-      design || customColors ? `color-mix(in srgb, ${colors.ink} 80%, ${colors.page})` : "#5D625F",
+      design || customColors ? `color-mix(in srgb, ${colors.ink} 80%, ${backgroundColors?.surface || colors.page})` : "#5D625F",
     "--signup-border":
-      design || customColors ? `color-mix(in srgb, ${colors.ink} 24%, ${colors.page})` : "#DEDCD5",
+      design || customColors ? `color-mix(in srgb, ${colors.ink} 24%, ${backgroundColors?.surface || colors.page})` : "#DEDCD5",
     "--signup-accent": accent,
     "--signup-accent-text": accentText,
     "--signup-on-accent": signupContrast(accent, "#FFFFFF") >= 4.5 ? "#FFFFFF" : "#000000",
     "--signup-soft": colors.soft,
     "--signup-secondary":
       customColors?.secondary ||
+      backgroundColors?.secondary ||
       (design ? SIGNUP_DESIGN_PALETTES[design.palette].secondary : theme.soft),
     "--signup-focus": accentText,
+    ...(background ? {
+      "--signup-canvas-page": background.page,
+      "--signup-page-text": background.ink,
+      "--signup-page-border": `color-mix(in srgb, ${background.ink} 24%, ${background.page})`,
+    } : {}),
     "--signup-heading-font": font.heading,
     "--signup-body-font": font.body,
     "--signup-radius": appearance?.slotLayout === "rows" ? "0.5rem" : "1rem",
     "--signup-slot-padding": appearance?.density === "compact" ? "0.75rem" : "1rem",
     "--signup-gap": appearance?.density === "compact" ? "0.5rem" : "0.85rem",
   } as CSSProperties;
+}
+
+/** Only an explicit saved choice opts a form into the holiday background system. */
+export function resolveSignupHolidayBackground(appearance?: SignupAppearance | null) {
+  if (appearance?.customTheme || !appearance?.pageBackground) return undefined;
+  const choice = normalizeHolidayBackgroundChoice(appearance.pageBackground);
+  const background = choice ? getHolidayBackground(appearance.designId, choice) : undefined;
+  return background?.id === choice?.presetId ? background : undefined;
 }
 
 export function resolveSignupDesign(

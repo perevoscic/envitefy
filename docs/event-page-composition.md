@@ -4,6 +4,14 @@ Every authored Event Page category uses `EventEditorWorkspace` with scoped `sect
 
 Native categories can add information sections containing a heading and body. Their existing sections keep the category's editor fields and native content. Layout thumbnails apply to body sections while preserving the template's hero and artwork; **Template layout** removes the body layout override. Custom generated/uploaded pages use the same builder and their existing full-page layout thumbnails.
 
+## Choosing sections
+
+**Page sections** lists every available section directly in the panel, alongside **On your page** management. Hosts choose an existing category section, an information preset, or **Custom section** without opening a separate Add section chooser. Choosing a section opens its scoped editor; the editing dialog remains available for entering its content.
+
+The information presets are **Schedule**, **Venue & directions**, **Parking & arrival**, **Dress code**, **What to bring**, **Food & drinks**, **Accessibility**, **Travel & hotels**, **Things to do**, **FAQs**, **Contact host**, and **Event updates**. Each supplies an editable heading with an empty body. Custom section starts with the editable heading **Information** and an empty body. Presets never insert sample event facts, answers, contact information, reservations or guest actions.
+
+When a category already supplies an equivalent native section, the list uses that section and its existing editor instead of adding a second information preset. Hidden sections can be restored with their contents retained. **On your page** keeps editing, reordering and Remove together, with Undo available after changes. Pairing remains available on the editable page. All changes remain in memory until an explicit save.
+
 ## Saved representation
 
 Native event data stores optional `eventPageComposition`:
@@ -29,9 +37,12 @@ The public event route wraps native pages in a read-only `EventPageCompositionPr
 
 For a future category, supply scoped `sectionEditors` to `EventEditorWorkspace`, wrap the native body with `EventPageSections` (or the existing `TemplateBodyLayout`), and use stable section IDs in both editor and guest renderer. Keep the hero and footer outside the body. Use the shared save lifecycle rather than saving when a control changes.
 
+`TemplateBodyLayout` reserves equal responsive page gutters of at least 16px around every body arrangement, including a single visible section and narrow desktop previews. Single-section normalization fills the space inside those gutters; retain the template's panel padding and full-width hero artwork.
+
 ## Verification
 
 - `src/lib/event-page-composition.test.cjs`: normalization, safe text, saved order, hidden sections, guest controls, all seven layouts and legacy markup.
+- `src/lib/event-information-section-presets.test.cjs`: informational presets, native identity and heading matching, retained hidden sections and independent functional sections.
 - `src/lib/event-section-layout.test.cjs`: existing football/gymnastics arrangements and guest pages.
 - `scripts/event-editor-browser.test.cjs`: desktop and phone editing, adding, Undo/restoring, moving, native field editing, explicit saves, reopen and publication.
 - `scripts/event-section-layout-browser.test.cjs`: rendered section widths, centered Minimal/Poster layouts, toolbar containment and responsive columns in editing and guest views. The shared canvas needs an explicit width because inline-size containment and auto margins otherwise collapse centered grid items; responsive rules target its descendants so narrow previews also work on desktop.

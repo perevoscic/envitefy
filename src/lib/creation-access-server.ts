@@ -4,9 +4,7 @@ import { getEventDiscoveryByEventId, getEventHistoryById, query, withClient, typ
 import { getEventPermissions } from "@/lib/event-collaboration";
 import { approvedCreationPreferences, creationAllowed, eventCreationRequirement, normalizeCreationCategory, normalizeCreationProduct, resolveCreationAccess, type CreationAccess, type CreationProduct } from "./creation-access";
 
-let schema: Promise<unknown> | undefined;
-export function ensureCreationAccessSchema() {
-  schema ||= query(`CREATE TABLE IF NOT EXISTS creation_account_access (
+const CREATION_ACCESS_SCHEMA = `CREATE TABLE IF NOT EXISTS creation_account_access (
     user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     policy text NOT NULL DEFAULT 'standard' CHECK(policy IN ('standard','restricted')),
     categories text[] NOT NULL DEFAULT '{}', products text[] NOT NULL DEFAULT '{}',
@@ -23,8 +21,32 @@ export function ensureCreationAccessSchema() {
   DO $$ BEGIN
     IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='anon') THEN REVOKE ALL ON TABLE creation_account_access,creation_access_requests FROM anon; END IF;
     IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN REVOKE ALL ON TABLE creation_account_access,creation_access_requests FROM authenticated; END IF;
-  END $$;`)
-    .catch((error) => { schema = undefined; throw error; });
+  END $$;`;
+
+let schema: Promise<void> | undefined;
+export function ensureCreationAccessSchema(): Promise<void> {
+  schema ||= withClient(async (client) => {
+    // Cold workers must not repeat ALTER TABLE's exclusive locks on a migrated
+    // database while other requests are reading the account's current grants.
+    const ready = await client.query<{ ready: boolean }>(`
+      SELECT count(*) = 2 AND bool_and(c.relrowsecurity AND NOT EXISTS (
+        SELECT 1 FROM aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) grants
+        LEFT JOIN pg_roles r ON r.oid = grants.grantee
+        WHERE grants.grantee = 0 OR r.rolname IN ('anon', 'authenticated')
+      )) AND to_regclass('public.creation_access_requests_pending') IS NOT NULL AS ready
+      FROM pg_class c WHERE c.oid IN (
+        to_regclass('public.creation_account_access'),
+        to_regclass('public.creation_access_requests'))`);
+    if (ready.rows[0]?.ready) return;
+    await client.query("BEGIN");
+    try {
+      await client.query(CREATION_ACCESS_SCHEMA);
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    }
+  }).catch((error) => { schema = undefined; throw error; });
   return schema;
 }
 export class CreationAccessError extends Error {

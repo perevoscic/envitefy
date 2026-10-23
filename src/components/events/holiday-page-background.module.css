@@ -1,0 +1,733 @@
+.page {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  min-height: inherit;
+}
+.content {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  min-height: inherit;
+}
+.decoration {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  background-color: transparent !important;
+  color: var(--holiday-accent);
+  contain: paint;
+}
+.decoration::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 1px solid color-mix(in srgb, var(--holiday-accent) 22%, transparent);
+  border-radius: 3px;
+}
+.decoration[data-holiday-treatment="corners"]::before {
+  border-block-color: transparent;
+  inset: 38px 22px;
+}
+.decoration[data-holiday-treatment="scatter"]::before {
+  border: 0;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--holiday-secondary) 18%, transparent) 1px, transparent 1.5px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to right, black, transparent 13%, transparent 87%, black);
+}
+.decoration[data-holiday-treatment="canopy"]::before {
+  inset: 14px 0 auto;
+  height: 72px;
+  border: 0;
+  border-top: 2px solid color-mix(in srgb, var(--holiday-accent) 30%, transparent);
+  border-radius: 0 0 50% 50%;
+}
+.decoration[data-holiday-treatment="horizon"]::before {
+  inset: auto 0 0;
+  height: 140px;
+  border: 0;
+  background: linear-gradient(transparent, color-mix(in srgb, var(--holiday-secondary) 12%, transparent));
+}
+.cluster {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: .36;
+  transform: rotate(-12deg);
+}
+.cluster[data-position="start"] { top: 32px; left: 24px; }
+.cluster[data-position="end"] { top: 38px; right: 24px; transform: rotate(12deg); }
+.cluster[data-position="lowerStart"] { bottom: 40px; left: 26px; transform: rotate(12deg); }
+.cluster[data-position="lowerEnd"] { bottom: 32px; right: 26px; transform: rotate(-12deg); }
+.mark {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 34px;
+  font: 32px/1 Georgia, serif;
+  text-align: center;
+  transform: translateY(calc(var(--mark-index) * 7px)) rotate(calc(var(--mark-index) * 12deg));
+  color: var(--holiday-accent);
+}
+.mark:nth-child(2) { color: var(--holiday-secondary); scale: .72; }
+.mark[data-motif="ghosts"] {
+  width: 26px;
+  height: 34px;
+  background: var(--holiday-surface);
+  border: 1px solid color-mix(in srgb, var(--holiday-accent) 55%, transparent);
+  border-radius: 50% 50% 5% 5%;
+  clip-path: polygon(0 0,100% 0,100% 100%,83% 86%,66% 100%,50% 86%,33% 100%,17% 86%,0 100%);
+}
+.mark[data-motif="ghosts"]::before {
+  content: "";
+  position: absolute;
+  top: 11px;
+  left: 7px;
+  width: 4px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--holiday-ink);
+  box-shadow: 8px 0 var(--holiday-ink);
+}
+.mark[data-motif="pumpkins"] {
+  width: 33px;
+  height: 27px;
+  border-radius: 44%;
+  background: var(--holiday-accent);
+  border-inline: 5px solid var(--holiday-secondary);
+  box-shadow: inset 1px 0 var(--holiday-page), inset -1px 0 var(--holiday-page);
+}
+.mark[data-motif="pumpkins"]::before {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 8px;
+  background: var(--holiday-ink);
+  top: -6px;
+  left: 10px;
+  rotate: 12deg;
+}
+.mark[data-motif="evergreen"] {
+  width: 29px;
+  height: 38px;
+  background: var(--holiday-accent);
+  clip-path: polygon(50% 0,80% 30%,65% 30%,95% 60%,76% 60%,100% 87%,56% 87%,56% 100%,44% 100%,44% 87%,0 87%,24% 60%,5% 60%,35% 30%,20% 30%);
+}
+.mark[data-motif="candles"], .mark[data-motif="lanterns"] {
+  width: 16px;
+  height: 25px;
+  margin-inline: 5px;
+  border: 1px solid currentColor;
+  background: var(--holiday-secondary);
+  border-radius: 2px;
+}
+.mark[data-motif="candles"]::before {
+  content: "";
+  position: absolute;
+  width: 7px;
+  height: 12px;
+  border-radius: 80% 0 70% 40%;
+  background: var(--holiday-accent);
+  rotate: -25deg;
+  top: -16px;
+  left: 3px;
+}
+.mark[data-motif="lanterns"] {
+  width: 26px;
+  height: 31px;
+  border-radius: 45%;
+  border-block: 4px solid var(--holiday-accent);
+  box-shadow: inset 3px 0 color-mix(in srgb, var(--holiday-accent) 25%, transparent), inset -3px 0 color-mix(in srgb, var(--holiday-accent) 25%, transparent);
+}
+.mark[data-motif="lanterns"]::before {
+  content: "";
+  position: absolute;
+  height: 12px;
+  width: 1px;
+  background: currentColor;
+  top: -15px;
+  left: 11px;
+  box-shadow: 0 43px currentColor;
+}
+.mark[data-motif="corn"] {
+  width: 17px;
+  height: 33px;
+  border-radius: 50%;
+  border: 3px solid var(--holiday-accent);
+  background: repeating-linear-gradient(0deg,var(--holiday-secondary) 0 4px,var(--holiday-accent) 4px 5px);
+  rotate: 20deg;
+}
+.mark[data-motif="books"] {
+  width: 31px;
+  height: 24px;
+  border: 2px solid currentColor;
+  border-radius: 2px 6px 1px 1px;
+  background: linear-gradient(90deg,transparent 47%,currentColor 48% 52%,transparent 53%);
+}
+.mark[data-motif="graduation"] {
+  width: 33px;
+  height: 22px;
+  background: currentColor;
+  clip-path: polygon(50% 0,100% 40%,80% 55%,80% 86%,50% 100%,20% 86%,20% 55%,0 40%);
+}
+.decoration[data-holiday-treatment="canopy"] .cluster[data-position^="lower"] { display: none; }
+.decoration[data-holiday-treatment="horizon"] .cluster[data-position="start"],
+.decoration[data-holiday-treatment="horizon"] .cluster[data-position="end"] { display: none; }
+.decoration[data-holiday-compact] .cluster { zoom: .55; }
+.decoration[data-holiday-compact]::before { inset: 6px; }
+.decoration[data-holiday-compact] .cluster[data-position="start"] { top: 14px; left: 9px; }
+.decoration[data-holiday-compact] .cluster[data-position="end"] { top: 16px; right: 9px; }
+.decoration[data-holiday-compact] .cluster[data-position="lowerStart"] { bottom: 14px; left: 9px; }
+.decoration[data-holiday-compact] .cluster[data-position="lowerEnd"] { bottom: 14px; right: 9px; }
+
+/* Expanded papers are static CSS textures. They sit below page content, while
+   motifs remain at the outer edges; neither layer changes the artwork colors. */
+.material {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--holiday-accent);
+  opacity: .1;
+}
+.decoration[data-holiday-treatment="plain"]::before { display: none; }
+.decoration[data-holiday-material] .cluster { opacity: .27; }
+.decoration[data-holiday-material="linen"] .material {
+  background-image: repeating-linear-gradient(0deg, currentColor 0 1px, transparent 1px 4px), repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 5px);
+  opacity: .045;
+}
+.decoration[data-holiday-material="parchment"] .material {
+  background-image: radial-gradient(ellipse at 0 10%, currentColor, transparent 48%), radial-gradient(ellipse at 100% 95%, currentColor, transparent 42%), repeating-linear-gradient(103deg, transparent 0 22px, currentColor 23px, transparent 24px 57px);
+  opacity: .065;
+}
+.decoration[data-holiday-material="grain"] .material {
+  background-image: radial-gradient(ellipse, currentColor .6px, transparent 1px), radial-gradient(ellipse, currentColor .5px, transparent 1px);
+  background-size: 7px 9px, 11px 13px;
+  background-position: 0 0, 3px 5px;
+  opacity: .065;
+}
+.decoration[data-holiday-material="stripes"] .material {
+  background-image: repeating-linear-gradient(135deg, currentColor 0 12px, transparent 12px 38px);
+  opacity: .045;
+}
+.decoration[data-holiday-material="gingham"] .material {
+  background-image: repeating-linear-gradient(0deg, currentColor 0 18px, transparent 18px 36px), repeating-linear-gradient(90deg, currentColor 0 18px, transparent 18px 36px);
+  opacity: .055;
+}
+.decoration[data-holiday-material="plaid"] .material {
+  background-image: repeating-linear-gradient(0deg, currentColor 0 2px, transparent 2px 8px, currentColor 8px 9px, transparent 9px 40px, currentColor 40px 53px, transparent 53px 72px), repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 8px, currentColor 8px 9px, transparent 9px 40px, currentColor 40px 53px, transparent 53px 72px);
+  opacity: .045;
+}
+.decoration[data-holiday-material="speckle"] .material {
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1.5px), radial-gradient(circle, currentColor 1.5px, transparent 2px), radial-gradient(circle, currentColor .6px, transparent 1px);
+  background-size: 23px 31px, 47px 53px, 13px 17px;
+  background-position: 0 0, 12px 8px, 6px 9px;
+  opacity: .07;
+}
+.decoration[data-holiday-material="tiles"] .material {
+  background-image: linear-gradient(45deg, transparent 48.5%, currentColor 49% 51%, transparent 51.5%), linear-gradient(-45deg, transparent 48.5%, currentColor 49% 51%, transparent 51.5%);
+  background-size: 54px 54px;
+  opacity: .05;
+}
+.decoration[data-holiday-material="foil"] .material {
+  background-image: repeating-linear-gradient(115deg, transparent 0 38px, currentColor 39px 40px, transparent 41px 75px), linear-gradient(155deg, transparent 20%, currentColor 50%, transparent 80%);
+  mask-image: linear-gradient(to right, black, transparent 28%, transparent 72%, black);
+  opacity: .14;
+}
+.decoration[data-holiday-material="watercolor"] .material {
+  background-image: radial-gradient(ellipse 45% 35% at 0 4%, currentColor, transparent), radial-gradient(ellipse 35% 40% at 100% 88%, var(--holiday-secondary), transparent), radial-gradient(ellipse 30% 20% at 100% 0, currentColor, transparent);
+  opacity: .16;
+}
+.decoration[data-holiday-material="wood"] .material {
+  background-image: repeating-linear-gradient(88deg, transparent 0 11px, currentColor 12px, transparent 13px 38px, currentColor 39px, transparent 40px 72px), repeating-linear-gradient(90deg, transparent 0 121px, currentColor 122px 124px, transparent 125px 248px);
+  opacity: .07;
+}
+.decoration[data-holiday-material="starlight"] .material {
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1.8px), radial-gradient(circle, currentColor .6px, transparent 1px), radial-gradient(ellipse at 50% 0, currentColor, transparent 55%);
+  background-size: 61px 67px, 29px 41px, 100% 100%;
+  background-position: 0 0, 17px 23px, 0 0;
+  mask-image: linear-gradient(to right, black, transparent 24%, transparent 76%, black);
+  opacity: .22;
+}
+.decoration[data-holiday-material="notebook"] .material {
+  background-image: repeating-linear-gradient(0deg, transparent 0 27px, currentColor 27px 28px), linear-gradient(90deg, transparent 0 39px, currentColor 39px 40px, transparent 40px);
+  opacity: .065;
+}
+
+/* A treatment changes the composition as well as the individual silhouette. */
+.decoration[data-holiday-treatment="frame"]::before {
+  inset: 14px;
+  border: 4px double color-mix(in srgb, var(--holiday-accent) 27%, transparent);
+  border-radius: 20px 2px;
+}
+.decoration[data-holiday-treatment="frame"] .cluster[data-position="start"],
+.decoration[data-holiday-treatment="frame"] .cluster[data-position="end"] { top: 42px; }
+.decoration[data-holiday-treatment="garland"]::before {
+  inset: 8px -4% auto;
+  height: 86px;
+  border: 0;
+  border-bottom: 2px solid color-mix(in srgb, var(--holiday-accent) 32%, transparent);
+  border-radius: 0 0 50% 50%;
+}
+.decoration[data-holiday-treatment="garland"] .cluster[data-position="start"],
+.decoration[data-holiday-treatment="garland"] .cluster[data-position="end"] { top: 55px; }
+.decoration[data-holiday-treatment="garland"] .cluster[data-position^="lower"] { display: none; }
+.decoration[data-holiday-treatment="medallion"]::before,
+.decoration[data-holiday-treatment="medallion"]::after {
+  content: "";
+  position: absolute;
+  inset: -78px auto auto calc(50% - 82px);
+  width: 164px;
+  height: 164px;
+  border: 5px double color-mix(in srgb, var(--holiday-accent) 24%, transparent);
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, transparent 0 12deg, color-mix(in srgb, var(--holiday-secondary) 14%, transparent) 12deg 14deg, transparent 14deg 24deg);
+}
+.decoration[data-holiday-treatment="medallion"]::after { inset: auto auto -78px calc(50% - 82px); }
+.decoration[data-holiday-treatment="medallion"] .cluster { gap: 5px; }
+.decoration[data-holiday-treatment="medallion"] .mark:nth-child(2) { scale: .9; }
+.decoration[data-holiday-treatment="columns"]::before {
+  inset: 0 12px;
+  border: 0;
+  border-inline: 8px double color-mix(in srgb, var(--holiday-accent) 25%, transparent);
+  border-radius: 0;
+}
+.decoration[data-holiday-treatment="columns"] .cluster { flex-direction: column; gap: 10px; }
+.decoration[data-holiday-treatment="columns"] .cluster[data-position="start"],
+.decoration[data-holiday-treatment="columns"] .cluster[data-position="lowerStart"] { left: 30px; }
+.decoration[data-holiday-treatment="columns"] .cluster[data-position="end"],
+.decoration[data-holiday-treatment="columns"] .cluster[data-position="lowerEnd"] { right: 30px; }
+
+/* New silhouettes deliberately use CSS rather than emoji or SVG patterns. */
+.mark[data-motif="bats"] {
+  width: 42px;
+  height: 25px;
+  background: currentColor;
+  clip-path: polygon(0 12%,18% 31%,31% 9%,40% 35%,44% 3%,50% 14%,56% 3%,60% 35%,69% 9%,82% 31%,100% 12%,92% 66%,77% 58%,67% 84%,57% 76%,50% 100%,43% 76%,33% 84%,23% 58%,8% 66%);
+}
+.mark[data-motif="webs"] {
+  width: 36px;
+  height: 36px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background:
+    linear-gradient(0deg, transparent 47%, currentColor 48% 52%, transparent 53%),
+    linear-gradient(45deg, transparent 48%, currentColor 49% 51%, transparent 52%),
+    linear-gradient(90deg, transparent 47%, currentColor 48% 52%, transparent 53%),
+    linear-gradient(135deg, transparent 48%, currentColor 49% 51%, transparent 52%);
+}
+.mark[data-motif="webs"]::before,
+.mark[data-motif="webs"]::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+.mark[data-motif="webs"]::after { inset: 11px; }
+.mark[data-motif="cats"] {
+  width: 29px;
+  height: 31px;
+  background: currentColor;
+  clip-path: polygon(0 0,31% 18%,69% 18%,100% 0,94% 70%,77% 94%,50% 100%,23% 94%,6% 70%);
+}
+.mark[data-motif="cats"]::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 15px;
+  width: 4px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--holiday-page);
+  box-shadow: 10px 0 var(--holiday-page);
+}
+.mark[data-motif="witch-hat"] {
+  width: 38px;
+  height: 35px;
+  background: linear-gradient(0deg, currentColor 0 25%, var(--holiday-secondary) 26% 34%, currentColor 35%);
+  clip-path: polygon(45% 0,62% 10%,57% 17%,75% 75%,100% 83%,96% 97%,6% 100%,0 85%,26% 76%);
+}
+.mark[data-motif="skulls"] {
+  width: 28px;
+  height: 25px;
+  margin-bottom: 6px;
+  background: currentColor;
+  border-radius: 45% 45% 25% 25%;
+}
+.mark[data-motif="skulls"]::before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 5px;
+  width: 6px;
+  height: 7px;
+  background: var(--holiday-page);
+  border-radius: 50%;
+  box-shadow: 12px 0 var(--holiday-page);
+}
+.mark[data-motif="skulls"]::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 7px;
+  width: 14px;
+  height: 10px;
+  background: repeating-linear-gradient(90deg,currentColor 0 3px,transparent 3px 4px);
+}
+.mark[data-motif="candy"] {
+  width: 40px;
+  height: 23px;
+  background: repeating-linear-gradient(65deg,currentColor 0 6px,var(--holiday-secondary) 6px 11px);
+  clip-path: polygon(0 5%,22% 29%,32% 8%,68% 8%,78% 29%,100% 5%,96% 50%,100% 95%,78% 71%,68% 92%,32% 92%,22% 71%,0 95%,4% 50%);
+}
+.mark[data-motif="branches"] {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(130deg,transparent 47%,currentColor 48% 52%,transparent 53%);
+}
+.mark[data-motif="branches"]::before,
+.mark[data-motif="branches"]::after {
+  content: "";
+  position: absolute;
+  width: 15px;
+  height: 8px;
+  border-radius: 90% 0 90% 0;
+  background: currentColor;
+  top: 9px;
+  left: 4px;
+  rotate: 12deg;
+  box-shadow: 10px 10px currentColor;
+}
+.mark[data-motif="branches"]::after { top: 5px; left: 17px; rotate: 95deg; }
+.mark[data-motif="keys"] {
+  width: 16px;
+  height: 16px;
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  margin: 0 8px 18px 0;
+}
+.mark[data-motif="keys"]::before {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 22px;
+  background: currentColor;
+  top: 10px;
+  left: 10px;
+  rotate: -35deg;
+  transform-origin: top;
+}
+.mark[data-motif="keys"]::after {
+  content: "";
+  position: absolute;
+  width: 7px;
+  height: 3px;
+  background: currentColor;
+  top: 22px;
+  left: 17px;
+  rotate: -35deg;
+  box-shadow: 0 5px currentColor;
+}
+.mark[data-motif="bottles"] {
+  width: 23px;
+  height: 32px;
+  border-radius: 4px 4px 7px 7px;
+  border: 2px solid currentColor;
+  background: linear-gradient(transparent 35%,var(--holiday-secondary) 36%);
+  clip-path: polygon(29% 0,71% 0,71% 23%,100% 38%,100% 100%,0 100%,0 38%,29% 23%);
+}
+.mark[data-motif="bottles"]::before {
+  content: "";
+  position: absolute;
+  inset: 15px 4px 5px;
+  border: 1px solid currentColor;
+  background: var(--holiday-page);
+  border-radius: 50%;
+}
+.mark[data-motif="windows"] {
+  width: 28px;
+  height: 37px;
+  border: 2px solid currentColor;
+  border-radius: 50% 50% 0 0;
+  background: linear-gradient(90deg,transparent 46%,currentColor 47% 53%,transparent 54%), linear-gradient(0deg,transparent 47%,currentColor 48% 52%,transparent 53%);
+}
+.mark[data-motif="snowflakes"] { font-size: 36px; }
+.mark[data-motif="ornaments"] {
+  width: 28px;
+  height: 31px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  background: linear-gradient(0deg,transparent 42%,currentColor 43% 48%,transparent 49% 53%,currentColor 54% 59%,transparent 60%);
+}
+.mark[data-motif="ornaments"]::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: -8px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid currentColor;
+  border-radius: 2px 2px 0 0;
+}
+.mark[data-motif="gifts"] {
+  width: 29px;
+  height: 26px;
+  border: 1px solid currentColor;
+  background: linear-gradient(90deg,transparent 42%,currentColor 43% 57%,transparent 58%),linear-gradient(0deg,var(--holiday-secondary) 65%,currentColor 66% 72%,var(--holiday-secondary) 73%);
+}
+.mark[data-motif="gifts"]::before,
+.mark[data-motif="gifts"]::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 3px;
+  width: 12px;
+  height: 9px;
+  border: 2px solid currentColor;
+  border-radius: 70% 70% 0 70%;
+  rotate: 10deg;
+}
+.mark[data-motif="gifts"]::after { left: 14px; rotate: 70deg; }
+.mark[data-motif="bells"] {
+  width: 29px;
+  height: 30px;
+  background: currentColor;
+  clip-path: polygon(46% 0,56% 0,60% 9%,76% 18%,83% 68%,100% 84%,100% 91%,0 91%,0 84%,17% 68%,24% 18%,40% 9%);
+}
+.mark[data-motif="bells"]::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  bottom: -3px;
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+  border-radius: 50%;
+}
+.mark[data-motif="berries"] {
+  width: 29px;
+  height: 31px;
+  background: linear-gradient(62deg,transparent 48%,currentColor 49% 52%,transparent 53%);
+}
+.mark[data-motif="berries"]::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--holiday-secondary);
+  box-shadow: 10px 1px var(--holiday-secondary), 5px 10px var(--holiday-secondary);
+}
+.mark[data-motif="berries"]::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 1px;
+  width: 17px;
+  height: 9px;
+  background: currentColor;
+  border-radius: 0 90% 0 90%;
+  rotate: -25deg;
+}
+.mark[data-motif="eggs"] {
+  width: 25px;
+  height: 34px;
+  border: 1px solid currentColor;
+  border-radius: 50% 50% 47% 47% / 65% 65% 35% 35%;
+  background: repeating-linear-gradient(0deg,transparent 0 7px,currentColor 7px 9px,transparent 9px 13px,var(--holiday-secondary) 13px 17px);
+}
+.mark[data-motif="butterflies"] {
+  width: 36px;
+  height: 30px;
+  background: currentColor;
+  clip-path: polygon(0 0,27% 5%,47% 40%,47% 10%,53% 10%,53% 40%,73% 5%,100% 0,100% 43%,76% 56%,95% 72%,88% 100%,60% 88%,50% 65%,40% 88%,12% 100%,5% 72%,24% 56%,0 43%);
+}
+.mark[data-motif="fireworks"] { font-size: 38px; }
+.mark[data-motif="balloons"] {
+  width: 25px;
+  height: 31px;
+  margin-bottom: 13px;
+  border: 1px solid currentColor;
+  border-radius: 50% 50% 45% 45%;
+  background: color-mix(in srgb,currentColor 35%,transparent);
+}
+.mark[data-motif="balloons"]::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  bottom: -5px;
+  width: 5px;
+  height: 5px;
+  background: currentColor;
+  clip-path: polygon(50% 0,100% 100%,0 100%);
+}
+.mark[data-motif="balloons"]::after {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 34px;
+  width: 5px;
+  height: 17px;
+  border-left: 1px solid currentColor;
+  border-radius: 50%;
+}
+.mark[data-motif="kites"] {
+  width: 27px;
+  height: 35px;
+  background: conic-gradient(from 0deg,var(--holiday-secondary) 0 90deg,currentColor 90deg 180deg,var(--holiday-secondary) 180deg 270deg,currentColor 270deg);
+  clip-path: polygon(50% 0,100% 40%,50% 100%,0 40%);
+}
+.mark[data-motif="waves"] {
+  width: 39px;
+  height: 28px;
+  background: radial-gradient(ellipse 20px 14px at 10px 0,transparent 73%,currentColor 76% 86%,transparent 90%) 0 7px / 25px 16px repeat-x, radial-gradient(ellipse 20px 14px at 10px 0,transparent 73%,var(--holiday-secondary) 76% 86%,transparent 90%) 8px 17px / 25px 16px repeat-x;
+}
+.mark[data-motif="fruit"] {
+  width: 31px;
+  height: 29px;
+  background: currentColor;
+  border-radius: 43% 43% 48% 48%;
+}
+.mark[data-motif="fruit"]::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 13px;
+  width: 14px;
+  height: 8px;
+  background: var(--holiday-secondary);
+  border-radius: 90% 0 90% 0;
+  rotate: -20deg;
+}
+.mark[data-motif="fruit"]::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 13px;
+  width: 3px;
+  height: 8px;
+  background: currentColor;
+}
+.mark[data-motif="citrus"] {
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.mark[data-motif="citrus"]::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 16px;
+  width: 13px;
+  height: 7px;
+  border-radius: 90% 0 90% 0;
+  background: var(--holiday-secondary);
+  rotate: -15deg;
+}
+.mark[data-motif="citrus"]::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 14px;
+  width: 2px;
+  height: 6px;
+  background: currentColor;
+}
+.mark[data-motif="pomegranates"] {
+  width: 29px;
+  height: 30px;
+  border-radius: 46% 46% 50% 50%;
+  background: currentColor;
+}
+.mark[data-motif="pomegranates"]::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 8px;
+  width: 13px;
+  height: 11px;
+  background: currentColor;
+  clip-path: polygon(0 0,30% 25%,50% 0,70% 25%,100% 0,85% 100%,15% 100%);
+}
+.mark[data-motif="pomegranates"]::after {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 6px;
+  width: 5px;
+  height: 12px;
+  border-left: 1px solid var(--holiday-page);
+  border-radius: 50%;
+  rotate: 12deg;
+}
+.mark[data-motif="dates"] {
+  width: 32px;
+  height: 36px;
+  background: linear-gradient(108deg, transparent 46%, currentColor 47% 51%, transparent 52%);
+}
+.mark[data-motif="dates"]::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 3px;
+  width: 10px;
+  height: 17px;
+  border-radius: 45%;
+  background: currentColor;
+  box-shadow: 13px -2px var(--holiday-secondary), 7px 12px currentColor;
+  rotate: -12deg;
+}
+.mark[data-motif="dates"]::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 11px;
+  width: 13px;
+  height: 7px;
+  border-top: 1px solid currentColor;
+  rotate: 25deg;
+}
+.decoration[data-holiday-compact][data-holiday-treatment="frame"]::before { inset: 5px; border-width: 3px; border-radius: 9px 1px; }
+.decoration[data-holiday-compact][data-holiday-treatment="garland"]::before { inset: -9px -4% auto; height: 37px; }
+.decoration[data-holiday-compact][data-holiday-treatment="columns"]::before { inset: 0 5px; border-inline-width: 5px; }
+.decoration[data-holiday-compact][data-holiday-treatment="medallion"]::before,
+.decoration[data-holiday-compact][data-holiday-treatment="medallion"]::after { width: 72px; height: 72px; inset: -35px auto auto calc(50% - 36px); border-width: 3px; }
+.decoration[data-holiday-compact][data-holiday-treatment="medallion"]::after { inset: auto auto -35px calc(50% - 36px); }
+.picker { min-width: 0; margin: 0; padding: 0; border: 0; }
+.legend { font-weight: 650; font-size: .95rem; }
+.help { margin: .35rem 0 1rem; font-size: .8125rem; line-height: 1.5; opacity: .75; }
+.options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem .75rem; }
+.option { position: relative; display: grid; align-content: start; min-width: 0; cursor: pointer; }
+.option input { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.tile { position: relative; isolation: isolate; display: grid; place-items: center; min-height: 112px; border-radius: 12px; overflow: hidden; border: 2px solid color-mix(in srgb,currentColor 18%,transparent); }
+.sample { position: relative; z-index: 1; display: grid; justify-items: center; gap: 6px; width: 52%; padding: 12px 8px; border: 1px solid color-mix(in srgb,currentColor 20%,transparent); border-radius: 4px; font: 24px/1.1 Georgia,serif; }
+.sampleLine { display: block; width: 80%; height: 2px; background: currentColor; opacity: .28; }
+.sampleLine:last-child { width: 55%; }
+.selected { position: absolute; z-index: 2; right: 7px; top: 7px; display: none; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--holiday-ink); color: var(--holiday-page); font: 700 14px/1 system-ui,sans-serif; }
+.option input:checked + .tile { outline: 2px solid var(--color-primary,#7c3aed); outline-offset: 2px; }
+.option input:checked + .tile .selected { display: grid; }
+.option input:focus-visible + .tile { outline: 3px solid var(--color-primary,#7c3aed); outline-offset: 3px; }
+.name { margin-top: .5rem; font-size: .8125rem; line-height: 1.35; font-weight: 600; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .cluster { opacity: .3; gap: 5px; zoom: .75; }
+  .decoration::before { inset: 10px; }
+  .decoration[data-holiday-material] .cluster { opacity: .22; }
+  .decoration[data-holiday-treatment="frame"]::before { inset: 8px; }
+  .decoration[data-holiday-treatment="columns"]::before { inset: 0 6px; border-inline-width: 5px; }
+  .decoration[data-holiday-treatment="columns"] .cluster[data-position="start"],
+  .decoration[data-holiday-treatment="columns"] .cluster[data-position="lowerStart"] { left: 16px; }
+  .decoration[data-holiday-treatment="columns"] .cluster[data-position="end"],
+  .decoration[data-holiday-treatment="columns"] .cluster[data-position="lowerEnd"] { right: 16px; }
+}
+@media (forced-colors: active) {
+  .decoration { display: none; }
+  .option input:checked + .tile, .option input:focus-visible + .tile { outline-color: Highlight; }
+}

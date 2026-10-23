@@ -244,6 +244,7 @@ test("custom event menus toggle maps and weather, preview seven layouts, and sav
         assert.equal(await section.getByRole("list", { name: "Arrival locations" }).count(), 1);
       }
       await page.goto(`${origin}/editor?editor=1`);
+      await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
       const toggle = page.getByRole("switch", { name: "Show parking map", exact: true });
       await toggle.waitFor();
       assert.equal(await page.getByRole("button", { name: /^Page options/ }).count(), 0);
@@ -272,7 +273,7 @@ test("custom event menus toggle maps and weather, preview seven layouts, and sav
       assert.equal(await page.getByRole("button", { name: "Celsius", exact: true }).getAttribute("aria-pressed"), "true");
       const menuAxe = await new AxeBuilder({ page }).include('[aria-label="Event editing controls"]').analyze();
       assert.deepEqual(menuAxe.violations, []);
-      await page.getByRole("button", { name: /^Design/ }).click();
+      await page.getByRole("button", { name: "Layout", exact: true }).click();
       const layouts = ["Split", "Banner", "Poster", "Editorial", "Spotlight", "Minimal", "Cards"];
       assert.equal(await page.getByRole("button", { name: /^Choose .* layout$/ }).count(), layouts.length);
       assert.equal(await page.getByRole("combobox", { name: "Layout", exact: true }).count(), 0);
@@ -317,12 +318,14 @@ test("custom event menus toggle maps and weather, preview seven layouts, and sav
       assert.equal(await page.getByText(initial.details.sections[0].body, { exact: true }).count(), 1);
       assert.equal(await page.getByRole("link", { name: /^Directions to/ }).count(), 0);
       await page.goto(`${origin}/editor?editor=1&saved=1`);
+      await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
       await toggle.waitFor();
       assert.equal(await toggle.getAttribute("aria-checked"), "false");
       await toggle.click();
       assert.equal(await previewImage.count(), 1);
       assert.equal(writes.length, 1);
       await page.goto(`${origin}/editor?editor=1&noParkingSection=1`);
+      await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
       await page.getByRole("button", { name: /^Page sections/ }).click();
       assert.equal(await page.getByRole("button", { name: "Add parking / drop-off map", exact: true }).count(), 1);
       const newMapChooser = page.waitForEvent("filechooser");

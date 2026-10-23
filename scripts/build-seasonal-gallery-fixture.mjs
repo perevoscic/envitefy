@@ -20,12 +20,13 @@ import {HOLIDAY_COLLECTIONS} from "../../src/lib/holiday-collections";
 import {getPublicTemplates} from "../../src/lib/public-template-catalog";
 import {GENERAL_EVENT_DESIGNS} from "../../src/lib/general-event-designs";
 import {createEmptySignupTemplateForm} from "../../src/lib/signup-starters";
+import {templateOccasion} from "../../src/lib/seasonal-template-order";
 
 import PublicTemplateGallery from "../../src/components/templates/PublicTemplateGallery";
 import {CUSTOM_EVENT_CATEGORIES, takeCustomEventPage} from "../../src/lib/event-custom-design";
 import {takeSignupTheme} from "../../src/lib/signup-theme-handoff";
 import {getCategoryCustomDesignProfile} from "../../src/lib/category-custom-design-profiles";
-window.galleryFixture = {collections: HOLIDAY_COLLECTIONS, getPublicTemplates, generalDesigns: GENERAL_EVENT_DESIGNS, createEmptySignupTemplateForm};
+window.galleryFixture = {collections: HOLIDAY_COLLECTIONS, getPublicTemplates, generalDesigns: GENERAL_EVENT_DESIGNS, createEmptySignupTemplateForm, templateOccasion};
 window.fixture = {categories: [...Object.keys(CUSTOM_EVENT_CATEGORIES), "signup-forms"], profile: getCategoryCustomDesignProfile, takeCustomEventPage, takeSignupTheme};
 const params = new URLSearchParams(location.search);
 const category = params.get("category") || "weddings";

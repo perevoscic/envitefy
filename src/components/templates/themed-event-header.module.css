@@ -1,23 +1,308 @@
-.header { background: inherit; color: inherit; isolation: isolate; }
-.header > :first-child { position: relative; overflow: hidden; }
-.header > :first-child img { width: 100%; height: 100%; object-fit: cover; }
-.header > :nth-child(2) { border-color: color-mix(in srgb, var(--themed-accent) 25%, transparent); }
-.header[data-composition="arch"] { padding: clamp(1rem, 4vw, 3rem); text-align: center; }
-.header[data-composition="arch"] > :first-child { max-width: 40rem; margin-inline: auto; border-radius: 48% 48% 0 0; aspect-ratio: 4 / 3; height: auto; }
-.header[data-composition="oval"] { padding: clamp(1rem, 4vw, 3rem); text-align: center; }
-.header[data-composition="oval"] > :first-child { max-width: 34rem; margin-inline: auto; border-radius: 50%; aspect-ratio: 1; height: auto; }
-.header[data-composition="framed"] { padding: clamp(.75rem, 3vw, 2rem); border: .6rem double var(--themed-accent); }
-.header[data-composition="framed"] > :first-child { outline: 1px solid var(--themed-accent); outline-offset: -.6rem; }
-.header[data-composition="postcard"] { padding: clamp(1.2rem, 4vw, 3rem); }
-.header[data-composition="postcard"] > :first-child { border: .65rem solid #fffaf0; transform: rotate(-1.5deg); box-shadow: 0 1rem 2rem #0002; }
-.header[data-composition="journal"] > :nth-child(2) { border-top: .3rem double var(--themed-accent); margin-top: 1rem; }
-.header[data-composition="poster"] > :nth-child(2) { border-top: .4rem solid var(--themed-accent); }
-.header[data-composition="organic"] > :first-child { border-radius: 0 0 44% 12%; }
-.header[data-composition="panorama"] > :first-child { aspect-ratio: 2.25; height: auto; }
-@container (min-width: 760px) {
-  .header[data-page-layout="split"], .header[data-page-layout="editorial"] { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: stretch; }
-  .header[data-page-layout="split"] > :first-child, .header[data-page-layout="editorial"] > :first-child { height: 100%; min-height: 26rem; aspect-ratio: auto; max-width: none; margin: 0; }
-  .header[data-page-layout="split"] > :nth-child(2), .header[data-page-layout="editorial"] > :nth-child(2) { align-content: center; }
-  .header[data-page-layout="poster"] > :first-child { min-height: 32rem; }
+.shell {
+  container-type: inline-size;
+  min-width: 0;
+  width: 100%;
+  background: inherit;
+  color: inherit;
 }
-.shell { container-type: inline-size; min-width: 0; width: 100%; }
+.header {
+  --header-gutter: clamp(1.25rem, 4cqi, 3.5rem);
+  --header-space: clamp(2rem, 5cqi, 4.5rem);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  min-width: 0;
+  background: inherit;
+  color: inherit;
+  isolation: isolate;
+}
+.header[data-header-spacing="airy"] {
+  --header-space: clamp(2.5rem, 6cqi, 5.5rem);
+}
+.header[data-header-spacing="compact"] {
+  --header-space: clamp(1.5rem, 3cqi, 2.75rem);
+}
+.artwork,
+.copy {
+  min-width: 0;
+  position: relative;
+}
+.artwork {
+  aspect-ratio: 4 / 3;
+}
+/* Only the image receives its silhouette. Editor controls stay outside the clip. */
+.artwork > :first-child {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  min-height: 0;
+}
+.artwork img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.copy {
+  padding: var(--header-space) var(--header-gutter);
+}
+.copy > :first-child {
+  padding: 0;
+  border: 0;
+}
+.copy h1 {
+  max-width: 20ch;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.header[data-header-alignment="center"] .copy {
+  text-align: center;
+}
+.header[data-header-alignment="center"] .copy h1 {
+  margin-inline: auto;
+}
+.header[data-header-alignment="center"] .copy nav,
+.header[data-header-alignment="center"] .copy [data-event-navigation] {
+  justify-content: center;
+}
+
+/* Page layouts change the image/title hierarchy as well as their relative placement. */
+.header[data-page-layout="banner"] .artwork {
+  aspect-ratio: 2.2;
+}
+.header[data-page-layout="banner"] .copy {
+  border-left: 0.45rem solid var(--themed-accent);
+  margin: var(--header-gutter);
+  padding: 0.5rem 0 0.5rem var(--header-gutter);
+}
+.header[data-page-layout="poster"] {
+  padding: var(--header-gutter);
+}
+.header[data-page-layout="poster"] .copy {
+  padding: var(--header-space) 0 0.5rem;
+  border-bottom: 0.45rem solid var(--themed-accent);
+}
+.header[data-page-layout="poster"] .copy h1 {
+  max-width: 16ch;
+  line-height: 0.98;
+}
+:where(.header[data-page-layout="poster"] .copy h1) {
+  font-size: clamp(2.4rem, 7cqi, 6rem);
+}
+.header[data-page-layout="poster"] .artwork {
+  aspect-ratio: 1.2;
+}
+.header[data-page-layout="editorial"] {
+  padding: var(--header-gutter);
+  gap: var(--header-gutter);
+}
+.header[data-page-layout="editorial"] .copy {
+  padding: 0.5rem 0 var(--header-gutter);
+  border-bottom: 0.25rem double var(--themed-accent);
+}
+.header[data-page-layout="spotlight"] {
+  padding: var(--header-gutter);
+}
+.header[data-page-layout="spotlight"] .artwork {
+  width: 92%;
+  margin-inline: auto;
+}
+.header[data-page-layout="spotlight"] .copy {
+  width: 94%;
+  margin: 1rem auto 0;
+  padding: var(--header-space) var(--header-gutter);
+  background: inherit;
+  border: 1px solid color-mix(in srgb, var(--themed-accent) 45%, transparent);
+}
+.header[data-page-layout="minimal"] {
+  padding: var(--header-gutter);
+}
+.header[data-page-layout="minimal"] .copy {
+  width: 92%;
+  margin-left: auto;
+  padding: var(--header-space) 0 var(--header-gutter);
+  border-top: 1px solid var(--themed-accent);
+}
+.header[data-page-layout="minimal"] .artwork {
+  aspect-ratio: 1.9;
+}
+.header[data-page-layout="cards"] {
+  padding: var(--header-gutter);
+  gap: 1rem;
+}
+.header[data-page-layout="cards"] .artwork {
+  width: 94%;
+  border-radius: var(--themed-radius);
+}
+.header[data-page-layout="cards"] .copy {
+  width: 94%;
+  margin-left: auto;
+  padding: var(--header-space) var(--header-gutter);
+  border: 1px solid color-mix(in srgb, var(--themed-accent) 45%, transparent);
+  border-radius: var(--themed-radius);
+  background: color-mix(in srgb, var(--themed-accent) 7%, transparent);
+}
+
+/* Authored artwork silhouettes remain independent of the chosen page arrangement. */
+.header[data-composition="editorial"] .artwork img {
+  border-radius: 0 20% 0 0;
+}
+.header[data-composition="arch"] .artwork {
+  max-width: 38rem;
+  margin-inline: auto;
+}
+.header[data-composition="arch"] .artwork img {
+  border-radius: 48% 48% 0 0;
+}
+.header[data-composition="oval"] .artwork {
+  max-width: 34rem;
+  aspect-ratio: 1.18;
+  margin-inline: auto;
+}
+.header[data-composition="oval"] .artwork img {
+  border-radius: 50%;
+}
+.header[data-composition="framed"] {
+  border: 0.55rem double var(--themed-accent);
+}
+.header[data-composition="framed"] .artwork {
+  padding: 0.65rem;
+}
+.header[data-composition="framed"] .artwork::after {
+  content: "";
+  position: absolute;
+  inset: 0.25rem;
+  border: 1px solid var(--themed-accent);
+  pointer-events: none;
+  z-index: 1;
+}
+.header[data-composition="postcard"] {
+  padding: var(--header-gutter);
+}
+.header[data-composition="postcard"] .artwork {
+  transform: rotate(-1.5deg);
+  padding: 0.65rem;
+  background: #fffaf0;
+  box-shadow: 0 0.75rem 1.5rem #0002;
+}
+.header[data-composition="postcard"] .artwork::after {
+  content: "";
+  position: absolute;
+  width: 27%;
+  height: 1.5rem;
+  top: -0.5rem;
+  left: 38%;
+  background: color-mix(in srgb, var(--themed-accent) 48%, #f2ddba);
+  opacity: 0.8;
+  transform: rotate(4deg);
+  pointer-events: none;
+}
+.header[data-composition="journal"] .copy {
+  border-top: 0.3rem double var(--themed-accent);
+}
+.header[data-composition="journal"] .copy h1 {
+  font-style: italic;
+}
+.header[data-composition="poster"] .copy {
+  border-top: 0.45rem solid var(--themed-accent);
+}
+.header[data-composition="poster"] .artwork img {
+  clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+}
+.header[data-composition="poster"] .copy h1 {
+  text-transform: uppercase;
+  letter-spacing: -0.035em;
+}
+.header[data-composition="organic"] .artwork img {
+  border-radius: 44% 4% 45% 4%;
+}
+.header[data-composition="panorama"] .artwork {
+  aspect-ratio: 2.4;
+}
+
+@container (min-width: 720px) {
+  .header[data-page-layout="split"] {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .header[data-page-layout="split"] .artwork {
+    aspect-ratio: auto;
+    min-height: 31rem;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+  .header[data-page-layout="split"] .copy {
+    display: grid;
+    align-content: center;
+  }
+  .header[data-page-layout="editorial"] {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
+    padding-block: var(--header-space);
+  }
+  .header[data-page-layout="editorial"] .artwork {
+    grid-column: 2;
+    grid-row: 1;
+    aspect-ratio: 4 / 5;
+    width: 100%;
+  }
+  .header[data-page-layout="editorial"] .copy {
+    grid-column: 1;
+    grid-row: 1;
+    padding-block: var(--header-gutter);
+  }
+  .header[data-page-layout="poster"] {
+    padding-inline: clamp(2rem, 9cqi, 8rem);
+  }
+  .header[data-page-layout="poster"] .artwork {
+    aspect-ratio: 1.55;
+  }
+  .header[data-page-layout="spotlight"] {
+    padding-block: var(--header-space);
+  }
+  .header[data-page-layout="spotlight"] .artwork {
+    width: 78%;
+    aspect-ratio: 1.4;
+  }
+  .header[data-page-layout="spotlight"] .copy {
+    width: 84%;
+    margin-top: 1.5rem;
+  }
+  .header[data-page-layout="minimal"] {
+    padding-inline: clamp(2rem, 8cqi, 7rem);
+  }
+  .header[data-page-layout="minimal"] .artwork {
+    aspect-ratio: 2.4;
+  }
+  .header[data-page-layout="cards"] {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--header-gutter);
+    padding-block: var(--header-space);
+  }
+  .header[data-page-layout="cards"] .artwork {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+  }
+  .header[data-page-layout="cards"] .copy {
+    width: 100%;
+    margin: 3rem 0 0;
+  }
+}
+
+@container (max-width: 419px) {
+  .header[data-page-layout="banner"] .artwork,
+  .header[data-page-layout="minimal"] .artwork,
+  .header[data-composition="panorama"] .artwork {
+    aspect-ratio: 1.65;
+  }
+  .header[data-composition="framed"] {
+    border-width: 0.35rem;
+  }
+  .header[data-composition="postcard"] .artwork {
+    transform: rotate(-0.75deg);
+  }
+}

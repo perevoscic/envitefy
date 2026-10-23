@@ -1,5 +1,5 @@
 import { HOLIDAY_COLLECTIONS, type HolidayCollectionId } from "@/lib/holiday-collections";
-import { HOLIDAY_SIGNUP_DESIGNS, SIGNUP_DESIGN_PALETTES } from "@/lib/signup-designs";
+import { getSignupDesign, SIGNUP_DESIGN_PALETTES } from "@/lib/signup-designs";
 import { isHolidayTemplateAvailable } from "@/lib/holiday-template-availability";
 import type { TemplateArtwork } from "@/components/events/TemplateArtworkThumbnail";
 
@@ -104,26 +104,44 @@ const ORIGINAL_GENERAL_EVENT_DESIGNS: GeneralEventDesign[] = [
 
 const holidayCompositions = ["panorama", "arch", "editorial", "journal", "poster", "framed", "postcard", "oval", "organic", "editorial"] as const;
 const holidayFonts = [serif, serif, '"Libre Baskerville", Georgia, serif', sans, '"Bebas Neue", Arial, sans-serif', serif, sans, serif, sans, sans];
+const holidayStyles = ["Scenic", "Botanical", "Editorial", "Journal", "Bold", "Classic", "Scrapbook", "Supper club", "Modern", "Letterpress"] as const;
+const holidaySeries = ["Printed invitation", "Garden edition", "Community cards", "Bound journal", "Paper celebration"] as const;
+type HolidayCoverRecipe = Pick<GeneralEventDesign, "composition" | "font" | "style">;
+
+/** The original ten covers keep their recipes as collections gain more designs. */
+function holidayCoverRecipe(index: number): HolidayCoverRecipe {
+  const slot = index % holidayCompositions.length;
+  const series = Math.floor(index / holidayCompositions.length);
+  return {
+    composition: holidayCompositions[slot],
+    font: holidayFonts[(slot + series) % holidayFonts.length],
+    style: series === 0 ? holidayStyles[slot] : `${holidayStyles[slot]} · ${holidaySeries[(series - 1) % holidaySeries.length]}`,
+  };
+}
+
 export const GENERAL_EVENT_DESIGNS: GeneralEventDesign[] = [
   ...ORIGINAL_GENERAL_EVENT_DESIGNS,
   ...HOLIDAY_COLLECTIONS.flatMap((collection) => collection.designs.flatMap((design, index): GeneralEventDesign[] => {
     const id = `holidays--${collection.id}--${design.slug}`;
     if (!isHolidayTemplateAvailable(id)) return [];
-    const recipe = HOLIDAY_SIGNUP_DESIGNS.find((item) => item.id === id)!;
+    const recipe = getSignupDesign(id)!;
     const palette = SIGNUP_DESIGN_PALETTES[recipe.palette];
-    const font = holidayFonts[index];
+    const cover = holidayCoverRecipe(index);
+    const { font } = cover;
     return [{
       id, name: `${collection.name} · ${design.name}`, label: collection.name, occasion: collection.id,
       coverTitle: design.name,
       description: `${collection.name}: ${design.scene}. ${collection.aliases}`,
-      style: ["Scenic", "Botanical", "Editorial", "Journal", "Bold", "Classic", "Scrapbook", "Supper club", "Modern", "Letterpress"][index],
-      artwork: recipe.artwork, composition: holidayCompositions[index],
+      style: cover.style,
+      artwork: recipe.artwork, composition: cover.composition,
       background: palette.page, ink: palette.ink, accent: palette.accent, font,
       theme: { bg: `holiday-bg-${recipe.palette}`, text: `holiday-ink-${recipe.palette}`, accent: `holiday-accent-${recipe.palette}`, preview: `holiday-bg-${recipe.palette}`, fontFamily: font },
     }];
   })),
 ];
 
+const generalEventDesignsById = new Map(GENERAL_EVENT_DESIGNS.map(design => [design.id, design]));
+
 export function getGeneralEventDesign(id: string | null | undefined): GeneralEventDesign | undefined {
-  return GENERAL_EVENT_DESIGNS.find((design) => design.id === id);
+  return generalEventDesignsById.get(id || "");
 }

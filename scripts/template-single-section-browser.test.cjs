@@ -323,7 +323,7 @@ test("authored body treatments remain visible during section editing and saved c
   }
 });
 
-test("all template bodies and signup designs fill a single section without a reserved column", {
+test("all template bodies and signup designs fill a single section within their page gutters", {
   timeout: 120000,
 }, async (t) => {
   const Signup = load("src/components/smart-signup-form/SignupViewer.tsx").default;
@@ -388,20 +388,29 @@ test("all template bodies and signup designs fill a single section without a res
       await page.setViewportSize({ width, height: 900 });
       const failures = await page.locator("[data-case]").evaluateAll((elements) =>
         elements.flatMap((fixture) => {
-          const body =
-            fixture.querySelector("[data-template-body-layout]") ||
-            fixture.querySelector("#signup-input-slots");
+          const sharedBody = fixture.querySelector("[data-template-body-layout]");
+          const body = sharedBody || fixture.querySelector("#signup-input-slots");
           const panel =
             fixture.querySelector("[data-body-section]") ||
             fixture.querySelector("[data-signup-section]");
           if (!body || !panel) return [{ id: fixture.dataset.case, error: "Missing section" }];
           const bounds = body.getBoundingClientRect();
+          const bodyStyles = getComputedStyle(body);
+          const paddingLeft = sharedBody ? parseFloat(bodyStyles.paddingLeft) : 0;
+          const paddingRight = sharedBody ? parseFloat(bodyStyles.paddingRight) : 0;
+          const contentLeft = bounds.left + paddingLeft;
+          const contentRight = bounds.right - paddingRight;
           const section = panel.getBoundingClientRect();
           const styles = getComputedStyle(panel);
-          const inset = Math.max(section.left - bounds.left, bounds.right - section.right);
-          const overflows = section.left < bounds.left - 1 || section.right > bounds.right + 1;
+          const inset = Math.max(section.left - contentLeft, contentRight - section.right);
+          const overflows = section.left < contentLeft - 1 || section.right > contentRight + 1;
+          const missingGutters = sharedBody && (
+            paddingLeft < 16 || paddingRight < 16 || Math.abs(paddingLeft - paddingRight) > 1
+          );
           // A book's decorative frame is 4px on each side; no layout may reserve a column or percentage inset.
-          return inset > 4.5 ||
+          // Shared bodies retain equal page gutters; signup's own section container keeps its existing bounds.
+          return missingGutters ||
+            inset > 4.5 ||
             overflows ||
             parseFloat(styles.marginLeft) ||
             parseFloat(styles.marginRight)
@@ -409,7 +418,11 @@ test("all template bodies and signup designs fill a single section without a res
                 {
                   id: fixture.dataset.case,
                   body: bounds.width,
+                  content: contentRight - contentLeft,
                   panel: section.width,
+                  paddingLeft,
+                  paddingRight,
+                  missingGutters: Boolean(missingGutters),
                   inset,
                   overflows,
                 },
@@ -417,7 +430,7 @@ test("all template bodies and signup designs fill a single section without a res
             : [];
         }),
       );
-      assert.deepEqual(failures, [], `Every single section fills its body at ${width}px`);
+      assert.deepEqual(failures, [], `Every single section fills its available body at ${width}px`);
     }
     // CSS must respond when the host adds/removes a section without changing the selected design.
     const multi = renderToStaticMarkup(
@@ -430,16 +443,20 @@ test("all template bodies and signup designs fill a single section without a res
     );
     await page.setContent(`<style>${style}</style><article>${multi}</article>`);
     const before = await page.locator("[data-body-section]").first().boundingBox();
-    const board = await page.locator("[data-template-body-layout]").boundingBox();
-    assert.ok(before.width < board.width * 0.7, "two real sections keep their columns");
+    const contentWidth = await page.locator("[data-template-body-layout]").evaluate((element) => {
+      const styles = getComputedStyle(element);
+      return element.getBoundingClientRect().width -
+        parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+    });
+    assert.ok(before.width < contentWidth * 0.7, "two real sections keep their columns");
     await page
       .locator("[data-body-section]")
       .last()
       .evaluate((element) => element.remove());
     const after = await page.locator("[data-body-section]").boundingBox();
     assert.ok(
-      Math.abs(after.width - board.width) < 1,
-      "removing the second section immediately expands the remaining section",
+      Math.abs(after.width - contentWidth) < 1,
+      "removing the second section immediately fills the body inside its page gutters",
     );
     t.diagnostic(
       `Verified ${cases.length} template renderings across ${layouts.size} layouts at phone, tablet and desktop widths.`,

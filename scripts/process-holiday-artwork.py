@@ -2,6 +2,7 @@
 """Install and verify the holiday collection artwork (no image API calls)."""
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -12,6 +13,7 @@ RESULTS = ROOT / "output/seasonal-templates/results"
 API_SOURCES = ROOT / "output/imagegen/holiday-batch"
 API_CORRECTIONS = ROOT / "output/imagegen/holiday-corrections"
 SOURCES = Path.home() / ".codex/generated_images/01a0d710-2458-7f01-b400-591358ad081c"
+GENERATED_ROOT = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")) / "generated_images"
 
 
 def run(*args):
@@ -44,8 +46,16 @@ def main():
     if mode not in {"install", "reviewed", "cleanup", "verify"}:
         raise ValueError("Use install, reviewed <ids...>, cleanup, or verify")
     plan = json.loads(PLAN.read_text())
+    only = set()
+    if "--only" in sys.argv:
+        only = set(sys.argv[sys.argv.index("--only") + 1:])
+        unknown = only - {asset["id"] for asset in plan["assets"]}
+        if unknown:
+            raise ValueError(f"Unknown artwork IDs: {sorted(unknown)}")
     count = 0
     for asset in plan["assets"]:
+        if only and asset["id"] not in only:
+            continue
         if mode == "reviewed":
             if asset["id"] in sys.argv[2:] and asset["status"] == "generated":
                 asset["visuallyReviewed"] = True
@@ -59,6 +69,10 @@ def main():
                     raise ValueError("Result ID mismatch")
                 asset["source"] = entry["source"]
                 asset["provider"] = "OpenAI built-in image_gen"
+                if entry.get("generationPrompt") and entry["generationPrompt"] != asset["prompt"]:
+                    asset["generationPromptOverride"] = entry["generationPrompt"]
+                if entry.get("referenceSource"):
+                    asset["generationReferenceSource"] = entry["referenceSource"]
             elif (API_SOURCES / (asset["id"] + ".png")).exists():
                 asset["source"] = str((API_SOURCES / (asset["id"] + ".png")).resolve())
                 asset["provider"] = "OpenAI API"
@@ -68,7 +82,9 @@ def main():
             continue
         source = Path(asset["source"]).resolve()
         output = (ROOT / asset["output"]).resolve()
-        if source.suffix != ".png" or not (source.parent == SOURCES.resolve() or
+        codex_original = (source.parent.parent == GENERATED_ROOT.resolve()
+                          and source.name.startswith("exec-"))
+        if source.suffix != ".png" or not (source.parent == SOURCES.resolve() or codex_original or
                 (source.parent in {API_SOURCES.resolve(), API_CORRECTIONS.resolve()}
                  and source.name == asset["id"] + ".png")):
             raise ValueError(f"Unexpected generated original: {source}")
@@ -108,8 +124,9 @@ def main():
                 count += 1
     save(plan)
     if mode == "verify":
-        expected = (sum(a["status"] == "generated" for a in plan["assets"])
-                    if "--available-only" in sys.argv else len(plan["assets"]))
+        selected = [a for a in plan["assets"] if not only or a["id"] in only]
+        expected = (sum(a["status"] == "generated" for a in selected)
+                    if "--available-only" in sys.argv else len(selected))
         assert count == expected and count > 0, f"Only {count} of {expected} assets complete"
     print(json.dumps({"action": mode, "processed": count,
                       "installed": sum(a["status"] == "generated" for a in plan["assets"])}))

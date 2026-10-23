@@ -889,7 +889,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       dismissMobileMenu,
       previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer(true, "event-actions", true);
+    } = useMobileDrawer(false, "event-actions", true);
     const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
     const handlePageTextChange = useCallback<GymnasticsPageTextChange>((key, value) => {
       setData((prev) => applyGymnasticsPageTextChange(prev, key, value));
@@ -2994,6 +2994,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           {}
 
           <div
+            data-event-editor-fields
             className="p-4 pb-8 pt-4 md:p-6 md:pb-10 md:pt-6"
             data-mobile-form-surface
             style={{ pointerEvents: "auto" }}

@@ -10,12 +10,13 @@ const readSource = (relativePath) =>
 
 test("/snap renders the new landing component with key sections", () => {
   const page = readSource("src/app/snap/page.tsx");
+  const uploadStart = readSource("src/components/snap/SnapUploadStart.tsx");
   const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
 
   assert.match(page, /<SnapLanding \/>/);
   assert.match(page, /getServerSession\(authOptions as any\)/);
-  assert.match(page, /AuthenticatedSnapUploadStart/);
-  assert.match(page, /<SnapLaunchCards processInPage \/>/);
+  assert.match(page, /<SnapUploadStart \/>/);
+  assert.match(uploadStart, /<SnapLaunchCards processInPage variant="explained" \/>/);
   assert.match(snapLanding, /navLinks=\{marketingPageNavLinks\("\/snap"\)\}/);
   assert.doesNotMatch(snapLanding, /publicUseCasePrimaryNavLinks|signedOutMobileMenuLinks/);
   assert.match(snapLanding, /variant="transparent-dark"/);
@@ -73,15 +74,15 @@ test("/snap includes the updated social-proof and CTA copy", () => {
 
 test("/snap keeps public auth CTAs but renders direct upload cards for authenticated users", () => {
   const page = readSource("src/app/snap/page.tsx");
+  const uploadStart = readSource("src/components/snap/SnapUploadStart.tsx");
   const mainWrapper = readSource("src/components/MainContentWrapper.tsx");
   const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
   const snapSignupLanding = readSource("src/components/snap-landing/SnapSignupLanding.tsx");
 
   assert.match(page, /isAuthenticated \? \(/);
-  assert.match(page, /AuthenticatedSnapUploadStart/);
-  assert.match(page, /Snap \/ Upload/);
-  assert.match(page, /Snap or upload your/);
-  assert.match(page, /min-h-\[100dvh\] bg-transparent/);
+  assert.match(page, /<SnapUploadStart \/>/);
+  assert.match(uploadStart, /Snapping means taking a photo/);
+  assert.match(uploadStart, /add to your calendar and a digital link you can share/);
   assert.match(page, /isAuthenticated \? "min-h-\[100dvh\] bg-transparent" : ""/);
   assert.match(page, /<Dashboard snapProcessingMode \/>/);
   assert.doesNotMatch(page, /uploadActionHref="\/snap\?action=upload"/);

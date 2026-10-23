@@ -93,24 +93,53 @@ function buildResponse(
   };
 }
 
-export async function GET(req: Request) {
-  const authUser = await getAuthenticatedRequestUser(req);
-  if (!authUser.ok) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+async function loadSportPreferenceSuggestion(
+  email: string,
+  row: Awaited<ReturnType<typeof getFeatureVisibilityByEmail>>,
+): Promise<SportPreferenceSuggestion | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    // History inference is only a suggestion. It must not hold up the saved
+    // workspace preferences or make them unavailable when history cannot load.
+    return await Promise.race([
+      getSportPreferenceSuggestionByEmail(email, row),
+      new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), 1_000); }),
+    ]);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
+}
 
-  const row = await getFeatureVisibilityByEmail(authUser.email);
-  const metadata = readMetadata(row);
-  const configured = normalizeSportPreferences(metadata?.sportPreferences).setupCompleted;
-  const suggestion = configured
-    ? null
-    : await getSportPreferenceSuggestionByEmail(authUser.email, row);
-  const payload = buildResponse(row, suggestion);
-  const access = await getCreationAccess(authUser.userId);
-  payload.visibleTemplateKeys = filterCreationTemplateKeys(payload.visibleTemplateKeys, access);
-  payload.sportPreferences = allowedSportPreferences(payload.sportPreferences, access);
-  payload.defaultCreateIntent = allowedDefaultIntent(payload.defaultCreateIntent, access);
-  return NextResponse.json(payload, { headers: { "Cache-Control": "private, no-store" } });
+export async function GET(req: Request) {
+  const headers = { "Cache-Control": "private, no-store" };
+  try {
+    const authUser = await getAuthenticatedRequestUser(req);
+    if (!authUser.ok) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401, headers });
+    }
+
+    const [row, access] = await Promise.all([
+      getFeatureVisibilityByEmail(authUser.email),
+      getCreationAccess(authUser.userId),
+    ]);
+    const metadata = readMetadata(row);
+    const configured = normalizeSportPreferences(metadata?.sportPreferences).setupCompleted;
+    const suggestion = configured
+      ? null
+      : await loadSportPreferenceSuggestion(authUser.email, row);
+    const payload = buildResponse(row, suggestion);
+    payload.visibleTemplateKeys = filterCreationTemplateKeys(payload.visibleTemplateKeys, access);
+    payload.sportPreferences = allowedSportPreferences(payload.sportPreferences, access);
+    payload.defaultCreateIntent = allowedDefaultIntent(payload.defaultCreateIntent, access);
+    return NextResponse.json(payload, { headers });
+  } catch {
+    return NextResponse.json(
+      { error: "Could not load your workspace preferences. Please retry." },
+      { status: 503, headers },
+    );
+  }
 }
 
 export async function PUT(req: Request) {

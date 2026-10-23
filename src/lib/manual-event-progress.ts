@@ -1,6 +1,7 @@
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
 import { normalizeEventPageComposition } from "./event-page-composition";
 import { normalizeFootballPageText } from "./football-page-text";
+import { getHolidayBackground, normalizeHolidayBackgroundChoice } from "./holiday-backgrounds";
 import { replaceDraftMedia, retainDraftMedia, type EditorSnapshot } from "./template-draft-storage";
 
 const EDITOR_PATHS = new Set([
@@ -104,6 +105,38 @@ export async function saveManualEventProgress({
       ? parseCalendarDateTimeToIso(`${endDate}T${data.endTime}`, timezone)
       : null;
   const title = String(data.title || "Event draft");
+  const bodyDesignId = typeof data.bodyDesignId === "string" ? data.bodyDesignId : "";
+  const holidayDesign = getHolidayBackground(bodyDesignId);
+  const savedBackgroundChoice = normalizeHolidayBackgroundChoice(data.pageBackground);
+  const matchingBackground = savedBackgroundChoice ? getHolidayBackground(bodyDesignId, savedBackgroundChoice) : undefined;
+  const pageBackground = matchingBackground?.id === savedBackgroundChoice?.presetId ? savedBackgroundChoice : undefined;
+  const background = pageBackground ? matchingBackground : undefined;
+  const literalTheme = saved.theme && typeof saved.theme === "object" && !Array.isArray(saved.theme)
+    ? saved.theme
+    : existing.theme && typeof existing.theme === "object" && !Array.isArray(existing.theme)
+      ? existing.theme
+      : undefined;
+  // Draft owner views need the same explicit appearance as the mounted editor.
+  // Published events continue to receive only the new editing snapshot below.
+  const holidayFields = holidayDesign ? {
+    bodyDesignId,
+    themeId: saved.themeId || existing.themeId || bodyDesignId,
+    creationCollection: data.creationCollection || "holidays-seasonal",
+    holidayOccasion: data.holidayOccasion || holidayDesign.occasion,
+    pageBackground,
+    ...(literalTheme || background ? {
+      theme: background ? {
+        ...literalTheme,
+        bg: "",
+        text: "text-inherit",
+        accent: "text-inherit",
+        bgStyle: { backgroundColor: background.page, color: background.ink },
+        backgroundColor: background.page,
+        ink: background.ink,
+        accentColor: background.accent,
+      } : literalTheme,
+    } : {}),
+  } : {};
   const response = await historyFetch(
     eventId ? `/api/history/${encodeURIComponent(eventId)}` : "/api/history",
     {
@@ -140,6 +173,7 @@ export async function saveManualEventProgress({
                 createdVia: "manual",
                 createdManually: true,
                 eventPageComposition: normalizeEventPageComposition(saved.pageComposition) ?? null,
+                ...holidayFields,
                 ...(templateId === "football-season"
                   ? {
                       footballPageText: normalizeFootballPageText(data.footballPageText),

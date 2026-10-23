@@ -425,7 +425,7 @@ export default function BirthdayTemplateCustomizePage() {
     closeMobileMenu,
     dismissMobileMenu, previewTouchHandlers,
     drawerTouchHandlers,
-  } = useMobileDrawer(true, "event-actions", true);
+  } = useMobileDrawer(false, "event-actions", true);
   const [_themesExpanded, setThemesExpanded] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const fontListRef = useRef<HTMLDivElement | null>(null);
@@ -1495,7 +1495,7 @@ const handleGalleryUpload = useCallback(
       </EventCanvas>}
  controls={<><ScrollHandoffContainer className="min-h-full">
 
-          <div className="p-6 pt-4 md:pt-6">
+          <div data-event-editor-fields className="p-6 pt-4 md:pt-6">
             {(activeView === "main" || activeView === "images") && renderMainMenu()}
             {activeView === "headline" && renderHeadlineEditor()}
 

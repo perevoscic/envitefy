@@ -1,6 +1,7 @@
 import type { EventGuestActionVisibility } from "@/lib/event-guest-actions";
 import type { EventGuestPlanning } from "@/lib/event-guest-planning";
 import type { GalleryFontPairId } from "@/lib/font-library";
+import type { HolidayBackgroundChoice } from "@/lib/holiday-backgrounds";
 
 /** Accepted means the mail provider accepted the message, not that it reached the inbox. */
 export type SignupConfirmationEmailStatus = "accepted" | "failed" | "not_requested";
@@ -172,6 +173,8 @@ export type SignupAppearance = {
   themeId: SignupThemeId;
   themeRevision: 1;
   designId?: string;
+  /** Missing on saved legacy forms so their original design colors remain intact. */
+  pageBackground?: HolidayBackgroundChoice;
   palette: "original" | "soft" | "ink";
   fontPair: SignupFontPair;
   headerLayout: SignupHeaderLayout;

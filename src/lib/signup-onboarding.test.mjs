@@ -227,9 +227,15 @@ test("preference loading and failed refreshes do not reveal unrelated creation c
       },
       useCallback: (callback) => callback,
       useEffect: () => {},
+      useRef: (current) => ({ current }),
     },
-  }, {
-    fetch: async () => ({ ok: Boolean(payload), json: async () => payload }),
+    "@/lib/feature-visibility-client": {
+      loadFeatureVisibility: async () => {
+        if (!payload) throw new Error("Preferences unavailable");
+        return payload;
+      },
+      invalidateFeatureVisibility: () => {},
+    },
   });
   const render = () => { stateIndex = 0; return useFeatureVisibility(); };
   const { getCreateEventSections } = load("src/config/navigation-config.tsx");

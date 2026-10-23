@@ -61,7 +61,7 @@ function AuthTransitionOverlay() {
         className="auth-transition-mark relative flex h-24 w-56 items-center justify-center overflow-hidden rounded-[2rem]"
         aria-hidden
       >
-        <EnvitefyWordmark className="relative z-10 text-[4rem] leading-none" scaled={false} shine />
+        <EnvitefyWordmark className="relative z-10 text-[4rem] leading-none" scaled={false} appearance="fixed" shine />
       </div>
     </div>
   );

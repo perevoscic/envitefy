@@ -2,6 +2,7 @@
 "use client";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import ThemedEventHeader from "@/components/templates/ThemedEventHeader";
+import HolidayPageBackground, { HolidayBackgroundPicker } from "@/components/events/HolidayPageBackground";
 import { useCreationEditorHydration } from "@/components/events/useCreationEditorHydration";
 
 import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
@@ -14,8 +15,11 @@ import HeroImageEditor from "@/components/events/HeroImageEditor";
 import CreationTemplateGallery from "@/components/event-create/CreationTemplateGallery";
 import EventCanvas from "@/components/EventCanvas";
 import { GENERAL_EVENT_DESIGNS } from "@/lib/general-event-designs";
+import { getGeneralEventPageDesign, getGeneralEventBodyPresentation } from "@/lib/general-event-presentation";
 import { getGeneralCreationDesigns, resolveGeneralCreationDesign, generalCreationCollectionLabel } from "@/lib/create/event-page-collections";
 import { getThemedEventBodyPresentation, getThemedEventDesign, getThemedEventTheme, isThemedEventDesignDark } from "@/lib/event-page-themed-designs";
+import { getHolidayBackground, getHolidayBackgroundChoice, normalizeHolidayBackgroundChoice } from "@/lib/holiday-backgrounds";
+import { isDarkEventPageColor } from "@/lib/event-page-chrome";
 import type { CreationTemplate } from "@/lib/create/template-selection";
 import "@/components/birthdays/redesign/birthday-fonts.css";
 
@@ -204,6 +208,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       creationCollection: initialCollection,
       holidayOccasion: search?.get("occasion") || initialDesign?.occasion || null,
       bodyDesignId: initialDesign?.id || null,
+      pageBackground: !editEventId && initialDesign?.occasion
+        ? getHolidayBackgroundChoice(getHolidayBackground(initialDesign.id)?.id, "template")
+        : undefined,
       rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
       rsvpDeadline:
         initialDesign ? "" : config.prefill?.rsvpDeadline ||
@@ -236,6 +243,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [themeId, setThemeId] = useState(
       initialDesign?.id ?? config.themes[0]?.id ?? "default-theme"
     );
+    const pageDesign = getThemedEventDesign(data.bodyDesignId || themeId) || getGeneralEventPageDesign(data.bodyDesignId || themeId);
+    // Missing choices are legacy saved pages: retain their original authored colors.
+    const savedBackgroundChoice = normalizeHolidayBackgroundChoice(data.pageBackground);
+    const matchingBackground = savedBackgroundChoice ? getHolidayBackground(pageDesign?.id, savedBackgroundChoice) : undefined;
+    const pageBackgroundChoice = matchingBackground?.id === savedBackgroundChoice?.presetId ? savedBackgroundChoice : undefined;
+    const pageBackground = pageBackgroundChoice ? matchingBackground : undefined;
+    const bodyPresentation = getThemedEventBodyPresentation(data.bodyDesignId || themeId) || getGeneralEventBodyPresentation(data.bodyDesignId || themeId);
     const [activeView, setActiveView] = useState<string>("main");
     const creationReady = useCreationEditorHydration({ category: "general", eventId: editEventId, snapshot: { data, advancedState, themeId }, restore: saved => { if (saved.data) setData(saved.data); if (saved.advancedState) setAdvancedState(saved.advancedState); if (saved.themeId !== undefined) setThemeId(saved.themeId); }, onError: setLoadError });
     const designGalleryScrollRef = useRef<HTMLDivElement>(null);
@@ -254,13 +268,23 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       const design = resolveGeneralCreationDesign(template.id);
       if (!design) return;
       setThemeId(design.id);
-      setData((previous) => ({
-        ...previous,
-        bodyDesignId: design.id,
-        hero: !previous.hero || previous.hero === config.defaultHero || previous.hero === config.prefill?.hero || previous.hero === resolveGeneralCreationDesign(themeId)?.artwork || GENERAL_EVENT_DESIGNS.some((item) => item.artwork === previous.hero)
-          ? design.artwork
-          : previous.hero,
-      }));
+      setData((previous) => {
+        const previousChoice = normalizeHolidayBackgroundChoice(previous.pageBackground);
+        const previousDefault = getHolidayBackground(previous.bodyDesignId || themeId);
+        const previousBackground = previousChoice ? getHolidayBackground(previous.bodyDesignId || themeId, previousChoice) : undefined;
+        const nextDefault = getHolidayBackground(design.id);
+        const keepBackground = previousChoice && previousBackground?.id === previousChoice.presetId && previousBackground.occasion === nextDefault?.occasion && (previousChoice.source === "custom" || (!previousChoice.source && previousChoice.presetId !== previousDefault?.id));
+        return {
+          ...previous,
+          bodyDesignId: design.id,
+          pageBackground: nextDefault
+            ? keepBackground ? previousChoice : getHolidayBackgroundChoice(nextDefault.id, "template")
+            : undefined,
+          hero: !previous.hero || previous.hero === config.defaultHero || previous.hero === config.prefill?.hero || previous.hero === resolveGeneralCreationDesign(themeId)?.artwork || GENERAL_EVENT_DESIGNS.some((item) => item.artwork === previous.hero)
+            ? design.artwork
+            : previous.hero,
+        };
+      });
     }, [themeId]);
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
@@ -274,7 +298,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       closeMobileMenu,
       dismissMobileMenu, previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer(true, "event-actions", true);
+    } = useMobileDrawer(false, "event-actions", true);
     const updateData = useCallback((field: string, value: any) => {
       setData((prev) => ({ ...prev, [field]: value }));
     }, []);
@@ -289,7 +313,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     // Expand themes when Design view is opened
     useEffect(() => {
-      if (activeView === "design") {
+      if (activeView === "background") {
         setThemesExpanded(true);
       }
     }, [activeView]);
@@ -306,6 +330,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         const row = await response.json();
         if (cancelled) return;
         const existing = row.data || {};
+        setSavedEventData(existing);
           if (existing.manualEditor?.snapshot) {
             const saved = existing.manualEditor.snapshot;
             if (saved.data !== undefined) setData(saved.data);
@@ -317,7 +342,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
         const start = eventLocalDateParts(existing.startISO || existing.startAt || existing.start);
         const end = eventLocalDateParts(existing.endISO || existing.endAt || existing.end);
-        setSavedEventData(existing);
         setData((prev) => ({
           ...prev,
           title: row.title ?? existing.title ?? prev.title,
@@ -336,6 +360,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           creationCollection: existing.creationCollection || prev.creationCollection,
           holidayOccasion: existing.holidayOccasion || null,
           bodyDesignId: existing.bodyDesignId || existing.themeId || null,
+          pageBackground: normalizeHolidayBackgroundChoice(existing.pageBackground),
           rsvpEnabled: typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : typeof existing.rsvp?.isEnabled === "boolean" ? existing.rsvp.isEnabled : Boolean(existing.rsvp),
           rsvpDeadline: existing.rsvpDeadline ?? (typeof existing.rsvp === "string" ? existing.rsvp : existing.rsvp?.deadline) ?? "",
 
@@ -357,16 +382,32 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const currentTheme = useMemo(() => {
       const design = resolveGeneralCreationDesign(themeId);
-      const themed = getThemedEventDesign(themeId);
-      const base = themed ? getThemedEventTheme(themed) : design ? { id: design.id, name: design.name, ...design.theme } : config.themes.find((theme) => theme.id === themeId) || config.themes[0];
-      return (savedEventData.themeId || savedEventData.theme?.id || savedEventData.theme?.themeId) === themeId
+      const base = design ? getThemedEventTheme(design) : config.themes.find((theme) => theme.id === themeId) || config.themes[0];
+      const theme = (savedEventData.themeId || savedEventData.theme?.id || savedEventData.theme?.themeId) === themeId
         ? { ...base, ...(savedEventData.theme || {}) }
         : base;
-    }, [themeId, savedEventData]);
+      return pageBackground ? {
+        ...theme,
+        bg: "",
+        text: "text-inherit",
+        accent: "text-inherit",
+        bgStyle: { backgroundColor: pageBackground.page, color: pageBackground.ink },
+        backgroundColor: pageBackground.page,
+        ink: pageBackground.ink,
+        accentColor: pageBackground.accent,
+      } : theme;
+    }, [themeId, savedEventData, pageBackground]);
+    const headerDesign = pageDesign ? {
+      ...pageDesign,
+      background: currentTheme.backgroundColor || currentTheme.bgStyle?.backgroundColor || pageDesign.background,
+      ink: currentTheme.ink || currentTheme.bgStyle?.color || pageDesign.ink,
+      accent: currentTheme.accentColor || pageDesign.accent,
+    } : undefined;
 
     const isDarkBackground = useMemo(() => {
-      const themed = getThemedEventDesign(themeId);
-      if (themed) return isThemedEventDesignDark(themed);
+      if (pageBackground) return isDarkEventPageColor(pageBackground.page);
+      const design = resolveGeneralCreationDesign(themeId);
+      if (design) return isThemedEventDesignDark(design);
       const bg = currentTheme?.bg?.toLowerCase() ?? "";
       const id = currentTheme?.id?.toLowerCase() ?? "";
       const darkTokens = [
@@ -389,10 +430,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       const hasDarkHex = /#0[0-9a-f]{5,}/i.test(bg);
       const idHintsDark = /(night|dark)/i.test(id);
       return hasDarkToken || hasDarkHex || idHintsDark;
-    }, [currentTheme, themeId]);
+    }, [currentTheme, themeId, pageBackground]);
 
 
-    const authoredPalette = getThemedEventDesign(themeId);
+    const authoredPalette = resolveGeneralCreationDesign(themeId);
     const rawTextClass = authoredPalette ? "text-inherit" : currentTheme?.text || "";
     const forceLightText =
       !authoredPalette && isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
@@ -412,7 +453,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
       : undefined;
     // Title color for dark backgrounds - light gold/beige
-    const titleColor = authoredPalette ? { color: authoredPalette.ink } : isDarkBackground
+    const titleColor = pageBackground ? { color: pageBackground.ink } : authoredPalette ? { color: currentTheme.ink || authoredPalette.ink } : isDarkBackground
       ? { color: "#f5e6d3" } // Light beige/gold
       : undefined;
 
@@ -448,7 +489,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         endISO = end?.toISOString() || null;
       }
       const payload: any = {
-        title: data.title || displayName,
+        title: data.title || pageDesign?.coverTitle || displayName,
         data: {
           ...savedEventData,
           category: config.category,
@@ -479,6 +520,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           creationCollection: data.creationCollection || initialCollection,
           holidayOccasion: data.holidayOccasion || null,
           bodyDesignId: data.bodyDesignId || null,
+          pageBackground: pageBackground ? pageBackgroundChoice : undefined,
           customFields: {
             ...data.extra,
             advancedSections: advancedState,
@@ -488,7 +530,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           heroImage: heroImageUrl,
           fontSize: data.fontSize,
           themeId,
-          theme: (savedEventData.themeId || savedEventData.theme?.id || savedEventData.theme?.themeId) === themeId ? savedEventData.theme || currentTheme : currentTheme,
+          theme: currentTheme,
           ...(data.passcodeRequired && data.passcode
             ? {
               accessControl: {
@@ -529,6 +571,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     data.creationCollection,
     data.holidayOccasion,
     data.bodyDesignId,
+    data.pageBackground,
     initialCollection,
     data.rsvpEnabled,
     data.rsvpDeadline,
@@ -545,7 +588,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       router,
     ]);
 
-    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting && creationReady, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
+    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId, theme: currentTheme }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting && creationReady, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
@@ -617,7 +660,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<Type size={18} />}
             onClick={() => setActiveView("headline")}
           />
-          <MenuCard title="Design" desc="Page style, typography, and colors." icon={<Type size={18} />} onClick={() => setActiveView("design")} />
+          <MenuCard title="Design" desc="Artwork, page style, and typography." icon={<Type size={18} />} onClick={() => setActiveView("design")} />
+          <MenuCard title="Background" desc={pageDesign?.occasion ? "Holiday backgrounds and coordinated colors." : "Choose page colors."} icon={<Palette size={18} />} onClick={() => setActiveView("background")} />
 
           <MenuCard
             title="Details"
@@ -721,6 +765,41 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <div ref={designGalleryScrollRef} className="max-h-[65vh] overflow-y-auto overscroll-contain pr-1" role="region" aria-label={collectionLabel ? `${collectionLabel} designs` : "General event designs"} tabIndex={0}>
             <CreationTemplateGallery templates={designTemplates} onSelect={selectDesign} selectedTemplateId={themeId} scrollRoot={designGalleryScrollRef} compact />
           </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
+              Text Size
+            </label>
+            <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
+              {["small", "medium", "large"].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setData((p) => ({ ...p, fontSize: size }))}
+                  className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
+                    data.fontSize === size
+                      ? "bg-white text-indigo-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </EditorLayout>
+    );
+
+    const renderBackgroundEditor = () => (
+      <EditorLayout title="Background" onBack={() => setActiveView("main")} showBack>
+        {pageDesign?.occasion ? (
+          <HolidayBackgroundPicker
+            designId={pageDesign.id}
+            value={pageBackgroundChoice}
+            onChange={(choice) => updateData("pageBackground", choice || getHolidayBackgroundChoice(getHolidayBackground(pageDesign.id)?.id, "template"))}
+          />
+        ) : (
+          <div className="space-y-3">
           <button
             onClick={() => setThemesExpanded(!themesExpanded)}
             className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
@@ -757,27 +836,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
           )}
 
-          <div>
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
-              Text Size
-            </label>
-            <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
-              {["small", "medium", "large"].map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setData((p) => ({ ...p, fontSize: size }))}
-                  className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
-                    data.fontSize === size
-                      ? "bg-white text-indigo-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
           </div>
-        </div>
+        )}
       </EditorLayout>
     );
 
@@ -971,7 +1031,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     return (
-      <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={templatesHref} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+      <EventEditorWorkspace sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "background": renderBackgroundEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={templatesHref} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
@@ -985,8 +1045,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               style={currentTheme.bgStyle}
               data-event-page-design={data.bodyDesignId || themeId}
             >
-              <div className="relative z-10">
-                <ThemedEventHeader design={getThemedEventDesign(data.bodyDesignId || themeId)} fontFamily={currentTheme.fontFamily}>
+              <HolidayPageBackground background={pageBackground} className="relative z-10">
+                <ThemedEventHeader design={headerDesign} fontFamily={currentTheme.fontFamily}>
                 <TemplateImageTone enabled={data.heroImageFilterEnabled !== false} color={currentTheme.accent || currentTheme.bg}>
 <div className="relative w-full aspect-video">
                   {data.hero ? (
@@ -1012,6 +1072,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}
                 >
                   <div>
+                    {pageDesign && <p className="text-xs uppercase tracking-[.18em] mb-3 opacity-75">{pageDesign.label}</p>}
                     <h1
                       className={`text-3xl md:text-5xl font-serif mb-2 leading-tight ${textClass}`}
                       style={{
@@ -1020,14 +1081,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         ...(titleColor || {}),
                       }}
                     >
-                      {data.title || displayName}
+                      {data.title || pageDesign?.coverTitle || displayName}
                     </h1>
                     {infoLine}
                   </div>
                 </div>
 
                 </ThemedEventHeader>
-                <TemplateBodyLayout presentation={getThemedEventBodyPresentation(data.bodyDesignId || themeId)} style={getThemedEventDesign(data.bodyDesignId || themeId) ? { "--body-heading-font": currentTheme.fontFamily } : undefined}>
+                <TemplateBodyLayout presentation={bodyPresentation} style={pageDesign ? { "--body-heading-font": currentTheme.fontFamily, ...(pageBackground ? { "--body-tint": pageBackground.surface } : {}) } : undefined}>
 <section id="details" className="py-10 border-t border-white/10 px-6 md:px-10">
                   <h2
                     className={`text-2xl mb-3 ${accentClass}`}
@@ -1239,18 +1300,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 >
                   <EnvitefyEventBranding category="Events" inverse={isDarkBackground} />
                 </footer>
-              </div>
+              </HolidayPageBackground>
             </div>
           </div>
         </EventCanvas>}
  controls={<><ScrollHandoffContainer className="min-h-full">
 
 
-            <div className="p-6 pt-4 md:pt-6">
+            <div data-event-editor-fields className="p-6 pt-4 md:pt-6">
               {(activeView === "main" || activeView === "images") && renderMainMenu()}
               {activeView === "headline" && renderHeadlineEditor}
 
               {activeView === "design" && renderDesignEditor()}
+              {activeView === "background" && renderBackgroundEditor()}
               {activeView === "details" && renderDetailsEditor()}
               {activeView === "rsvp" && renderRsvpEditor()}
               {activeView === "passcode" && renderPasscodeEditor()}

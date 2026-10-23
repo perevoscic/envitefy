@@ -9,7 +9,11 @@ import "@/components/event-create/imported-event-theme.css";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 import { getThemedEventDesign, getThemedEventBodyPresentation, getThemedEventTheme, isThemedEventDesignDark } from "@/lib/event-page-themed-designs";
+import { getGeneralEventPageDesign, getGeneralEventBodyPresentation } from "@/lib/general-event-presentation";
 import ThemedEventHeader from "@/components/templates/ThemedEventHeader";
+import HolidayPageBackground from "@/components/events/HolidayPageBackground";
+import { getHolidayBackground, normalizeHolidayBackgroundChoice } from "@/lib/holiday-backgrounds";
+import { isDarkEventPageColor } from "@/lib/event-page-chrome";
 import { buildCalendarLinks } from "@/utils/calendar-links";
 
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -400,6 +404,10 @@ export default function SimpleTemplateView({
   // Use state data if available, fallback to prop
   const currentData = eventDataState || eventData;
   const themedDesign = getThemedEventDesign(currentData?.bodyDesignId || currentData?.templateEditor?.templateId || currentData?.themeId);
+  const pageDesign = themedDesign || getGeneralEventPageDesign(currentData?.bodyDesignId || currentData?.templateEditor?.templateId || currentData?.themeId);
+  const savedBackgroundChoice = normalizeHolidayBackgroundChoice(currentData?.pageBackground);
+  const matchingBackground = savedBackgroundChoice ? getHolidayBackground(pageDesign?.id, savedBackgroundChoice) : undefined;
+  const pageBackground = matchingBackground?.id === savedBackgroundChoice?.presetId ? matchingBackground : undefined;
   const simpleDesignTokens =
     currentData?.designTokens || currentData?.customFields?.designTokens || null;
   const hasSimpleDesignTokens = Boolean(
@@ -505,7 +513,7 @@ export default function SimpleTemplateView({
     const imported = importedSportsTheme(importedTheme);
     if (imported) return imported;
     // The theme object should be stored directly in currentData.theme
-    const storedTheme = currentData?.theme || (themedDesign ? getThemedEventTheme(themedDesign) : undefined);
+    const storedTheme = currentData?.theme || (pageDesign ? getThemedEventTheme(pageDesign) : undefined);
 
     // Debug logging
     if (typeof window !== "undefined") {
@@ -515,11 +523,26 @@ export default function SimpleTemplateView({
     }
 
     // Accept theme if it has text and either bg (solid) or bgStyle (gradient)
-    if (storedTheme?.text && (storedTheme?.bg || storedTheme?.bgStyle)) {
-      return storedTheme;
-    }
-    return DEFAULT_THEME;
+    const selectedTheme = storedTheme?.text && (storedTheme?.bg || storedTheme?.bgStyle)
+      ? storedTheme
+      : DEFAULT_THEME;
+    return pageBackground ? {
+      ...selectedTheme,
+      bg: "",
+      text: "text-inherit",
+      accent: "text-inherit",
+      bgStyle: { backgroundColor: pageBackground.page, color: pageBackground.ink },
+      backgroundColor: pageBackground.page,
+      ink: pageBackground.ink,
+      accentColor: pageBackground.accent,
+    } : selectedTheme;
   })();
+  const headerDesign = pageDesign ? {
+    ...pageDesign,
+    background: theme.backgroundColor || theme.bgStyle?.backgroundColor || pageDesign.background,
+    ink: theme.ink || theme.bgStyle?.color || pageDesign.ink,
+    accent: theme.accentColor || pageDesign.accent,
+  } : undefined;
 
   // Template config
   const templateConfig = currentData?.templateConfig || {};
@@ -712,7 +735,8 @@ export default function SimpleTemplateView({
 
   // Theme classes
   const isDarkBackground = (() => {
-    if (themedDesign && (!currentData?.themeId || currentData.themeId === themedDesign.id)) return isThemedEventDesignDark(themedDesign);
+    if (pageBackground) return isDarkEventPageColor(pageBackground.page);
+    if (pageDesign && (!currentData?.themeId || currentData.themeId === pageDesign.id)) return isThemedEventDesignDark(pageDesign);
     // Prefer palette inference when available
     if (paletteIsDark !== null) return paletteIsDark;
     const bg = theme?.bg?.toLowerCase() ?? "";
@@ -760,7 +784,7 @@ export default function SimpleTemplateView({
   const paletteTextFallback =
     paletteIsDark === null ? "" : paletteIsDark ? "text-white" : "text-slate-900";
 
-  const authoredPalette = themedDesign && (!currentData?.themeId || currentData.themeId === themedDesign.id);
+  const authoredPalette = pageDesign && (!currentData?.themeId || currentData.themeId === pageDesign.id);
   const rawTextClass = authoredPalette ? "text-inherit" : theme?.text || paletteTextFallback;
   const neutralPreviewSurface = neutralPreview?.surface || "white";
   const neutralPaletteDriven = Boolean(neutralPreview?.paletteDriven);
@@ -804,7 +828,7 @@ export default function SimpleTemplateView({
       isDarkBackground);
   const headingShadow = usesLightText ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" } : undefined;
   const bodyShadow = usesLightText ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" } : undefined;
-  const titleColor = authoredPalette ? { color: themedDesign.ink } : neutralUsesPalette
+  const titleColor = pageBackground ? { color: pageBackground.ink } : authoredPalette ? { color: theme.ink || pageDesign.ink } : neutralUsesPalette
     ? { color: "var(--color-heading, #1f2937)" }
     : hasSimpleDesignTokens
       ? undefined
@@ -840,6 +864,7 @@ export default function SimpleTemplateView({
     simpleDesignTokens?.titleFont ||
     currentData?.fontFamily ||
     currentData?.theme?.fontFamily ||
+    pageDesign?.font ||
     "var(--font-playfair)";
   const headingSizeClass =
     currentData?.fontSizeClass || currentData?.theme?.fontSizeH1 || "text-3xl md:text-5xl";
@@ -4714,12 +4739,12 @@ export default function SimpleTemplateView({
                 ? neutralBackgroundStyle
                 : hasSimpleDesignTokens
                   ? { backgroundColor: "var(--bg)", color: "var(--text)" }
-                  : paletteBackgroundStyle || backgroundStyle
+                  : pageBackground ? backgroundStyle : paletteBackgroundStyle || backgroundStyle
             }
           >
-            <div className="relative z-10">
+            <HolidayPageBackground background={disableThemeBackground ? undefined : pageBackground} className="relative z-10">
               {/* Header */}
-              <ThemedEventHeader design={themedDesign} fontFamily={headingFontFamily}>
+              <ThemedEventHeader design={headerDesign} fontFamily={headingFontFamily}>
               <TemplateImageTone enabled={currentData.heroImageFilterEnabled !== false} color={theme.accent || paletteColors[0] || theme.bg}>
 <div className="relative w-full h-64 md:h-96">
                 {heroImage?.trim() ? (
@@ -4809,6 +4834,7 @@ export default function SimpleTemplateView({
                   </div>
                 )}
                 <div className="pr-0 md:pr-32">
+                  {pageDesign && <p className="text-xs uppercase tracking-[.18em] mb-3 opacity-75">{pageDesign.label}</p>}
                   <h1
                     data-role="page-title"
                     className={`page-title ${headingSizeClass} mb-2 leading-tight ${textClass}`}
@@ -4886,7 +4912,7 @@ export default function SimpleTemplateView({
 
 
               {/* Details Section */}
-              <TemplateBodyLayout presentation={getThemedEventBodyPresentation(currentData?.bodyDesignId || currentData?.templateEditor?.templateId || currentData?.themeId) || (normalizedCategory === "sport_event" || currentData?.templateEditor?.category === "sport-events" ? getTemplateBodyPresentation("sport-events", currentData?.bodyDesignId || currentData?.templateEditor?.templateId || `${currentData?.customFields?.sport || currentData?.activityProfile || "football"}--stadium`) : undefined)}>
+              <TemplateBodyLayout presentation={getThemedEventBodyPresentation(currentData?.bodyDesignId || currentData?.templateEditor?.templateId || currentData?.themeId) || getGeneralEventBodyPresentation(currentData?.bodyDesignId || currentData?.templateEditor?.templateId || currentData?.themeId) || (normalizedCategory === "sport_event" || currentData?.templateEditor?.category === "sport-events" ? getTemplateBodyPresentation("sport-events", currentData?.bodyDesignId || currentData?.templateEditor?.templateId || `${currentData?.customFields?.sport || currentData?.activityProfile || "football"}--stadium`) : undefined)} style={pageDesign ? { "--body-heading-font": headingFontFamily, ...(pageBackground ? { "--body-tint": pageBackground.surface } : {}) } : undefined}>
               <section
                 id="details"
                 className="py-10 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
@@ -5248,7 +5274,7 @@ export default function SimpleTemplateView({
               <footer className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}>
                 <EnvitefyEventBranding category={normalizedCategory} inverse={isDarkBackground} />
               </footer>
-            </div>
+            </HolidayPageBackground>
           </div>
         </div>
       </div>

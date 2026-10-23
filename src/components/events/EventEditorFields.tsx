@@ -1,9 +1,9 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
-import { useId, useState, type ChangeEvent, type ReactNode } from "react";
-import styles from "./event-editor.module.css";
+import { type ChangeEvent, type ReactNode, useId, useState } from "react";
 import { useSectionEditorClose } from "./EventSectionEditorContext";
+import styles from "./event-editor.module.css";
 
 export function EventEditorInput({
   label,
@@ -67,6 +67,8 @@ export function EventEditorMenuCard({
   opacity,
   status,
   showsOnEvent,
+  compact = false,
+  active = false,
 }: {
   title: string;
   icon?: ReactNode;
@@ -75,7 +77,37 @@ export function EventEditorMenuCard({
   opacity?: string;
   status?: "not-started" | "in-progress" | "ready";
   showsOnEvent?: string;
+  compact?: boolean;
+  active?: boolean;
 }) {
+  if (compact) {
+    return (
+      <button
+        type="button"
+        className={styles.toolCard}
+        onClick={onClick}
+        aria-label={title}
+        aria-pressed={active}
+      >
+        <span className={styles.toolGlow} aria-hidden="true" />
+        {(["front", "back"] as const).map((face) => (
+          <span
+            key={face}
+            className={`${styles.toolFace} ${face === "back" ? styles.toolFaceBack : styles.toolFaceFront}`}
+            aria-hidden="true"
+          >
+            <span className={styles.menuIcon}>{icon}</span>
+            <span className={styles.menuText}>
+              <strong>{title}</strong>
+            </span>
+          </span>
+        ))}
+        <span className={styles.menuDescription} hidden>
+          {desc}
+        </span>
+      </button>
+    );
+  }
   return (
     <button type="button" className={`${styles.menuCard} ${opacity || ""}`} onClick={onClick}>
       <span className={styles.menuIcon} aria-hidden="true">
@@ -83,7 +115,7 @@ export function EventEditorMenuCard({
       </span>
       <span className={styles.menuText}>
         <strong>{title}</strong>
-        <span>{desc}</span>
+        <span className={styles.menuDescription}>{desc}</span>
         {showsOnEvent && <span>Shows on event: {showsOnEvent}</span>}
         {status && (
           <span>
@@ -97,6 +129,14 @@ export function EventEditorMenuCard({
       </span>
       <ChevronRight size={17} aria-hidden="true" />
     </button>
+  );
+}
+
+export function EventEditorToolsRow({ children }: { children: ReactNode }) {
+  return (
+    <div className={styles.compositionMenu} role="group" aria-label="Page tools">
+      {children}
+    </div>
   );
 }
 
@@ -187,6 +227,7 @@ export function EventEditorSections({
     title: string;
     description: string;
     icon?: ReactNode;
+    tool?: boolean;
     content: ReactNode;
   }[];
   activeSection?: string;
@@ -198,8 +239,24 @@ export function EventEditorSections({
   const [localSection, setLocalSection] = useState("main");
   const active = activeSection ?? localSection;
   const select = onSectionChange ?? setLocalSection;
+  const tools = sections.filter((section) => section.tool);
   return (
     <div className={styles.sectionNavigation}>
+      {tools.length > 0 && (
+        <EventEditorToolsRow>
+          {tools.map((section) => (
+            <EventEditorMenuCard
+              key={section.id}
+              compact
+              active={section.id === active}
+              title={section.title}
+              desc={section.description}
+              icon={section.icon}
+              onClick={() => select(section.id)}
+            />
+          ))}
+        </EventEditorToolsRow>
+      )}
       <div hidden={active !== "main"} className={styles.sectionMenu}>
         <header className={styles.menuHeader}>
           <h2>Add your details</h2>
@@ -207,15 +264,17 @@ export function EventEditorSections({
         </header>
         <p>Edit your event details and design.</p>
         {menuContent}
-        {sections.map((section) => (
-          <EventEditorMenuCard
-            key={section.id}
-            title={section.title}
-            desc={section.description}
-            icon={section.icon}
-            onClick={() => select(section.id)}
-          />
-        ))}
+        {sections
+          .filter((section) => !section.tool)
+          .map((section) => (
+            <EventEditorMenuCard
+              key={section.id}
+              title={section.title}
+              desc={section.description}
+              icon={section.icon}
+              onClick={() => select(section.id)}
+            />
+          ))}
         {menuFooter}
       </div>
       {sections.map((section) => (

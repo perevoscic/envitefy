@@ -1576,7 +1576,7 @@ const App = () => {
     closeMobileMenu,
     dismissMobileMenu, previewTouchHandlers,
     drawerTouchHandlers,
-  } = useMobileDrawer(true, "event-actions", true);
+  } = useMobileDrawer(false, "event-actions", true);
   const [_designOpen, _setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const designGridRef = useRef<HTMLDivElement | null>(null);
@@ -3665,6 +3665,7 @@ const renderDesignEditor = () => (
  controls={<><ScrollHandoffContainer className="min-h-full">
 
           <div
+            data-event-editor-fields
             className={`p-6 pt-4 md:pt-6 ${
               (activeView === "main" || activeView === "images") ? "h-full flex flex-col" : ""
             }`}

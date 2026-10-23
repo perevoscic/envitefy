@@ -62,7 +62,9 @@ import { validateClientUploadFile } from "@/utils/media-upload-client";
 import CategoryScrollPicker from "./CategoryScrollPicker";
 import EventTypeFilter from "./EventTypeFilter";
 import EventTypeSearch from "./EventTypeSearch";
+import UploadDocumentFan from "./UploadDocumentFan";
 import styles from "./create-workspace.module.css";
+import uploadStyles from "./upload-document-fan.module.css";
 
 const EventCustomThemeDialog = dynamic(
   () => import("@/components/events/custom/EventCustomThemeDialog"),
@@ -395,7 +397,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
     };
   }, [restore]);
   useEffect(() => {
-    if (phase === "templates") headingRef.current?.focus();
+    if (phase === "templates") (headingRef.current || pageTitleRef.current)?.focus();
   }, [phase]);
 
   const invalidate = () => {
@@ -940,10 +942,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
       <div className={styles.container}>
         <header className={styles.header}>
           <div>
-            {phase === "templates" && manualCreation ? (
-              <p className={styles.eyebrow}>Design</p>
-            ) : null}
-            <h1 ref={pageTitleRef} className={styles.title}>
+            <h1 ref={pageTitleRef} tabIndex={-1} className={styles.title}>
               {phase === "templates"
                 ? manualCreation
                   ? "Choose your design"
@@ -1071,7 +1070,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                     >
                       <legend className="sr-only">Event information</legend>
                       {mode === "scratch" ? (
-                        <div className={styles.categoryPanel}>
+                        <div className={styles.categoryPanel} data-category-panel>
                           <EventTypeFilter
                             compact
                             choices={manualChoices}
@@ -1111,7 +1110,8 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                         <form onSubmit={(event) => void readSource(event)}>
                           {mode === "files" ? (
                             <div
-                              className={`${styles.dropZone} ${dragging ? styles.dropZoneDragging : ""}`}
+                              className={`${styles.dropZone} ${!files.length ? uploadStyles.emptyDropZone : ""} ${dragging ? styles.dropZoneDragging : ""}`}
+                              data-upload-drop-zone
                               onDragOver={(event) => {
                                 event.preventDefault();
                                 if (changingMode.current || restoring) return;
@@ -1126,17 +1126,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                               }}
                             >
                               {!files.length ? (
-                                <>
-                                  <span className={styles.dropIcon}>
-                                    <Upload aria-hidden="true" />
-                                  </span>
-                                  <h2 className={styles.taskHeading}>
-                                    Drop your flyer or PDF here
-                                  </h2>
-                                  <p className={styles.taskIntro}>
-                                    We’ll read the details and open your event editor.
-                                  </p>
-                                </>
+                                <UploadDocumentFan />
                               ) : (
                                 <>
                                   <h2 className={styles.taskHeading}>
@@ -1175,15 +1165,20 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                               )}
                               <button
                                 type="button"
-                                className={styles.uploadButton}
+                                className={`${styles.uploadButton} ${uploadStyles.chooseFiles}`}
                                 onClick={() => inputRef.current?.click()}
                               >
                                 <Upload className="size-4" aria-hidden="true" />
                                 {files.length ? "Add files" : "Choose files"}
                               </button>
-                              <p className={styles.formats}>
+                              <p className={`${styles.formats} ${uploadStyles.formats}`}>
                                 JPG, PNG, WebP · Up to 5 photos or one PDF
                               </p>
+                              {!files.length ? (
+                                <p className={uploadStyles.more}>
+                                  Baby showers, graduations, workshops &amp; more
+                                </p>
+                              ) : null}
                               <input
                                 ref={inputRef}
                                 type="file"
@@ -1279,7 +1274,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                                       ? !text.trim()
                                       : !url.trim())
                                 }
-                                className={`${primary} inline-flex w-full items-center justify-center gap-2`}
+                                className={`${primary} inline-flex items-center justify-center gap-2`}
                               >
                                 {mode === "files"
                                   ? error
@@ -1354,61 +1349,61 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
               <ArrowLeft className="size-4" aria-hidden="true" />
               Back to your information
             </button>
-            <div className={styles.summary}>
-              <div className={styles.summaryFacts}>
-                <p className="mb-2 text-xs font-medium text-[#786b80]">
-                  {intake.source.kind === "scratch"
-                    ? "Your event"
-                    : intake.classification?.confidence === "low"
+            {!manualCreation ? (
+              <div className={styles.summary}>
+                <div className={styles.summaryFacts}>
+                  <p className="mb-2 text-xs font-medium text-[#786b80]">
+                    {intake.classification?.confidence === "low"
                       ? "Check the event type below"
                       : "From your event information"}
-                </p>
-                <h2 ref={headingRef} tabIndex={-1} className={styles.summaryTitle}>
-                  {information?.details.title || createGuessLabel(guess)}
-                </h2>
-                <p className={styles.summaryDetails}>
-                  {[
-                    information?.details.date,
-                    information?.details.time,
-                    information?.details.venue || information?.details.location,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ") || "Add your event details in the editor after choosing a design."}
-                </p>
+                  </p>
+                  <h2 ref={headingRef} tabIndex={-1} className={styles.summaryTitle}>
+                    {information?.details.title || createGuessLabel(guess)}
+                  </h2>
+                  <p className={styles.summaryDetails}>
+                    {[
+                      information?.details.date,
+                      information?.details.time,
+                      information?.details.venue || information?.details.location,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Add your event details in the editor after choosing a design."}
+                  </p>
+                </div>
+                <label className={styles.categoryField}>
+                  Event type
+                  <select
+                    aria-label="Event type"
+                    value={`${guess.category}:${guess.sport || ""}`}
+                    onChange={(event) => {
+                      const choice = choices.find(
+                        (item) => `${item.category}:${item.sport || ""}` === event.target.value,
+                      );
+                      if (choice)
+                        void chooseCategory(choice).catch((failure) => setError(String(failure)));
+                    }}
+                  >
+                    {!choices.some(
+                      (item) => item.category === guess.category && item.sport === guess.sport,
+                    ) ? (
+                      <option value={`${guess.category}:${guess.sport || ""}`}>
+                        {createGuessLabel(guess)}
+                        {!supportedGuess ? " — access required" : ""}
+                      </option>
+                    ) : null}
+                    {choices.map((choice) => (
+                      <option
+                        key={`${choice.category}:${choice.sport}`}
+                        value={`${choice.category}:${choice.sport || ""}`}
+                      >
+                        {createGuessLabel(choice)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
-              <label className={styles.categoryField}>
-                Event type
-                <select
-                  aria-label="Event type"
-                  value={`${guess.category}:${guess.sport || ""}`}
-                  onChange={(event) => {
-                    const choice = choices.find(
-                      (item) => `${item.category}:${item.sport || ""}` === event.target.value,
-                    );
-                    if (choice)
-                      void chooseCategory(choice).catch((failure) => setError(String(failure)));
-                  }}
-                >
-                  {!choices.some(
-                    (item) => item.category === guess.category && item.sport === guess.sport,
-                  ) ? (
-                    <option value={`${guess.category}:${guess.sport || ""}`}>
-                      {createGuessLabel(guess)}
-                      {!supportedGuess ? " — access required" : ""}
-                    </option>
-                  ) : null}
-                  {choices.map((choice) => (
-                    <option
-                      key={`${choice.category}:${choice.sport}`}
-                      value={`${choice.category}:${choice.sport || ""}`}
-                    >
-                      {createGuessLabel(choice)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {guess.category === "holidays-seasonal" && supportedGuess ? (
+            ) : null}
+            {!manualCreation && guess.category === "holidays-seasonal" && supportedGuess ? (
               <div className={styles.collectionPanel}>
                 <label className={styles.collectionFilter} htmlFor="creation-holiday-occasion">
                   Holiday or occasion

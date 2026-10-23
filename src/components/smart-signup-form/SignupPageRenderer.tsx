@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import HolidayPageBackground from "@/components/events/HolidayPageBackground";
 import { EVENT_GUEST_ACTIONS } from "@/lib/event-guest-actions";
-import { resolveSignupDesign, resolveSignupThemeStyle, signupContrast } from "@/lib/signup-themes";
+import { resolveSignupDesign, resolveSignupHolidayBackground, resolveSignupThemeStyle, signupContrast } from "@/lib/signup-themes";
 import type { SignupForm } from "@/types/signup";
 import SignupFormFooter from "./SignupFormFooter";
 import type { SignupHeaderEditing } from "./SignupHeaderDetailsEditor";
@@ -35,13 +36,15 @@ export default function SignupPageRenderer({
 }) {
   const design = resolveSignupDesign(form.appearance);
   const themeStyle = resolveSignupThemeStyle(form);
-  const pageColor = String(themeStyle["--signup-page" as keyof typeof themeStyle] || "#F3F2EE");
+  const background = resolveSignupHolidayBackground(form.appearance);
+  const pageColor = background?.page || String(themeStyle["--signup-page" as keyof typeof themeStyle] || "#F3F2EE");
   const inverseFooter = signupContrast(pageColor, "#FFFFFF") > signupContrast(pageColor, "#000000");
   const hasHeaderArtwork =
     form.appearance?.headerLayout !== "none" &&
     Boolean(form.header?.backgroundImage || form.header?.images?.length);
   const showActions = editing || EVENT_GUEST_ACTIONS.some(({ id }) => form.guestActions?.[id] !== false);
   return (
+    <HolidayPageBackground background={background} style={background ? { minHeight: "inherit" } : undefined}>
     <div
       className={`${styles.page} ${className}`}
       data-appearance-scope="authored"
@@ -49,6 +52,7 @@ export default function SignupPageRenderer({
       data-signup-theme={form.appearance?.themeId || "legacy"}
       data-signup-design={design?.id}
       data-signup-composition={design?.composition}
+      data-signup-background={background?.id}
     >
       <div className={styles.sheet}>
         {ownerActions && (
@@ -90,5 +94,6 @@ export default function SignupPageRenderer({
         <SignupFormFooter inverse={inverseFooter} />
       </div>
     </div>
+    </HolidayPageBackground>
   );
 }

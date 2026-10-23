@@ -15,6 +15,7 @@ function editor(value, multiline = false) {
   const slots = [];
   const changes = [];
   let cursor = 0;
+  let readOnly = false;
   const hooks = {
     useState(initial) {
       const index = cursor++;
@@ -32,6 +33,7 @@ function editor(value, multiline = false) {
       return slots[index];
     },
     useEffect() {},
+    useId: () => "description",
   };
   const module = { exports: {} };
   new Function("require", "module", "exports", "requestAnimationFrame", code)(
@@ -40,6 +42,8 @@ function editor(value, multiline = false) {
         ? hooks
         : name === "lucide-react"
           ? {}
+          : name === "./EventPageReadOnlyContext"
+            ? { useEventPageReadOnly: () => readOnly }
           : name.endsWith(".css")
             ? {}
             : require(name),
@@ -69,8 +73,20 @@ function editor(value, multiline = false) {
   const open = () => control("Edit welcome message").props.onClick();
   const input = () => control("Welcome message");
   const type = (text) => input().props.onChange({ target: { value: text } });
-  return { props, changes, render, control, open, input, type };
+  return { props, changes, render, control, open, input, type, setReadOnly: value => { readOnly = value; } };
 }
+
+test("the clean page hides inline editing while preserving its wording and mounted draft", () => {
+  const h = editor("Original");
+  h.open();
+  h.type("Host wording");
+  h.setReadOnly(true);
+  assert.equal(h.render(), "Host wording");
+  assert.equal(h.control("Edit welcome message"), undefined);
+  h.setReadOnly(false);
+  assert.equal(h.input().props.value, "Host wording");
+  assert.deepEqual(h.changes, ["Host wording"]);
+});
 
 test("typing updates memory, Done commits and Cancel restores the exact prior override", () => {
   const h = editor("Original");

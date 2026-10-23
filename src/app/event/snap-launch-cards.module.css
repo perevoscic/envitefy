@@ -1,10 +1,144 @@
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 88px;
+  padding: 16px 14px;
+  border: 1px solid #d8cfea;
+  border-radius: 20px;
+  background: rgb(255 255 255 / 70%);
+  color: #49366b;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgb(43 26 69 / 3%);
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.action:hover {
+  background: #fff;
+  box-shadow: 0 6px 18px rgb(43 26 69 / 9%);
+  transform: translateY(-2px);
+}
+
+.action:active {
+  transform: translateY(0);
+}
+.action:focus-visible {
+  outline: 3px solid var(--focus-ring, #a38ae6);
+  outline-offset: 4px;
+}
+
+.action.cameraAction {
+  border-color: transparent;
+  background: #6742d9;
+  color: #fff;
+  box-shadow: 0 8px 20px rgb(103 66 217 / 18%);
+}
+
+.action.cameraAction:hover {
+  background: #5934c7;
+}
+.action.dragging {
+  outline: 3px dashed var(--focus-ring, #a38ae6);
+  outline-offset: 4px;
+}
+.actionIcon {
+  flex: 0 0 auto;
+  width: 25px;
+  height: 25px;
+}
+.actionText {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.actionLabel {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.actionDescription {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.error {
+  margin: 16px 0 0;
+  color: var(--error, #a72a4b);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+:global(html.dark) .action {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  color: var(--foreground);
+  box-shadow:
+    inset 0 1px 0 #ffffff08,
+    0 8px 20px #00000020;
+}
+
+:global(html.dark) .action:hover {
+  background: var(--surface-alt);
+}
+:global(html.dark) .action.cameraAction {
+  border-color: transparent;
+  background: #c7b3ff;
+  color: #2b194f;
+}
+:global(html.dark) .action.cameraAction:hover {
+  background: #d3c3ff;
+}
+
+@media (max-width: 380px) {
+  .action {
+    min-height: 104px;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+  .actionLabel {
+    font-size: 14px;
+  }
+  .actionDescription {
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action {
+    transition: none;
+  }
+  .action:hover {
+    transform: none;
+  }
+}
+
 :global(html.dark) .tile {
-  box-shadow: inset 0 1px 0 #ffffff08, 0 12px 28px #00000040;
+  box-shadow:
+    inset 0 1px 0 #ffffff08,
+    0 12px 28px #00000040;
   outline-color: var(--focus-ring);
 }
 
 :global(html.dark) .tile:hover {
-  box-shadow: inset 0 1px 0 #ffffff0d, 0 14px 32px #00000050;
+  box-shadow:
+    inset 0 1px 0 #ffffff0d,
+    0 14px 32px #00000050;
 }
 
 :global(html.dark) .tile:focus-visible {

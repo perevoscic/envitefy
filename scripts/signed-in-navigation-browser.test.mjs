@@ -52,7 +52,7 @@ async function assertAccountFooter(account,label) {
   assert.equal(geometry.columns.length,2,`${label} uses two footer columns`);
   assert.ok(Math.abs(geometry.columns[0]-geometry.columns[1])<=1,`${label} uses equal footer columns`);
   assert.ok(Math.abs(geometry.logout.centerY-geometry.toggle.centerY)<=1,`${label} aligns the footer controls horizontally`);
-  assert.ok(geometry.logout.right<=geometry.toggle.left,`${label} puts Log out on the left and the toggle on the right`);
+  assert.ok(geometry.toggle.right<=geometry.logout.left,`${label} puts the toggle on the left and Log out on the right`);
   assert.ok(geometry.earlierBottom<=geometry.row.top+1,`${label} keeps the shared row below the other account links`);
   const visibleAppearance=await account.getByText("Appearance",{exact:true}).evaluateAll(elements=>elements.filter(element=>{
     const rect=element.getBoundingClientRect();return rect.width>1&&rect.height>1&&element.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
@@ -91,6 +91,21 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
       evidence.push({label,property,actual,expected});if(actual!==expected)failures.push({label,property,actual,expected});
     };
     const snapshot=async(name)=>page.screenshot({path:path.join(out,`signed-in-navigation-${name}.png`)});
+    const assertCreateRoot=async(sidebar,label)=>{
+      const navigation=sidebar.getByRole("navigation",{name:"Main navigation",exact:true});
+      await navigation.waitFor();
+      for(const name of ["Snap a Flyer","Live Card","Create event","My Events","Drafts"]){
+        await navigation.getByRole("button",{name,exact:true}).waitFor();
+      }
+      const create=navigation.getByRole("button",{name:"Create event",exact:true});
+      assert.equal(await create.getAttribute("aria-current"),"page",`${label} keeps Create event selected`);
+      assert.equal(await navigation.getByRole("button",{name:"My Events",exact:true}).getAttribute("aria-current"),null,`${label} does not select My Events for a creation route`);
+      assert.equal(await sidebar.getByRole("region",{name:"Create Event list",exact:true,includeHidden:true}).count(),0,`${label} omits the duplicate category submenu`);
+      assert.equal(await sidebar.getByRole("region",{name:"Other Events list",exact:true,includeHidden:true}).count(),0,`${label} omits the nested category submenu`);
+      await check(`${label} Create event surface`,create,"backgroundColor","rgb(56, 45, 66)");
+      await check(`${label} Create event text`,create.locator(".nav-chrome-menu-label"),"color",pink);
+      await check(`${label} Create event icon`,create.locator("svg").first(),"color",pink);
+    };
     for(const tone of ["default","dark"]){
       await page.setViewportSize({width:1440,height:1080});
       await page.goto(`https://navigation.test/navigation?screen=navigation&tone=${tone}`);
@@ -132,14 +147,15 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
       await page.mouse.up();
       await snapshot(`${tone}-desktop-selected-hover`);
 
-      // Unified creation navigates away; category routes mount the retained category submenu.
-      await page.goto(`https://navigation.test/event/gymnastics?screen=navigation&tone=${tone}`);
-      const create=sidebar.getByRole("region",{name:"Create Event list",exact:true});
-      await create.getByRole("button",{name:"Birthdays",exact:true}).waitFor({timeout:10000});
-      const birthday=create.getByRole("button",{name:"Birthdays",exact:true});
-      await check(`${tone} create submenu text`,birthday.locator(".nav-chrome-menu-label"),"color",pink);
-      await check(`${tone} create submenu icon`,birthday.locator("svg").first(),"color",pink);
-      await snapshot(`${tone}-desktop-submenu`);
+      for(const pathname of ["/create","/event/gymnastics","/event/birthdays","/event/birthdays/customize"]){
+        await page.goto(`https://navigation.test${pathname}?screen=navigation&tone=${tone}`);
+        await assertCreateRoot(sidebar,`${tone} desktop ${pathname}`);
+        if(pathname==="/create"){
+          await page.reload();
+          await assertCreateRoot(sidebar,`${tone} desktop /create reload`);
+          await snapshot(`${tone}-desktop-create-root`);
+        }
+      }
       await page.goto(`https://navigation.test/navigation?screen=navigation&tone=${tone}`);
       await sidebar.getByRole("button",{name:"Snap a Flyer",exact:true}).waitFor();
 
@@ -195,6 +211,17 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
       await check(`${tone} mobile profile text`,account.getByRole("link",{name:"Profile",exact:true}).locator("span").last(),"color",pink);
       await assertAccountFooter(account,`${tone} mobile sidebar account footer`);
       await snapshot(`${tone}-mobile-profile`);
+      for(const pathname of ["/create","/event/gymnastics","/event/birthdays/customize"]){
+        await page.goto(`https://navigation.test${pathname}?screen=navigation&tone=${tone}`);
+        await page.getByRole("button",{name:"Open navigation",exact:true}).click();
+        await assertCreateRoot(sidebar,`${tone} mobile ${pathname}`);
+        if(pathname==="/create"){
+          await page.reload();
+          await page.getByRole("button",{name:"Open navigation",exact:true}).click();
+          await assertCreateRoot(sidebar,`${tone} mobile /create reload`);
+          await snapshot(`${tone}-mobile-create-root`);
+        }
+      }
       // Each iteration starts from a fresh page, with a pinned desktop rail.
       await context.addInitScript(()=>localStorage.setItem("sidebar:desktop-pinned","1"));
     }

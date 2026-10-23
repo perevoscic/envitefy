@@ -28,7 +28,7 @@ function App() {
   // Publication leaves the editor route in Next; the isolated fixture stops rendering it too.
   if (!search.get("collection")) return null;
   const bridal = search.get("collection") === "bridal-showers";
-  const general = ["graduations", "housewarming", "open-house", "religious-events"].includes(search.get("collection") || "");
+  const general = ["graduations", "housewarming", "open-house", "religious-events", "holidays-seasonal"].includes(search.get("collection") || "");
   return <UnsavedProgressProvider>{search.has("guest")
     ? <Guest id={search.get("id")!} bridal={bridal} />
     : general ? <General /> : <TemplateEditorProvider category={bridal ? "bridal-showers" : "sport-events"} templateId={search.get("templateId")!}>

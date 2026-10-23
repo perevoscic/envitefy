@@ -79,6 +79,7 @@ test("custom URLs work across Event Pages, Live Cards and Sign-up Forms without 
   try {
     records.set(id, record());
     await page.goto(`${base}/event/general/customize?mode=page&edit=${id}`);
+    await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
     await page.getByLabel("Event title", { exact: true }).fill("Pending corrected title");
     await page.getByRole("button", { name: /Custom URL/ }).click();
     const input = page.getByRole("textbox", { name: "Custom URL", exact: true });
@@ -147,6 +148,7 @@ test("custom URLs work across Event Pages, Live Cards and Sign-up Forms without 
     await page.getByText("Only the owner can change this URL.").waitFor();
     assert.equal(await input.count(), 0);
     await page.goto(`${base}/event/general/customize?mode=page&edit=${id}`);
+    await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
     await page.getByLabel("Event title", { exact: true }).fill("Co-host content edit");
     assert.equal(await page.getByRole("button", { name: /Custom URL/ }).count(), 0);
     await page.getByRole("button", { name: "Save changes", exact: true }).click();

@@ -27,6 +27,7 @@ import { isEventDraft } from "@/lib/event-draft-access";
 import { getSession } from "next-auth/react";
 import { attachCreationIntakeEvent, creationIntakeOwner, readCreationIntake, writeCreationIntake } from "@/lib/create/creation-intake";
 import { creationComposition, creationNativePayload } from "@/lib/create/editor-handoff";
+import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 import type { EventUrlUpdate } from "./EventUrlEditor";
 
 export type EventPageEditorSession = {
@@ -359,7 +360,7 @@ export function useEventPageEditor({
       ownerEventEditorReturnHref(search) ||
       (id.current
         ? buildEventPath(id.current, loaded?.title, { tab: "event" }, loaded?.public_slug)
-        : "/");
+        : UNIFIED_CREATION_ENABLED ? "/create" : "/");
     progress.requestLeave(() => {
       if (search?.get("embed") === "1" && window.parent !== window) {
         window.parent.postMessage(

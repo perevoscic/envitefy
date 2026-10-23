@@ -1687,7 +1687,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       closeMobileMenu,
       dismissMobileMenu, previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer(true, "event-actions", true);
+    } = useMobileDrawer(false, "event-actions", true);
     const fontListRef = useRef<HTMLDivElement | null>(null);
     const [fontScrollTop, setFontScrollTop] = useState(0);
     const updateData = useCallback((field: string, value: any) => {
@@ -2922,7 +2922,7 @@ const rawTextClass = currentTheme?.text || "";
  controls={<><ScrollHandoffContainer className="min-h-full">
 
 
-            <div className="p-6 pt-4 md:pt-6">
+            <div data-event-editor-fields className="p-6 pt-4 md:pt-6">
               {(activeView === "main" || activeView === "images") && renderMainMenu()}
               {activeView === "headline" && renderHeadlineEditor}
 

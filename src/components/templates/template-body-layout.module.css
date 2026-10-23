@@ -3,7 +3,8 @@
   --body-tint: color-mix(in srgb, currentColor 4%, transparent);
   --body-gap: clamp(1.5rem, 3vw, 3.5rem);
   min-width: 0;
-  padding: clamp(1.5rem, 4vw, 4rem) 0;
+  /* Every arrangement keeps a page gutter, even with just one visible section. */
+  padding: clamp(1.5rem, 4vw, 4rem) clamp(1rem, 3%, 2.5rem);
   container-type: inline-size;
 }
 .sections {
@@ -315,11 +316,20 @@
   border-radius: 0;
   padding: 2rem;
 }
-.body[data-body-radius] .panel {
+.body[data-body-radius]:not([data-body-authored-shape]) .panel {
   border-radius: var(--body-panel-radius);
 }
 .body[data-body-spacing] .panel {
   padding: var(--body-panel-padding);
+}
+.body[data-body-authored-shape]:is(
+    [data-body-surface="arch"],
+    [data-body-surface="capsule"],
+    [data-body-surface="oval"],
+    [data-body-surface="petal"]
+  )
+  .panel {
+  padding-block: max(var(--body-panel-padding, 1.5rem), 3.5rem);
 }
 .body[data-body-tone]:not([data-body-surface="outline"]):not([data-body-surface="ruled"]) .panel {
   background: var(--body-tint);

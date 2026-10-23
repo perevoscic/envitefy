@@ -31,6 +31,20 @@ test("seasonal galleries mix upcoming occasions, retain filters and links, and f
   });
   const cards = () => page.locator("[data-template-masonry-card]");
   const ids = () => cards().evaluateAll((nodes) => nodes.map((n) => n.getAttribute("data-template-masonry-card")));
+  const occasionCount = (category, occasion) => page.evaluate(({ category, occasion }) => {
+    const fixture = window.galleryFixture;
+    const templates = category === "general" ? fixture.generalDesigns : fixture.getPublicTemplates(category);
+    return templates.filter((template) => fixture.templateOccasion(template) === occasion).length;
+  }, { category, occasion });
+  const loadAllCards = async (expected) => {
+    await page.waitForFunction(() => document.querySelectorAll("[data-template-masonry-card]").length > 0);
+    while (await cards().count() < expected) {
+      const before = await cards().count();
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.waitForFunction((before) => document.querySelectorAll("[data-template-masonry-card]").length > before, before);
+    }
+    assert.equal(await cards().count(), expected, "automatic loading reaches every matching released design");
+  };
   const goto = async (category, extras = "") => {
     await page.goto(`${origin}/gallery?category=${category}${extras}`);
     await page.waitForFunction(() => Boolean(window.galleryFixture));
@@ -53,7 +67,7 @@ test("seasonal galleries mix upcoming occasions, retain filters and links, and f
       const expectedCollections = new Set([...availableCollections, ...(category === "signup-forms" ? ["fall-harvest", "friendsgiving", "back-to-school", "graduation", "hanukkah"] : [])]);
       assert.equal(await occasionSelect.locator("option").count(), expectedCollections.size + 1);
       await occasionSelect.selectOption("corn-maze");
-      await page.waitForFunction((count) => document.querySelectorAll("[data-template-masonry-card]").length === count, category === "signup-forms" ? 11 : 10);
+      await loadAllCards(await occasionCount(category, "corn-maze"));
       const selectedIds = await ids();
       assert.ok(selectedIds.every((id) => id.includes("corn-maze")));
       const href = await cards().filter({ has: page.locator('[href*="holidays--corn-maze"]') }).first().locator("a").getAttribute("href");
@@ -81,7 +95,7 @@ test("seasonal galleries mix upcoming occasions, retain filters and links, and f
       await search.fill("Memorial Day");
       assert.equal(await cards().count(), 0, "occasion and text filters combine");
       await occasionSelect.selectOption("");
-      await page.waitForFunction(() => document.querySelectorAll("[data-template-masonry-card]").length === 10);
+      await loadAllCards(await occasionCount(category, "memorial-day"));
       assert.ok((await ids()).every((id) => id.includes("memorial-day")));
       await search.fill("");
       const original = await page.evaluate((category) => (category === "general" ? window.galleryFixture.generalDesigns : window.galleryFixture.getPublicTemplates(category)).slice(0, 12).map((item) => item.id), category);
@@ -101,7 +115,7 @@ test("seasonal galleries mix upcoming occasions, retain filters and links, and f
     for (const category of ["signup-forms", "general"]) {
       await goto(category);
       await page.getByRole("combobox", { name: "Holiday or occasion", exact: true }).selectOption("diwali");
-      await page.waitForFunction(() => document.querySelectorAll("[data-template-masonry-card]").length === 10);
+      await loadAllCards(await occasionCount(category, "diwali"));
       assert.ok((await ids()).every((id) => id.startsWith("holidays--diwali--")));
       await cards().locator("img").evaluateAll((images) => images.forEach((img) => { img.loading = "eager"; }));
       await page.waitForFunction(() => [...document.querySelectorAll('[data-template-masonry-card] img')].every((img) => img.complete && img.naturalWidth === 1536));
@@ -113,6 +127,17 @@ test("seasonal galleries mix upcoming occasions, retain filters and links, and f
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
         await page.screenshot({ path: path.join(out, `${category}-diwali-${width}.png`) });
       }
+    }
+    for (const category of ["signup-forms", "general"]) {
+      await goto(category);
+      await page.getByRole("combobox", { name: "Holiday or occasion", exact: true }).selectOption("halloween");
+      const expected = await occasionCount(category, "halloween");
+      assert.ok(expected >= 60, "the expanded Halloween collection is installed");
+      await loadAllCards(expected);
+      const selected = await ids();
+      assert.equal(new Set(selected).size, expected, "expanded collections contain no duplicate template IDs");
+      assert.ok(selected.includes("holidays--halloween--rainy-trick-or-treat-lane"));
+      assert.ok(selected.includes("holidays--halloween--halloween-chessboard"), "the final new design is reachable");
     }
     await goto("signup-forms", "&featured=1");
     assert.equal(await page.getByRole("combobox", { name: "Template order" }).count(), 0);

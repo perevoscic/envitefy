@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { getServerSession, type Session } from "next-auth";
 import Script from "next/script";
-import SnapLaunchCards from "@/app/event/SnapLaunchCards";
-import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 import Dashboard from "@/components/Dashboard";
+import SnapUploadStart from "@/components/snap/SnapUploadStart";
 import SnapLanding from "@/components/snap-landing/SnapLanding";
 import { authOptions } from "@/lib/auth";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
@@ -39,36 +38,6 @@ export const viewport: Viewport = {
   themeColor: themeColorPalette.eventFallback,
 };
 
-function AuthenticatedSnapUploadStart() {
-  return (
-    <main
-      data-snap-upload-intro
-      className="min-h-[100dvh] bg-transparent px-4 py-10 sm:px-6 lg:px-10"
-      data-theme-color={themeColorPalette.eventFallback}
-    >
-      <div className="mx-auto w-full max-w-5xl">
-        <section className="mx-auto max-w-4xl text-center">
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.26em] text-[#6b5ee8]">
-            {UNIFIED_CREATION_ENABLED ? "Snap a Flyer" : "Snap / Upload"}
-          </p>
-          <h1 className="pb-[0.08em] text-[clamp(1.65rem,8.8vw,2.85rem)] font-semibold leading-[1] tracking-[-0.06em] text-[#151229] [font-family:var(--font-playfair),Georgia,serif] sm:text-[clamp(3.2rem,8vw,5.5rem)]">
-            <span className="inline-block max-w-full whitespace-nowrap">Snap or upload your</span>
-            <br />
-            <span className="mt-3 inline-block bg-[linear-gradient(135deg,#5c43ff_0%,#8f42ff_55%,#b24cff_100%)] bg-clip-text pb-[0.1em] pr-[0.08em] italic text-transparent">
-              flyer or invite
-            </span>
-          </h1>
-        </section>
-        <SnapLaunchCards processInPage />
-        <p className="mx-auto mt-6 max-w-3xl pb-10 text-center text-lg leading-8 text-[#767287] sm:mt-8 sm:text-[1.35rem]">
-          Upload a flyer, invitation, screenshot, schedule or PDF. Envitefy reads the details
-          so you can save the event and use its calendar tools.
-        </p>
-      </div>
-    </main>
-  );
-}
-
 export default async function SnapPage() {
   const session = (await getServerSession(authOptions as any)) as Session | null;
   const isAuthenticated = Boolean(session?.user);
@@ -95,7 +64,7 @@ export default async function SnapPage() {
     >
       {isAuthenticated ? (
         <>
-          <AuthenticatedSnapUploadStart />
+          <SnapUploadStart />
           <Dashboard snapProcessingMode />
         </>
       ) : (
