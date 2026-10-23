@@ -357,7 +357,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       closeMobileMenu,
       dismissMobileMenu, previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer(false, "event-actions", true);
+    } = useMobileDrawer(true, "event-actions", true);
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];

@@ -1,5 +1,6 @@
 import { projectSignupForm } from "@/lib/signup-projection";
 import { isEventDraft } from "@/lib/event-draft-access";
+import { manualEventEditHref } from "@/lib/manual-event-progress";
 import type { Metadata } from "next";
 import nextDynamic from "next/dynamic";
 import { cookies } from "next/headers";
@@ -1083,7 +1084,11 @@ export default async function EventPage({
   }
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
   const collaborationPermissions = await getEventPermissions(row, userId);
-  if (isOwner && isEventDraft(row.data) && (row.data?.templateEditor || row.data?.customEventPage)) redirect(resolveEditHref(row.id, row.data, row.title));
+  if (
+    isOwner &&
+    isEventDraft(row.data) &&
+    (row.data?.templateEditor || row.data?.customEventPage || manualEventEditHref(row.id, row.data))
+  ) redirect(resolveEditHref(row.id, row.data, row.title));
   let recipientAccepted = collaborationPermissions.role === "cohost";
   let isReadOnly = false;
   if (!isOwner && !collaborationPermissions.canEdit) {

@@ -327,7 +327,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       closeMobileMenu,
       dismissMobileMenu, previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer(false, "event-actions", true);
+    } = useMobileDrawer(true, "event-actions", true);
 
     // Ensure the soccer template has the same sporty headline fonts available
     useEffect(() => {

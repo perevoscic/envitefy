@@ -81,6 +81,11 @@ test("themed sports, bridal and General-backed occasions retain artwork, typogra
       await page.goto(url);
       const header = page.locator(`[data-themed-event-header="${design.id}"]`);
       await header.waitFor();
+      const view = page.getByRole("group", { name: "Editor view", exact: true });
+      const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+      await view.getByRole("button", { name: "Preview", exact: true }).waitFor();
+      assert.ok(await controls.isVisible(), `${collection}: editing controls open by default`);
+      assert.equal(await page.getByRole("group", { name: "Save event", exact: true }).getByRole("button", { name: "Back", exact: true }).count(), 0, `${collection}: bottom Back stays hidden`);
       assert.equal(await header.locator("img").first().getAttribute("src"), design.artwork);
       assert.equal(await header.getAttribute("data-composition"), pageDesign.composition);
       assert.equal(await header.getAttribute("data-page-layout"), pageDesign.editorLayout);
@@ -133,7 +138,15 @@ test("themed sports, bridal and General-backed occasions retain artwork, typogra
       const signatures = new Map();
       for (const design of holidayDesigns) {
         await page.goto(`http://localhost:43139/event/general/customize?collection=holidays-seasonal&occasion=cinco-de-mayo&templateId=${design.id}`);
-        await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).waitFor();
+        const view = page.getByRole("group", { name: "Editor view", exact: true });
+        const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+        await view.getByRole("button", { name: "Preview", exact: true }).waitFor();
+        assert.ok(await controls.isVisible(), `${design.id}: editing controls open by default at ${width}px`);
+        assert.equal(await page.getByRole("group", { name: "Save event", exact: true }).getByRole("button", { name: "Back", exact: true }).count(), 0, `${design.id}: bottom Back stays hidden at ${width}px`);
+        await view.getByRole("button", { name: "Preview", exact: true }).click();
+        await view.getByRole("button", { name: "Edit", exact: true }).waitFor();
+        assert.equal(await controls.isVisible(), false, `${design.id}: Preview collapses the editing controls at ${width}px`);
+        assert.equal(await page.getByRole("group", { name: "Save event", exact: true }).getByRole("button", { name: "Back", exact: true }).count(), 0, `${design.id}: preview keeps bottom Back hidden at ${width}px`);
         const header = page.locator(`[data-themed-event-header="${design.id}"]`);
         await header.waitFor();
         const pageDesign = getGeneralEventPageDesign(design.id);
@@ -195,7 +208,6 @@ test("themed sports, bridal and General-backed occasions retain artwork, typogra
     let header = page.locator(`[data-themed-event-header="${ghosts.id}"]`);
     assert.equal(await header.locator("img").first().getAttribute("src"), customHero);
     assert.notEqual(defaultBackground.page.toLowerCase(), ghosts.background.toLowerCase(), "Friendly Ghosts gets a Halloween background instead of the legacy pink paper");
-    await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
     await page.getByRole("button", { name: /^Background/ }).click();
     const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
     const preview = page.getByRole("region", { name: "Event page preview panel", exact: true });
@@ -293,7 +305,6 @@ test("themed sports, bridal and General-backed occasions retain artwork, typogra
     const allOccasions = { ...seed, id: "all-holiday-backgrounds", data: { ...seed.data, holidayOccasion: null, pageBackground: getHolidayBackgroundChoice(alternateBackground.id, "custom") } };
     records.set(allOccasions.id, allOccasions);
     await page.goto(`http://localhost:43139/event/general/customize?collection=holidays-seasonal&templateId=${ghosts.id}&edit=${allOccasions.id}`);
-    await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
     await page.getByRole("button", { name: /^Design Artwork/ }).click();
     const otherOccasion = GENERAL_EVENT_DESIGNS.find((design) => design.occasion && design.occasion !== "halloween");
     await page.locator(`[data-template-masonry-card="${otherOccasion.id}"] button`).click();
@@ -313,7 +324,6 @@ test("themed sports, bridal and General-backed occasions retain artwork, typogra
     const legacyColor = await page.locator(`[data-themed-event-header="${ghosts.id}"]`).evaluate((node) => getComputedStyle(node.closest('[class*="min-h-"]')).backgroundColor);
     assert.equal(legacyColor, "rgb(233, 221, 230)", "the existing saved plum paper is retained");
     await page.goto(`http://localhost:43139/event/general/customize?collection=holidays-seasonal&occasion=halloween&templateId=${ghosts.id}&edit=${legacy.id}`);
-    await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
     await page.getByRole("button", { name: /^Background/ }).click();
     assert.equal(await page.locator('input[type="radio"]:checked').count(), 0);
     const writesBeforeReset = writes.length;

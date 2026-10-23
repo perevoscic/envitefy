@@ -196,18 +196,35 @@ test("one Event Page editor protects saves and navigation across creation modes 
     return route.abort();
   });
   const click = (name) => page.getByRole("button", { name, exact: true }).click();
+  const leave = () => page.locator("[data-leave]").click();
   const workspace = page.locator("[data-event-page-editor]");
   const preview = page.getByRole("region", { name: "Event page preview panel", exact: true });
   const viewActions = page.getByRole("group", { name: "Editor view", exact: true });
   const checkActionPlacement = async () => {
     const bounds = await workspace.boundingBox();
     const actions = page.getByRole("group", { name: "Save event", exact: true });
+    assert.equal(await actions.getByRole("button", { name: "Back", exact: true }).count(), 0, "the footer Back action stays outside the accessibility tree");
+    assert.equal(await actions.getByRole("button", { name: "Back", exact: true, includeHidden: true }).isVisible(), false, "the footer Back action is hidden");
     const footer = await actions.evaluate((element) => {
-      const rect = element.parentElement.getBoundingClientRect();
-      return { x: rect.x, width: rect.width, bottom: rect.bottom };
+      const footer = element.parentElement;
+      const rect = footer.getBoundingClientRect();
+      const style = getComputedStyle(footer);
+      return { x: rect.x, width: rect.width, bottom: rect.bottom, editing: element.closest("[data-event-page-editor]").getAttribute("data-editing") === "true", background: style.backgroundColor, topBorder: parseFloat(style.borderTopWidth), border: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth].reduce((sum, value) => sum + parseFloat(value), 0), backdrop: style.backdropFilter };
     });
     assert.ok(Math.abs(footer.bottom - (bounds.y + bounds.height)) < 1, "save actions overlay the bottom of the workspace");
     if (await workspace.getAttribute("data-page-editing") === "false" && await workspace.getAttribute("data-embedded") === "false") {
+      const desktop = page.viewportSize().width >= 768;
+      if (desktop) {
+        if (footer.editing) {
+          assert.match(footer.background, /^rgb\(/, "the desktop editing footer has an opaque surface behind the actions");
+          assert.equal(footer.topBorder, 1, "the desktop editing footer has a one-pixel top divider");
+          assert.equal(footer.border, 1, "the desktop editing footer only has its top divider");
+        } else {
+          assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(footer.background), "the desktop preview footer leaves the event artwork visible");
+          assert.equal(footer.border, 0, "the desktop preview footer has no enclosing border");
+        }
+        assert.equal(footer.backdrop, "none", "the desktop footer does not blur the content behind it");
+      }
       assert.equal(await viewActions.count(), 1, "the shared footer owns one mounted view toggle");
       assert.equal(await viewActions.evaluate((element) => element.closest('[aria-label="Save event"]') !== null && element.closest("footer") !== null), true, "the view toggle shares the bottom action group");
       await page.mouse.move(0, 0);
@@ -217,15 +234,17 @@ test("one Event Page editor protects saves and navigation across creation modes 
         const style = getComputedStyle(button);
         return { label: button.textContent.trim(), x, y, width, height, radius: Math.max(...[style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomLeftRadius, style.borderBottomRightRadius].map(parseFloat)), border: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth].reduce((sum, value) => sum + parseFloat(value), 0), background: style.backgroundColor, role: button.getAttribute("role"), pressed: button.getAttribute("aria-pressed"), selected: button.getAttribute("aria-selected") };
       }));
-      assert.equal(buttons[0].label, "Back", "Back starts the bottom action bar");
-      assert.match(buttons[1].label, /^(Preview|Edit)$/, "the view toggle follows Back");
+      assert.match(buttons[0].label, /^(Preview|Edit)$/, "the view toggle starts the visible bottom action bar");
       for (const [index, button] of buttons.entries()) {
-        assert.equal(button.radius, 0, `${button.label} has square corners`);
+        assert.equal(button.radius, desktop ? 12 : 0, `${button.label} keeps ${desktop ? "regular desktop button" : "square mobile"} corners`);
         assert.notEqual(button.role, "tab", `${button.label} remains an action button`);
         assert.equal(button.pressed, null, `${button.label} does not claim a selected tool state`);
         assert.equal(button.selected, null, `${button.label} does not claim a selected tab state`);
         if (["Publish", "Save changes", "Saving…"].includes(button.label)) {
           assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(button.background), `${button.label} keeps its filled primary surface`);
+        } else if (desktop) {
+          assert.equal(button.border, 4, `${button.label} has a one-pixel border on each side`);
+          assert.match(button.background, /^rgb\(/, `${button.label} has its own opaque desktop button surface`);
         } else {
           assert.equal(button.border, 0, `${button.label} uses the borderless top-toolbar treatment`);
           assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(button.background), `${button.label} has a transparent idle surface`);
@@ -324,16 +343,21 @@ test("one Event Page editor protects saves and navigation across creation modes 
       const before = writes.length;
       await page.goto(`${base}/event/general/customize?mode=manual&templateId=holidays--cinco-de-mayo--community-table&collection=holidays-seasonal&occasion=cinco-de-mayo`);
       await workspace.waitFor();
-      await viewActions.getByRole("button", { name: "Edit", exact: true }).waitFor();
-      assert.equal(await preview.isVisible(), true, `clean template is visible at ${width}×${height}`);
+      await viewActions.getByRole("button", { name: "Preview", exact: true }).waitFor();
       const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true, includeHidden: true });
-      assert.equal(await controls.isVisible(), false, `editing starts closed at ${width}×${height}`);
+      await controls.waitFor();
+      assert.equal(await controls.isVisible(), true, `editing starts expanded at ${width}×${height}`);
+      assert.equal(await preview.isVisible(), width >= 768, "the expanded panel shares desktop space and replaces the phone canvas");
+      await checkActionPlacement();
+      await switchView("Preview");
+      assert.equal(await preview.isVisible(), true, `Preview shows the clean template at ${width}×${height}`);
+      assert.equal(await controls.isVisible(), false, "Preview collapses the editing panel");
       assert.equal(await preview.getByRole("button", { name: "Add section", exact: true }).count(), 0, "clean page hides section editing tools");
       assert.equal(await preview.getByRole("button", { name: "Change", exact: true }).count(), 0, "clean page hides artwork replacement controls");
       assert.equal(await preview.locator("[data-hero-image-control]").count(), 0, "initial page omits the artwork editing surface");
       const checkTouchActions = async () => {
         const actions = page.getByRole("group", { name: "Save event", exact: true });
-        assert.deepEqual(await actions.getByRole("button").allTextContents(), ["Back", await viewActions.getByRole("button").innerText(), "Save draft", "Publish"], "draft actions follow Back, view toggle, Save draft and Publish order");
+        assert.deepEqual(await actions.getByRole("button").allTextContents(), [await viewActions.getByRole("button").innerText(), "Save draft", "Publish"], "draft actions show the view toggle, Save draft and Publish in order");
         for (const button of await actions.getByRole("button").all()) {
           if (!(await button.isVisible())) continue;
           const bounds = await button.boundingBox();
@@ -343,10 +367,10 @@ test("one Event Page editor protects saves and navigation across creation modes 
         await checkActionPlacement();
       };
       await checkTouchActions();
-      await page.screenshot({ path: path.join(output, `page-first-${width}-${height}.png`) });
-      await click("Back");
+      await page.screenshot({ path: path.join(output, `preview-${width}-${height}.png`) });
+      await leave();
       await page.locator("[data-destination]").waitFor();
-      assert.equal(new URL(page.url()).pathname, "/create", `Back from a clean template returns to Create at ${width}×${height}`);
+      assert.equal(new URL(page.url()).pathname, "/chosen-destination", `a clean template can leave through app navigation at ${width}×${height}`);
       assert.equal(await page.getByRole("dialog").count(), 0, "a clean template exits without an unsaved-changes prompt");
       assert.equal(writes.length, before, "leaving a clean template never saves or publishes");
       await page.goto(`${base}/event/general/customize?mode=manual&templateId=holidays--cinco-de-mayo--community-table&collection=holidays-seasonal&occasion=cinco-de-mayo`);
@@ -424,14 +448,14 @@ test("one Event Page editor protects saves and navigation across creation modes 
           await controls.getByRole("button", { name: /^Headline/ }).click();
           await toolRow.getByRole("button", { name, exact: true }).click();
         }
-        await click("Back");
+        await click("Back to details");
         await assertMainEditMenu(name);
       }
       await controls.getByRole("button", { name: /^Headline/ }).click();
       assert.equal(await headline.isVisible(), true, "reopening Headline restores its preserved values");
       assert.equal(await headline.inputValue(), `Preserved title ${width}`, "all shared-tool Back steps retain the pending headline");
       assert.equal(await venue.inputValue(), "The host's chosen venue", "all shared-tool Back steps retain the pending venue");
-      await click("Back");
+      await click("Back to details");
       await assertMainEditMenu("Headline");
       await controls.evaluate((element) => { element.scrollTop = element.scrollHeight; });
       const last = await controls.getByRole("button", { name: /^Passcode/ }).boundingBox();
@@ -440,26 +464,26 @@ test("one Event Page editor protects saves and navigation across creation modes 
       await checkTouchActions();
       assert.equal(writes.length, before, "opening Edit and Preview never saves or publishes");
       await page.screenshot({ path: path.join(output, `compact-settings-${width}-${height}.png`) });
-      await click("Back");
-      assert.equal(await controls.isVisible(), false, "Back from the main Edit menu returns to the clean template preview");
+      await switchView("Preview");
+      assert.equal(await controls.isVisible(), false, "Preview from the main Edit menu collapses the editing panel");
       assert.equal(await preview.isVisible(), true);
       await viewActions.getByRole("button", { name: "Edit", exact: true }).waitFor();
       assert.equal(await page.getByRole("dialog").count(), 0, "returning to preview retains unsaved edits without a prompt");
       assert.equal(writes.length, before, "returning to preview never saves or publishes");
-      await click("Back");
+      await leave();
       await page.getByRole("dialog").waitFor();
-      assert.equal(new URL(page.url()).pathname, "/event/general/customize", "only Back from preview requests confirmation before leaving unsaved template edits");
+      assert.equal(new URL(page.url()).pathname, "/event/general/customize", "app navigation protects unsaved template edits from preview");
       await click("Keep editing");
       await switchView("Edit");
       await controls.getByRole("button", { name: /^Headline/ }).click();
       assert.equal(await headline.inputValue(), `Preserved title ${width}`);
-      await click("Back");
+      await click("Back to details");
       await assertMainEditMenu("Headline after cancelling exit");
-      await click("Back");
-      await click("Back");
+      await switchView("Preview");
+      await leave();
       await click("Discard and leave");
       await page.locator("[data-destination]").waitFor();
-      assert.equal(new URL(page.url()).pathname, "/create", `Back returns holiday template creation to Create at ${width}×${height}`);
+      assert.equal(new URL(page.url()).pathname, "/chosen-destination", `discarding holiday edits follows app navigation at ${width}×${height}`);
       assert.equal(writes.length, before, "discarding a template never saves or publishes");
     }
     // Wedding Travel contains a second menu level; Back unwinds it one step at a time.
@@ -471,40 +495,40 @@ test("one Event Page editor protects saves and navigation across creation modes 
     await weddingControls.getByRole("button", { name: /^Travel/ }).click();
     await weddingControls.getByRole("button", { name: "Add Hotel", exact: true }).click();
     await page.getByLabel("Hotel Name", { exact: true }).fill("Pending wedding hotel");
-    await click("Back");
+    await click("Back to details");
     assert.equal(await weddingControls.getByRole("heading", { name: "Travel", exact: true }).isVisible(), true, "hotel Back returns to Travel");
     assert.equal(await weddingControls.getByRole("button", { name: "Add Hotel", exact: true }).isVisible(), true);
     assert.equal(await page.getByRole("dialog").count(), 0, "leaving temporary hotel fields never prompts to discard");
-    await click("Back");
+    await click("Back to details");
     assert.equal(await weddingControls.getByRole("button", { name: /^Travel/ }).isVisible(), true, "Travel Back returns to the main Edit menu");
     assert.equal(await viewActions.getByRole("button", { name: "Preview", exact: true }).isVisible(), true);
     assert.equal(await page.getByRole("dialog").count(), 0);
-    await click("Back");
-    assert.equal(await weddingControls.isVisible(), false, "wedding main-menu Back returns to the page preview");
+    await switchView("Preview");
+    assert.equal(await weddingControls.isVisible(), false, "wedding Preview collapses the editing panel");
     assert.equal(await preview.isVisible(), true);
     assert.equal(await page.getByRole("dialog").count(), 0);
     await switchView("Edit");
     await weddingControls.getByRole("button", { name: /^Travel/ }).click();
     await weddingControls.getByRole("button", { name: "Add Hotel", exact: true }).click();
     assert.equal(await page.getByLabel("Hotel Name", { exact: true }).inputValue(), "Pending wedding hotel", "temporary hotel content survives every local Back step");
-    await click("Back");
+    await click("Back to details");
     await weddingControls.getByRole("button", { name: "Add Airport", exact: true }).click();
     await page.getByLabel("Airport Name", { exact: true }).fill("Pending arrival airport");
-    await click("Back");
+    await click("Back to details");
     assert.equal(await weddingControls.getByRole("heading", { name: "Travel", exact: true }).isVisible(), true, "airport Back also returns to Travel");
-    await click("Back");
-    await click("Back");
+    await click("Back to details");
+    await switchView("Preview");
     assert.equal(await viewActions.getByRole("button", { name: "Edit", exact: true }).isVisible(), true);
     assert.equal(await page.getByRole("dialog").count(), 0, "all wedding Back steps within the editor stay prompt-free");
     assert.deepEqual({ event: writes.length, url: urlWrites.length }, beforeWeddingNavigation, "wedding menu navigation never writes event content or URLs");
-    await click("Back");
+    await leave();
     await page.getByRole("dialog").waitFor();
     await click("Discard and leave");
     await page.locator("[data-destination]").waitFor();
-    assert.equal(new URL(page.url()).pathname, "/create");
+    assert.equal(new URL(page.url()).pathname, "/chosen-destination");
     assert.deepEqual({ event: writes.length, url: urlWrites.length }, beforeWeddingNavigation);
 
-    // Embedded editors have no page-preview step; main-menu Back retains protected exit.
+    // Embedded editors retain subsection navigation and protect app navigation without a footer Back action.
     const beforeEmbeddedNavigation = { event: writes.length, url: urlWrites.length };
     await page.goto(`${base}/event/general/customize?embed=1`);
     await workspace.waitFor();
@@ -515,24 +539,24 @@ test("one Event Page editor protects saves and navigation across creation modes 
     await embeddedControls.getByRole("button", { name: /^Event details/ }).click();
     const embeddedTitle = page.getByLabel("Event title", { exact: true });
     await embeddedTitle.fill("Pending embedded event");
-    await click("Back");
+    await click("Back to details");
     assert.equal(await embeddedControls.getByRole("button", { name: /^Event details/ }).isVisible(), true, "embedded subsection Back returns to its main menu");
     assert.equal(await embeddedControls.isVisible(), true, "embedded Back never opens an unavailable preview view");
     assert.equal(await embeddedTitle.isVisible(), false);
     assert.equal(await embeddedTitle.inputValue(), "Pending embedded event");
     assert.equal(await page.getByRole("dialog").count(), 0);
     assert.deepEqual({ event: writes.length, url: urlWrites.length }, beforeEmbeddedNavigation);
-    await click("Back");
+    await leave();
     await page.getByRole("dialog").waitFor();
-    assert.equal(new URL(page.url()).pathname, "/event/general/customize", "embedded main-menu Back protects unsaved content before leaving");
+    assert.equal(new URL(page.url()).pathname, "/event/general/customize", "app navigation protects unsaved embedded content before leaving");
     await click("Keep editing");
     await embeddedControls.getByRole("button", { name: /^Event details/ }).click();
     assert.equal(await embeddedTitle.inputValue(), "Pending embedded event");
-    await click("Back");
-    await click("Back");
+    await click("Back to details");
+    await leave();
     await click("Discard and leave");
     await page.locator("[data-destination]").waitFor();
-    assert.equal(new URL(page.url()).pathname, "/create");
+    assert.equal(new URL(page.url()).pathname, "/chosen-destination");
     assert.deepEqual({ event: writes.length, url: urlWrites.length }, beforeEmbeddedNavigation, "discarding an embedded draft never writes event content or URLs");
     await page.setViewportSize({ width: 1440, height: 900 });
     for (const mode of ["guest", "editor", "missing-details"]) {
@@ -582,21 +606,20 @@ test("one Event Page editor protects saves and navigation across creation modes 
       await page.goto(`${base}/event/general/customize?${query}`);
       await workspace.waitFor();
       await page.getByRole("heading", { name: "School field trip", exact: true }).waitFor();
-      await click("Back");
+      await checkActionPlacement();
+      await leave();
       await page.locator("[data-destination]").waitFor();
-      assert.equal(new URL(page.url()).pathname, "/event/school-trip", "saved-event Back returns to its public address");
-      assert.equal(new URL(page.url()).searchParams.get("tab"), "event");
+      assert.equal(new URL(page.url()).pathname, "/chosen-destination", "clean saved events follow app navigation");
       assert.equal(writes.length, 0, "leaving a saved event never writes");
     }
     await page.goto(`${base}/event/general/customize?edit=saved-event`);
     await workspace.waitFor();
     await page.getByRole("heading", { name: "School field trip", exact: true }).waitFor();
-    assert.equal(await preview.isVisible(), true, "Event Pages open on the clean page");
-    assert.equal(await page.getByRole("complementary", { name: "Event editing controls", exact: true }).isVisible(), false, "editing controls wait for Edit");
-    await viewActions.getByRole("button", { name: "Edit", exact: true }).waitFor();
+    assert.equal(await preview.isVisible(), true, "desktop Event Pages retain the page beside the expanded panel");
+    assert.equal(await page.getByRole("complementary", { name: "Event editing controls", exact: true }).isVisible(), true, "saved Event Pages open with expanded editing controls");
+    await viewActions.getByRole("button", { name: "Preview", exact: true }).waitFor();
     assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).count(), 0);
     assert.equal(await page.getByRole("button", { name: "Save draft", exact: true }).count(), 0);
-    await switchView("Edit");
     await switchView("Preview");
     await switchView("Edit");
     assert.equal(writes.length, 0);
@@ -651,8 +674,9 @@ test("one Event Page editor protects saves and navigation across creation modes 
         const before = writes.length;
         await page.goto(`${base}/event/design/customize?mode=${mode}`);
         await workspace.waitFor();
-        assert.equal(await preview.isVisible(), true, `${mode} opens its page at ${width}px`);
-        assert.equal(await page.getByRole("complementary", { name: "Event editing controls", exact: true }).isVisible(), false, `${mode} waits for Edit at ${width}px`);
+        await page.getByRole("complementary", { name: "Event editing controls", exact: true }).waitFor();
+        assert.equal(await preview.isVisible(), width >= 768, `${mode} shares the desktop canvas and hides the phone canvas while expanded`);
+        assert.equal(await page.getByRole("complementary", { name: "Event editing controls", exact: true }).isVisible(), true, `${mode} opens expanded at ${width}px`);
         await openControls();
         await page.getByRole("button", { name: /Event details/ }).click();
         await title.fill(`${mode} event ${width}`);
@@ -672,22 +696,22 @@ test("one Event Page editor protects saves and navigation across creation modes 
         assert.equal(await title.inputValue(), `${mode} event ${width}`);
         assert.equal(writes.length, before, "viewing and editing must not implicitly save");
         const controls = page.getByRole("complementary", { name: "Event editing controls" });
-        await click("Back");
+        await click("Back to details");
         assert.equal(await controls.getByRole("button", { name: /^Event details/ }).isVisible(), true, `${mode} subsection Back returns to the main Edit menu at ${width}px`);
         assert.equal(await title.isVisible(), false);
         assert.equal(await title.evaluate((element) => element === window.savedCustomEventTitleNode), true, "custom subsection Back retains its mounted title input");
         assert.equal(await title.inputValue(), `${mode} event ${width}`);
         assert.equal(await page.getByRole("dialog").count(), 0, "custom subsection Back never prompts to discard edits");
-        await click("Back");
-        assert.equal(await controls.isVisible(), false, "custom main-menu Back returns to the clean page preview");
+        await switchView("Preview");
+        assert.equal(await controls.isVisible(), false, "custom Preview collapses the editing panel");
         assert.equal(await preview.isVisible(), true);
-        assert.equal(await page.getByRole("dialog").count(), 0, "custom main-menu Back keeps unsaved content without prompting");
-        assert.equal(writes.length, before, "custom local Back transitions never save or publish");
+        assert.equal(await page.getByRole("dialog").count(), 0, "custom Preview keeps unsaved content without prompting");
+        assert.equal(writes.length, before, "custom subsection and Preview transitions never save or publish");
         await switchView("Edit");
         await controls.getByRole("button", { name: /^Event details/ }).click();
         assert.equal(await title.inputValue(), `${mode} event ${width}`);
         await page.getByRole("button", { name: /Page sections/ }).click();
-        await click("Back");
+        await click("Back to details");
         assert.equal(await controls.getByRole("button", { name: /^Event details/ }).isVisible(), true, "custom shared-tool Back closes its underlying details submenu");
         assert.equal(await title.isVisible(), false);
         assert.equal(await title.inputValue(), `${mode} event ${width}`);
@@ -789,8 +813,8 @@ test("one Event Page editor protects saves and navigation across creation modes 
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${base}/event/general/customize?mode=manual`);
     await workspace.waitFor();
-    assert.equal(await preview.isVisible(), true, `General opens its page at ${width}px`);
     await openControls();
+    assert.equal(await preview.isVisible(), width >= 768, `General starts with expanded controls at ${width}px`);
     await page.getByRole("button", { name: /^Headline/ }).click();
     const generalTitle = page.getByLabel("Headline", { exact: true });
     await generalTitle.fill("Community gathering");
@@ -1178,6 +1202,8 @@ test("one Event Page editor protects saves and navigation across creation modes 
       assert.deepEqual(sections.find((section) => section.kind === "links").links, [{ label: "Parking map", url: "https://example.com/parking" }]);
       assert.ok(sections.some((section) => section.title === "Guest notes" && section.body === "Leave room for a quiet break."));
       await page.reload();
+      await openControls();
+      await switchView("Preview");
       await preview.waitFor();
       assert.equal(await preview.getByRole("img", { name: "Group picnic", exact: true }).count(), 1);
       assert.equal(await preview.getByRole("img", { name: "Trail overlook", exact: true }).count(), 1);

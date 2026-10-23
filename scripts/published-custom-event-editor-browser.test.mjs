@@ -10,7 +10,7 @@ import sharp from "sharp";
 const loadTs = createRequire(import.meta.url)("./lib/event-messages-test-loader.cjs");
 const appearanceBootstrap = loadTs("src/lib/appearance.ts").buildAppearanceBootstrap();
 
-test("published custom Event Page edits save changes to the same live page and Back retains unsaved protection", { timeout: 120000 }, async () => {
+test("published custom Event Pages open editing controls, hide footer Back and retain live saves and unsaved protection", { timeout: 120000 }, async () => {
   execFileSync(process.env.BUN_EXECUTABLE || (process.platform === "win32" ? path.join(process.env.APPDATA, "npm/node_modules/bun/bin/bun.exe") : "bun"), ["scripts/build-category-custom-design-fixture.mjs"], { stdio: "pipe" });
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
   const origin = "http://localhost:43131";
@@ -60,11 +60,10 @@ test("published custom Event Page edits save changes to the same live page and B
       });
       const open = async (ready = false) => {
         await page.goto(`${origin}/editor?editor=1&edit=${eventId}${ready ? "&ready=1" : ""}`);
-        await page.getByRole("button", { name: "Back", exact: true }).waitFor();
-        const edit = page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true });
-        await edit.waitFor();
-        assert.equal(await page.getByRole("region", { name: "Event page preview panel", exact: true }).isVisible(), true, "published page opens before its editing controls");
-        await edit.click();
+        await toolbar.getByRole("button", { name: "Preview", exact: true }).waitFor();
+        assert.equal(await controls.isVisible(), true, "published pages open with editing controls expanded");
+        assert.equal(await tools.isVisible(), true, "page tools are available immediately after opening");
+        assert.equal(await page.getByRole("button", { name: "Back", exact: true }).count(), 0, "footer Back is hidden on initial load");
         await page.getByRole("button", { name: /^Event details/ }).click();
         await title.waitFor();
         assert.equal(await title.inputValue(), initial.details.title);
@@ -72,9 +71,10 @@ test("published custom Event Page edits save changes to the same live page and B
       };
       const toolbar = page.getByRole("group", { name: "Editor view", exact: true });
       const save = page.getByRole("button", { name: "Save changes", exact: true });
-      const back = page.getByRole("button", { name: "Back", exact: true });
+      const backToDetails = page.getByRole("button", { name: "Back to details", exact: true });
       const title = page.locator("#event-field-title");
       const preview = page.getByRole("region", { name: "Event page preview panel", exact: true });
+      const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
       const tools = page.getByRole("group", { name: "Page tools", exact: true });
       const setAppearance = async (mode) => {
         await page.evaluate((value) => localStorage.setItem("envitefy:appearance:v1", value), mode);
@@ -88,8 +88,28 @@ test("published custom Event Page edits save changes to the same live page and B
       };
       const checkActions = async () => {
         const actions = page.getByRole("group", { name: "Save event", exact: true });
+        const desktop = width >= 768;
+        if (desktop) {
+          const footer = await actions.evaluate((element) => {
+            const style = getComputedStyle(element.closest("footer"));
+            return { editing: element.closest("[data-event-page-editor]").getAttribute("data-editing") === "true", background: style.backgroundColor, topBorder: parseFloat(style.borderTopWidth), border: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth].reduce((sum, value) => sum + parseFloat(value), 0), backdrop: style.backdropFilter };
+          });
+          if (footer.editing) {
+            assert.match(footer.background, /^rgb\(/, "the desktop editing footer has an opaque surface behind the actions");
+            assert.equal(footer.topBorder, 1, "the desktop editing footer has a one-pixel top divider");
+            assert.equal(footer.border, 1, "the desktop editing footer only has its top divider");
+          } else {
+            assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(footer.background), "the desktop preview footer leaves the event artwork visible");
+            assert.equal(footer.border, 0, "the desktop preview footer has no enclosing border");
+          }
+          assert.equal(footer.backdrop, "none", "the desktop footer does not blur the content behind it");
+        }
         assert.equal(await toolbar.count(), 1, "one mounted view toggle serves both editor views");
         assert.equal(await toolbar.evaluate((element) => element.closest('[aria-label="Save event"]') !== null && element.closest("footer") !== null), true, "the view toggle belongs to the bottom action bar");
+        const hiddenBack = actions.getByRole("button", { name: "Back", exact: true, includeHidden: true });
+        assert.equal(await hiddenBack.count(), 1, "the footer retains its existing Back action markup");
+        assert.equal(await hiddenBack.isVisible(), false, `footer Back stays hidden at ${width}px`);
+        assert.equal(await hiddenBack.evaluate((element) => getComputedStyle(element).display), "none", "hidden Back reserves no action-bar space");
         await page.mouse.move(0, 0);
         await actions.evaluate(async (element) => Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished.catch(() => {}))));
         const buttons = await actions.getByRole("button").evaluateAll((elements) => elements.map((button) => {
@@ -97,16 +117,18 @@ test("published custom Event Page edits save changes to the same live page and B
           const style = getComputedStyle(button);
           return { label: button.textContent.trim(), x, y, width, height, radius: Math.max(...[style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomLeftRadius, style.borderBottomRightRadius].map(parseFloat)), border: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth].reduce((sum, value) => sum + parseFloat(value), 0), background: style.backgroundColor, role: button.getAttribute("role"), pressed: button.getAttribute("aria-pressed"), selected: button.getAttribute("aria-selected") };
         }));
-        assert.equal(buttons[0].label, "Back");
-        assert.match(buttons[1].label, /^(Edit|Preview)$/);
-        assert.deepEqual(buttons.slice(2).map((button) => button.label), await save.count() ? ["Save changes"] : [], "published pages retain conditional Save changes after navigation actions");
+        assert.match(buttons[0].label, /^(Edit|Preview)$/);
+        assert.deepEqual(buttons.slice(1).map((button) => button.label), await save.count() ? ["Save changes"] : [], "published pages retain conditional Save changes after the view action");
         for (const [index, button] of buttons.entries()) {
-          assert.equal(button.radius, 0, `${button.label} has square corners`);
+          assert.equal(button.radius, desktop ? 12 : 0, `${button.label} keeps ${desktop ? "regular desktop button" : "square mobile"} corners`);
           assert.notEqual(button.role, "tab", `${button.label} remains an action button`);
           assert.equal(button.pressed, null, `${button.label} does not claim a selected tool state`);
           assert.equal(button.selected, null, `${button.label} does not claim a selected tab state`);
           if (button.label === "Save changes") {
             assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(button.background), "Save changes keeps its filled primary surface");
+          } else if (desktop) {
+            assert.equal(button.border, 4, `${button.label} has a one-pixel border on each side`);
+            assert.match(button.background, /^rgb\(/, `${button.label} has its own opaque desktop button surface`);
           } else {
             assert.equal(button.border, 0, `${button.label} uses the borderless top-toolbar treatment`);
             assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(button.background), `${button.label} has a transparent idle surface`);
@@ -123,6 +145,20 @@ test("published custom Event Page edits save changes to the same live page and B
       const assertNavigation = async () => {
         await page.waitForFunction(() => window.navigations?.length === 1);
         assert.deepEqual(await page.evaluate(() => window.navigations), [eventPath]);
+      };
+      const requestLeave = async () => {
+        // Exercise the shared navigation guard independently of the hidden footer action.
+        await page.evaluate((href) => {
+          const link = document.createElement("a");
+          link.id = "fixture-leave-editor";
+          link.href = href;
+          link.textContent = "Leave editor fixture";
+          link.style.cssText = "position:fixed;top:0;left:0;z-index:9999";
+          document.body.append(link);
+        }, eventPath);
+        const link = page.locator("#fixture-leave-editor");
+        await link.click();
+        await link.evaluate((element) => element.remove());
       };
       const assertLiveSave = (write, expectedTitle) => {
         assert.equal(write.path, `/api/history/${eventId}`);
@@ -145,26 +181,26 @@ test("published custom Event Page edits save changes to the same live page and B
         assert.equal(writes.length, expectedWrites, "local Back never saves the event or URL");
       };
 
-      // Back traverses the clean editor hierarchy before leaving the page preview.
+      // The settings panel opens by default and Preview collapses it at every width.
       for (const ready of [false, true]) {
         await open(ready);
         await checkActions();
         assert.equal(await save.count(), 0);
         if (!ready) {
-          await back.click();
+          await backToDetails.click();
           await assertMainEditMenu(initial.details.title);
-          await back.click();
-          await toolbar.getByRole("button", { name: "Edit", exact: true }).waitFor();
-          assert.equal(await preview.isVisible(), true, "main-menu Back returns to the clean page preview");
-          assert.equal(await page.getByRole("dialog").count(), 0);
-          assert.deepEqual(await page.evaluate(() => window.navigations || []), []);
+          await toolbar.getByRole("button", { name: "Preview", exact: true }).focus();
+          await page.keyboard.press("Enter");
         }
-        const backBox = await back.boundingBox();
-        assert.ok(backBox.height >= 44);
-        await back.focus();
-        await page.keyboard.press("Enter");
-        await assertNavigation();
+        await toolbar.getByRole("button", { name: "Edit", exact: true }).waitFor();
+        assert.equal(await controls.isVisible(), false, "Preview collapses the editing panel on desktop and phones");
+        assert.equal(await preview.isVisible(), true, "Preview shows the event page");
+        await checkActions();
         assert.equal(await page.getByRole("dialog").count(), 0);
+        assert.deepEqual(await page.evaluate(() => window.navigations || []), []);
+        await toolbar.getByRole("button", { name: "Edit", exact: true }).click();
+        assert.equal(await controls.isVisible(), true, "Edit restores the mounted editing panel");
+        assert.equal(await title.inputValue(), initial.details.title);
       }
       assert.equal(writes.length, 0);
       assert.equal(wording.length, 0);
@@ -248,7 +284,7 @@ test("published custom Event Page edits save changes to the same live page and B
           await toolbar.getByRole("button", { name: "Edit", exact: true }).click();
           await assertActiveTool(name);
           assert.equal(await title.inputValue(), "Pending title while using page tools", "Preview/Edit retains the active tool and its underlying pending fields");
-          await back.click();
+          await backToDetails.click();
           await assertMainEditMenu("Pending title while using page tools");
           assert.equal(await urlInput.inputValue(), "pending-field-trip-address", "shared-tool Back retains pending URL text");
           assert.equal(await urlInput.evaluate((element) => element === window.savedEventUrlNode), true, "shared-tool Back retains the mounted URL field");
@@ -302,16 +338,16 @@ test("published custom Event Page edits save changes to the same live page and B
 
       await openSection(/^Event details/);
       await title.fill("Trip with unsaved edits");
-      await back.click();
+      await backToDetails.click();
       await assertMainEditMenu("Trip with unsaved edits");
       await save.waitFor();
-      await back.click();
+      await toolbar.getByRole("button", { name: "Preview", exact: true }).click();
       await toolbar.getByRole("button", { name: "Edit", exact: true }).waitFor();
       assert.equal(await page.getByRole("dialog").count(), 0, "returning to preview does not request a discard");
       assert.deepEqual(await page.evaluate(() => window.navigations || []), []);
       assert.equal(writes.length, 0);
       await save.waitFor();
-      await back.click();
+      await requestLeave();
       const dialog = page.getByRole("dialog");
       await dialog.getByRole("button", { name: "Keep editing", exact: true }).click();
       assert.equal(await title.inputValue(), "Trip with unsaved edits");
@@ -321,10 +357,10 @@ test("published custom Event Page edits save changes to the same live page and B
       await openSection(/^Event details/);
       assert.equal(await title.isVisible(), true, "Keep editing allows the preserved subsection to reopen");
       assert.equal(await title.inputValue(), "Trip with unsaved edits");
-      await back.click();
+      await backToDetails.click();
       await assertMainEditMenu("Trip with unsaved edits");
-      await back.click();
-      await back.click();
+      await toolbar.getByRole("button", { name: "Preview", exact: true }).click();
+      await requestLeave();
       await dialog.getByRole("button", { name: "Discard and leave", exact: true }).click();
       await assertNavigation();
       assert.equal(writes.length, 0, "Discard does not write over the published event");
@@ -348,12 +384,12 @@ test("published custom Event Page edits save changes to the same live page and B
       // Save and leave keeps the selected destination and saves published changes once.
       await open();
       await title.fill("Changes saved while leaving");
-      await back.click();
+      await backToDetails.click();
       await assertMainEditMenu("Changes saved while leaving", 2);
-      await back.click();
+      await toolbar.getByRole("button", { name: "Preview", exact: true }).click();
       await toolbar.getByRole("button", { name: "Edit", exact: true }).waitFor();
       assert.equal(await page.getByRole("dialog").count(), 0);
-      await back.click();
+      await requestLeave();
       await dialog.getByRole("button", { name: "Save and leave", exact: true }).click();
       await assertNavigation();
       assert.equal(writes.length, 3);

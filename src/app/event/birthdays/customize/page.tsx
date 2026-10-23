@@ -425,7 +425,7 @@ export default function BirthdayTemplateCustomizePage() {
     closeMobileMenu,
     dismissMobileMenu, previewTouchHandlers,
     drawerTouchHandlers,
-  } = useMobileDrawer(false, "event-actions", true);
+  } = useMobileDrawer(true, "event-actions", true);
   const [_themesExpanded, setThemesExpanded] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const fontListRef = useRef<HTMLDivElement | null>(null);

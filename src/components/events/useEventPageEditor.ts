@@ -355,12 +355,15 @@ export function useEventPageEditor({
     },
   });
   const cancel = () => {
-    const href =
-      cancelHref ||
-      ownerEventEditorReturnHref(search) ||
-      (id.current
-        ? buildEventPath(id.current, loaded?.title, { tab: "event" }, loaded?.public_slug)
-        : UNIFIED_CREATION_ENABLED ? "/create" : "/");
+    const creationHref = UNIFIED_CREATION_ENABLED ? "/create" : "/";
+    // An explicit draft save creates an identity, but not a published page to return to.
+    const href = published
+      ? cancelHref ||
+        ownerEventEditorReturnHref(search) ||
+        (id.current
+          ? buildEventPath(id.current, loaded?.title, { tab: "event" }, loaded?.public_slug)
+          : creationHref)
+      : creationHref;
     progress.requestLeave(() => {
       if (search?.get("embed") === "1" && window.parent !== window) {
         window.parent.postMessage(

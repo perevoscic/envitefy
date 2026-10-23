@@ -7,9 +7,12 @@ import AxeBuilder from "@axe-core/playwright";
 import { chromium } from "playwright";
 import sharp from "sharp";
 
-test("custom event menus toggle maps and weather, preview seven layouts, and save only explicitly", {
+test("custom event menus toggle maps and weather, preview twelve hero layouts, and save only explicitly", {
   timeout: 180000,
 }, async () => {
+  const { createRequire } = await import("node:module");
+  const loadTs = createRequire(import.meta.url)("./lib/event-messages-test-loader.cjs");
+  const { EVENT_HERO_LAYOUT_PRESETS: layouts } = loadTs("src/lib/event-hero-layout.ts");
   execFileSync(
     process.env.BUN_EXECUTABLE ||
       (process.platform === "win32"
@@ -244,7 +247,8 @@ test("custom event menus toggle maps and weather, preview seven layouts, and sav
         assert.equal(await section.getByRole("list", { name: "Arrival locations" }).count(), 1);
       }
       await page.goto(`${origin}/editor?editor=1`);
-      await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
+      await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Preview", exact: true }).waitFor();
+      assert.ok(await page.getByRole("complementary", { name: "Event editing controls", exact: true }).isVisible(), "New custom pages open with editing controls expanded");
       const toggle = page.getByRole("switch", { name: "Show parking map", exact: true });
       await toggle.waitFor();
       assert.equal(await page.getByRole("button", { name: /^Page options/ }).count(), 0);
@@ -274,19 +278,22 @@ test("custom event menus toggle maps and weather, preview seven layouts, and sav
       const menuAxe = await new AxeBuilder({ page }).include('[aria-label="Event editing controls"]').analyze();
       assert.deepEqual(menuAxe.violations, []);
       await page.getByRole("button", { name: "Layout", exact: true }).click();
-      const layouts = ["Split", "Banner", "Poster", "Editorial", "Spotlight", "Minimal", "Cards"];
-      assert.equal(await page.getByRole("button", { name: /^Choose .* layout$/ }).count(), layouts.length);
+      assert.equal(layouts.length, 12);
+      assert.equal(await page.getByRole("button", { name: /^Choose .* hero layout$/ }).count(), layouts.length);
       assert.equal(await page.getByRole("combobox", { name: "Layout", exact: true }).count(), 0);
-      for (const label of layouts) {
-        const choice = page.getByRole("button", { name: `Choose ${label} layout`, exact: true });
+      for (const { label, layout } of layouts) {
+        const choice = page.getByRole("button", { name: `Choose ${label} hero layout`, exact: true });
         await choice.click();
         assert.equal(await choice.getAttribute("aria-pressed"), "true");
-        assert.equal(await page.locator('article[aria-label="Event page preview"]').getAttribute("data-layout"), label.toLowerCase());
+        assert.equal(await page.locator("[data-event-hero]").getAttribute("data-image-position"), layout.imagePosition);
+        assert.equal(await page.locator("[data-event-hero]").getAttribute("data-image-shape"), layout.imageShape);
+        assert.equal(await page.locator("[data-event-hero]").getAttribute("data-title-position"), layout.titlePosition);
+        assert.equal(await page.locator('article[aria-label="Event page preview"]').getAttribute("data-layout"), initial.design.layout, "Hero choices preserve the authored editorial body arrangement");
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       }
       if (size.width === 1280) {
         await page.setViewportSize({ width: size.width, height: 1300 });
-        const bytes = await page.getByRole("group", { name: "Layout", exact: true }).screenshot({ type: "png" });
+        const bytes = await page.getByRole("group", { name: "Hero image and title layouts", exact: true }).screenshot({ type: "png" });
         const { createRequire } = await import("node:module");
         const loadTs = createRequire(import.meta.url)("./lib/event-messages-test-loader.cjs");
         await fs.writeFile(path.join(out, "layout-thumbnails.webp"), await loadTs("src/lib/ocr/artwork-webp.ts").encodeScanArtworkWebp(bytes));
@@ -298,7 +305,8 @@ test("custom event menus toggle maps and weather, preview seven layouts, and sav
       await page.waitForFunction(() => (window.imageUploads || []).length === 3);
       assert.equal(writes.length, 1);
       const saved = writes[0].data.customEventPage;
-      assert.equal(saved.design.layout, "cards");
+      assert.equal(saved.design.layout, initial.design.layout, "Saving a hero retains the authored editorial body arrangement");
+      assert.deepEqual(saved.design.hero, layouts.at(-1).layout, "The chosen hero saves separately from the body layout");
       assert.deepEqual(saved.details.weather, { enabled: true, units: "c" });
       assert.equal(saved.details.arrivalMapEnabled, false);
       assert.deepEqual(saved.details.sections[0].map.markers, map.markers);
@@ -310,22 +318,26 @@ test("custom event menus toggle maps and weather, preview seven layouts, and sav
       await page.getByRole("heading", { name: "Student Drop-Off & Parking" }).waitFor();
       const activityBox = await page.getByRole("heading", { name: "Activities", exact: true }).locator("..").boundingBox();
       const chaperoneBox = await page.getByRole("heading", { name: "Chaperone Requirements", exact: true }).locator("..").boundingBox();
-      if (size.width > 700) {
-        assert.ok(Math.abs(activityBox.y - chaperoneBox.y) <= 1, "Cards layout has two information columns");
-        assert.ok(activityBox.x + activityBox.width <= chaperoneBox.x);
-      } else assert.ok(chaperoneBox.y >= activityBox.y + activityBox.height, "Cards stack on phones");
+      assert.equal(await page.locator('article[aria-label="Event page"]').getAttribute("data-layout"), initial.design.layout);
+      assert.equal(await page.locator("[data-event-hero]").getAttribute("data-image-shape"), layouts.at(-1).layout.imageShape);
+      assert.equal(await page.locator("[data-event-hero]").getAttribute("data-image-position"), layouts.at(-1).layout.imagePosition);
+      assert.ok(chaperoneBox.y >= activityBox.y + activityBox.height, "Editorial information sections retain their authored single column");
+      assert.ok(Math.abs(chaperoneBox.x - activityBox.x) <= 1 && Math.abs(chaperoneBox.width - activityBox.width) <= 1, "Editorial sections retain equal aligned widths");
       assert.equal(await previewImage.count(), 0);
       assert.equal(await page.getByText(initial.details.sections[0].body, { exact: true }).count(), 1);
       assert.equal(await page.getByRole("link", { name: /^Directions to/ }).count(), 0);
       await page.goto(`${origin}/editor?editor=1&saved=1`);
-      await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
+      await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Preview", exact: true }).waitFor();
+      assert.ok(await page.getByRole("complementary", { name: "Event editing controls", exact: true }).isVisible(), "Saved custom pages reopen with editing controls expanded");
       await toggle.waitFor();
       assert.equal(await toggle.getAttribute("aria-checked"), "false");
+      assert.equal(await page.locator("[data-event-hero]").getAttribute("data-image-shape"), layouts.at(-1).layout.imageShape, "Saved hero presentation is restored in the editor");
       await toggle.click();
       assert.equal(await previewImage.count(), 1);
       assert.equal(writes.length, 1);
       await page.goto(`${origin}/editor?editor=1&noParkingSection=1`);
-      await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
+      await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Preview", exact: true }).waitFor();
+      assert.ok(await page.getByRole("complementary", { name: "Event editing controls", exact: true }).isVisible(), "Custom pages without a parking section open with editing controls expanded");
       await page.getByRole("button", { name: /^Page sections/ }).click();
       assert.equal(await page.getByRole("button", { name: "Add parking / drop-off map", exact: true }).count(), 1);
       const newMapChooser = page.waitForEvent("filechooser");

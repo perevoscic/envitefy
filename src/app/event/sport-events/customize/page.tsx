@@ -379,7 +379,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       closeMobileMenu,
       dismissMobileMenu, previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer(false, "event-actions", true);
+    } = useMobileDrawer(true, "event-actions", true);
     const fontListRef = useRef<HTMLDivElement | null>(null);
     const [fontScrollTop, setFontScrollTop] = useState(0);
 

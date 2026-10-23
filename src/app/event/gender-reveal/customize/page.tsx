@@ -344,7 +344,7 @@ export default function GenderRevealTemplateCustomizePage() {
     closeMobileMenu,
     dismissMobileMenu, previewTouchHandlers,
     drawerTouchHandlers,
-  } = useMobileDrawer(false, "event-actions", true);
+  } = useMobileDrawer(true, "event-actions", true);
   const [designOpen, setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);

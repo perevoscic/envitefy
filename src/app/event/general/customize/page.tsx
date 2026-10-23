@@ -298,7 +298,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       closeMobileMenu,
       dismissMobileMenu, previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer(false, "event-actions", true);
+    } = useMobileDrawer(true, "event-actions", true);
     const updateData = useCallback((field: string, value: any) => {
       setData((prev) => ({ ...prev, [field]: value }));
     }, []);

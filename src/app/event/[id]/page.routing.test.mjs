@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
+import { createRequire } from "node:module";
 import ts from "typescript";
 import { redactDiscoverySourceForPublicView } from "../../../lib/discovery-public-redact.ts";
+import { isEventDraft } from "../../../lib/event-draft-access.ts";
+
+const loadTs = createRequire(import.meta.url)("../../../../scripts/lib/event-messages-test-loader.cjs");
+const { manualEventEditHref } = loadTs("src/lib/manual-event-progress.ts");
 
 const source = fs.readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const ast = ts.createSourceFile("page.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -25,6 +30,42 @@ test("recognized templates retain dedicated dispatch before the unknown-renderer
   for (const component of ["ConciergeEventWebsite", "BirthdaySkin", "GenderRevealTemplateView", "FootballDiscoveryContent", "SimpleTemplateView"]) {
     assert.ok(route.indexOf(`<${component}`) >= 0, `${component} must remain a supported renderer`);
     assert.ok(route.indexOf(`<${component}`) < route.lastIndexOf("notFound()"));
+  }
+});
+
+test("saved owner drafts resume supported manual editors before entering the public owner canvas", () => {
+  const statements = page.body.statements;
+  const branch = statements.find(node => ts.isIfStatement(node) && node.expression.getText(ast).includes("isEventDraft(row.data)"));
+  assert.ok(branch, "saved authored drafts need an editor redirect before the public renderer");
+  const route = page.getText(ast);
+  assert.ok(route.indexOf(branch.getText(ast)) < route.indexOf("if (showOwnerEventView && !editParam)"), "redirect saved drafts before mounting the owner's embedded public preview");
+  const dispatch = new Function("isOwner", "row", "isEventDraft", "manualEventEditHref", "resolveEditHref", "redirect", ts.transpile(branch.getText(ast)));
+  const fixtures = [
+    ...["/event/general/customize", "/event/special-events/customize", "/event/manual"].map(path => ({
+      name: `supported manual draft ${path}`,
+      owner: true,
+      data: { status: "draft", createdVia: "manual", manualEditor: { path, snapshot: { data: { title: "" } } } },
+      expected: `${path}?edit=saved-manual`,
+    })),
+    { name: "template draft", owner: true, data: { status: "draft", templateEditor: { category: "birthdays", templateId: "candy-dreams" } }, expected: "/resolved-editor" },
+    { name: "custom draft", owner: true, data: { draftStatus: "draft", customEventPage: { version: 1 } }, expected: "/resolved-editor" },
+    { name: "published manual event", owner: true, data: { status: "published", manualEditor: { path: "/event/general/customize" } }, expected: null },
+    { name: "legacy published manual event", owner: true, data: { manualEditor: { path: "/event/general/customize" } }, expected: null },
+    { name: "nonowner manual draft", owner: false, data: { status: "draft", manualEditor: { path: "/event/general/customize" } }, expected: null },
+    { name: "orphan manual draft with unknown editor", owner: true, data: { status: "draft", manualEditor: { path: "/retired-editor" } }, expected: null },
+    { name: "manual draft with external editor path", owner: true, data: { status: "draft", manualEditor: { path: "https://example.test/editor" } }, expected: null },
+    { name: "manual draft without editor path", owner: true, data: { status: "draft", manualEditor: { snapshot: {} } }, expected: null },
+    { name: "unrecognized draft", owner: true, data: { status: "draft" }, expected: null },
+  ];
+  for (const fixture of fixtures) {
+    const row = { id: "saved-manual", title: "Event draft", data: fixture.data };
+    const destinations = [], resolved = [];
+    dispatch(fixture.owner, row, isEventDraft, manualEventEditHref, (id, data, title) => {
+      resolved.push({ id, data, title });
+      return manualEventEditHref(id, data) || "/resolved-editor";
+    }, href => destinations.push(href));
+    assert.deepEqual(destinations, fixture.expected ? [fixture.expected] : [], fixture.name);
+    assert.deepEqual(resolved, fixture.expected ? [{ id: row.id, data: row.data, title: row.title }] : [], `${fixture.name}: only eligible drafts resolve an editor`);
   }
 });
 

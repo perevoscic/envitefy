@@ -39,7 +39,7 @@ export function EventEditorActions({
   const disabled = editor.busy || !editor.ready;
   return (
     <div className={styles.actions} role="group" aria-label="Save event">
-      <button type="button" disabled={disabled} onClick={onBack || editor.cancel}>
+      <button type="button" hidden disabled={disabled} onClick={onBack || editor.cancel}>
         <ArrowLeft size={17} aria-hidden="true" />
         Back
       </button>
@@ -156,7 +156,7 @@ export default function EventEditorWorkspace({
       sectionEditors?.[alias]?.() || (typeof controls === "function" ? controls(null) : controls)
     );
   };
-  const [editing, setEditing] = useState(embedded);
+  const [editing, setEditing] = useState(embedded || !pageEditing);
   const [mobile, setMobile] = useState(false);
   useEffect(() => {
     const query = window.matchMedia("(max-width: 767px)");

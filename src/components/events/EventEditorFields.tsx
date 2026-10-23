@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { ArrowLeft, ChevronRight, FileText } from "lucide-react";
 import { type ChangeEvent, type ReactNode, useId, useState } from "react";
 import { useSectionEditorClose } from "./EventSectionEditorContext";
 import styles from "./event-editor.module.css";
@@ -167,7 +167,7 @@ export function EventEditorSection({
             aria-label="Back to details"
             onClick={onBack}
           >
-            <ChevronLeft size={20} aria-hidden="true" />
+            <ArrowLeft size={17} aria-hidden="true" />
           </button>
         )}
         <h2>{title}</h2>

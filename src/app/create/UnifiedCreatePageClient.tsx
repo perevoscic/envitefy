@@ -62,6 +62,7 @@ import { validateClientUploadFile } from "@/utils/media-upload-client";
 import CategoryScrollPicker from "./CategoryScrollPicker";
 import EventTypeFilter from "./EventTypeFilter";
 import EventTypeSearch from "./EventTypeSearch";
+import LinkImportPreview from "./LinkImportPreview";
 import UploadDocumentFan from "./UploadDocumentFan";
 import styles from "./create-workspace.module.css";
 import uploadStyles from "./upload-document-fan.module.css";
@@ -1194,16 +1195,12 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                             </div>
                           ) : (
                             <>
-                              <h2 className={styles.taskHeading}>
-                                Bring a link. We’ll find the details.
-                              </h2>
-                              <p className={`${styles.taskIntro} mb-5`}>
-                                Use a public event page, schedule or document.
-                              </p>
+                              <LinkImportPreview />
                               <label className={styles.fieldLabel}>
                                 Public event URL
                                 <input
                                   type="url"
+                                  aria-describedby="link-import-guidance"
                                   value={url}
                                   onChange={(event) => {
                                     invalidate();

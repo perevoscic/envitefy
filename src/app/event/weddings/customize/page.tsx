@@ -1576,7 +1576,7 @@ const App = () => {
     closeMobileMenu,
     dismissMobileMenu, previewTouchHandlers,
     drawerTouchHandlers,
-  } = useMobileDrawer(false, "event-actions", true);
+  } = useMobileDrawer(true, "event-actions", true);
   const [_designOpen, _setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const designGridRef = useRef<HTMLDivElement | null>(null);

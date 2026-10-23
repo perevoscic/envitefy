@@ -687,7 +687,7 @@ export default function SpecialEventsCustomizePage() {
     closeMobileMenu,
     dismissMobileMenu, previewTouchHandlers,
     drawerTouchHandlers,
-  } = useMobileDrawer(false, "event-actions", true);
+  } = useMobileDrawer(true, "event-actions", true);
   const buildCalendarDetails = () => {
     const title = data.title || "Special Event";
     let start: Date | null = null;

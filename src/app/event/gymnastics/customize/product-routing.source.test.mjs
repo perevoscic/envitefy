@@ -29,7 +29,11 @@ findCancel(sourceFile);
 assert.ok(cancelExpression, "the editor must expose its Cancel action");
 const cancelCode = ts.transpileModule(`const cancel = ${cancelExpression};`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
 
-function cancelHarness(query, embedded = false) {
+function cancelHarness(query, embedded = false, {
+  published = true,
+  unifiedCreationEnabled = true,
+  cancelHref,
+} = {}) {
   const navigations = [];
   const resets = [];
   const pending = [];
@@ -40,7 +44,9 @@ function cancelHarness(query, embedded = false) {
     didExplicitSave: false,
     isEmbed: embedded,
     search: new URLSearchParams(query + (embedded ? "&embed=1" : "")),
-    cancelHref: undefined,
+    cancelHref,
+    published,
+    UNIFIED_CREATION_ENABLED: unifiedCreationEnabled,
     id: { current: savedEventId },
     loaded: null,
     progress: { requestLeave: navigate => embedded ? pending.push(navigate) : navigate() },
@@ -79,5 +85,41 @@ test("embedded Cancel waits for unsaved-change resolution and retains the event 
   assert.equal(editor.pending.length, 1);
   editor.pending[0]();
   assert.deepEqual(editor.navigations, ["/event/fright-invite?tab=event"]);
+  assert.deepEqual(editor.resets, [[{ type: "envitefy:discovery-preview-reset", eventId: "489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf" }, "https://envitefy.test"]]);
+});
+
+test("draft Cancel returns to Create even with a stale owner return address or explicit public cancelHref", () => {
+  for (const cancelHref of [undefined, "/event/event-draft?tab=event"]) {
+    const editor = cancelHarness("editor=menu&returnTo=%2Fevent%2Fevent-draft%3Ftab%3Devent", false, {
+      published: false,
+      cancelHref,
+    });
+    editor.cancel();
+    assert.deepEqual(editor.navigations, ["/create"]);
+    assert.deepEqual(editor.resets, []);
+  }
+});
+
+test("draft Cancel retains the legacy creation destination when unified creation is disabled", () => {
+  const editor = cancelHarness("editor=menu&returnTo=%2Fevent%2Fevent-draft", false, {
+    published: false,
+    unifiedCreationEnabled: false,
+    cancelHref: "/event/event-draft?tab=event",
+  });
+  editor.cancel();
+  assert.deepEqual(editor.navigations, ["/"]);
+});
+
+test("embedded draft Cancel waits for unsaved-change resolution before resetting and exiting to Create", () => {
+  const editor = cancelHarness("editor=menu&returnTo=%2Fevent%2Fevent-draft", true, {
+    published: false,
+    cancelHref: "/event/event-draft?tab=event",
+  });
+  editor.cancel();
+  assert.deepEqual(editor.navigations, []);
+  assert.deepEqual(editor.resets, []);
+  assert.equal(editor.pending.length, 1);
+  editor.pending[0]();
+  assert.deepEqual(editor.navigations, ["/create"]);
   assert.deepEqual(editor.resets, [[{ type: "envitefy:discovery-preview-reset", eventId: "489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf" }, "https://envitefy.test"]]);
 });

@@ -1344,11 +1344,13 @@ export default function LeftSidebar() {
                   className="inline-flex h-14 max-w-full items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                   aria-label="Envitefy home"
                 >
-                  {viewModel.isCompact ? (
+                  {/* Keep fixed image sources so a pending icon cannot repaint the old wordmark. */}
+                  <span data-sidebar-brand="symbol" hidden={!viewModel.isCompact}>
                     <EnvitefyBrandImage src={sidebarBrandIcon} whiteSrc={whiteSidebarBrandIcon} alt="" className="h-11 w-11 shrink-0 object-contain" priority />
-                  ) : (
+                  </span>
+                  <span data-sidebar-brand="wordmark" hidden={viewModel.isCompact}>
                     <EnvitefyBrandImage src={sidebarBrandWordmark} whiteSrc={whiteSidebarBrandWordmark} alt="" className="h-auto w-[196px] object-contain" priority />
-                  )}
+                  </span>
                 </Link>
                 {viewModel.isDesktop ? (
                   <button
