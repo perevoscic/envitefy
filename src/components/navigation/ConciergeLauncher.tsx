@@ -1,19 +1,23 @@
 "use client";
 
+import type { Ref } from "react";
 import styles from "./concierge-launcher.module.css";
 
 export default function ConciergeLauncher({
   visible = true,
   open = false,
   onOpen,
+  buttonRef,
 }: {
   visible?: boolean;
   open?: boolean;
   onOpen: () => void;
+  buttonRef?: Ref<HTMLButtonElement>;
 }) {
   return (
     <div className={styles.launcher} data-concierge-launcher data-visible={visible} data-open={open} aria-hidden={!visible} inert={!visible}>
       <button
+        ref={buttonRef}
         type="button"
         className={styles.button}
         onClick={onOpen}

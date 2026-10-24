@@ -21,6 +21,7 @@ import AuthModal from "@/components/auth/AuthModal";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
+import PublicConciergeWidget from "@/components/navigation/PublicConciergeWidget";
 
 const navigation = [
   { label: "How it works", href: "#how-it-works" },
@@ -133,6 +134,7 @@ export default function CreateLandingPage() {
   return (
     <MarketingPage tone="product" className={`${styles.editorial} ${styles.coordinated}`}>
       <HeroTopNav
+        editorialTone="product"
         navLinks={navigation}
         variant="transparent-light"
         mobileNavLinks={[{ label: "Home", href: "/" }, ...navigation]}
@@ -389,6 +391,7 @@ export default function CreateLandingPage() {
           </p>
         </section>
       </main>
+      <PublicConciergeWidget onSignupSelect={() => openAuth("signup")} />
       <AuthModal
         open={authOpen}
         mode={authMode}

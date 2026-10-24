@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import GuestChatWidget from "../../../src/components/guest-chat/GuestChatWidget";
 import ConciergeLauncher from "../../../src/components/navigation/ConciergeLauncher";
 import ConciergeSheet from "../../../src/components/navigation/ConciergeSheet";
+import PublicConciergeWidget from "../../../src/components/navigation/PublicConciergeWidget";
 
 function Fixture() {
   const [open, setOpen] = useState(false);
@@ -13,6 +14,8 @@ function Fixture() {
     return () => window.removeEventListener("concierge-fixture-close", close);
   }, []);
   const widget = new URLSearchParams(window.location.search).has("widget");
+  const publicConcierge = new URLSearchParams(window.location.search).has("publicConcierge");
+  const conciergeLauncher = new URLSearchParams(window.location.search).has("conciergeLauncher");
   const hasHero = !new URLSearchParams(window.location.search).has("noHero");
   return (
     <>
@@ -37,7 +40,7 @@ function Fixture() {
           {signup && <p role="status">Sign up selected</p>}
         </section>
       </main>
-      {widget ? <GuestChatWidget /> : <>
+      {publicConcierge ? <PublicConciergeWidget onSignupSelect={() => setSignup(true)} /> : widget ? <GuestChatWidget conciergeLauncher={conciergeLauncher} /> : <>
         <ConciergeLauncher open={open} onOpen={() => setOpen((value) => !value)} />
         <ConciergeSheet open={open} onOpenChange={setOpen} onSignupSelect={() => setSignup(true)} />
       </>}

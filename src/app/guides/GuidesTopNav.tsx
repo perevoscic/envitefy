@@ -3,6 +3,7 @@
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav, { type HeroTopNavLink } from "@/components/navigation/HeroTopNav";
+import PublicConciergeWidget from "@/components/navigation/PublicConciergeWidget";
 
 const guidesTopNavLinks: HeroTopNavLink[] = [
   { label: "Guides", href: "/guides" },
@@ -25,6 +26,7 @@ export default function GuidesTopNav() {
   return (
     <>
       <HeroTopNav
+        editorialTone="celebration"
         navLinks={guidesTopNavLinks}
         primaryCtaLabel="Home"
         authenticatedPrimaryHref="/"
@@ -34,6 +36,7 @@ export default function GuidesTopNav() {
         onGuestPrimaryAction={() => openAuth("signup")}
         variant="transparent-light"
       />
+      <PublicConciergeWidget onSignupSelect={() => openAuth("signup")} />
       <AuthModal
         open={authModalOpen}
         mode={authMode}

@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { requestGuestChatAnswer } from "@/lib/guest-chat/client";
 import { getQuickGuestChatAnswer } from "@/lib/guest-chat/quick-answer";
 import { guestChatStarterQuestions } from "@/lib/guest-chat/starters";
+import ConciergeLauncher from "../navigation/ConciergeLauncher";
 import { useConciergePopover } from "../navigation/concierge-popover";
 import popoverStyles from "../navigation/concierge-popover.module.css";
 
@@ -48,7 +49,7 @@ function transcriptFromMessages(messages: ChatMessage[]) {
     .slice(-6000);
 }
 
-export default function GuestChatWidget() {
+export default function GuestChatWidget({ conciergeLauncher = false }: { conciergeLauncher?: boolean }) {
   const { status } = useSession();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
@@ -519,7 +520,16 @@ export default function GuestChatWidget() {
       ) : null}
       </AnimatePresence>
 
-      <motion.button
+      {conciergeLauncher ? (
+        <ConciergeLauncher
+          buttonRef={launcherRef}
+          open={open}
+          onOpen={() => {
+            resetConversation();
+            setOpen((value) => !value);
+          }}
+        />
+      ) : <motion.button
         ref={launcherRef}
         type="button"
         whileTap={motionEnabled ? { scale: 0.96 } : undefined}
@@ -538,7 +548,7 @@ export default function GuestChatWidget() {
         ) : (
           <MessageCircle className="h-6 w-6 -scale-x-100" aria-hidden="true" />
         )}
-      </motion.button>
+      </motion.button>}
     </div>
   );
 }

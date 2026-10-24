@@ -19,6 +19,7 @@ import AuthModal from "@/components/auth/AuthModal";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
+import PublicConciergeWidget from "@/components/navigation/PublicConciergeWidget";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 import { marketingPageNavLinks } from "@/config/navigation";
 import GymnasticsLandingFaq from "./GymnasticsLandingFaq";
@@ -108,6 +109,7 @@ export default function GymnasticsLanding() {
   return (
     <MarketingPage tone="sports" className={styles.editorial}>
       <HeroTopNav
+        editorialTone="sports"
         navLinks={marketingPageNavLinks("/gymnastics")}
         variant="transparent-light"
         primaryCtaLabel="Browse templates"
@@ -284,6 +286,7 @@ export default function GymnasticsLanding() {
           </div>
         </section>
       </main>
+      <PublicConciergeWidget onSignupSelect={() => openAuth("signup")} />
       <AuthModal
         open={authModalOpen}
         mode={authMode}

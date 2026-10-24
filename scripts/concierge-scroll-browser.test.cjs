@@ -506,6 +506,41 @@ test("Concierge uses an anchored popover, answers known questions instantly, and
       }
     }
 
+    // Support pages opt into the same e launcher without replacing their
+    // contact-capable guest chat. New public headers share the regular sheet.
+    for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+      await page.setViewportSize(viewport);
+      for (const variant of ["widget&conciergeLauncher", "publicConcierge"]) {
+        await page.goto(`${base}/?noHero&offline=1&${variant}`);
+        const panel = panelFor(variant.startsWith("widget"));
+        const toggle = page.locator("[data-concierge-launcher] button");
+        await toggle.waitFor();
+        assert.equal(await page.locator("[data-concierge-launcher]").count(), 1, "each public page has one shared launcher");
+        assert.equal((await toggle.boundingBox()).width, 56);
+        assert.ok(await toggle.locator("span").evaluate((node) => getComputedStyle(node).maskImage.includes("/brand/concierge-chat.webp")), "support and product pages use the Envitefy e symbol");
+        await toggle.click();
+        await panel.waitFor();
+        assert.equal(await toggle.getAttribute("aria-label"), "Minimize Envitefy Concierge");
+        await populate(panel);
+        await toggle.click();
+        await panel.waitFor({ state: "hidden" });
+        await page.waitForTimeout(280);
+        assert.equal(await panel.count(), 0, "the e launcher minimizes without reopening on its click");
+        await toggle.click();
+        await panel.waitFor();
+        await fresh(panel);
+        await page.keyboard.press("Escape");
+        await panel.waitFor({ state: "hidden" });
+        assert.equal(await toggle.evaluate((node) => node === document.activeElement), true, "Escape returns focus to the shared support launcher");
+      }
+    }
+    for (const session of ["loading", "authenticated"]) {
+      await page.goto(`${base}/?noHero&publicConcierge&session=${session}`);
+      await page.getByRole("heading", { name: "Event templates", exact: true }).waitFor();
+      assert.equal(await page.locator("[data-concierge-launcher]").count(), 0, "public help does not mount in a signed-in workspace or while session identity resolves");
+      assert.equal(await page.getByRole("dialog").count(), 0);
+    }
+
     const cdp = await page.context().newCDPSession(page);
     await cdp.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: 0, bottom: 28, right: 35 } });
     const launchButton = () => page.getByRole("button", { name: "Open Envitefy Concierge", exact: true });

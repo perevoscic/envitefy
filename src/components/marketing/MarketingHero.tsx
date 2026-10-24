@@ -2,6 +2,7 @@ import { ArrowDownRight, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import PublicCreationLink from "./PublicCreationLink";
 import styles from "./marketing.module.css";
 
 export type MarketingHeroProps = {
@@ -12,6 +13,7 @@ export type MarketingHeroProps = {
   imageAlt?: string;
   primaryHref: string;
   primaryLabel: string;
+  primaryRequiresAccount?: boolean;
   secondaryHref?: string;
   secondaryLabel?: string;
   children?: ReactNode;
@@ -26,6 +28,7 @@ export default function MarketingHero({
   imageAlt = "",
   primaryHref,
   primaryLabel,
+  primaryRequiresAccount = false,
   secondaryHref,
   secondaryLabel,
   children,
@@ -41,10 +44,17 @@ export default function MarketingHero({
         <h1 className={styles.heroTitle}>{title}</h1>
         <p className={styles.heroDescription}>{description}</p>
         <div className={styles.heroActions}>
-          <Link href={primaryHref} className={styles.primaryAction}>
-            {primaryLabel}
-            <ArrowRight size={17} aria-hidden="true" />
-          </Link>
+          {primaryRequiresAccount ? (
+            <PublicCreationLink href={primaryHref} className={styles.primaryAction}>
+              {primaryLabel}
+              <ArrowRight size={17} aria-hidden="true" />
+            </PublicCreationLink>
+          ) : (
+            <Link href={primaryHref} className={styles.primaryAction}>
+              {primaryLabel}
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
+          )}
           {secondaryHref && secondaryLabel && (
             <Link href={secondaryHref} className={styles.secondaryAction}>
               {secondaryLabel}

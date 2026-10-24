@@ -193,7 +193,8 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
   const isMarketingRoute =
     isMarketingRoot ||
     (normalizedPathname ? MARKETING_ROUTE_PATHS.has(normalizedPathname) : false) ||
-    (normalizedPathname?.startsWith("/guides/") ?? false);
+    (normalizedPathname?.startsWith("/guides/") ?? false) ||
+    (normalizedPathname ? isPublicTemplatePath(normalizedPathname) : false);
 
   if (isMarketingRoute) {
     return (

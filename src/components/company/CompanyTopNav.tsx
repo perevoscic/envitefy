@@ -3,6 +3,7 @@
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav, { type HeroTopNavLink } from "@/components/navigation/HeroTopNav";
+import PublicConciergeWidget from "@/components/navigation/PublicConciergeWidget";
 
 const companyTopNavLinks: HeroTopNavLink[] = [
   { label: "About", href: "/about" },
@@ -12,7 +13,7 @@ const companyTopNavLinks: HeroTopNavLink[] = [
   { label: "Terms", href: "/terms" },
 ];
 
-export default function CompanyTopNav() {
+export default function CompanyTopNav({ concierge = true }: { concierge?: boolean }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
 
@@ -24,6 +25,7 @@ export default function CompanyTopNav() {
   return (
     <>
       <HeroTopNav
+        editorialTone="celebration"
         navLinks={companyTopNavLinks}
         primaryCtaLabel="Home"
         authenticatedPrimaryHref="/"
@@ -33,6 +35,7 @@ export default function CompanyTopNav() {
         onGuestPrimaryAction={() => openAuth("signup")}
         variant="transparent-light"
       />
+      {concierge && <PublicConciergeWidget onSignupSelect={() => openAuth("signup")} />}
       <AuthModal
         open={authModalOpen}
         mode={authMode}

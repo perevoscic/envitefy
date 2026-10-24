@@ -25,6 +25,10 @@ The October 24, 2026 editorial design uses a large approved Envitefy wordmark, a
 - Supporting public pages: `/about`, `/how-it-works`, `/who-its-for`, `/guides` and its shared article renderer, `/faq`, `/contact`, `/privacy`, `/terms`, `/delete-account`, `/showcase`.
 - Public template gallery headers/filters share the visual language. Football opts into its public gallery skin with `publicView`; its editor gallery keeps its existing behavior.
 
+Non-homepage public creation actions use `PublicCreationLink` when their destination requires an account. Its account dialog is portaled to the document body so animated content cannot clip it, and signup and login retain the explicit creation destination. Gender-reveal actions retain their own editor and signup intent. The signup landing page's Browse templates actions remain public; its Claim/Undo interaction is an explicitly local sample that never submits a response.
+
+Supporting pages, guide articles and product introductions share the public Concierge launcher. Existing support contact behavior remains in `GuestChatWidget`, with the e-symbol launcher enabled only for marketing callers. `PublicConciergeWidget` covers the other signed-out pages and unmounts when an authenticated session begins. Public template galleries use the editorial footer; customization and workspace boundaries retain their existing chrome. Non-homepage `HeroTopNav` callers opt into an explicit editorial tone for their portaled phone menus; the homepage keeps its existing navigation and appearance.
+
 Each page retains category-specific artwork, content and destinations. Wedding and shower studios, birthday demos, sports query choices, public template selection, metadata, JSON-LD, category anchors and existing account continuations remain. Contact/deletion handlers, reCAPTCHA and legal wording remain intact. Individual event/card/showcase rendering, the signed-in dashboard and editing workspaces do not inherit marketing typography or surfaces.
 
 ## Structure and behavior

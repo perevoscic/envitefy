@@ -5,6 +5,7 @@ import CompanyTopNav from "@/components/company/CompanyTopNav";
 import styles from "@/components/company/supporting-public.module.css";
 import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
+import PublicCreationLink from "@/components/marketing/PublicCreationLink";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 
 const siteOgImageUrl = getRandomSiteOgImageUrl();
@@ -61,6 +62,7 @@ export default function HowItWorksPage() {
           image="/images/landing/hero/garden-vows-desktop.webp"
           imageAlt="Envitefy event page with original invitation artwork"
           primaryHref="/create"
+          primaryRequiresAccount
           primaryLabel="Create your event"
           secondaryHref="/showcase"
           secondaryLabel="See examples"
@@ -94,15 +96,15 @@ export default function HowItWorksPage() {
             </article>
           </div>
           <div className={styles.links}>
-            <Link href="/create">
+            <PublicCreationLink href="/create">
               Start from scratch<span aria-hidden="true">↗</span>
-            </Link>
+            </PublicCreationLink>
             <Link href="/snap">
               Upload with Snap<span aria-hidden="true">↗</span>
             </Link>
-            <Link href="/live-cards">
+            <PublicCreationLink href="/live-cards">
               Explore live cards<span aria-hidden="true">↗</span>
-            </Link>
+            </PublicCreationLink>
             <Link href="/guides">
               Read a guide<span aria-hidden="true">↗</span>
             </Link>

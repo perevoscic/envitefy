@@ -24,6 +24,7 @@ export default function AboutTopNav() {
   return (
     <>
       <HeroTopNav
+        editorialTone="celebration"
         navLinks={aboutTopNavLinks}
         primaryCtaLabel="Home"
         authenticatedPrimaryHref="/"

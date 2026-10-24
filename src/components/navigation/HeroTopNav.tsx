@@ -9,8 +9,10 @@ import { createPortal } from "react-dom";
 import AppearanceSelector from "@/components/AppearanceSelector";
 import LoginForm from "@/components/auth/LoginForm";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import type { MarketingTone } from "@/components/marketing/MarketingPage";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 import appearanceStyles from "./navigation-appearance.module.css";
+import editorialStyles from "./editorial-navigation.module.css";
 import scrollStyles from "./scroll-aware-header.module.css";
 import useScrollAwareHeader from "./useScrollAwareHeader";
 
@@ -32,6 +34,7 @@ type HeroTopNavProps = {
   onGuestLoginAction: () => void;
   onGuestPrimaryAction: () => void;
   showMobileMenuAuthActions?: boolean;
+  editorialTone?: MarketingTone;
   variant?: "default" | "glass-dark" | "transparent-dark" | "transparent-light";
 };
 
@@ -150,6 +153,7 @@ export default function HeroTopNav({
   onGuestLoginAction,
   onGuestPrimaryAction,
   showMobileMenuAuthActions = true,
+  editorialTone,
   variant = "default",
 }: HeroTopNavProps) {
   const { status } = useSession();
@@ -656,6 +660,7 @@ export default function HeroTopNav({
           ? createPortal(
               <div
                 id="hero-top-nav-mobile"
+                data-editorial-tone={editorialTone}
                 aria-hidden={!mobileMenuOpen}
                 inert={!mobileMenuOpen ? true : undefined}
                 onPointerDownCapture={(event) => {
@@ -673,6 +678,7 @@ export default function HeroTopNav({
                 className={cx(
                   appearanceStyles.chrome,
                   appearanceStyles.mobileMenu,
+                  editorialTone && editorialStyles.menu,
                   "!fixed inset-0 z-[1000] h-dvh w-screen touch-pan-y !overflow-y-auto overscroll-y-contain px-4 pb-6 pt-[max(0.9rem,env(safe-area-inset-top))] transition-[transform,opacity] duration-300 ease-out will-change-transform [-webkit-overflow-scrolling:touch]",
                   "lg:hidden",
                   mobileMenuOpen
@@ -711,6 +717,7 @@ export default function HeroTopNav({
                       type="button"
                       className={cx(
                         "nav-chrome-motion inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-sm",
+                        editorialTone && editorialStyles.secondaryAction,
                         useDarkMobileMenu
                           ? "border border-white/16 bg-white/[0.08] text-white hover:bg-white/[0.12]"
                           : "nav-chrome-pill-secondary text-[#31264f]",
@@ -742,6 +749,7 @@ export default function HeroTopNav({
                             }
                             className={cx(
                               "nav-chrome-menu-entry nav-chrome-motion relative flex min-h-11 w-full items-center justify-end rounded-2xl px-4 py-1.5 text-right text-base font-semibold transition",
+                              editorialTone && editorialStyles.navLink,
                               isActive
                                 ? useDarkMobileMenu
                                   ? "text-white"
@@ -760,6 +768,7 @@ export default function HeroTopNav({
                             <span
                               className={cx(
                                 "pointer-events-none absolute right-4 bottom-1.5 h-[2px] w-12 rounded-full",
+                                editorialTone && editorialStyles.activeIndicator,
                                 useDarkMobileMenu ? "bg-white" : "bg-[#6e59db]",
                               )}
                               aria-hidden="true"
@@ -780,6 +789,7 @@ export default function HeroTopNav({
                             href={dashboardHref}
                             className={cx(
                               "nav-chrome-motion mt-1.5 w-full rounded-2xl px-4 py-3 text-right text-base font-semibold transition",
+                              editorialTone && editorialStyles.navLink,
                               useDarkMobileMenu
                                 ? "text-white/74 hover:bg-white/[0.08] hover:text-white"
                                 : lightNavPillClass,
@@ -798,6 +808,7 @@ export default function HeroTopNav({
                                 onClick={() => setMobileLoginExpanded((value) => !value)}
                                 className={cx(
                                   "cta-shell mt-1.5 self-end nav-chrome-motion rounded-2xl px-6 py-3 text-center text-base font-semibold transition",
+                                  editorialTone && editorialStyles.navLink,
                                   useDarkMobileMenu
                                     ? "border border-white/16 bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-white/[0.12]"
                                     : lightNavPillClass,
@@ -822,6 +833,7 @@ export default function HeroTopNav({
                                 <div
                                   className={cx(
                                     "rounded-[2rem] px-4 py-4",
+                                    editorialTone && editorialStyles.loginPanel,
                                     useDarkMobileMenu
                                       ? "border border-white/16 bg-white/[0.08] shadow-[0_18px_44px_rgba(4,1,14,0.28)]"
                                       : "border border-[#e7dcff] bg-white/92 shadow-[0_18px_44px_rgba(89,70,171,0.12)]",
@@ -853,6 +865,7 @@ export default function HeroTopNav({
                             href={authenticatedPrimaryHref}
                             className={cx(
                               "mt-1.5 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+                              editorialTone && editorialStyles.primaryAction,
                               useDarkMobileMenu
                                 ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
                                 : "nav-chrome-pill-primary text-white",
@@ -867,6 +880,7 @@ export default function HeroTopNav({
                               href={guestPrimaryHref}
                               className={cx(
                                 "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+                                editorialTone && editorialStyles.primaryAction,
                                 useDarkMobileMenu
                                   ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
                                   : "nav-chrome-pill-primary text-white",
@@ -888,6 +902,7 @@ export default function HeroTopNav({
                               }}
                               className={cx(
                                 "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+                                editorialTone && editorialStyles.primaryAction,
                                 useDarkMobileMenu
                                   ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
                                   : "nav-chrome-pill-primary text-white",

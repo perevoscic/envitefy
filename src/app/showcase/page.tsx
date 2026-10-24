@@ -78,8 +78,8 @@ export default async function ShowcaseIndexPage() {
             <p className={styles.eyebrow}>Public Live Cards</p>
             <h1 className={styles.title}>A little inspiration for your next occasion.</h1>
             <p className={styles.intro}>
-              Crawlable showcase pages for live invitation cards, event pages, and hosted RSVP
-              experiences. Each example links to its own public URL with a dedicated preview image.
+              Explore invitations, event pages, and RSVP experiences for birthdays, weddings,
+              showers, and more. Open an example to see how the details come together.
             </p>
           </div>
 

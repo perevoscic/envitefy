@@ -19,6 +19,7 @@ import AuthModal from "@/components/auth/AuthModal";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
+import PublicConciergeWidget from "@/components/navigation/PublicConciergeWidget";
 import { marketingPageNavLinks } from "@/config/navigation";
 
 const steps = [
@@ -88,6 +89,7 @@ export default function SnapLanding() {
   return (
     <MarketingPage tone="product" className={styles.editorial}>
       <HeroTopNav
+        editorialTone="product"
         navLinks={marketingPageNavLinks("/snap")}
         variant="transparent-light"
         primaryCtaLabel="Let's create"
@@ -224,6 +226,7 @@ export default function SnapLanding() {
           <div className={styles.actions}>{startAction}</div>
         </section>
       </main>
+      <PublicConciergeWidget onSignupSelect={() => openAuth("signup")} />
       <AuthModal
         open={authModalOpen}
         mode={authMode}

@@ -16,6 +16,7 @@ import Script from "next/script";
 import styles from "@/components/company/supporting-public.module.css";
 import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
+import PublicCreationLink from "@/components/marketing/PublicCreationLink";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import GuidesTopNav from "./GuidesTopNav";
 import { guidePages } from "./guide-content";
@@ -237,10 +238,10 @@ export default function GuidesPage() {
                 Start with a file
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
-              <Link href="/live-cards">
+              <PublicCreationLink href="/live-cards">
                 Design a live card
                 <ArrowRight size={16} aria-hidden="true" />
-              </Link>
+              </PublicCreationLink>
             </div>
           </div>
         </section>

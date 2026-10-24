@@ -17,6 +17,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import MarketingPage from "@/components/marketing/MarketingPage";
+import PublicCreationLink from "@/components/marketing/PublicCreationLink";
 import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 
@@ -249,9 +250,9 @@ export default function InvitationMakerPage() {
               design, a clear plan, one link to share.
             </p>
             <div className={styles.actions}>
-              <Link href="/live-cards" className={styles.primary}>
+              <PublicCreationLink href="/live-cards" className={styles.primary}>
                 Create your invitation <ArrowRight aria-hidden="true" />
-              </Link>
+              </PublicCreationLink>
               <Link href="/showcase" className={styles.secondary}>
                 See live examples
               </Link>
@@ -352,12 +353,12 @@ export default function InvitationMakerPage() {
                     </p>
                   </div>
 
-                  <Link
+                  <PublicCreationLink
                     href="/live-cards"
                     className="mt-8 inline-flex items-center gap-2 font-bold text-[#f2c6de] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--marketing-soft)]"
                   >
                     Create with Envitefy <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
+                  </PublicCreationLink>
                 </div>
               </article>
 
@@ -648,12 +649,12 @@ export default function InvitationMakerPage() {
                 Guests can open either experience in any modern browser—no app required.
               </p>
               <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-                <Link
+                <PublicCreationLink
                   href="/live-cards"
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#f2c6de] px-7 text-sm font-bold text-[#442c3b] hover:bg-[#fff4cb] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--marketing-soft)]"
                 >
                   Create an invitation <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
+                </PublicCreationLink>
                 <Link
                   href="/snap"
                   className="inline-flex h-12 items-center justify-center rounded-full border border-white/25 px-7 text-sm font-bold text-white hover:bg-[var(--marketing-soft)]/[0.1] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"

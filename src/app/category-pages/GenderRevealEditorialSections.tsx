@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import PublicCreationLink from "@/components/marketing/PublicCreationLink";
 import type { UseCasePage } from "./category-page-data";
 
 const moments = [
@@ -277,13 +278,13 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                 );
               })}
             </div>
-            <Link
+            <PublicCreationLink
               href={page.primaryHref}
               className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#2b1748] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_50px_rgba(43,23,72,0.2)] transition hover:-translate-y-0.5"
             >
               {page.primaryCta}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
+            </PublicCreationLink>
           </div>
         </div>
       </section>
@@ -441,13 +442,13 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
             Build your reveal page, share one link, and let Envitefy keep count.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link
+            <PublicCreationLink
               href={page.primaryHref}
               className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#241b29] transition hover:-translate-y-0.5"
             >
               Create your reveal page
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
+            </PublicCreationLink>
             <Link
               href={page.secondaryHref}
               className="inline-flex min-h-12 items-center rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur"

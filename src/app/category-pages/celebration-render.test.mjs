@@ -46,6 +46,12 @@ function load(file) {
         default: ({ children, ...props }) => React.createElement("script", props, children),
       };
     if (name === "lucide-react") return new Proxy({}, { get: () => () => null });
+    if (name.endsWith("/PublicCreationLink"))
+      return {
+        __esModule: true,
+        default: ({ children, signupIntent, ...props }) =>
+          React.createElement("a", { ...props, "data-public-create-destination": props.href }, children),
+      };
     if (name === "@/components/navigation/SignedOutPageChrome")
       return {
         __esModule: true,
@@ -94,7 +100,7 @@ for (const [route, componentFile, createHref, previewAnchor] of [
   [
     "gender-reveal",
     "src/app/category-pages/CategoryLandingView.tsx",
-    "/snap?auth=signup",
+    "/event/gender-reveal",
     "reveal-start",
   ],
   [
@@ -135,3 +141,24 @@ for (const [route, componentFile, createHref, previewAnchor] of [
     }
   });
 }
+
+test("signup browsing actions open the public gallery without requiring an account", () => {
+  const Component = load("src/app/category-pages/CategoryLandingView.tsx").default;
+  const html = renderToStaticMarkup(
+    React.createElement(Component, { page: getUseCasePageByPath("/signup-forms") }),
+  );
+  const browseLinks = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)]
+    .filter((match) => match[2].replace(/<[^>]*>/g, "").trim() === "Browse templates");
+  assert.equal(browseLinks.length, 2);
+  for (const link of browseLinks) assert.match(link[1], /href="\/signup-forms\/templates"/);
+});
+
+test("all reveal creation actions retain the reveal editor destination", () => {
+  const Component = load("src/app/category-pages/CategoryLandingView.tsx").default;
+  const html = renderToStaticMarkup(
+    React.createElement(Component, { page: getUseCasePageByPath("/gender-reveal") }),
+  );
+  const createLinks = [...html.matchAll(/<a\b([^>]*data-public-create-destination[^>]*)>/g)];
+  assert.equal(createLinks.length, 3);
+  for (const link of createLinks) assert.match(link[1], /href="\/event\/gender-reveal"/);
+});

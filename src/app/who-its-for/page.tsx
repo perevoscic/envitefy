@@ -60,6 +60,7 @@ export default function WhoItsForPage() {
           image="/images/about/hero/envitefy-about-hero-poster.webp"
           imageAlt="Envitefy event pages for celebrations and community gatherings"
           primaryHref="/create"
+          primaryRequiresAccount
           primaryLabel="Create your event"
           secondaryHref="/showcase"
           secondaryLabel="See examples"

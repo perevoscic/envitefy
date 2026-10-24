@@ -664,7 +664,7 @@ export const useCasePages = [
     heroImageAlt: "Gender reveal event page example",
     heroImagePosition: "center",
     primaryCta: "Create your reveal party page",
-    primaryHref: "/snap?auth=signup",
+    primaryHref: "/event/gender-reveal",
     secondaryCta: "Upload an invite",
     secondaryHref: "/snap",
     theme: {

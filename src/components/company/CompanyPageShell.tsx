@@ -33,7 +33,7 @@ export default function CompanyPageShell({
 }: CompanyPageShellProps) {
   return (
     <MarketingPage className={styles.content}>
-      <CompanyTopNav />
+      <CompanyTopNav concierge={false} />
       <main>
         <MarketingHero
           eyebrow={eyebrow}
@@ -57,7 +57,7 @@ export default function CompanyPageShell({
         </MarketingHero>
         <div className={styles.prose}>{children}</div>
       </main>
-      <GuestChatWidget />
+      <GuestChatWidget conciergeLauncher />
     </MarketingPage>
   );
 }

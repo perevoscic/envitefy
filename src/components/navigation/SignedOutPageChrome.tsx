@@ -30,6 +30,13 @@ export default function SignedOutPageChrome({
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [assistantOpen, setAssistantOpen] = useState(false);
+  // The homepage keeps its approved navigation; other public menus opt into
+  // their own palette even when rendered through a document-body portal.
+  const editorialTone = !pathname || pathname === "/" || pathname === "/landing"
+    ? undefined
+    : /^\/(?:sports|sport-events|football|gymnastics)(?:\/|$)/.test(pathname)
+      ? "sports"
+      : "celebration";
   const pageNavLinks = useMemo(() => marketingPageNavLinks(pathname || ""), [pathname]);
 
   const openAuth = useCallback((mode: "login" | "signup") => {
@@ -57,6 +64,7 @@ export default function SignedOutPageChrome({
   return (
     <>
       <HeroTopNav
+        editorialTone={editorialTone}
         navLinks={pageNavLinks}
         mobileNavLinks={pageNavLinks}
         primaryCtaLabel={templateCategory ? "Browse templates" : "Let's create"}

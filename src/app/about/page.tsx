@@ -20,6 +20,7 @@ import GuestChatWidget from "@/components/guest-chat/GuestChatWidget";
 import SnapEventPreview from "@/components/landing/SnapEventPreview";
 import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
+import PublicCreationLink from "@/components/marketing/PublicCreationLink";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import AboutTopNav from "./AboutTopNav";
 
@@ -185,6 +186,7 @@ export default function AboutPage() {
           }
           description="Envitefy brings the invitation, event details and guest actions together. Create a page that feels like your occasion, then share one link everyone can use."
           primaryHref="/create"
+          primaryRequiresAccount
           primaryLabel="Create your event"
           secondaryHref="#what-we-build"
           secondaryLabel="Get to know Envitefy"
@@ -314,10 +316,10 @@ export default function AboutPage() {
               Start with an original design or bring the information you already have.
             </p>
             <div className={styles.links}>
-              <Link href="/create">
+              <PublicCreationLink href="/create">
                 Create your event
                 <ArrowRight size={16} aria-hidden="true" />
-              </Link>
+              </PublicCreationLink>
               <Link href="/snap">
                 Start with Snap
                 <ArrowRight size={16} aria-hidden="true" />
@@ -336,7 +338,7 @@ export default function AboutPage() {
           {JSON.stringify(aboutPageLd)}
         </Script>
       </main>
-      <GuestChatWidget />
+      <GuestChatWidget conciergeLauncher />
     </MarketingPage>
   );
 }

@@ -11,6 +11,7 @@ import editorialStyles from "../category-pages/CelebrationLanding.module.css";
 import CelebrationPreview from "../category-pages/CelebrationPreview";
 import type { UseCasePage } from "../category-pages/category-page-data";
 import WeddingStudioPreview from "./WeddingStudioPreview";
+import styles from "./wedding-landing.module.css";
 
 type SuiteTheme = "gold" | "tuscan" | "noir";
 
@@ -190,9 +191,15 @@ const reviews = [
   },
 ] as const;
 
-function SectionEyebrow({ children }: { children: string }) {
+function SectionEyebrow({
+  children,
+  className = "text-[#795b3d]",
+}: {
+  children: string;
+  className?: string;
+}) {
   return (
-    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-[#795b3d]">
+    <span className={`text-xs font-semibold uppercase tracking-[0.25em] ${className}`}>
       {children}
     </span>
   );
@@ -333,15 +340,15 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
 
         <section
           id="studio"
-          className="border-y border-[#e5d7c3]/70 bg-gradient-to-b from-[#fbf9f5] to-[#faf7f2]/50 py-24"
+          className={`${styles.studio} border-y py-24`}
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto mb-16 max-w-3xl space-y-4 text-center">
-              <SectionEyebrow>Wedding Invitation Design</SectionEyebrow>
-              <h2 className="font-wedding-serif text-3xl font-light tracking-wide text-slate-900 sm:text-5xl">
+              <SectionEyebrow className={styles.studioEyebrow}>Wedding Invitation Design</SectionEyebrow>
+              <h2 className={`${styles.studioTitle} font-wedding-serif text-3xl font-light tracking-wide sm:text-5xl`}>
                 Design Your Wedding Invitation Live
               </h2>
-              <p className="text-sm font-light text-slate-600 sm:text-base">
+              <p className={`${styles.studioDescription} text-sm font-light sm:text-base`}>
                 Personalize names, dates, venue locations, and aesthetic themes in real time.
               </p>
             </div>

@@ -1351,6 +1351,7 @@ export function GuidePageView({ slug }: { slug: GuideSlug }) {
           title={guide.h1}
           description={guide.intro}
           primaryHref={guide.cta.href}
+          primaryRequiresAccount={guide.cta.href === "/live-cards"}
           primaryLabel={guide.cta.label}
           secondaryHref={guide.secondaryCta.href}
           secondaryLabel={guide.secondaryCta.label}

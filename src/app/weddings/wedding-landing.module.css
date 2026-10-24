@@ -1,0 +1,16 @@
+.studio {
+  border-color: var(--marketing-line);
+  background: linear-gradient(var(--marketing-paper), var(--marketing-surface));
+}
+
+.studioEyebrow {
+  color: var(--marketing-accent);
+}
+
+.studioTitle {
+  color: var(--marketing-ink);
+}
+
+.studioDescription {
+  color: var(--marketing-muted);
+}

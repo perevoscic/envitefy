@@ -164,6 +164,7 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
                 ? "Create a signup page"
                 : "Browse templates"
           }
+          primaryRequiresAccount={page.slug === "gender-reveal"}
           secondaryHref={page.slug === "signup-forms" ? "#how-it-works" : page.secondaryHref}
           secondaryLabel={page.slug === "signup-forms" ? "See how it works" : page.secondaryCta}
         >
