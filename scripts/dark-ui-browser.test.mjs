@@ -84,6 +84,7 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             // The app-owned favorite control overlays the authored thumbnail.
             const screenshotOptions={animations:"disabled",mask:[page.locator("[data-template-masonry-card]").first().getByRole("button")],maskColor:"#000000"};
             const before=await artwork.screenshot(screenshotOptions);
+            await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
             await page.getByRole("switch",{name:"Dark mode",exact:true}).filter({visible:true}).uncheck();
             const light=await artwork.screenshot(screenshotOptions);
             await fs.writeFile(path.join(out,"authored-artwork-dark.png"),before);
@@ -133,6 +134,7 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             };
             const authoredPixels=await contentPixels(before);
             assert.ok(authoredPixels.equals(await contentPixels(light)),"real gallery artwork must retain its authored pixels when app appearance changes");
+            await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
             await page.getByRole("switch",{name:"Dark mode",exact:true}).filter({visible:true}).check();
             assert.ok(authoredPixels.equals(await contentPixels(await artwork.screenshot(screenshotOptions))),"restoring dark must retain authored artwork");
           }
@@ -160,11 +162,10 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
           assert.ok(visible.every(img=>img.src.startsWith("/email/white-v1/")&&img.loaded),"dark website footer uses all five loaded white icon assets");
           assert.equal(await footer.getByRole("heading",{name:"Create",exact:true}).evaluate(el=>getComputedStyle(el).color),"rgb(242, 234, 250)");
           await footer.screenshot({path:path.join(out,`landing-footer-dark-${width}.png`)});
-          if(width===1440) {
-            await page.getByRole("button",{name:"Open Envitefy Concierge",exact:true}).click();
-          } else {
-            const navigation=page.getByRole("navigation",{name:"Signed-out mobile navigation",exact:true});
-            await navigation.getByRole("button",{name:"Open navigation",exact:true}).click();
+          if(width===390) {
+            await page.locator("[data-landing-wordmark]").evaluate(wordmark=>window.scrollTo({top:Math.ceil(scrollY+wordmark.getBoundingClientRect().bottom)+1,behavior:"instant"}));
+            await page.waitForFunction(()=>document.querySelector("header")?.dataset.scrollHidden==="false");
+            await page.getByRole("button",{name:"Open navigation",exact:true}).click();
             const sheet=page.getByRole("dialog",{name:"Menu",exact:true});
             await sheet.waitFor();
             assert.equal(await sheet.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(37, 31, 45)");
@@ -172,20 +173,34 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             assert.equal(await sheet.getByRole("img",{name:"Envitefy",exact:true}).getAttribute("src"),"/brand/wordmark-v2/envitefy-wordmark-white.webp","the signed-out menu uses the approved white wordmark");
             await sheet.screenshot({path:path.join(out,"signed-out-mobile-menu-dark.png")});
             await sheet.getByRole("button",{name:"Close menu",exact:true}).click();
-            // The landing Create action now opens signup. Its predecessor remains in
-            // the shared BottomNav, so retain that real component's appearance coverage.
-            const compatibility=await context.newPage();
-            await compatibility.setViewportSize({width,height:1080});
-            await compatibility.goto("https://dark-ui.test/landing?screen=create-options");
-            await compatibility.getByRole("button",{name:"Open signed-out creation choices.",exact:true}).click();
-            const choices=compatibility.getByRole("dialog",{name:"Create options",exact:true});
-            await choices.waitFor();
-            assert.equal(await choices.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(37, 31, 45)");
-            await choices.screenshot({path:path.join(out,"signed-out-create-options-dark.png")});
-            await choices.getByRole("button",{name:"Close create options",exact:true}).click();
-            await compatibility.close();
-            await navigation.getByRole("button",{name:"Ask Envitefy Concierge",exact:true}).click();
           }
+          assert.equal(await page.getByRole("navigation",{name:"Signed-out mobile navigation",exact:true}).count(),0,"the retired public bottom navigation must remain absent");
+          const launcherFixture=await context.newPage();
+          await launcherFixture.setViewportSize({width,height:1080});
+          await launcherFixture.goto("https://dark-ui.test/landing?screen=concierge-launcher");
+          const launcher=launcherFixture.getByRole("button",{name:"Open Envitefy Concierge",exact:true});
+          await launcher.waitFor({state:"visible"});
+          const launcherAppearance=await launcher.evaluate(button=>{
+            const rect=button.getBoundingClientRect();
+            const style=getComputedStyle(button);
+            const symbol=button.querySelector('[aria-hidden="true"]');
+            const symbolStyle=getComputedStyle(symbol);
+            return {width:rect.width,height:rect.height,radius:style.borderRadius,color:style.color,mask:symbolStyle.maskImage,symbolColor:symbolStyle.backgroundColor};
+          });
+          assert.ok(launcherAppearance.width>=44&&launcherAppearance.height>=44,"Concierge must retain a 44px touch target at both widths");
+          assert.ok(launcherAppearance.mask.includes("/brand/concierge-chat.webp"),"Concierge uses the approved e-chat brand mark");
+          assert.equal(launcherAppearance.symbolColor,launcherAppearance.color,"Concierge brand mark follows the launcher ink");
+          if(width===390) {
+            assert.equal(launcherAppearance.width,56);
+            assert.equal(launcherAppearance.height,56);
+            assert.ok(parseFloat(launcherAppearance.radius)>=28||launcherAppearance.radius.includes("50%"),"phone Concierge launcher is circular");
+            assert.equal(await launcher.getByText("Concierge",{exact:true}).isVisible(),false,"phone Concierge uses the icon alone");
+          } else {
+            assert.equal(await launcher.getByText("Concierge",{exact:true}).isVisible(),true,"desktop Concierge retains its visible label");
+          }
+          await launcherFixture.screenshot({path:path.join(out,`concierge-launcher-dark-${width}.png`)});
+          await launcherFixture.close();
+          await page.getByRole("button",{name:"Open Envitefy Concierge",exact:true}).click();
           const concierge=page.getByRole("dialog",{name:"Envitefy Concierge",exact:true});
           await concierge.waitFor();
           assert.equal(await concierge.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(37, 31, 45)");

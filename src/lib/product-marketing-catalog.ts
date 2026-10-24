@@ -163,7 +163,11 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "The Event Page starting workspace shows visual template suggestions and example pages for the host's enabled, permitted event types. Phones focus on the upload or link task with stacked template choices, and a compact Continue creating banner resumes unfinished work.",
             "The All category menu pairs artwork thumbnails with group names and familiar event types, such as Birthday, Wedding, Christmas and Halloween, to help hosts browse celebrations, holidays, home events, religious and cultural events, gatherings and sports. It adapts to phone and desktop workspaces and shows only groups and event-type examples available to the account.",
             "Sign-up Forms use their separate template gallery and builder for slots, claims and bookings.",
-            "Signed-out visitors can ask the help chat questions about Envitefy, guest actions and the available builders.",
+            "Signed-out visitors can open Envitefy Concierge from the floating chat button on public pages to ask questions about Envitefy, guest actions and the available builders. The gold Envitefy e/chat icon has a plum fill inside its speech bubble and stays available at 56px on phones and desktops without an extra surrounding circle or visible label.",
+            "Concierge's five suggested questions and common product questions use saved answers directly in the browser, including when the chat API is unavailable. Questions requiring a tailored answer stream their response with bounded waits; this help chat never creates or saves an event.",
+            "New conversation returns visitors to Concierge's welcome questions. Closing the chat also clears its conversation history and unsent question, so reopening begins fresh; canceled replies cannot appear in the new conversation.",
+            "Concierge opens as a compact rounded popover above its chat icon, with a small pointer and subtle fade and lift. It stays within the screen and leaves the page usable on phones and desktops; reduced motion uses an immediate presentation.",
+            "The same e/chat icon opens Concierge on the first click and minimizes it on the next. It stays reachable on phones while the chat is open, with space below the composer; reopening begins a fresh conversation.",
             "Published events and cards retain their current owner editing and guest workflows.",
           ],
           sellWhen: [

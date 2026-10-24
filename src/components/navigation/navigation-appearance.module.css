@@ -1,4 +1,30 @@
 /* Keep navigation chrome independent of event-owned colors and artwork. */
+.publicHeader {
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .publicHeader {
+    padding-inline: clamp(1.5rem, 2.5vw, 3rem);
+  }
+
+  .publicLinks {
+    overflow-x: auto;
+    overflow-y: hidden;
+    justify-content: safe center;
+    padding-block: 0.5rem;
+    scrollbar-width: none;
+  }
+
+  .publicLinks::-webkit-scrollbar {
+    display: none;
+  }
+
+  .publicActions {
+    gap: clamp(0.5rem, 0.8vw, 0.75rem);
+  }
+}
+
 @media (min-width: 1024px) {
   /* Anchor section captions to the icon rail in both sidebar states. */
   .chrome:global([data-app-navigation="sidebar"]) :global(.nav-chrome-sidebar-caption) {
@@ -197,15 +223,30 @@
 
 /* Legacy color compatibility includes hover selectors. These explicit component
    roles must win regardless of the order Next loads global and module CSS. */
-:global(html.dark) .chrome :global(.nav-chrome-menu-card) :is(a, button):global(.nav-chrome-menu-entry),
-:global(html.dark) .chrome:global(.nav-chrome-menu-card) :is(a, button):global(.nav-chrome-menu-entry),
-:global(html.dark) .chrome :global(.nav-chrome-menu-card) :is(span, h3):global(.nav-chrome-menu-copy),
-:global(html.dark) .chrome:global(.nav-chrome-menu-card) :is(span, h3):global(.nav-chrome-menu-copy) {
+:global(html.dark)
+  .chrome
+  :global(.nav-chrome-menu-card)
+  :is(a, button):global(.nav-chrome-menu-entry),
+:global(html.dark)
+  .chrome:global(.nav-chrome-menu-card)
+  :is(a, button):global(.nav-chrome-menu-entry),
+:global(html.dark)
+  .chrome
+  :global(.nav-chrome-menu-card)
+  :is(span, h3):global(.nav-chrome-menu-copy),
+:global(html.dark)
+  .chrome:global(.nav-chrome-menu-card)
+  :is(span, h3):global(.nav-chrome-menu-copy) {
   color: var(--nav-chrome-ink);
 }
 
-:global(html.dark) .chrome :global(.nav-chrome-menu-card) :is(span, p, div):global(.nav-chrome-menu-detail),
-:global(html.dark) .chrome:global(.nav-chrome-menu-card) :is(span, p, div):global(.nav-chrome-menu-detail) {
+:global(html.dark)
+  .chrome
+  :global(.nav-chrome-menu-card)
+  :is(span, p, div):global(.nav-chrome-menu-detail),
+:global(html.dark)
+  .chrome:global(.nav-chrome-menu-card)
+  :is(span, p, div):global(.nav-chrome-menu-detail) {
   color: var(--nav-chrome-muted);
 }
 
@@ -214,30 +255,37 @@
   color: var(--app-error, #ffa7b5);
 }
 
-:global(html.dark) .chrome:global([data-app-navigation="sidebar"]) :is(a, button, span, div, p, svg):is(
-  :global(.nav-chrome-sidebar-link),
-  :global(.nav-chrome-sidebar-label),
-  :global(.nav-chrome-menu-label),
-  :global(.nav-chrome-sidebar-heading),
-  :global(.nav-chrome-sidebar-icon),
-  :global(.nav-chrome-sidebar-control),
-  :global(.nav-chrome-account-name),
-  :global(.nav-chrome-sidebar-count),
-  :global(.nav-chrome-menu-icon)
-) {
+:global(html.dark)
+  .chrome:global([data-app-navigation="sidebar"])
+  :is(a, button, span, div, p, svg):is(
+    :global(.nav-chrome-sidebar-link),
+    :global(.nav-chrome-sidebar-label),
+    :global(.nav-chrome-menu-label),
+    :global(.nav-chrome-sidebar-heading),
+    :global(.nav-chrome-sidebar-icon),
+    :global(.nav-chrome-sidebar-control),
+    :global(.nav-chrome-account-name),
+    :global(.nav-chrome-sidebar-count),
+    :global(.nav-chrome-menu-icon)
+  ) {
   color: var(--nav-chrome-ink);
 }
 
-:global(html.dark) .chrome:global([data-app-navigation="sidebar"]) :is(p, div, span):is(
-  :global(.nav-chrome-sidebar-caption),
-  :global(.nav-chrome-account-detail)
-) {
+:global(html.dark)
+  .chrome:global([data-app-navigation="sidebar"])
+  :is(p, div, span):is(:global(.nav-chrome-sidebar-caption), :global(.nav-chrome-account-detail)) {
   color: var(--nav-chrome-muted);
 }
 
-:global(html.dark) .chrome:global([data-app-navigation="sidebar"]) :is(a, button):global(.nav-chrome-sidebar-link):hover,
-:global(html.dark) .chrome:global([data-app-navigation="sidebar"]) :is(a, button):global(.nav-chrome-sidebar-link-active),
-:global(html.dark) .chrome:global([data-app-navigation="sidebar"]) :is(a, button):global(.nav-chrome-sidebar-link[aria-current="page"]) {
+:global(html.dark)
+  .chrome:global([data-app-navigation="sidebar"])
+  :is(a, button):global(.nav-chrome-sidebar-link):hover,
+:global(html.dark)
+  .chrome:global([data-app-navigation="sidebar"])
+  :is(a, button):global(.nav-chrome-sidebar-link-active),
+:global(html.dark)
+  .chrome:global([data-app-navigation="sidebar"])
+  :is(a, button):global(.nav-chrome-sidebar-link[aria-current="page"]) {
   background: var(--nav-chrome-selected-surface);
   color: var(--nav-chrome-ink);
 }
@@ -277,7 +325,9 @@
   background: var(--app-surface, #251f2d);
   border-color: var(--app-border, #51435f);
   color: var(--app-foreground, #f2eafa);
-  box-shadow: 0 16px 42px rgb(0 0 0 / 35%), inset 0 1px 0 rgb(197 167 255 / 8%);
+  box-shadow:
+    0 16px 42px rgb(0 0 0 / 35%),
+    inset 0 1px 0 rgb(197 167 255 / 8%);
 }
 
 :global(html.dark) .bottomNavIcon {

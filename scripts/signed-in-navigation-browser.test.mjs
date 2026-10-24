@@ -292,7 +292,7 @@ test("actual signed-in sidebar and navbar stay dark with pink menus across deskt
 
 test("Next CSS compilation delivers persistent navigation styles and the compact theme switch",{timeout:60000},async()=>{
   const layout=await fs.readFile("src/app/layout.tsx","utf8");
-  for(const module of ["navigation/navigation-appearance","appearance-selector"]){
+  for(const module of ["navigation/navigation-appearance","navigation/concierge-sheet","appearance-selector"]){
     assert.ok(layout.includes(`import "@/components/${module}.module.css"`),`${module} remains in the persistent root CSS bundle`);
   }
   const directory=path.resolve("output/next-navigation-browser");

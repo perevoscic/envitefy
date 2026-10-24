@@ -45,18 +45,31 @@ export function normalizeGuestChatHistory(value: unknown): GuestChatMessage[] {
 }
 
 function asksForHuman(message: string) {
-  return /\b(contact|support|human|person|team|email|call|help desk|sales|partnership)\b/i.test(
-    message,
+  return (
+    /\b(?:customer support|support team|tech(?:nical)? support|help desk|customer service|sales|partnerships?)\b/i.test(message) ||
+    /\b(?:contact|get|reach|ask|need|want)\s+(?:envitefy\s+)?support\b/i.test(message) ||
+    /^support(?: please)?[?.!\s]*$/i.test(message) ||
+    /\b(?:contact|email|call|reach|talk to|speak to)\s+(?:the\s+)?(?:envitefy|support|your team|a human|a person|someone|a representative)\b/i.test(message) ||
+    /^(?:how (?:do|can) i )?(?:contact|email|call)(?: you)?[?.!\s]*$/i.test(message) ||
+    /\b(?:talk|speak)\s+(?:with|to)\s+(?:a\s+)?(?:human|person)\b/i.test(message)
   );
 }
 
 function asksAboutPricing(message: string) {
-  return /\b(price|pricing|cost|billing|plan|subscription|trial|refund|invoice)\b/i.test(message);
+  return /\b(price|pricing|costs?|billing|subscriptions?|trial|refund|invoice|free|paid plans?|pricing plans?|payment plans?)\b/i.test(message);
 }
 
 function asksForPrivateDetails(message: string) {
-  return /\b(guest list|who is coming|who'?s coming|who attended|rsvp responses?|private data|account password|password|api key|secret|session token|access token|door code|gate code)\b/i.test(
-    message,
+  // Asking whether page protection exists is different from asking for a code.
+  if (/^(?:can i password[- ]protect (?:an? |my |the )?event page|can (?:an? )?event pages? be password[- ]protected)[?.!\s]*$/i.test(message)) {
+    return false;
+  }
+  return (
+    /\b(who is coming|who'?s coming|who attended|private data|account password|password|api key|secret|session token|access token|door code|gate code)\b/i.test(message) ||
+    /\b(?:what(?:'s| is)|show|give|tell|reveal|find|retrieve)\b[\s\S]{0,40}\b(?:the|my|our|this|their)\s+(?:event(?:'s)?\s+)?(?:access code|passcode)\b/i.test(message) ||
+    /\b(?:my|our|this|the|their|private|hidden)\s+(?:event'?s?\s+)?(?:guest list|rsvp responses?)\b/i.test(message) ||
+    /\b(?:show|give|tell|reveal|send|read|retrieve)\b[\s\S]{0,40}\b(?:guest list|rsvp responses?)\b/i.test(message) ||
+    /^(?:guest list|rsvp responses?)[?.!\s]*$/i.test(message)
   );
 }
 
@@ -158,7 +171,7 @@ export const GUEST_SIGNUP_PROMPT = "Want to try it now? Create an account to get
 export function guestSignupPromptSuffix(answer: string) {
   const trimmed = answer.trim();
   if (!trimmed) return GUEST_SIGNUP_PROMPT;
-  if (/\b(?:try it now|create an account|start your event page|get started)\b/i.test(trimmed)) {
+  if (/\b(?:try it now|create (?:an? )?account|start your event page|get started)\b/i.test(trimmed)) {
     return "";
   }
   return `\n\n${GUEST_SIGNUP_PROMPT}`;
@@ -179,17 +192,6 @@ export function buildDeterministicGuestChatAnswer(message: string): GuestChatAns
       answer: "Ask me a question about Envitefy event pages, RSVPs, uploads, or guest actions.",
       handoffSuggested: false,
       signupSuggested: false,
-      matchedKnowledgeIds,
-      aiAllowed: false,
-    };
-  }
-
-  if (hasDirectAccountCreationIntent(cleaned)) {
-    return {
-      answer:
-        "Select Create account below to sign up. Once you're in, you can start a Live Card, an Event Page, or a Sign-up Form, save it as a draft, and publish when you're ready.",
-      handoffSuggested: false,
-      signupSuggested: true,
       matchedKnowledgeIds,
       aiAllowed: false,
     };
@@ -243,6 +245,17 @@ export function buildDeterministicGuestChatAnswer(message: string): GuestChatAns
     };
   }
 
+  if (hasDirectAccountCreationIntent(cleaned)) {
+    return {
+      answer:
+        "Select Create account below to sign up. Once you're in, you can start a Live Card, an Event Page, or a Sign-up Form, save it as a draft, and publish when you're ready.",
+      handoffSuggested: false,
+      signupSuggested: true,
+      matchedKnowledgeIds,
+      aiAllowed: false,
+    };
+  }
+
   if (!looksEnvitefyRelated(cleaned)) {
     return {
       answer: GUEST_CHAT_OUT_OF_SCOPE_ANSWER,
@@ -253,14 +266,16 @@ export function buildDeterministicGuestChatAnswer(message: string): GuestChatAns
     };
   }
 
-  const best = matches[0];
+  // Support and pricing require the explicit intents above. Their generic words
+  // ("contact", "team", "plan") must not turn an unknown feature into a handoff.
+  const best = matches.find((item) => item.id !== "support" && item.id !== "pricing");
   if (best) {
     return {
       answer: best.answer,
-      handoffSuggested: best.id === "support" || best.id === "pricing",
+      handoffSuggested: false,
       signupSuggested: false,
       matchedKnowledgeIds,
-      aiAllowed: best.id !== "support" && best.id !== "pricing",
+      aiAllowed: true,
     };
   }
 

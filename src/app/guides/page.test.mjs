@@ -77,7 +77,8 @@ test("guide pages provide crawlable H1s, JSON-LD, and related product links", ()
   assert.match(hub, /export const metadata/);
   assert.match(hub, /"@type": "CollectionPage"/);
   assert.match(hub, /Guides for live event pages, uploads, RSVPs, and gymnastics meets/);
-  assert.match(content, /<h1/);
+  assert.match(content, /<MarketingHero/);
+  assert.match(readSource("src/components/marketing/MarketingHero.tsx"), /<h1/);
   assert.match(content, /How do I turn a PDF into an event page\?/);
   assert.match(content, /How do I turn a flyer into an event page\?/);
   assert.match(content, /What are live card invitations\?/);

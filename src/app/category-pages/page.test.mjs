@@ -60,9 +60,9 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   assert.match(view, /https:\/\/envitefy\.com\$\{page\.path\}/);
   assert.match(view, /JSON\.stringify\(faqLd\)/);
   assert.match(view, /HeroPreview/);
+  assert.match(view, /<MarketingHero/);
+  assert.match(view, /<MarketingPage/);
   assert.match(view, /brandHref="\/"/);
-  assert.match(view, /topNavVariant="transparent-dark"/);
-  assert.match(view, /<LandingHeroMedia/);
   assert.doesNotMatch(view, /rgba\(10,7,14,0\.84\)/);
   assert.doesNotMatch(landingExperience, /rgba\(18,15,20,0\.66\)/);
   assert.match(signedOutPageChrome, /topNavVariant = "default"/);
@@ -102,7 +102,6 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   assert.match(landingData, /href: "\/baby-showers"/);
   assert.match(landingData, /href: "\/birthdays"/);
   assert.match(landingData, /href: "\/gender-reveal"/);
-  assert.match(landingExperience, /href=\{activeSlide\.href \?\? "#showcase"\}/);
   assert.match(featureCarousel, /href\?: string/);
   assert.match(featureCarousel, /href=\{feature\.href\}/);
 
@@ -122,11 +121,7 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   const weddingsView = readSource("src/app/weddings/WeddingsLandingView.tsx");
   assert.match(weddingsPage, /WeddingsLandingView/);
   assert.match(weddingsView, /SignedOutPageChrome/);
-  assert.match(weddingsView, /topNavVariant="transparent-dark"/);
-  assert.match(weddingsView, /<LandingHeroMedia/);
-  assert.match(weddingsView, /landingHeroGalleries\.weddings/);
   assert.doesNotMatch(weddingsView, /rgba\(18,12,10,0\.88\)/);
-  assert.match(weddingsView, /!text-white/);
 
   const birthdaysPage = readSource("src/app/birthdays/page.tsx");
   const birthdaysView = readSource("src/app/birthdays/BirthdaysLandingView.tsx");
@@ -146,10 +141,6 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   ].join("\n");
   assert.match(birthdaysPage, /BirthdaysLandingView/);
   assert.match(birthdaysView, /SignedOutPageChrome/);
-  assert.match(birthdaysView, /topNavVariant="transparent-dark"/);
-  assert.match(birthdaysHero, /<LandingHeroMedia/);
-  assert.match(birthdaysHero, /landingHeroGalleries\.birthdays/);
-  assert.match(birthdaysHero, /!text-white/);
   assert.match(birthdaysExperience, /Household RSVP/);
   assert.match(birthdaysExperience, /Host bar/);
   assert.match(birthdaysExperience, /SNAP/);
@@ -170,22 +161,19 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   assert.match(genderRevealView, /href="\/event\/gender-reveal"/);
 });
 
-test("each category landing hero rotates four full-bleed images every 7 seconds", () => {
+test("legacy hero image collections remain available while editorial category heroes show a stable preview", () => {
   const galleries = readSource("src/lib/landing-hero-galleries.ts");
   const heroMedia = readSource("src/components/landing/LandingHeroMedia.tsx");
   const categoryView = readSource("src/app/category-pages/CategoryLandingView.tsx");
-  const gymnasticsLanding = readSource("src/components/gymnastics-landing/GymnasticsLanding.tsx");
-  const sportsLanding = readSource("src/components/sports-landing/SportsLandingPage.tsx");
 
   assert.match(galleries, /export const LANDING_HERO_ROTATE_MS = 7000/);
-  assert.match(heroMedia, /LANDING_HERO_ROTATE_MS/);
+  assert.match(heroMedia, /carousel = false/);
   assert.match(heroMedia, /<HeroImageScrim/);
-  assert.match(categoryView, /<LandingHeroMedia/);
   const birthdaysHero = readSource("src/app/birthdays/_components/BirthdayHero.tsx");
-  assert.match(birthdaysHero, /landingHeroGalleries\.birthdays/);
-  assert.match(birthdaysHero, /<LandingHeroMedia/);
-  assert.match(gymnasticsLanding, /landingHeroGalleries\.gymnastics/);
-  assert.match(sportsLanding, /landingHeroGalleries\.sports/);
+
+  assert.match(categoryView, /<MarketingHero/);
+  assert.match(birthdaysHero, /<MarketingHero/);
+  assert.doesNotMatch(categoryView, /<LandingHeroMedia/);
 
   const galleryKeys = [
     "weddings",

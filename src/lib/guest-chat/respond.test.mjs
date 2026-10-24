@@ -28,7 +28,7 @@ test("how-to creation questions get a real answer, not a canned signup reply", (
   assert.equal(result.aiAllowed, true);
   assert.equal(result.signupSuggested, false);
   assert.doesNotMatch(result.answer, /^Yes\./);
-  assert.match(result.answer, /Design/);
+  assert.match(result.answer, /Your card/);
   assert.match(result.answer, /Publish/);
   assert.equal(shouldSuggestGuestSignup("How do I create a Live Card?"), true);
 });
@@ -60,6 +60,19 @@ test("guest chat answers account-free guest usage", () => {
   assert.match(result.answer, /No\./);
   assert.match(result.answer, /browser/i);
   assert.ok(result.matchedKnowledgeIds.includes("guest-account"));
+});
+
+test("feature vocabulary does not imply support or pricing intent", () => {
+  for (const question of [
+    "Does Envitefy support custom webhook delivery?",
+    "How do I contact my guests?",
+    "Can I share my event by email?",
+    "Can I plan a birthday party on Envitefy?",
+  ]) {
+    const result = buildDeterministicGuestChatAnswer(question);
+    assert.equal(result.handoffSuggested, false, question);
+    assert.equal(result.aiAllowed, true, question);
+  }
 });
 
 test("guest chat refuses private event data", () => {

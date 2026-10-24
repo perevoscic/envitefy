@@ -1,10 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Send, UserPlus, X } from "lucide-react";
+import { ArrowLeft, Loader2, Send, UserPlus, X } from "lucide-react";
 import type { FormEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { requestGuestChatAnswer } from "@/lib/guest-chat/client";
+import { getQuickGuestChatAnswer } from "@/lib/guest-chat/quick-answer";
 import { guestChatStarterQuestions } from "@/lib/guest-chat/starters";
+import { useConciergePopover } from "./concierge-popover";
+import popoverStyles from "./concierge-popover.module.css";
 import styles from "./concierge-sheet.module.css";
 import appearanceStyles from "./navigation-appearance.module.css";
 
@@ -14,13 +18,6 @@ type ChatMessage = {
   id: string;
   role: ChatRole;
   text: string;
-  signupSuggested?: boolean;
-};
-
-type GuestChatApiResponse = {
-  ok?: boolean;
-  answer?: string;
-  error?: string;
   signupSuggested?: boolean;
 };
 
@@ -45,20 +42,6 @@ function makeMessageId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
-
-function parseGuestChatResponse(value: unknown): GuestChatApiResponse {
-  if (!isRecord(value)) return {};
-  return {
-    ok: typeof value.ok === "boolean" ? value.ok : undefined,
-    answer: typeof value.answer === "string" ? value.answer : undefined,
-    error: typeof value.error === "string" ? value.error : undefined,
-    signupSuggested: typeof value.signupSuggested === "boolean" ? value.signupSuggested : undefined,
-  };
-}
-
 export default function ConciergeSheet({
   open,
   onOpenChange,
@@ -68,84 +51,118 @@ export default function ConciergeSheet({
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [streamingReplyId, setStreamingReplyId] = useState<string | null>(null);
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const panelRef = useRef<HTMLElement | null>(null);
+  const restoreFocusRef = useRef(true);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const firstQuestionRef = useRef<HTMLButtonElement | null>(null);
+  const focusWelcomeRef = useRef(false);
+  const requestRef = useRef<AbortController | null>(null);
+  const { panelMotion, motionEnabled } = useConciergePopover({ open, panelRef });
+  const reducedMotion = !motionEnabled;
+
+  const resetConversation = useCallback(() => {
+    const request = requestRef.current;
+    requestRef.current = null;
+    request?.abort();
+    focusWelcomeRef.current = false;
+    setMessages([welcomeMessage]);
+    setInput("");
+    setIsSending(false);
+    setStreamingReplyId(null);
+    scrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
+
+  const closeChat = useCallback(() => {
+    resetConversation();
+    onOpenChange(false);
+  }, [onOpenChange, resetConversation]);
 
   useEffect(() => {
-    const query = window.matchMedia("(min-width: 768px)");
-    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const syncViewport = () => {
-      setIsDesktop(query.matches);
-      setReducedMotion(motionQuery.matches);
-    };
-    syncViewport();
-    query.addEventListener("change", syncViewport);
-    motionQuery.addEventListener("change", syncViewport);
-    return () => {
-      query.removeEventListener("change", syncViewport);
-      motionQuery.removeEventListener("change", syncViewport);
-    };
+    if (!open) resetConversation();
+  }, [open, resetConversation]);
+
+  useEffect(() => () => {
+    const request = requestRef.current;
+    requestRef.current = null;
+    request?.abort();
   }, []);
 
   useEffect(() => {
-    if (!open || !isDesktop) return;
+    if (open && messages.length === 1 && focusWelcomeRef.current) {
+      focusWelcomeRef.current = false;
+      firstQuestionRef.current?.focus({ preventScroll: true });
+    }
+  }, [messages, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    restoreFocusRef.current = true;
     const previousFocus =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const frame = requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+    const handleFocusDeparture = (event: FocusEvent) => {
+      const target = event.target;
+      if (target instanceof Node && !panelRef.current?.contains(target) &&
+        !(target instanceof Element && target.closest("[data-concierge-launcher]"))) {
+        restoreFocusRef.current = false;
+        closeChat();
+      }
+    };
+    document.addEventListener("focusin", handleFocusDeparture, true);
+    const frame = requestAnimationFrame(() => {
+      const target = window.matchMedia("(min-width: 768px)").matches
+        ? inputRef.current : panelRef.current;
+      target?.focus({ preventScroll: true });
+    });
     return () => {
       cancelAnimationFrame(frame);
-      previousFocus?.focus({ preventScroll: true });
+      document.removeEventListener("focusin", handleFocusDeparture, true);
+      const focusedLauncher = document.activeElement instanceof Element &&
+        document.activeElement.closest("[data-concierge-launcher]");
+      if (restoreFocusRef.current && !focusedLauncher) previousFocus?.focus({ preventScroll: true });
     };
-  }, [open, isDesktop]);
+  }, [open, closeChat]);
 
   useEffect(() => {
     if (!open) return;
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onOpenChange(false);
+        closeChat();
+      }
+    };
+    const handleOutsidePointer = (event: PointerEvent) => {
+      if (
+        event.button === 0 &&
+        event.target instanceof Node &&
+        !(event.target instanceof Element && event.target.closest("[data-concierge-launcher]")) &&
+        panelRef.current &&
+        !panelRef.current.contains(event.target)
+      ) {
+        restoreFocusRef.current = false;
+        closeChat();
       }
     };
 
     document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [onOpenChange, open]);
-
-  useEffect(() => {
-    if (!open || isDesktop || typeof document === "undefined") return;
-
-    const { body, documentElement } = document;
-    const previousBodyOverflow = body.style.overflow;
-    const previousHtmlOverflow = documentElement.style.overflow;
-    const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
-    const previousHtmlOverscrollBehavior = documentElement.style.overscrollBehavior;
-
-    body.style.overflow = "hidden";
-    body.style.overscrollBehavior = "none";
-    documentElement.style.overflow = "hidden";
-    documentElement.style.overscrollBehavior = "none";
-
+    document.addEventListener("pointerdown", handleOutsidePointer, true);
     return () => {
-      body.style.overflow = previousBodyOverflow;
-      body.style.overscrollBehavior = previousBodyOverscrollBehavior;
-      documentElement.style.overflow = previousHtmlOverflow;
-      documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
+      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("pointerdown", handleOutsidePointer, true);
     };
-  }, [open, isDesktop]);
+  }, [closeChat, open]);
 
   useEffect(() => {
     if (!open) return;
     scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: reducedMotion ? "instant" : "smooth",
+      top: messages.length === 1 ? 0 : scrollRef.current.scrollHeight,
+      behavior: messages.length === 1 || reducedMotion ? "instant" : "smooth",
     });
   }, [messages, isSending, open, reducedMotion]);
 
   async function sendMessage(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || isSending) return;
+    if (!trimmed || requestRef.current) return;
 
     const userMessage: ChatMessage = {
       id: makeMessageId(),
@@ -153,86 +170,63 @@ export default function ConciergeSheet({
       text: trimmed.slice(0, 1000),
     };
     const nextMessages = [...messages, userMessage];
+    const history = messages
+      .filter((message) => message.id !== welcomeMessage.id)
+      .slice(-10)
+      .map(({ role, text }) => ({ role, text }));
+    const quickAnswer = getQuickGuestChatAnswer(userMessage.text, history);
+
+    setInput("");
+    if (quickAnswer) {
+      setMessages([
+        ...nextMessages,
+        {
+          id: makeMessageId(),
+          role: "assistant",
+          text: quickAnswer.answer,
+          signupSuggested: quickAnswer.signupSuggested,
+        },
+      ]);
+      return;
+    }
 
     setMessages(nextMessages);
-    setInput("");
     setIsSending(true);
+    const controller = new AbortController();
+    requestRef.current = controller;
 
     const replyId = makeMessageId();
-    const showReply = (text: string, signupSuggested?: boolean) =>
+    const isCurrentRequest = () =>
+      requestRef.current === controller && !controller.signal.aborted;
+    const showReply = (text: string, signupSuggested?: boolean) => {
+      if (!isCurrentRequest()) return;
       setMessages((current) => {
         const reply: ChatMessage = { id: replyId, role: "assistant", text, signupSuggested };
         return current.some((message) => message.id === replyId)
           ? current.map((message) => (message.id === replyId ? reply : message))
           : [...current, reply];
       });
+    };
 
     let streamed = "";
     try {
-      const res = await fetch("/api/guest-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
+      const data = await requestGuestChatAnswer(
+        {
           message: userMessage.text,
-          stream: true,
-          history: nextMessages
-            .filter((message) => message.id !== welcomeMessage.id)
-            .slice(-10)
-            .map((message) => ({
-              role: message.role,
-              text: message.text,
-            })),
-        }),
-      });
-
-      if (res.ok && res.body && res.headers.get("content-type")?.includes("ndjson")) {
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffered = "";
-        let finished = false;
-        while (!finished) {
-          const { value, done } = await reader.read();
-          buffered += decoder.decode(value, { stream: !done });
-          const lines = buffered.split("\n");
-          buffered = done ? "" : lines.pop() || "";
-          for (const line of lines) {
-            let event: unknown;
-            try {
-              event = JSON.parse(line);
-            } catch {
-              continue;
-            }
-            if (!isRecord(event)) continue;
-            if (event.type === "delta" && typeof event.text === "string") {
-              streamed += event.text;
-              setStreamingReplyId(replyId);
-              showReply(streamed);
-            } else if (event.type === "done") {
-              const data = parseGuestChatResponse(event);
-              showReply(data.answer || streamed, Boolean(data.signupSuggested));
-              finished = true;
-            }
-          }
-          if (done) finished = true;
-        }
-        if (!streamed) throw new Error("Envitefy Concierge is temporarily unavailable.");
-        return;
-      }
-
-      const data = parseGuestChatResponse(await res.json().catch(() => ({})));
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Envitefy Concierge is temporarily unavailable.");
-      }
-
-      showReply(
-        data.answer ||
-          "I can help with Live Cards, Event Pages, Sign-up Forms, RSVPs and guest actions.",
-        Boolean(data.signupSuggested),
+          history: [...history, { role: userMessage.role, text: userMessage.text }],
+          onDelta: (text) => {
+            if (!isCurrentRequest()) return;
+            streamed += text;
+            setStreamingReplyId(replyId);
+            showReply(streamed);
+          },
+        },
+        { signal: controller.signal },
       );
+      showReply(data.answer, Boolean(data.signupSuggested));
     } catch (error) {
       // Keep a partly streamed answer rather than replacing it with an error.
-      if (!streamed) {
+      if (!streamed && isCurrentRequest()) {
         showReply(
           error instanceof Error && error.message
             ? error.message
@@ -240,8 +234,11 @@ export default function ConciergeSheet({
         );
       }
     } finally {
-      setStreamingReplyId(null);
-      setIsSending(false);
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        setStreamingReplyId(null);
+        setIsSending(false);
+      }
     }
   }
 
@@ -251,57 +248,44 @@ export default function ConciergeSheet({
   }
 
   function handleSignupSelect() {
-    onOpenChange(false);
+    closeChat();
     onSignupSelect();
+  }
+
+  function handleNewConversation() {
+    resetConversation();
+    focusWelcomeRef.current = true;
   }
 
   return (
     <AnimatePresence>
       {open ? (
         <div
-          className="pointer-events-none fixed inset-0 z-[90] overflow-hidden"
+          className="pointer-events-none fixed inset-0 z-[90]"
           role="presentation"
         >
-          <motion.button
-            type="button"
-            aria-label="Dismiss Envitefy Concierge"
-            className="pointer-events-auto absolute inset-0 bg-[#120b1d]/48 backdrop-blur-[3px] md:hidden"
-            onClick={() => onOpenChange(false)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reducedMotion ? 0 : 0.22, ease: "easeOut" }}
-          />
-
           <motion.section
+            ref={panelRef}
             role="dialog"
-            aria-modal={!isDesktop}
+            aria-modal={false}
             aria-label="Envitefy Concierge"
-            className={`${styles.panel} pointer-events-auto absolute inset-x-0 bottom-0 mx-auto flex h-[82vh] max-h-[85vh] min-h-[70vh] w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#fbf8ff] text-[#211821] shadow-[0_-28px_90px_rgba(20,11,34,0.38)]`}
-            initial={
-              reducedMotion
-                ? false
-                : { x: isDesktop ? "calc(100% + 2rem)" : 0, y: isDesktop ? 0 : "100%", opacity: 0 }
-            }
-            animate={{ x: 0, y: 0, opacity: 1 }}
-            exit={
-              reducedMotion
-                ? { opacity: 0 }
-                : { x: isDesktop ? "calc(100% + 2rem)" : 0, y: isDesktop ? 0 : "100%", opacity: 0 }
-            }
-            transition={{ duration: reducedMotion ? 0 : 0.32, ease: "easeOut" }}
+            tabIndex={-1}
+            data-concierge-motion={motionEnabled ? "popover" : "reduced"}
+            className={`${styles.panel} ${popoverStyles.panel} pointer-events-auto border border-white/12 bg-[#fbf8ff] text-[#211821] shadow-[0_18px_48px_rgba(20,11,34,0.22)]`}
+            {...panelMotion}
           >
-            <header className="shrink-0 border-b border-white/10 bg-[linear-gradient(135deg,#171019_0%,#241927_52%,#40233d_100%)] px-4 pb-4 pt-4 text-[#fff9ef] shadow-[0_1px_0_rgba(255,255,255,0.1)_inset]">
+            <span data-concierge-arrow className={popoverStyles.arrow} aria-hidden="true" />
+            <header className="shrink-0 border-b border-white/10 bg-[linear-gradient(135deg,#171019_0%,#241927_52%,#40233d_100%)] px-4 py-3 text-[#fff9ef] shadow-[0_1px_0_rgba(255,255,255,0.1)_inset]">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <span
-                    className={`${appearanceStyles.conciergeSymbol} h-9 w-28 shrink-0 bg-[#f6d477] drop-shadow-[0_8px_18px_rgba(246,212,119,0.18)]`}
+                    className={`${appearanceStyles.conciergeSymbol} h-9 w-9 shrink-0 bg-[#f6d477] drop-shadow-[0_8px_18px_rgba(246,212,119,0.18)]`}
                     style={conciergeLogoMaskStyle}
                     aria-hidden="true"
                   />
                   <div className="min-w-0">
                     <h2
-                      className="truncate text-base font-semibold text-[#f9df94]"
+                      className={styles.title}
                       style={{ color: "#f9df94" }}
                     >
                       Envitefy Concierge
@@ -313,8 +297,8 @@ export default function ConciergeSheet({
                 </div>
                 <button
                   type="button"
-                  onClick={() => onOpenChange(false)}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#f4ead5]/78 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
+                  onClick={closeChat}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#f4ead5]/78 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f]"
                   aria-label="Close Envitefy Concierge"
                   title="Close"
                 >
@@ -322,6 +306,20 @@ export default function ConciergeSheet({
                 </button>
               </div>
             </header>
+
+            {messages.length > 1 || input || isSending ? (
+              <div className="shrink-0 px-3 py-1">
+                <button
+                  type="button"
+                  onClick={handleNewConversation}
+                  className={`${styles.starter} inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-[#51465b] transition hover:bg-[#eee7f6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8b7be8] focus-visible:ring-inset`}
+                  title="Back to the welcome questions"
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  New conversation
+                </button>
+              </div>
+            ) : null}
 
             <div
               ref={scrollRef}
@@ -366,6 +364,7 @@ export default function ConciergeSheet({
                   <div className="grid gap-2 pt-2">
                     {guestChatStarterQuestions.map((prompt) => (
                       <button
+                        ref={prompt === guestChatStarterQuestions[0] ? firstQuestionRef : undefined}
                         key={prompt}
                         type="button"
                         onClick={() => sendMessage(prompt)}

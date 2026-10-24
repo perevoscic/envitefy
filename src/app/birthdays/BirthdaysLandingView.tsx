@@ -1,8 +1,10 @@
-import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
-import publicStyles from "@/styles/public-appearance.module.css";
 import Script from "next/script";
 import type { CSSProperties } from "react";
+import MarketingPage from "@/components/marketing/MarketingPage";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import publicStyles from "@/styles/public-appearance.module.css";
+import editorialStyles from "../category-pages/CelebrationLanding.module.css";
 import type { UseCasePage } from "../category-pages/category-page-data";
 import BirthdayEditorialSections from "./_components/BirthdayEditorialSections";
 import BirthdayHero from "./_components/BirthdayHero";
@@ -39,17 +41,10 @@ export default function BirthdaysLandingView({ page }: { page: UseCasePage }) {
   };
 
   return (
-    <div
-      style={cssVars}
-      className={`${publicStyles.page} min-h-screen bg-[#fffaf6] text-[var(--birthday-ink)] selection:bg-[#ffd5bd]`}
-    >
-      <SignedOutPageChrome
-        activeBottomNavLabel="Menu"
-        brandHref="/"
-        topNavVariant="transparent-dark"
-      />
+    <MarketingPage className={`${publicStyles.page} ${editorialStyles.editorial}`}>
+      <SignedOutPageChrome activeBottomNavLabel="Menu" brandHref="/" />
 
-      <main>
+      <main style={cssVars}>
         <BirthdayHero page={page} primaryHref={birthdayCreateHref} />
         <PublicTemplateGallery category="birthdays" featured />
         <BirthdayEditorialSections page={page} primaryHref={birthdayCreateHref} />
@@ -61,6 +56,6 @@ export default function BirthdaysLandingView({ page }: { page: UseCasePage }) {
       <Script id={`ld-use-case-faq-${page.slug}`} type="application/ld+json">
         {JSON.stringify(faqLd)}
       </Script>
-    </div>
+    </MarketingPage>
   );
 }

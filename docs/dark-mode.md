@@ -21,9 +21,11 @@ the storage event. Restricted storage falls back to the current tab's memory.
 `src/themes/registry.ts` is the source of application semantic colors. The initial
 bootstrap and the React provider consume the same registry. CSS modules and
 Tailwind semantic utilities consume those roles rather than a separate palette.
-The root layout imports both shared navigation and switch CSS modules directly.
+The root layout imports shared navigation, Concierge panel and switch CSS modules directly.
 Their styles must arrive with the persistent layout stylesheet instead of relying
-on the dynamically loaded sidebar's CSS chunk. Isolated Bun fixtures cannot
+on dynamically loaded sidebar or Concierge CSS chunks. The Concierge module also
+owns the desktop corner position and compact title, so its delivery must not wait
+for the deferred chat component. Isolated Bun fixtures cannot
 verify that Next stylesheet-delivery path; the navigation suite also compiles
 through Next's CSS loaders and extraction plugin, and guards the root imports.
 
@@ -62,9 +64,10 @@ authored design. Theme changes must not remount editors or request artwork.
 
 ## White branding
 
-The canonical wordmark joins the v–i and f–y serif edges just enough to touch,
-without overlapping their letter bodies. Every current app placement, new email,
-ad and export uses the shared component or `ENVITEFY_BRAND_ASSETS` registry.
+The canonical wordmark joins the v–i and f–y serif edges with a tiny overlap that
+closes antialiasing seams while keeping their letter bodies clear. Every current
+app placement, new email, ad and export uses the shared component or
+`ENVITEFY_BRAND_ASSETS` registry.
 Wordmark images are rendered from the same component and bundled font under
 `brand/wordmark-v2`; email GIF derivatives under `email/wordmark-v2` support inboxes
 without WebP. Prepared app logos load directly, bypassing the Next image optimizer.

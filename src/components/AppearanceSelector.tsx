@@ -1,14 +1,20 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useId } from "react";
+import { useId, useSyncExternalStore } from "react";
 import { useTheme } from "@/components/AppearanceProvider";
 import styles from "./appearance-selector.module.css";
+
+const subscribeToHydration = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export default function AppearanceSelector({ compact = false }: { compact?: boolean }) {
   const { theme, setPreference } = useTheme();
   const id = useId();
-  const isDark = theme === "dark";
+  // A deferred page may hydrate after the provider has resolved browser appearance.
+  const hydrated = useSyncExternalStore(subscribeToHydration, getClientSnapshot, getServerSnapshot);
+  const isDark = hydrated && theme === "dark";
   return (
     <fieldset
       className={`appearance-selector ${styles.selector} ${compact ? styles.compact : ""}`}

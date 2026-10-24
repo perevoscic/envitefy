@@ -53,6 +53,8 @@ function loadLandingComponent(relativePath, cache = new Map()) {
       };
     if (name === "next-auth/react")
       return { useSession: () => ({ status: "unauthenticated", data: null }) };
+    if (name === "@/components/AppearanceProvider")
+      return { useTheme: () => ({ theme: "light", setPreference() {} }) };
     if (name === "lucide-react") return new Proxy({}, { get: () => () => null });
     if (name.startsWith("@/") || name.startsWith(".")) {
       const base = name.startsWith("@/")
@@ -91,7 +93,12 @@ test("homepage first explains the product, then the steps, designs and guest ben
   assert.match(html, /All the details\./);
   assert.match(html, /One link\./);
   assert.match(html, /Create your event/);
+  assert.doesNotMatch(html, /Take a look around\. You can explore designs before signing up\./);
   assert.match(html, /No app needed for guests/);
+  assert.match(html, /Beautiful invitations are just the beginning\./);
+  assert.match(html, /Collect RSVPs, share schedules and directions/);
+  assert.match(html, /keep guests up to date through one link/);
+  assert.match(html, /school events and volunteer sign-ups/);
   assert.match(html, /aria-label="Main navigation"/);
   assert.match(html, /href="#landing-content"[^>]*>Skip to content/);
   assert.match(html, /<main id="landing-content"/);
@@ -116,10 +123,47 @@ test("homepage first explains the product, then the steps, designs and guest ben
   assert.match(html, /href="#showcase"/);
   assert.equal(
     (html.match(/<details\b/g) || []).length,
-    4,
+    12,
     "Practical questions are available without opening a dialog",
   );
   assert.doesNotMatch(html, /FAQPage|Ask Concierge<\/h1/);
+});
+
+test("guest benefits retain four useful capabilities with an upright bold celebration heading", () => {
+  const html = renderLanding();
+  const section = html.match(/<section id="guest-flow"[^>]*>([\s\S]*?)<\/section>/)?.[1];
+  assert.ok(section, "The guest experience retains its public anchor");
+  assert.match(section, /Less chasing\. <strong>More celebrating\.<\/strong>/);
+  assert.doesNotMatch(section, /<em\b/);
+  const cards = [
+    ...section.matchAll(/<article\b[^>]*data-guest-benefit[^>]*>([\s\S]*?)<\/article>/g),
+  ];
+  assert.equal(cards.length, 4, "Four distinct guest capabilities are rendered");
+  assert.equal(
+    cards
+      .map(([, card]) => card.match(/<span[^>]*aria-hidden="true"[^>]*>(\w)<\/span>/)?.[1])
+      .join(""),
+    "RSVP",
+    "Benefit initials spell RSVP in reading order",
+  );
+  for (const [index, title] of [
+    "Know who’s coming.",
+    "Everyone brings something.",
+    "Get everyone there.",
+    "Share the planning.",
+  ].entries()) {
+    assert.ok(cards[index][1].includes(`<h3>${title}</h3>`), `${title} keeps its semantic title`);
+    assert.match(
+      cards[index][1],
+      /aria-hidden="true"/,
+      "Decorative initials are hidden from speech",
+    );
+  }
+  assert.match(section, /Track guest responses and keep your guest list together/);
+  assert.match(section, /Organize supplies, potluck dishes, and volunteers with easy sign-ups/);
+  assert.match(section, /Keep directions, arrival notes, and event details in one place/);
+  assert.match(section, /Add co-hosts to help organize and manage your event/);
+  assert.match(section, /href="#showcase"/);
 });
 
 test("the rendered design directory keeps all eight public category destinations and real artwork", () => {
@@ -137,12 +181,134 @@ test("the rendered design directory keeps all eight public category destinations
   ]) {
     assert.ok(html.includes(`href="${href}"`), `${label} links to its public category`);
     assert.ok(html.includes(`data-category="${id}"`), `${label} remains in the directory`);
-    assert.ok(html.includes(`<h3>${label}</h3>`));
+    assert.match(html, new RegExp(`<h3\\b[^>]*>${label}</h3>`));
   }
   for (const [, asset] of html.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)) {
     assert.ok(asset.startsWith("/"), `Homepage artwork uses local assets: ${asset}`);
     assert.ok(fs.existsSync(path.join(repoRoot, "public", asset.slice(1))), `${asset} exists`);
   }
+});
+
+test("the together mosaic keeps seven original artwork destinations among twelve tiles", () => {
+  const ArtMosaic = loadLandingComponent("src/app/landing/sections/LandingArtCollage.tsx").default;
+  const html = renderToStaticMarkup(React.createElement(ArtMosaic));
+  assert.match(html, /data-art-mosaic/);
+  assert.match(html, /data-mosaic-stage/);
+  assert.match(html, /data-mosaic-grid/);
+  assert.match(html, /Every kind of/);
+  assert.match(html, /together\./);
+  assert.equal((html.match(/data-mosaic-tile=/g) || []).length, 12);
+  assert.equal((html.match(/data-collage-card=/g) || []).length, 7);
+  const destinations = [
+    "/birthdays/templates",
+    "/baby-showers/templates",
+    "/bridal-showers/templates",
+    "/weddings/templates",
+    "/sport-events/templates",
+    "/gender-reveal/templates",
+    "/signup-forms/templates",
+  ];
+  assert.deepEqual(
+    [...html.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((match) => match[1]).sort(),
+    destinations.sort(),
+    "Every existing occasion keeps its public browsing destination",
+  );
+  const artwork = [...html.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)];
+  assert.equal(artwork.length, 7, "The mosaic reuses the seven existing Envitefy artworks");
+  for (const [, asset] of artwork) {
+    assert.ok(asset.startsWith("/images/landing/"), `${asset} remains original local artwork`);
+    assert.ok(fs.existsSync(path.join(repoRoot, "public", asset.slice(1))), `${asset} exists`);
+  }
+});
+
+test("the questions keep practical answers and native no-JavaScript disclosure controls", () => {
+  const Questions = loadLandingComponent("src/app/landing/sections/LandingQuestions.tsx").default;
+  const html = renderToStaticMarkup(React.createElement(Questions, { onHelp: () => {} }));
+  assert.match(html, /data-landing-faq/);
+  assert.match(html, /aria-labelledby="faq-heading"/);
+  assert.match(html, /<h2 id="faq-heading"[^>]*>Good <strong>questions\.<\/strong>/);
+  const questions = [...html.matchAll(/<details\b[^>]*>([\s\S]*?)<\/details>/g)];
+  assert.equal(questions.length, 12, "All twelve answers remain reachable without JavaScript");
+  for (const [index, [question, answer]] of [
+    [
+      "Do my guests need an app?",
+      "Your shared invitation or event page opens in a browser on phones, tablets and computers.",
+    ],
+    [
+      "Can I change the details after sharing?",
+      "Guests opening the same link will see the updated details",
+    ],
+    [
+      "Can I start with a flyer, PDF or event link?",
+      "The event creation workspace offers Upload, Paste URL and Start from scratch.",
+    ],
+    [
+      "Can I explore designs before creating an account?",
+      "Browse the public template galleries and try a design first.",
+    ],
+  ].entries()) {
+    assert.ok(questions[index][1].includes(question), `${question} retains its disclosure`);
+    assert.ok(questions[index][1].includes(answer), `${question} retains its useful answer`);
+    assert.match(questions[index][1], /<summary\b/);
+  }
+  assert.match(html, /href="\/faq"/);
+  assert.match(html, /Ask Concierge/);
+  assert.doesNotMatch(html, /<img\b|FAQPage/);
+});
+
+test("editorial feedback preserves every existing quote after the practical questions", () => {
+  const Testimonials = loadLandingComponent(
+    "src/app/landing/sections/LandingTestimonials.tsx",
+  ).default;
+  const { landingTestimonials } = loadLandingComponent("src/app/landing/landing-data.ts");
+  const html = renderToStaticMarkup(React.createElement(Testimonials));
+  assert.equal(landingTestimonials.length, 24, "The existing collection contains 24 voices");
+  assert.match(html, /id="testimonials"/);
+  assert.match(html, /data-landing-testimonials/);
+  assert.match(html, /data-feedback-track/);
+  const cards = [...html.matchAll(/<figure\b[^>]*data-feedback-card[^>]*>([\s\S]*?)<\/figure>/g)];
+  assert.equal(cards.length, 24, "Every existing guest and host quote appears once");
+  const escapeText = (text) =>
+    renderToStaticMarkup(React.createElement(React.Fragment, null, text));
+  for (const [index, testimonial] of landingTestimonials.entries()) {
+    for (const key of ["quote", "author", "role", "company"]) {
+      assert.ok(
+        cards[index][1].includes(escapeText(testimonial[key])),
+        `Feedback ${index + 1} preserves its ${key}`,
+      );
+    }
+    assert.match(cards[index][1], /<blockquote\b/);
+  }
+  assert.match(html, /aria-label="Previous feedback"/);
+  assert.match(html, /aria-label="Next feedback"/);
+  const decorations = [
+    ...html.matchAll(/<[^>]+\bdata-feedback-(?:number|ribbon)(?==|\s|>)[^>]*>/g),
+  ];
+  assert.ok(decorations.length >= 2, "The editorial layout has its number and ribbon");
+  assert.ok(
+    decorations.every(([tag]) => /aria-hidden="true"/.test(tag)),
+    "Decorative numbers and the occasion ribbon stay outside the accessible reading order",
+  );
+  assert.match(html, /data-feedback-number/);
+  assert.match(html, /data-feedback-ribbon/);
+  assert.match(html, /data-feedback-ribbon-track/);
+  assert.match(html, /data-feedback-parallax/);
+  assert.match(
+    html,
+    /data-feedback-autoplay="false"/,
+    "Server rendering starts with static feedback",
+  );
+  assert.equal(
+    (html.match(/<button\b/g) || []).length,
+    2,
+    "Only the original feedback arrows appear",
+  );
+  assert.doesNotMatch(html, /<img\b|images\.unsplash\.com|[★☆]|star-rating/i);
+  const homepage = renderLanding();
+  assert.ok(
+    homepage.indexOf('id="faq-heading"') < homepage.indexOf('id="testimonials"'),
+    "Practical questions precede the guest and host feedback",
+  );
 });
 
 test("explicit creation continues to Create after authentication while ordinary login returns home", () => {
@@ -216,8 +382,10 @@ test("landing preserves canonical wordmark, prepared assets and public font deli
   assert.match(wordmark, /fontWeight: 700/);
   assert.match(wordmark, /fontOpticalSizing: "auto"/);
   assert.match(wordmark, /letterSpacing: "-0\.075em"/);
-  assert.match(wordmark, /marginLeft: "0\.005em"/);
-  assert.match(wordmark, /env<span[\s\S]*>itef<\/span><span>y<\/span>/);
+  assert.match(
+    wordmark,
+    /env<span>itef<\/span><span style=\{\{ marginLeft: "-0\.005em" \}\}>y<\/span>/,
+  );
   assert.match(
     wordmark,
     /leading-\[1\.16\] pl-\[0\.02em\] pr-\[0\.14em\] pt-\[0\.04em\] pb-\[0\.16em\]/,
@@ -245,10 +413,10 @@ test("landing preserves canonical wordmark, prepared assets and public font deli
   );
 });
 
-test("shared signed-out navigation keeps categories and inert hidden controls", () => {
+test("shared signed-out chrome replaces the bottom bar with Concierge and keeps category menus", () => {
   const navigation = readSource("src/config/navigation.ts");
-  const scrollNavigation = readSource("src/components/navigation/ScrollAwareBottomNav.tsx");
-  const bottomNav = readSource("src/components/navigation/BottomNav.tsx");
+  const chrome = readSource("src/components/navigation/SignedOutPageChrome.tsx");
+  const launcher = readSource("src/components/navigation/ConciergeLauncher.tsx");
   const menu = readSource("src/components/navigation/MenuBottomSheet.tsx");
   const dialog = readSource("src/hooks/useModalDialog.ts");
   for (const label of [
@@ -274,15 +442,17 @@ test("shared signed-out navigation keeps categories and inert hidden controls", 
   }
   for (const anchor of ["#examples", "#showcase", "#creation-paths"])
     assert.ok(navigation.includes(anchor));
-  assert.match(scrollNavigation, /#landing-hero/);
-  assert.match(scrollNavigation, /new IntersectionObserver/);
-  assert.match(scrollNavigation, /!entry\.isIntersecting/);
-  assert.match(scrollNavigation, /aria-hidden=\{!showNav\}/);
-  assert.match(scrollNavigation, /inert=\{!showNav\}/);
-  assert.match(scrollNavigation, /<ConciergeLauncher visible=\{showDesktopConcierge\}/);
-  assert.match(bottomNav, /aria-label="Signed-out mobile navigation"/);
-  assert.match(bottomNav, /prefers-reduced-motion: reduce/);
-  assert.match(bottomNav, /document\.getElementById\(href\.slice\(1\)\)/);
+  assert.match(
+    chrome,
+    /<ConciergeLauncher open=\{assistantOpen\} onOpen=\{\(\) => setAssistantOpen\(\(open\) => !open\)\}/,
+  );
+  assert.doesNotMatch(chrome, /ScrollAwareBottomNav|<BottomNav/);
+  assert.match(launcher, /visible = true/);
+  assert.match(launcher, /open \? "Minimize Envitefy Concierge" : "Open Envitefy Concierge"/);
+  assert.match(launcher, /aria-expanded=\{open\}/);
+  const html = renderLanding();
+  assert.match(html, /data-concierge-launcher="true" data-visible="true"/);
+  assert.doesNotMatch(html, /data-mobile-bottom-nav|Signed-out mobile navigation/);
   assert.match(menu, /navLinks = signedOutMobileMenuLinks/);
   assert.match(menu, /aria-label="Signed-out mobile menu"/);
   assert.match(menu, /useModalDialog\(/);
@@ -301,16 +471,20 @@ test("landing keeps question help separate from creation and preserves real live
   const showcase = readSource("src/components/landing/LandingLiveCardShowcase.tsx");
   const snapshots = readSource("src/components/landing/landing-live-card-snapshots.ts");
   assert.match(landing, /<ConciergeSheet/);
-  assert.match(landing, /<ScrollAwareBottomNav/);
-  assert.match(landing, /onConciergeSelect=\{openHelpChat\}/);
-  assert.match(landing, /onMenuSelect=\{\(\) => setMobileMenuOpen\(true\)\}/);
-  assert.match(landing, /onVisibilityChange=\{setBottomNavVisible\}/);
+  assert.match(
+    landing,
+    /<ConciergeLauncher open=\{assistantOpen\} onOpen=\{\(\) => setAssistantOpen\(\(open\) => !open\)\}/,
+  );
+  assert.match(landing, /<LandingQuestions onHelp=\{openHelpChat\}/);
+  assert.doesNotMatch(landing, /ScrollAwareBottomNav|bottomNavigation|bottomNavVisible/);
+  assert.match(landing, /onClick=\{\(\) => setMobileMenuOpen\(true\)\}/);
   assert.match(concierge, /Envitefy Concierge/);
   assert.match(concierge, /Questions about Envitefy/);
   assert.match(concierge, /Ask me anything about creating or sharing your event/);
   assert.match(concierge, /guestChatStarterQuestions\.map\(/);
   assert.match(concierge, /signupSuggested/);
-  assert.match(concierge, /stream: true/);
+  assert.match(concierge, /getQuickGuestChatAnswer\(/);
+  assert.match(concierge, /requestGuestChatAnswer\(/);
   assert.match(landing, /<LandingLiveCardShowcase/);
   assert.match(landing, /DeferredShowcase/);
   assert.match(showcase, /sectionId = "showcase"/);

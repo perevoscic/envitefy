@@ -1,0 +1,27 @@
+/* Content is visible by default. Only the mounted, motion-enabled driver opts into reveals. */
+.scope[data-motion-enhanced="true"] :global([data-motion-reveal]) {
+  transition-property: opacity, translate;
+  transition-duration: 650ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: clamp(0ms, calc(var(--motion-index, 0) * 65ms), 325ms);
+}
+.scope[data-motion-enhanced="true"] :global([data-motion-reveal][data-motion-visible="false"]) {
+  opacity: 0;
+  translate: 0 var(--motion-distance, 24px);
+}
+.scope[data-motion-enhanced="true"] :global([data-motion-reveal][data-motion-visible="true"]) {
+  opacity: 1;
+  translate: 0 0;
+}
+.scope :global([data-motion-reveal][data-motion-instant="true"]) {
+  transition: none !important;
+  opacity: 1;
+  translate: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scope :global([data-motion-reveal]) {
+    transition: none !important;
+    opacity: 1 !important;
+    translate: none !important;
+  }
+}

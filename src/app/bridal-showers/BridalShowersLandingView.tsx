@@ -1,10 +1,8 @@
 "use client";
-import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 
 import {
   ArrowRight,
   CalendarDays,
-  Check,
   Feather,
   Gift,
   Link as LinkIcon,
@@ -16,9 +14,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { type CSSProperties, useMemo, useState } from "react";
-import LandingHeroMedia from "@/components/landing/LandingHeroMedia";
+import MarketingHero from "@/components/marketing/MarketingHero";
+import MarketingPage from "@/components/marketing/MarketingPage";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
-import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import editorialStyles from "../category-pages/CelebrationLanding.module.css";
+import CelebrationPreview from "../category-pages/CelebrationPreview";
 import styles from "./BridalShowersLandingView.module.css";
 
 const features = [
@@ -104,24 +105,24 @@ const collections: Array<{
 const testimonials = [
   {
     quote:
-      "Our guests kept saying the invitation felt like opening a beautiful piece of stationery. Nearly every RSVP came in by the next morning.",
-    initials: "CL",
-    name: "Chloe Larson",
-    role: "Maid of honor",
+      "Keep the invitation, brunch details, and registry links together so guests can find everything from the first open.",
+    initials: "01",
+    name: "Make it easy to find",
+    role: "A planning note",
   },
   {
     quote:
-      "The registry, directions, and brunch details finally lived in one place. It was genuinely the easiest part of planning the shower.",
-    initials: "JS",
-    name: "Jessica Sinclair",
-    role: "Bride",
+      "Try the live preview with your names and venue, then explore a palette that fits the celebration you are planning.",
+    initials: "02",
+    name: "Make it feel like you",
+    role: "In the invitation studio",
   },
   {
     quote:
-      "It looked custom, felt thoughtful, and saved me from answering the same questions in five different group chats.",
-    initials: "AM",
-    name: "Amanda Miller",
-    role: "Bride & host",
+      "Review the guest page on your phone before sharing. Check the date, arrival details, and registry destinations.",
+    initials: "03",
+    name: "Look through a guest's eyes",
+    role: "Before you share",
   },
 ];
 
@@ -151,48 +152,33 @@ export default function BridalShowersLandingView() {
   };
 
   return (
-    <div className={styles.page}>
-      <SignedOutPageChrome
-        activeBottomNavLabel="Menu"
-        brandHref="/"
-        topNavVariant="transparent-dark"
-      />
+    <MarketingPage className={`${styles.page} ${editorialStyles.editorial}`}>
+      <SignedOutPageChrome activeBottomNavLabel="Menu" brandHref="/" />
 
       <main>
-        <section id="landing-hero" className={styles.hero} aria-labelledby="bridal-hero-title">
-          <LandingHeroMedia images={landingHeroGalleries["bridal-showers"]} />
-          <div className={styles.heroContent}>
-            <p className={`${styles.eyebrow} ${styles.eyebrowLight}`}>
-              Bridal shower invitations, beautifully hosted
-            </p>
-            <h1 id="bridal-hero-title" className={styles.heroTitle}>
-              A beautiful beginning
-              <span>before “I do.”</span>
-            </h1>
-            <p className={styles.heroCopy}>
-              Turn a garden brunch, afternoon tea, or champagne celebration into one elegant
-              guest experience—with the invitation, RSVP, registry, map, and every detail
-              together.
-            </p>
-            <div className={styles.heroActions}>
-              <Link className={`${styles.button} ${styles.buttonIvory}`} href="#templates">Browse templates</Link>
-              <a className={styles.heroTextLink} href="#bridal-collections">
-                Explore the collections
-              </a>
-            </div>
-            <div className={styles.heroAssurance}>
-              <span>
-                <Check aria-hidden="true" /> One shareable link
-              </span>
-              <span>
-                <Check aria-hidden="true" /> Guest-ready in minutes
-              </span>
-              <span>
-                <Check aria-hidden="true" /> No app required
-              </span>
-            </div>
-          </div>
-        </section>
+        <MarketingHero
+          eyebrow="Bridal showers, beautifully hosted"
+          title={
+            <>
+              A beautiful beginning.
+              <br />
+              <em>Before “I do.”</em>
+            </>
+          }
+          description="For the garden brunch, the afternoon tea, the people who make it special. Your invitation, RSVP, registry, and every detail in one lovely place."
+          image="/images/landing/template-proof/rose-garden-bridal-brunch.webp"
+          imageAlt="Original rose garden bridal brunch invitation artwork"
+          primaryHref="#templates"
+          primaryLabel="Browse bridal shower designs"
+          secondaryHref="#bridal-studio"
+          secondaryLabel="Try the invitation preview"
+        >
+          <CelebrationPreview
+            title="Sophia's bridal brunch"
+            meta="A toast to the bride · The Rosewood Estate"
+            chips={["RSVP", "Registry", "Calendar"]}
+          />
+        </MarketingHero>
         <PublicTemplateGallery category="bridal-showers" featured />
 
         <section className={styles.intro} aria-labelledby="bridal-experience-title">
@@ -208,8 +194,8 @@ export default function BridalShowersLandingView() {
             </h2>
             <p className={styles.introCopy}>
               Your shower deserves more than a static invitation. Envitefy turns the first
-              impression into a living event page guests can return to—from the first RSVP to
-              the final toast.
+              impression into a living event page guests can return to—from the first RSVP to the
+              final toast.
             </p>
 
             <div className={styles.featureGrid}>
@@ -243,8 +229,8 @@ export default function BridalShowersLandingView() {
                 </h2>
               </div>
               <p>
-                Personalize the names, setting, and palette. Your guest-ready page keeps the
-                refined feel while making every detail easy to act on.
+                Personalize the names, setting, and palette. Your guest-ready page keeps the refined
+                feel while making every detail easy to act on.
               </p>
             </div>
 
@@ -291,11 +277,17 @@ export default function BridalShowersLandingView() {
 
                 <div className={styles.formFooter}>
                   <p>Everything stays editable after sharing.</p>
-                  <Link className={`${styles.button} ${styles.buttonDark}`} href="#templates">Browse templates</Link>
+                  <Link className={`${styles.button} ${styles.buttonDark}`} href="#templates">
+                    Browse templates
+                  </Link>
                 </div>
               </form>
 
-              <div className={styles.previewStage} style={previewStyle}>
+              <div
+                className={styles.previewStage}
+                style={previewStyle}
+                data-appearance-scope="authored"
+              >
                 <article className={styles.invitationCard}>
                   <p className={styles.invitationEyebrow}>{activeTheme.eyebrow}</p>
                   <div className={styles.monogram}>S</div>
@@ -340,8 +332,8 @@ export default function BridalShowersLandingView() {
                 Find the feeling of your celebration.
               </h2>
               <p>
-                From softly gilded luncheons to garden-grown romance, every suite is designed
-                to feel considered from the first open.
+                From softly gilded luncheons to garden-grown romance, every suite is designed to
+                feel considered from the first open.
               </p>
             </div>
 
@@ -351,7 +343,7 @@ export default function BridalShowersLandingView() {
                   className={`${styles.collectionCard} ${styles[`collection${collection.key}`]}`}
                   key={collection.key}
                 >
-                  <div className={styles.collectionVisual}>
+                  <div className={styles.collectionVisual} data-appearance-scope="authored">
                     {collection.key === "sage" ? (
                       <>
                         <i className={`${styles.sprig} ${styles.sprigLeft}`} />
@@ -391,7 +383,9 @@ export default function BridalShowersLandingView() {
                   Guests get a polished mobile experience. You get a calm command center for
                   replies, links, and last-minute updates.
                 </p>
-                <Link className={`${styles.button} ${styles.buttonDark}`} href="#templates">Browse templates</Link>
+                <Link className={`${styles.button} ${styles.buttonDark}`} href="#templates">
+                  Browse templates
+                </Link>
               </div>
               <div className={styles.guestFlowList}>
                 <article>
@@ -426,18 +420,15 @@ export default function BridalShowersLandingView() {
         <section className={styles.testimonials} aria-labelledby="testimonial-title">
           <div className={styles.sectionShell}>
             <div className={styles.centerHeading}>
-              <p className={styles.eyebrow}>Celebrated stories</p>
+              <p className={styles.eyebrow}>Thoughtful little details</p>
               <h2 id="testimonial-title" className={styles.sectionTitle}>
-                Loved by brides and their favorite people.
+                A beautiful invitation starts with a thoughtful plan.
               </h2>
             </div>
             <div className={styles.testimonialGrid}>
               {testimonials.map((testimonial, index) => (
                 <figure key={testimonial.name}>
-                  <span className={styles.quoteMark} aria-hidden="true">
-                    “
-                  </span>
-                  <blockquote>{testimonial.quote}</blockquote>
+                  <p>{testimonial.quote}</p>
                   <figcaption>
                     <span>{testimonial.initials}</span>
                     <div>
@@ -462,11 +453,13 @@ export default function BridalShowersLandingView() {
               Make the invitation feel as special as the day.
             </h2>
             <p>
-              Create a beautiful bridal shower page in minutes, then share one link guests will
-              actually want to open.
+              Create a beautiful bridal shower page, then share one link guests will actually want
+              to open.
             </p>
             <div className={styles.finalActions}>
-              <Link className={`${styles.button} ${styles.buttonIvory}`} href="#templates">Browse templates</Link>
+              <Link className={`${styles.button} ${styles.buttonIvory}`} href="#templates">
+                Browse templates
+              </Link>
               <Link className={styles.finalTextLink} href="/snap">
                 Upload an existing invite
               </Link>
@@ -474,6 +467,6 @@ export default function BridalShowersLandingView() {
           </div>
         </section>
       </main>
-    </div>
+    </MarketingPage>
   );
 }

@@ -10,11 +10,21 @@ An optional website fixture mode creates twelve synthetic non-admin accounts and
 
 ## Revised closed-test plan — October 17, 2026
 
+### Scheduled activity sessions — October 25 and 26
+
+The owner requested one follow-up tomorrow and one Monday. Two one-occurrence chat automations are active for **Sunday October 25, 2026 at 10:00 AM** and **Monday October 26, 2026 at 10:00 AM**, both America/Chicago (15:00 UTC). The [dated schedule and scope](../output/maestro/closed-test/scheduled-20261025-26/plan.json) records automation IDs `envitefy-11-accounts-sunday-oct-25` and `envitefy-11-accounts-monday-oct-26`. Each session targets QA01–QA10 and QA12, with 42 planned automated browsing actions; QA11 remains deferred. Reuse existing workshops and the ten mapped private drafts without creating, saving or publishing content. Prepare separate dated output roots and empty ledgers from the calibrated October 24 sources; update date guards before execution and never count October 24 results as later activity. Preserve all prior evidence. Each run must verify the Play installation and exact owner, use the shared UI lock with one emulator at a time, retain specific failures/MFA checkpoints and retire after its dated attempt. No early testing or backfilling is authorized. Keep the computer awake and Codex running for these local runs.
+
 ### Manual activity session — October 24
 
 The owner authorized tests and app activity today for QA01–QA10 and QA12; QA11 remains deferred. The [dated plan](../output/maestro/closed-test/manual-20261024-1792860437782/activity-plan.json), [ledger](../output/maestro/closed-test/manual-20261024-1792860437782/activity-ledger.json) and [report](../output/maestro/closed-test/manual-20261024-1792860437782/index.html) start empty and exclude earlier dates. Reuse the original workshop and mapped private draft, verify the exact owner, inspect Preview and return when available, and read another QA workshop. QA01 uses its preserved secondary Play installation; all other profiles use the primary installation with one shared UI lock. Preserve actual timestamps, flow snapshots, JUnit/stdout, screenshots and Android/browser diagnostics, including failed attempts. No new records, saves, publishing, invitations, messages, RSVPs or camera checks are part of this browsing session. No future schedule is created.
 
 The separate October 23 [Play Console observation](../output/maestro/closed-test/play-enrollment-20261023/observation.json) recorded Google's aggregate of twelve testers continuously opted in for nine days after its October 14 review. It does not identify individual accounts, establish human feedback or turn Maestro activity into human testing. That counter must be rechecked separately; October 24 activity is counted only from successful current UI evidence.
+
+<!-- envitefy-manual-20261024:result -->
+
+October 24 automated activity records 11/11 accounts with successful UI actions and 11/11 completing all planned actions, with 42/42 verified action types. Actual verified action timestamps: 2026-10-24T17:04:57.010Z through 2026-10-24T18:37:42.984Z. The [completion manifest](../output/maestro/closed-test/manual-20261024-1792860437782/session-completion.json), [evidence audit](../output/maestro/closed-test/manual-20261024-1792860437782/activity-evidence-audit.json) and [finding rechecks](../output/maestro/closed-test/manual-20261024-1792860437782/activity-findings.json) preserve attribution, failures, expected/observed facts, UI flows, JUnit, screenshots and diagnostics. Current original-workshop rechecks retain 11 five-hour mismatch observations and 1 QA05 title mismatch observations. These existing-record observations do not verify a new OCR scan or deployment. QA11 remains deferred. No new records, content saves or publishing ran; no new schedule was created. Human feedback and Play enrollment duration are separate checks.
+
+<!-- /envitefy-manual-20261024:result -->
 
 ### Manual activity session — October 23
 

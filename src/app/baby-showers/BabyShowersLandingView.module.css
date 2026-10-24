@@ -1,14 +1,14 @@
 .page {
-  --baby-orange: #a83f12;
-  --baby-orange-dark: #87300c;
-  --baby-navy: #13233d;
-  --baby-blue: #245b87;
-  --baby-cream: #f8fafc;
+  --baby-orange: #853652;
+  --baby-orange-dark: #693047;
+  --baby-navy: #442c3b;
+  --baby-blue: #853652;
+  --baby-cream: #fcf8f3;
   min-height: 100vh;
   overflow: clip;
   background: var(--baby-cream);
   color: #334155;
-  font-family: var(--font-poppins), var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-geist-sans), var(--font-sans), system-ui, sans-serif;
 }
 :global(html.dark) .page {
   --baby-navy: var(--foreground);
@@ -16,9 +16,27 @@
   --baby-cream: var(--background);
   color: var(--foreground);
 }
-:global(html.dark) :is(.secondaryCta, .heroVisual, .floatingNote, .collectionCard, .registryPreview, .stepCard, .quoteCard, .faqCard) { background: var(--surface); border-color: var(--border); }
-:global(html.dark) .textLink { background: var(--surface-alt); color: var(--primary); }
-:global(html.dark) .secondaryCta:hover { background: var(--surface-raised); }
+:global(html.dark)
+  :is(
+    .secondaryCta,
+    .heroVisual,
+    .floatingNote,
+    .collectionCard,
+    .registryPreview,
+    .stepCard,
+    .quoteCard,
+    .faqCard
+  ) {
+  background: var(--surface);
+  border-color: var(--border);
+}
+:global(html.dark) .textLink {
+  background: var(--surface-alt);
+  color: var(--primary);
+}
+:global(html.dark) .secondaryCta:hover {
+  background: var(--surface-raised);
+}
 
 .page ::selection {
   background: #fed7aa;
@@ -241,4 +259,31 @@
   .textLink {
     transition: none;
   }
+}
+
+.page {
+  background: var(--marketing-paper);
+  color: var(--marketing-ink);
+}
+.page .collectionCard,
+.page .stepCard,
+.page .quoteCard {
+  border-color: var(--marketing-line);
+  background: var(--marketing-surface);
+  box-shadow: none;
+}
+.page .textLink {
+  background: var(--marketing-soft);
+  color: var(--marketing-accent);
+}
+.page .quoteCard {
+  min-height: 0;
+}
+.page .faqCard {
+  border-color: var(--marketing-line);
+  background: var(--marketing-paper);
+}
+.page .faqCard summary::after {
+  color: var(--marketing-accent);
+  background: var(--marketing-soft);
 }

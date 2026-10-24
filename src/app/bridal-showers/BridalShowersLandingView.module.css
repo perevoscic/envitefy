@@ -1,15 +1,15 @@
 .page {
-  --bridal-champagne: #fbf8f3;
-  --bridal-pearl: #fffdfa;
-  --bridal-ink: #241f1d;
-  --bridal-muted: #6c625d;
-  --bridal-gold: #6e5638;
-  --bridal-gold-deep: #6e5638;
-  --bridal-gold-soft: #e8ded0;
-  --bridal-blush: #f3dedc;
-  --bridal-serif: "Cormorant Garamond", Georgia, serif;
-  --bridal-sans: "Montserrat", Arial, sans-serif;
-  --bridal-script: "Great Vibes", "Brush Script MT", cursive;
+  --bridal-champagne: var(--marketing-paper);
+  --bridal-pearl: var(--marketing-surface);
+  --bridal-ink: var(--marketing-ink);
+  --bridal-muted: var(--marketing-muted);
+  --bridal-gold: var(--marketing-accent);
+  --bridal-gold-deep: var(--marketing-accent);
+  --bridal-gold-soft: var(--marketing-line);
+  --bridal-blush: var(--marketing-soft);
+  --bridal-serif: var(--font-playfair), Georgia, serif;
+  --bridal-sans: var(--font-geist-sans), Arial, sans-serif;
+  --bridal-script: var(--font-playfair), Georgia, serif;
   min-height: 100vh;
   overflow: hidden;
   background: var(--bridal-champagne);
@@ -128,7 +128,10 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
 }
 
 .button svg {
@@ -245,7 +248,9 @@
   border: 1px solid var(--bridal-gold-soft);
   background: rgba(255, 255, 255, 0.55);
   box-shadow: 0 25px 55px rgba(91, 70, 52, 0.05);
-  transition: transform 220ms ease, box-shadow 220ms ease;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
 }
 
 .featureCard:hover {
@@ -310,10 +315,10 @@
 
 .studio {
   padding: clamp(105px, 12vw, 150px) 0;
-  border-block: 1px solid #e5d9cd;
+  border-block: 1px solid var(--marketing-line);
   background:
-    radial-gradient(circle at 12% 12%, rgba(237, 197, 196, 0.4), transparent 31%),
-    linear-gradient(180deg, #f8f2ec, #fdfaf6);
+    radial-gradient(circle at 12% 12%, var(--marketing-soft), transparent 31%),
+    var(--marketing-paper);
 }
 
 .splitHeading {
@@ -338,8 +343,9 @@
 
 .studioForm {
   padding: clamp(28px, 4vw, 50px);
-  border: 1px solid rgba(155, 126, 85, 0.3);
-  background: rgba(255, 253, 250, 0.9);
+  border: 1px solid var(--marketing-line);
+  background: var(--marketing-surface);
+  color: var(--marketing-ink);
   box-shadow: 0 30px 70px rgba(82, 59, 48, 0.08);
 }
 
@@ -357,6 +363,7 @@
   border-bottom: 1px solid var(--bridal-gold-soft);
   font-family: var(--bridal-serif);
   font-size: 1.55rem;
+  color: var(--marketing-ink);
 }
 
 .formHeading em {
@@ -383,7 +390,7 @@
 .studioForm legend {
   display: block;
   margin-bottom: 23px;
-  color: #625752;
+  color: var(--marketing-muted);
   font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.13em;
@@ -396,16 +403,18 @@
   height: 54px;
   margin-top: 10px;
   padding: 0 16px;
-  border: 1px solid #ddcfc2;
+  border: 1px solid var(--marketing-line);
   border-radius: 0;
   outline: none;
-  background: #fffdfa;
-  color: var(--bridal-ink);
+  background: var(--marketing-paper);
+  color: var(--marketing-ink);
   font-family: var(--bridal-sans);
   font-size: 0.8rem;
   letter-spacing: 0;
   text-transform: none;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .studioForm input:focus {
@@ -438,15 +447,17 @@
   align-items: center;
   justify-content: center;
   padding: 8px 10px;
-  border: 1px solid #e4d9cf;
-  background: #fffdfa;
-  color: #5a4f49;
+  border: 1px solid var(--marketing-line);
+  background: var(--marketing-surface);
+  color: var(--marketing-ink);
   font-family: var(--bridal-sans);
   font-size: 0.55rem;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  transition: border-color 160ms ease, background-color 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
 }
 
 .themePicker button > span {
@@ -458,7 +469,7 @@
 
 .themePicker .themeActive {
   border-color: var(--bridal-gold-deep);
-  background: #faf5ef;
+  background: var(--marketing-soft);
 }
 
 .formFooter {
@@ -470,7 +481,7 @@
 .formFooter p {
   max-width: 190px;
   margin: 0;
-  color: #877a72;
+  color: var(--marketing-muted);
   font-family: var(--bridal-serif);
   font-size: 1rem;
   font-style: italic;
@@ -677,7 +688,9 @@
   overflow: hidden;
   border: 1px solid var(--bridal-gold-soft);
   background: white;
-  transition: transform 220ms ease, box-shadow 220ms ease;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
 }
 
 .collectionCard:hover {
@@ -836,9 +849,9 @@
   gap: 6px;
   padding: 0 0 5px;
   border: 0;
-  border-bottom: 1px solid #d4c2af;
+  border-bottom: 1px solid var(--marketing-line);
   background: transparent;
-  color: #554942;
+  color: var(--marketing-ink);
   font-family: var(--bridal-sans);
   font-size: 0.52rem;
   font-weight: 600;
@@ -855,7 +868,7 @@
 .guestFlow {
   padding: clamp(100px, 12vw, 150px) 0;
   border-top: 1px solid var(--bridal-gold-soft);
-  background: #fffdfa;
+  background: var(--marketing-surface);
 }
 
 .guestFlowGrid {
@@ -915,14 +928,14 @@
 .testimonials {
   padding: clamp(105px, 12vw, 150px) 0;
   border-top: 1px solid var(--bridal-gold-soft);
-  background: #f4ece3;
+  background: var(--marketing-soft);
 }
 
 .testimonialGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   margin-top: 70px;
-  border-block: 1px solid #d9c8b8;
+  border-block: 1px solid var(--marketing-line);
 }
 
 .testimonialGrid figure {
@@ -930,7 +943,7 @@
   min-height: 390px;
   margin: 0;
   padding: 42px 37px 35px;
-  border-right: 1px solid #d9c8b8;
+  border-right: 1px solid var(--marketing-line);
 }
 
 .testimonialGrid figure:last-child {
@@ -944,9 +957,9 @@
   line-height: 0.7;
 }
 
-.testimonialGrid blockquote {
+.testimonialGrid figure > p {
   margin: 32px 0 44px;
-  color: #4c413c;
+  color: var(--marketing-ink);
   font-family: var(--bridal-serif);
   font-size: 1.35rem;
   font-style: italic;
@@ -965,7 +978,7 @@
   height: 44px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #cdbba9;
+  border: 1px solid var(--marketing-line);
   border-radius: 50%;
   color: var(--bridal-gold-deep);
   font-family: var(--bridal-serif);
@@ -984,7 +997,7 @@
 }
 
 .testimonialGrid figcaption small {
-  color: #5f534b;
+  color: var(--marketing-muted);
   font-size: 0.5rem;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -994,7 +1007,7 @@
   position: absolute;
   right: 25px;
   bottom: 23px;
-  color: #6e5638;
+  color: var(--marketing-accent);
   font-size: 0.53rem;
   font-style: normal;
   letter-spacing: 0.1em;
@@ -1242,4 +1255,62 @@
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.page .featureCard,
+.page .collectionCard {
+  border-radius: 1.4rem;
+  background: var(--marketing-surface);
+  box-shadow: none;
+}
+.page .intro,
+.page .collections,
+.page .studio,
+.page .guestFlow,
+.page .testimonials {
+  padding-block: clamp(3.5rem, 7vw, 6.5rem);
+}
+.page .studioForm {
+  border-radius: 1.4rem;
+}
+.page .invitationActions button {
+  min-height: 44px;
+}
+@media (max-width: 720px) {
+  .page .sectionShell {
+    width: calc(100% - 40px);
+  }
+  .page .sectionTitle {
+    font-size: clamp(2.1rem, 8.5vw, 3rem);
+    line-height: 1.1;
+  }
+  .page .featureGrid,
+  .page .testimonialGrid,
+  .page .collectionGrid {
+    margin-top: 2rem;
+  }
+  .page .featureCard {
+    padding: 1.5rem;
+  }
+  .page .featureIcon {
+    margin-block: 1.5rem;
+  }
+  .page .previewStage {
+    min-height: 470px;
+    padding: 24px 14px;
+  }
+  .page .invitationCard {
+    min-height: 420px;
+    padding: 30px 20px;
+  }
+  .page .collectionVisual {
+    min-height: 320px;
+    padding: 28px;
+  }
+}
+
+.page [data-appearance-scope="authored"] {
+  --bridal-serif: "Cormorant Garamond", Georgia, serif;
+  --bridal-script: "Great Vibes", "Brush Script MT", cursive;
+  --bridal-sans: "Montserrat", Arial, sans-serif;
 }

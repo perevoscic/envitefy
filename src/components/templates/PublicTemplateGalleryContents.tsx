@@ -1,20 +1,20 @@
 "use client";
 
-import SeasonalGalleryControls from "@/components/events/SeasonalGalleryControls";
-import { useSeasonalTemplates } from "@/hooks/useSeasonalTemplates";
-import CreateWithEnvitefyCallout from "@/components/events/CreateWithEnvitefyCallout";
-import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
+import CreateWithEnvitefyCallout from "@/components/events/CreateWithEnvitefyCallout";
 import { categoryGalleryPageClassName } from "@/components/events/category-gallery-page";
+import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
+import SeasonalGalleryControls from "@/components/events/SeasonalGalleryControls";
 import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
 import {
   TemplateMasonryCard,
   TemplateMasonryGrid,
 } from "@/components/events/TemplateMasonryGallery";
-import dynamic from "next/dynamic";
+import { useSeasonalTemplates } from "@/hooks/useSeasonalTemplates";
 import { matchesPublicTemplateSearch, type PublicTemplate } from "@/lib/public-template-shared";
 import {
   getTemplateCategory,
@@ -22,10 +22,13 @@ import {
   templateEditorHref,
 } from "@/lib/template-categories";
 import { readTemplateDraft, type TemplateDraft } from "@/lib/template-draft-storage";
-import PublicTemplatePreview from "./CategoryTemplateThumbnail";
 import { trackTemplateEvent } from "@/lib/template-tracking";
+import PublicTemplatePreview from "./CategoryTemplateThumbnail";
+import styles from "./public-gallery.module.css";
 
-const SignupGalleryThemeDialog = dynamic(() => import("./SignupGalleryThemeDialog"), { ssr: false });
+const SignupGalleryThemeDialog = dynamic(() => import("./SignupGalleryThemeDialog"), {
+  ssr: false,
+});
 
 export default function PublicTemplateGalleryContents({
   templates,
@@ -70,14 +73,16 @@ export default function PublicTemplateGalleryContents({
         filter.values.length > 1 ||
         (category === "signup-forms" && filter.key === "audience" && filter.values.length > 0),
     );
-  const filtered = seasonal.apply(templates.filter(
-    (template) =>
-      filters.every(
-        (filter) =>
-          !selectedFilters[filter.key] ||
-          String(template[filter.key]) === selectedFilters[filter.key],
-      ) && matchesPublicTemplateSearch(template, query),
-  ));
+  const filtered = seasonal.apply(
+    templates.filter(
+      (template) =>
+        filters.every(
+          (filter) =>
+            !selectedFilters[filter.key] ||
+            String(template[filter.key]) === selectedFilters[filter.key],
+        ) && matchesPublicTemplateSearch(template, query),
+    ),
+  );
   const alignBottoms = featured && category === "signup-forms";
   const shown = featured ? templates.slice(0, alignBottoms ? 10 : 6) : filtered.slice(0, visible);
   useEffect(() => {
@@ -96,10 +101,11 @@ export default function PublicTemplateGalleryContents({
     <section
       id="templates"
       aria-label={`${info.name} templates`}
-      className={`${featured ? "bg-[#fbf8f5]" : categoryGalleryPageClassName(category)} scroll-mt-24 px-5 py-14 text-[#342d38] sm:px-8 lg:px-12`}
+      className={`${featured ? styles.featured : `${categoryGalleryPageClassName(category)} ${styles.publicSection}`} scroll-mt-24 px-5 py-14 text-[#342d38] sm:px-8 lg:px-12`}
     >
       <div className="mx-auto max-w-[1500px]">
         <div
+          data-public-gallery-header
           className={
             featured
               ? "mb-8 flex flex-wrap items-end justify-between gap-5"
@@ -108,48 +114,55 @@ export default function PublicTemplateGalleryContents({
         >
           {!featured && <CategoryGalleryBackdrop category={category} />}
           <div className="relative z-10">
-            <p
-              className={`text-xs font-semibold uppercase tracking-widest ${featured ? "text-[#886488]" : "text-[#785779]"}`}
-            >
-              {info.name}
-            </p>
-            <Heading className="mt-3 font-serif text-4xl sm:text-5xl">
+            <p className={styles.eyebrow}>{info.name}</p>
+            <Heading className={`${styles.heading} mt-3 text-4xl sm:text-5xl`}>
               {featured ? "Make it yours" : `${info.name} templates`}
             </Heading>
-            {featured && <p className="mt-4 text-sm text-[#746775]">
-              {status === "authenticated"
-                ? "Save a private draft, then publish when ready."
-                : "Customize freely. An account is required to save and share."}
-              {category === "signup-forms" && " Choose a design, then make it yours in the editor."}
-            </p>}
+            {featured && (
+              <p className={`${styles.note} mt-4`}>
+                {status === "authenticated"
+                  ? "Save a private draft, then publish when ready."
+                  : "Customize freely. An account is required to save and share."}
+                {category === "signup-forms" &&
+                  " Choose a design, then make it yours in the editor."}
+              </p>
+            )}
           </div>
           {featured && (
-            <Link
-              href={`/${category}/templates`}
-              className="rounded-full border border-[#dcd0dc] bg-white px-6 py-3 text-sm font-semibold"
-            >
+            <Link href={`/${category}/templates`} className={styles.browse}>
               Browse all templates →
             </Link>
           )}
         </div>
-        {!featured && (category === "signup-forms" ? (
-          <div className="mb-8"><CreateWithEnvitefyCallout category="signup-forms" onClick={() => setCustomThemeOpen(true)} /></div>
-        ) : <EventCustomThemeLauncher category={category} contained />)}
-        {category === "signup-forms" && !featured && customThemeOpen && status === "authenticated" && (
-          <SignupGalleryThemeDialog
-            onUsed={() => setCustomThemeOpen(false)}
-            initialMessage={
-              customThemeExpired
-                ? "That preview is no longer available. Describe your idea to create a new one."
-                : undefined
-            }
-            onClose={() => {
-              setCustomThemeOpen(false);
-              if (customThemeRequested)
-                window.history.replaceState(null, "", "/signup-forms/templates");
-            }}
-          />
-        )}
+        {!featured &&
+          (category === "signup-forms" ? (
+            <div className="mb-8">
+              <CreateWithEnvitefyCallout
+                category="signup-forms"
+                onClick={() => setCustomThemeOpen(true)}
+              />
+            </div>
+          ) : (
+            <EventCustomThemeLauncher category={category} contained />
+          ))}
+        {category === "signup-forms" &&
+          !featured &&
+          customThemeOpen &&
+          status === "authenticated" && (
+            <SignupGalleryThemeDialog
+              onUsed={() => setCustomThemeOpen(false)}
+              initialMessage={
+                customThemeExpired
+                  ? "That preview is no longer available. Describe your idea to create a new one."
+                  : undefined
+              }
+              onClose={() => {
+                setCustomThemeOpen(false);
+                if (customThemeRequested)
+                  window.history.replaceState(null, "", "/signup-forms/templates");
+              }}
+            />
+          )}
         {resume && (
           <Link
             href={`${templateEditorHref(category, resume.templateId)}?draft=${resume.id}`}
@@ -159,7 +172,7 @@ export default function PublicTemplateGalleryContents({
           </Link>
         )}
         {!featured && (
-          <div className="mb-8 flex flex-wrap items-center gap-3">
+          <div className="mb-8 flex flex-wrap items-center gap-3" data-public-gallery-controls>
             <label className="max-w-full">
               <span className="sr-only">Search templates</span>
               <input

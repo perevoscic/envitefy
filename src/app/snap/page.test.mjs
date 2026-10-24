@@ -1,103 +1,50 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import path from "node:path";
 import test from "node:test";
 
-const repoRoot = process.cwd();
+const readSource = (file) => fs.readFileSync(file, "utf8");
 
-const readSource = (relativePath) =>
-  fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+test("signed-out Snap retains its local sections and original product visual", () => {
+  const landing = readSource("src/components/snap-landing/SnapLanding.tsx");
+  assert.match(landing, /marketingPageNavLinks\("\/snap"\)/);
+  assert.match(landing, /<MarketingPage tone="product"/);
+  assert.match(landing, /variant="transparent-light"/);
+  for (const id of ["snap", "problem-section", "how-it-works", "use-cases", "faq"])
+    assert.ok(landing.includes(`id="${id}"`), id);
+  assert.match(landing, /src="\/images\/snap-hero-after\.webp"/);
+  assert.match(landing, /alt="Envitefy Snap interface after upload conversion"/);
+  assert.doesNotMatch(
+    landing,
+    /ScenicBackground|ScrollPushTransition|Trusted by 10,000|ParentCircle|EventPro|TeamSnap/,
+  );
+  assert.match(landing, /review|Review/);
+  assert.match(landing, /publishing|Publish/);
+});
 
-test("/snap renders the new landing component with key sections", () => {
+test("Snap keeps signup attribution, query recovery and login continuation", () => {
+  const landing = readSource("src/components/snap-landing/SnapLanding.tsx");
+  assert.match(landing, /authenticatedPrimaryHref="\/snap"/);
+  assert.match(landing, /loginSuccessRedirectUrl="\/"/);
+  assert.match(landing, /const auth = searchParams\?\.get\("auth"\)/);
+  assert.match(landing, /auth === "signup" \|\| auth === "login"/);
+  assert.match(landing, /onGuestLoginAction=\{\(\) => openAuth\("login"\)\}/);
+  assert.match(landing, /onGuestPrimaryAction=\{\(\) => openAuth\("signup"\)\}/);
+  assert.match(landing, /signupSource="snap"/);
+  assert.match(landing, /successRedirectUrl=\{authMode === "signup" \? "\/snap" : "\/"\}/);
+  assert.match(landing, /href="\/snap"/);
+  assert.doesNotMatch(landing, /fetch\(|method:.*POST/);
+});
+
+test("authenticated Snap retains direct uploads and processing instead of the marketing page", () => {
   const page = readSource("src/app/snap/page.tsx");
-  const uploadStart = readSource("src/components/snap/SnapUploadStart.tsx");
-  const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
-
-  assert.match(page, /<SnapLanding \/>/);
+  const upload = readSource("src/components/snap/SnapUploadStart.tsx");
   assert.match(page, /getServerSession\(authOptions as any\)/);
-  assert.match(page, /<SnapUploadStart \/>/);
-  assert.match(uploadStart, /<SnapLaunchCards processInPage variant="explained" \/>/);
-  assert.match(snapLanding, /navLinks=\{marketingPageNavLinks\("\/snap"\)\}/);
-  assert.doesNotMatch(snapLanding, /publicUseCasePrimaryNavLinks|signedOutMobileMenuLinks/);
-  assert.match(snapLanding, /variant="transparent-dark"/);
-  assert.match(snapLanding, /primaryCtaLabel="Let's create"/);
-  assert.match(snapLanding, /brandHref="\/"/);
-  assert.doesNotMatch(snapLanding, /buildMarketingHeroNav/);
-  assert.doesNotMatch(snapLanding, /variant="glass-dark"/);
-  assert.doesNotMatch(snapLanding, /primaryCtaLabel="Snap Your First Invite"/);
-  assert.match(snapLanding, /Stop sharing screenshots\./);
-  assert.match(snapLanding, /Start sharing events\./);
-  assert.match(snapLanding, /id="snap"/);
-  assert.match(snapLanding, /id="how-it-works"/);
-  assert.match(snapLanding, /id="use-cases"/);
-  assert.match(snapLanding, /id="faq"/);
-  assert.match(snapLanding, /snapHashAnchorClass = "hash-anchor-below-fixed-nav"/);
-  assert.match(
-    snapLanding,
-    /src="\/images\/snap-hero-after\.webp"/,
-  );
-  assert.match(
-    snapLanding,
-    /alt="Envitefy Snap interface after upload conversion"/,
-  );
-  assert.match(
-    snapLanding,
-    /className=\{`\$\{snapHashAnchorClass\} px-4 pb-6 pt-\[calc\(max\(6\.5rem,calc\(env\(safe-area-inset-top\)\+5\.5rem\)\)\+1\.5rem\)\] sm:px-6 lg:px-8`\}/,
-  );
-  assert.match(
-    snapLanding,
-    /className="relative mt-2 h-\[60vh\] min-h-\[22rem\] w-full overflow-hidden rounded-\[1\.8rem\] border border-white\/14 bg-\[#090d18\]\/88 shadow-\[0_32px_90px_rgba\(4,1,14,0\.42\)\] sm:h-\[62vh\] xl:mt-0 xl:h-\[58vh\] 2xl:h-\[56vh\] md:rounded-\[2rem\]"/,
-  );
-  assert.match(
-    snapLanding,
-    /bg-\[linear-gradient\(180deg,rgba\(7,10,20,0\.1\),rgba\(7,10,20,0\.34\)\)\]/,
-  );
-  assert.doesNotMatch(snapLanding, /ScrollPushTransition/);
-  assert.doesNotMatch(snapLanding, /useScroll\(/);
-  assert.doesNotMatch(snapLanding, /useSpring\(/);
-  assert.doesNotMatch(snapLanding, /useTransform\(/);
-  assert.doesNotMatch(snapLanding, /scroll-push-section/);
-  assert.doesNotMatch(snapLanding, /h-\[200vh\]/);
-  assert.doesNotMatch(snapLanding, /sticky top-0 flex min-h-screen/);
-  assert.doesNotMatch(snapLanding, /heroRef/);
-  assert.doesNotMatch(snapLanding, /src="\/images\/snap-hero-before\.webp"/);
-});
-
-test("/snap includes the updated social-proof and CTA copy", () => {
-  const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
-
-  assert.match(snapLanding, /Trusted by 10,000\+ busy parents & organizers/);
-  assert.match(snapLanding, /One tool\. Infinite events\./);
-  assert.match(snapLanding, /Ready to clear the/);
-  assert.match(snapLanding, /Get Started Free/);
-});
-
-test("/snap keeps public auth CTAs but renders direct upload cards for authenticated users", () => {
-  const page = readSource("src/app/snap/page.tsx");
-  const uploadStart = readSource("src/components/snap/SnapUploadStart.tsx");
-  const mainWrapper = readSource("src/components/MainContentWrapper.tsx");
-  const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
-  const snapSignupLanding = readSource("src/components/snap-landing/SnapSignupLanding.tsx");
-
   assert.match(page, /isAuthenticated \? \(/);
   assert.match(page, /<SnapUploadStart \/>/);
-  assert.match(uploadStart, /Snapping means taking a photo/);
-  assert.match(uploadStart, /add to your calendar and a digital link you can share/);
-  assert.match(page, /isAuthenticated \? "min-h-\[100dvh\] bg-transparent" : ""/);
   assert.match(page, /<Dashboard snapProcessingMode \/>/);
-  assert.doesNotMatch(page, /uploadActionHref="\/snap\?action=upload"/);
-  assert.match(
-    mainWrapper,
-    /normalizedPath === "\/snap" && !isAuthenticated/,
-  );
-  assert.match(snapLanding, /authenticatedPrimaryHref="\/snap"/);
-  assert.match(snapLanding, /loginSuccessRedirectUrl="\/"/);
-  assert.match(snapLanding, /primaryHref=\{isAuthenticated \? "\/snap" : undefined\}/);
-  assert.match(snapLanding, /href=\{isAuthenticated \? "\/snap" : undefined\}/);
-  assert.match(snapLanding, /successRedirectUrl=\{authMode === "signup" \? "\/snap" : "\/"\}/);
-
-  assert.match(snapSignupLanding, /authenticatedPrimaryHref="\/"/);
-  assert.match(snapSignupLanding, /loginSuccessRedirectUrl="\/"/);
-  assert.match(snapSignupLanding, /<PrimaryButton href="\/" light=\{light\}>/);
-  assert.match(snapSignupLanding, /successRedirectUrl="\/"/);
+  assert.match(page, /<SnapLanding \/>/);
+  assert.match(upload, /<SnapLaunchCards processInPage variant="explained" \/>/);
+  assert.match(upload, /Snapping means taking a photo/);
+  const signup = readSource("src/components/snap-landing/SnapSignupLanding.tsx");
+  assert.match(signup, /successRedirectUrl="\/"/);
 });

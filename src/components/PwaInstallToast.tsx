@@ -3,6 +3,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useInstalledAppState } from "@/lib/pwa/install-state";
+import { dismissInstallToast, isInstallToastDismissed } from "@/lib/pwa/install-toast-dismissal";
 import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
 import styles from "./pwa-install-appearance.module.css";
 
@@ -116,17 +117,12 @@ export default function PwaInstallToast() {
     };
   }, [deferred, installState.status, isDismissed]);
 
-  // Check localStorage for dismissed state
+  // Restore the saved cooldown after reloads and page navigation.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      const dismissed = localStorage.getItem("pwa-install-dismissed");
-      if (dismissed === "true") {
-        setIsDismissed(true);
-        setIsVisible(false);
-      }
-    } catch {
-      // ignore
+    if (isInstallToastDismissed(window)) {
+      setIsDismissed(true);
+      setIsVisible(false);
     }
   }, []);
 
@@ -160,19 +156,7 @@ export default function PwaInstallToast() {
   const handleDismiss = useCallback(() => {
     setIsVisible(false);
     setIsDismissed(true);
-    try {
-      localStorage.setItem("pwa-install-dismissed", "true");
-      // Re-enable after 7 days
-      setTimeout(() => {
-        try {
-          localStorage.removeItem("pwa-install-dismissed");
-        } catch {
-          // ignore
-        }
-      }, 7 * 24 * 60 * 60 * 1000);
-    } catch {
-      // ignore
-    }
+    dismissInstallToast(window);
   }, []);
 
   if (isMarketingLanding || shouldHideInstallUi()) return null;
@@ -190,24 +174,21 @@ export default function PwaInstallToast() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[9999] px-3 pt-1.5 pb-1.5 safe-inset-x"
-      style={{
-        paddingTop: `calc(0.35rem + env(safe-area-inset-top))`,
-      }}
+      className={`${styles.toastPosition} pointer-events-none fixed top-0 left-0 right-0 z-[9999]`}
     >
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto w-fit max-w-full">
         <div
-          className={`${styles.toast} relative overflow-hidden rounded-[22px] border border-[#e7e1ff] bg-white/95 px-3.5 py-2.5 shadow-[0_18px_48px_rgba(103,87,255,0.14)] backdrop-blur-xl transition-all duration-300 ease-out`}
+          className={`${styles.toast} pointer-events-auto relative overflow-hidden rounded-[20px] border border-[#e7e1ff] bg-white/95 px-3 py-2 shadow-[0_18px_48px_rgba(103,87,255,0.14)] backdrop-blur-xl transition-all duration-300 ease-out`}
           style={{
             opacity: isAnimating ? 1 : 0,
             transform: isAnimating ? "translateY(0)" : "translateY(-20px)",
           }}
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(123,97,255,0.14),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(55,168,255,0.1),transparent_32%)]" />
-          <div className="relative flex items-center gap-3">
+          <div className="relative flex items-center gap-2 min-[360px]:gap-2.5">
             {/* App Icon */}
             <div className="flex-shrink-0">
-              <div className={`${styles.iconWrapper} flex h-11 w-11 items-center justify-center rounded-[16px] border border-[#ebe6ff] bg-[linear-gradient(135deg,#f8f5ff_0%,#eef2ff_100%)] shadow-[0_10px_24px_rgba(103,87,255,0.1)]`}>
+              <div className={`${styles.iconWrapper} flex h-10 w-10 items-center justify-center rounded-[14px] border border-[#ebe6ff] bg-[linear-gradient(135deg,#f8f5ff_0%,#eef2ff_100%)] shadow-[0_10px_24px_rgba(103,87,255,0.1)]`}>
                 <img
                   src={APP_ICON_SRC}
                   alt="Envitefy"
@@ -255,11 +236,11 @@ export default function PwaInstallToast() {
             </div>
 
             {/* Text Content */}
-            <div className="min-w-0 flex-1">
-              <div className={`${styles.heading} text-sm font-semibold leading-tight text-[#1f2340] sm:text-[15px]`}>
+            <div className="min-w-0">
+              <div className={`${styles.heading} text-sm font-semibold leading-tight text-[#1f2340] min-[360px]:text-[15px]`}>
                 Install Envitefy
               </div>
-              <div className={`${styles.description} mt-0.5 text-[11px] leading-none text-[#6b7390] sm:text-xs`}>
+              <div className={`${styles.description} mt-0.5 text-xs leading-none text-[#6b7390]`}>
                 envitefy.com
               </div>
             </div>
@@ -268,13 +249,13 @@ export default function PwaInstallToast() {
             <div className="flex flex-shrink-0 items-center gap-2">
               <button
                 onClick={handleInstall}
-                className={`${styles.install} rounded-full bg-[linear-gradient(96deg,#6b3cff_0%,#6757ff_42%,#5a7dff_100%)] px-4 py-2 text-xs font-semibold text-white shadow-[0_14px_26px_rgba(103,87,255,0.28)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_30px_rgba(103,87,255,0.32)] active:scale-95 sm:text-sm`}
+                className={`${styles.install} min-h-11 min-w-11 rounded-full bg-[linear-gradient(96deg,#6b3cff_0%,#6757ff_42%,#5a7dff_100%)] px-3 py-2 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(103,87,255,0.28)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_30px_rgba(103,87,255,0.32)] active:scale-95`}
               >
                 Install
               </button>
               <button
                 onClick={handleDismiss}
-                className={`${styles.dismiss} rounded-full border border-[#ece8ff] bg-white/85 p-1.5 text-[#7a8098] shadow-sm transition-all hover:bg-[#f6f3ff] hover:text-[#4d3bca]`}
+                className={`${styles.dismiss} flex h-11 w-11 items-center justify-center rounded-full border border-[#ece8ff] bg-white/85 text-[#7a8098] shadow-sm transition-all hover:bg-[#f6f3ff] hover:text-[#4d3bca]`}
                 aria-label="Dismiss"
               >
                 <svg

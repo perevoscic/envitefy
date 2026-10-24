@@ -1,9 +1,6 @@
-import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 import {
-  ArrowRight,
   Baby,
   CalendarDays,
-  Check,
   ExternalLink,
   Gift,
   Heart,
@@ -12,62 +9,80 @@ import {
   MessageCircleHeart,
   QrCode,
   Sparkles,
-  Star,
   Users,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import type { CSSProperties } from "react";
-import LandingHeroMedia from "@/components/landing/LandingHeroMedia";
+import MarketingHero from "@/components/marketing/MarketingHero";
+import MarketingPage from "@/components/marketing/MarketingPage";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
-import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import publicStyles from "@/styles/public-appearance.module.css";
+import editorialStyles from "../category-pages/CelebrationLanding.module.css";
+import CelebrationPreview from "../category-pages/CelebrationPreview";
 import styles from "./BabyShowersLandingView.module.css";
 
 const createHref = "#templates";
 
 const collections = [
   {
-    id: "pear-orchard-cradle", badge: "New collection", eyebrow: "Orchard & heirloom",
-    title: "Pear Orchard Cradle", body: "A hand-painted pear orchard, woven cradle, and arched invitation for a warm welcome.",
-    image: "/templates/baby-showers/pear-orchard-cradle.webp", imageAlt: "A woven baby cradle beneath a fruiting pear tree",
-    accent: "#354329", soft: "#faf5df",
+    id: "pear-orchard-cradle",
+    badge: "New collection",
+    eyebrow: "Orchard & heirloom",
+    title: "Pear Orchard Cradle",
+    body: "A hand-painted pear orchard, woven cradle, and arched invitation for a warm welcome.",
+    image: "/templates/baby-showers/pear-orchard-cradle.webp",
+    imageAlt: "A woven baby cradle beneath a fruiting pear tree",
+    accent: "#354329",
+    soft: "#faf5df",
   },
   {
-    id: "peach-patisserie", badge: "New collection", eyebrow: "Sweet & playful",
-    title: "Peach Patisserie", body: "Peach pastries, a scalloped shopfront, and a charming menu-inspired baby shower design.",
-    image: "/templates/baby-showers/peach-patisserie.webp", imageAlt: "Illustrated peach pastries in a charming French patisserie",
-    accent: "#713d39", soft: "#fff0e5",
+    id: "peach-patisserie",
+    badge: "New collection",
+    eyebrow: "Sweet & playful",
+    title: "Peach Patisserie",
+    body: "Peach pastries, a scalloped shopfront, and a charming menu-inspired baby shower design.",
+    image: "/templates/baby-showers/peach-patisserie.webp",
+    imageAlt: "Illustrated peach pastries in a charming French patisserie",
+    accent: "#713d39",
+    soft: "#fff0e5",
   },
   {
-    id: "starlight-observatory", badge: "New collection", eyebrow: "Celestial & luminous",
-    title: "Starlight Observatory", body: "A brass telescope, glowing planets, and a midnight invitation for your brightest new discovery.",
-    image: "/templates/baby-showers/starlight-observatory.webp", imageAlt: "A brass telescope and planet mobile beneath a starry night sky",
-    accent: "#224f79", soft: "#eaf3fb",
+    id: "starlight-observatory",
+    badge: "New collection",
+    eyebrow: "Celestial & luminous",
+    title: "Starlight Observatory",
+    body: "A brass telescope, glowing planets, and a midnight invitation for your brightest new discovery.",
+    image: "/templates/baby-showers/starlight-observatory.webp",
+    imageAlt: "A brass telescope and planet mobile beneath a starry night sky",
+    accent: "#224f79",
+    soft: "#eaf3fb",
   },
 ] as const;
 
 const hostNotes = [
   {
     quote:
-      "The invitation looked beautiful on every phone, and having the registry and RSVP in the same place saved us so many follow-up texts.",
-    initials: "ES",
-    name: "Emily S.",
-    meta: "Baby shower host",
+      "Add registry links beside the shower details, so guests can find the invitation and gift information together.",
+    initials: "01",
+    name: "Gather the gift links",
+    meta: "A planning note",
   },
   {
     quote:
-      "We changed the brunch time once and everyone had the current details immediately. No new invitation, no confusion.",
-    initials: "JM",
-    name: "Jessica M.",
-    meta: "Expecting parent",
+      "Keep the current start time, directions, and host note on the same page after you share it.",
+    initials: "02",
+    name: "Keep the details together",
+    meta: "For your guests",
   },
   {
     quote:
-      "Guests could RSVP, open the registry, get directions, and save the date without downloading another app.",
-    initials: "CL",
-    name: "Chloe L.",
-    meta: "Co-host",
+      "Review the invitation on your phone before publishing. Guests can open the shared page without downloading an app.",
+    initials: "03",
+    name: "Think of the guest view",
+    meta: "Before you share",
   },
 ] as const;
 
@@ -106,70 +121,20 @@ function SectionHeading({
 }) {
   return (
     <div className={align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-2xl"}>
-      <p className="inline-flex rounded-full bg-[#fff0e6] px-3.5 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[#9a3c12]">
+      <p className="inline-flex rounded-full bg-[var(--marketing-soft)] px-3.5 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[var(--marketing-accent)]">
         {eyebrow}
       </p>
       <h2
         className={cx(
           styles.serif,
-          "mt-4 text-3xl font-bold leading-tight text-[#13233d] sm:text-4xl lg:text-[2.8rem]",
+          "mt-4 text-3xl font-bold leading-tight text-[var(--marketing-ink)] sm:text-4xl lg:text-[2.8rem]",
         )}
       >
         {title}
       </h2>
-      {body ? <p className="mt-4 text-base leading-7 text-slate-600">{body}</p> : null}
-    </div>
-  );
-}
-
-function HeroInvitation() {
-  return (
-    <div className={styles.heroVisual}>
-      <Image
-        src="/images/landing/hero/baby-shower-mobile.webp"
-        alt="Elegant baby shower table with flowers, teddy bears, and a celebration cake"
-        fill
-        priority
-        sizes="(max-width: 1024px) 80vw, 420px"
-        className="object-cover"
-      />
-
-      <div className={styles.invitationCard}>
-        <div className="flex items-center justify-center gap-2 text-[0.58rem] font-bold uppercase tracking-[0.24em] text-[#9a3c12]">
-          <Sparkles className="h-3 w-3" aria-hidden="true" />
-          A little sprout is on the way
-        </div>
-        <p className={cx(styles.serif, "mt-3 text-3xl font-bold leading-none text-[#13233d]")}>
-          Olivia&apos;s
-        </p>
-        <p className={cx(styles.serif, "mt-1 text-xl italic text-[#9a3c12]")}>baby shower</p>
-        <div className="mx-auto my-4 h-px w-12 bg-[#efb692]" />
-        <p className="text-[0.68rem] font-semibold leading-5 text-slate-600">
-          Saturday, September 12 · 11:00 AM
-          <br />
-          The Garden House · Austin
-        </p>
-        <div className="mt-4 grid grid-cols-2 gap-2 text-[0.58rem] font-bold uppercase tracking-[0.1em]">
-          <span className="rounded-full bg-[#eaf3fb] px-2 py-2 text-[#245b87]">RSVP open</span>
-          <span className="rounded-full bg-[#fff0e6] px-2 py-2 text-[#9a3c12]">
-            View registry
-          </span>
-        </div>
-      </div>
-
-      <div className="absolute inset-x-5 bottom-5 rounded-2xl border border-white/70 bg-white/92 p-4 shadow-xl backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#fff0e6] text-[#9a3c12]">
-            <Gift className="h-4 w-4" aria-hidden="true" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-[#13233d]">One guest-ready link</p>
-            <p className="mt-0.5 text-[0.68rem] leading-4 text-slate-500">
-              Invitation, RSVP, registry, directions, and updates
-            </p>
-          </div>
-        </div>
-      </div>
+      {body ? (
+        <p className="mt-4 text-base leading-7 text-[var(--marketing-muted)]">{body}</p>
+      ) : null}
     </div>
   );
 }
@@ -202,15 +167,17 @@ function CollectionCard({ collection }: { collection: (typeof collections)[numbe
         </div>
       </div>
       <div className="flex flex-1 flex-col p-6 sm:p-7">
-        <p className="flex-1 text-sm leading-6 text-slate-600">{collection.body}</p>
+        <p className="flex-1 text-sm leading-6 text-[var(--marketing-muted)]">{collection.body}</p>
         <div className="mt-6 flex items-center justify-between gap-4 border-t border-slate-200/80 pt-5">
-          <span className="text-[0.62rem] font-bold uppercase tracking-[0.15em] text-slate-500">
+          <span className="text-[0.62rem] font-bold uppercase tracking-[0.15em] text-[var(--marketing-muted)]">
             Invite + live page
           </span>
           <Link
             href={createHref}
             className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--baby-card-accent)] transition hover:gap-2.5"
-          >Browse templates</Link>
+          >
+            Browse templates
+          </Link>
         </div>
       </div>
     </article>
@@ -242,63 +209,33 @@ export default function BabyShowersLandingView() {
   };
 
   return (
-    <div className={styles.page}>
-      <SignedOutPageChrome
-        activeBottomNavLabel="Menu"
-        brandHref="/"
-        topNavVariant="transparent-dark"
-      />
+    <MarketingPage className={`${publicStyles.page} ${styles.page} ${editorialStyles.editorial}`}>
+      <SignedOutPageChrome activeBottomNavLabel="Menu" brandHref="/" />
 
       <main className="pb-24 md:pb-0">
-        <section className={styles.heroPattern}>
-          <LandingHeroMedia images={landingHeroGalleries["baby-showers"]} />
-          <div className="relative z-[1] mx-auto grid min-h-[760px] max-w-7xl items-center gap-14 px-5 pt-32 pb-20 sm:px-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.7fr)] lg:px-10 lg:pt-36 lg:pb-24">
-            <div className="max-w-3xl text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/90 px-4 py-2 text-[0.66rem] font-bold uppercase tracking-[0.17em] text-[#245b87] shadow-sm backdrop-blur">
-                <Baby className="h-3.5 w-3.5 text-[#e66627]" aria-hidden="true" />
-                Invitations · RSVP · registries
-              </div>
-              <h1
-                className={cx(
-                  styles.serif,
-                  "mt-6 text-[2.8rem] font-bold leading-[1.03] tracking-[-0.035em] !text-white drop-shadow-[0_4px_22px_rgba(0,0,0,0.82)] sm:text-6xl lg:text-[4.55rem]",
-                )}
-              >
-                Gorgeous baby shower invitations,{" "}
-                <span className="italic text-[#ffb089]">all in one beautiful link.</span>
-              </h1>
-              <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-8 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-lg lg:mx-0">
-                Set the perfect tone for welcoming your little one. Create a polished digital
-                invitation with RSVPs, registry links, directions, calendar saves, and every guest
-                detail together.
-              </p>
-              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
-                <Link href={createHref} className={styles.primaryCta}>Browse templates</Link>
-                <a href="#collections" className={styles.secondaryCta}>
-                  Browse invitation styles
-                </a>
-              </div>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm font-semibold text-white drop-shadow-[0_2px_9px_rgba(0,0,0,0.9)] lg:justify-start">
-                <span className="inline-flex items-center gap-2">
-                  <Check className="h-4 w-4 text-[#e66627]" aria-hidden="true" />
-                  No guest app needed
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <Check className="h-4 w-4 text-[#e66627]" aria-hidden="true" />
-                  Update details anytime
-                </span>
-              </div>
-            </div>
-
-            <div className="relative mx-auto w-full max-w-[27rem]">
-              <HeroInvitation />
-              <div className={styles.floatingNote}>
-                <Heart className="h-4 w-4 fill-current text-[#e66627]" aria-hidden="true" />
-                Personalized for your celebration
-              </div>
-            </div>
-          </div>
-        </section>
+        <MarketingHero
+          eyebrow="Invitations · RSVP · registries"
+          title={
+            <>
+              A little one.
+              <br />
+              <em>So much to celebrate.</em>
+            </>
+          }
+          description="A lovely invitation for the sweetest new chapter. Bring your baby shower details, registry links, and guest replies together."
+          image="/templates/baby-showers/pear-orchard-cradle.webp"
+          imageAlt="Original pear orchard baby shower artwork with a woven cradle"
+          primaryHref={createHref}
+          primaryLabel="Browse baby shower designs"
+          secondaryHref="#collections"
+          secondaryLabel="Explore invitation styles"
+        >
+          <CelebrationPreview
+            title="Olivia's baby shower"
+            meta="Saturday, September 12 · The Garden House"
+            chips={["RSVP", "Registry", "Directions"]}
+          />
+        </MarketingHero>
         <PublicTemplateGallery category="baby-showers" featured />
 
         <nav className="border-y border-[#e7edf2] bg-white" aria-label="Baby shower page sections">
@@ -312,7 +249,7 @@ export default function BabyShowersLandingView() {
               <a
                 key={href}
                 href={href}
-                className="shrink-0 snap-start rounded-full px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-[#fff0e6] hover:text-[#d75b20]"
+                className="shrink-0 snap-start rounded-full px-4 py-2 text-sm font-bold text-[var(--marketing-muted)] transition hover:bg-[var(--marketing-soft)] hover:text-[#d75b20]"
               >
                 {label}
               </a>
@@ -336,14 +273,16 @@ export default function BabyShowersLandingView() {
               ))}
             </div>
             <div className="mt-10 text-center">
-              <Link href={createHref} className={styles.textLink}>Browse templates</Link>
+              <Link href={createHref} className={styles.textLink}>
+                Browse templates
+              </Link>
             </div>
           </div>
         </section>
 
         <section
           id="registries"
-          className="scroll-mt-28 border-y border-[#e7edf2] bg-[#f6f9fc] px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
+          className="scroll-mt-28 border-y border-[#e7edf2] bg-[var(--marketing-paper)] px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-20">
             <div>
@@ -374,12 +313,14 @@ export default function BabyShowersLandingView() {
                   const Icon = item.icon;
                   return (
                     <div key={item.title} className="flex gap-4">
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#fff0e6] text-[#d75b20]">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--marketing-soft)] text-[#d75b20]">
                         <Icon className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-[#13233d]">{item.title}</h3>
-                        <p className="mt-1 text-sm leading-6 text-slate-500">{item.body}</p>
+                        <h3 className="font-bold text-[var(--marketing-ink)]">{item.title}</h3>
+                        <p className="mt-1 text-sm leading-6 text-[var(--marketing-muted)]">
+                          {item.body}
+                        </p>
                       </div>
                     </div>
                   );
@@ -390,15 +331,20 @@ export default function BabyShowersLandingView() {
             <div className={styles.registryPreview}>
               <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-5">
                 <div>
-                  <p className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#245b87]">
+                  <p className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
                     Olivia&apos;s baby shower
                   </p>
-                  <h3 className={cx(styles.serif, "mt-1 text-2xl font-bold text-[#13233d]")}>
+                  <h3
+                    className={cx(
+                      styles.serif,
+                      "mt-1 text-2xl font-bold text-[var(--marketing-ink)]",
+                    )}
+                  >
                     Registry & wishes
                   </h3>
                 </div>
-                <span className="rounded-full bg-[#eaf3fb] px-3 py-1.5 text-[0.62rem] font-bold text-[#245b87]">
-                  Guest view
+                <span className="rounded-full bg-[#eaf3fb] px-3 py-1.5 text-[0.62rem] font-bold text-[var(--marketing-accent)]">
+                  Sample guest view
                 </span>
               </div>
 
@@ -437,8 +383,10 @@ export default function BabyShowersLandingView() {
                       {item.initials}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-[#13233d]">{item.name}</p>
-                      <p className="mt-0.5 truncate text-xs text-slate-500">{item.note}</p>
+                      <p className="text-sm font-bold text-[var(--marketing-ink)]">{item.name}</p>
+                      <p className="mt-0.5 truncate text-xs text-[var(--marketing-muted)]">
+                        {item.note}
+                      </p>
                     </div>
                     <ExternalLink className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
                   </div>
@@ -453,7 +401,7 @@ export default function BabyShowersLandingView() {
                     Guests going
                   </p>
                 </div>
-                <div className="rounded-2xl bg-[#fff0e6] p-4 text-[#7a2f0f]">
+                <div className="rounded-2xl bg-[var(--marketing-soft)] p-4 text-[#7a2f0f]">
                   <CalendarDays className="h-4 w-4" aria-hidden="true" />
                   <p className="mt-3 text-sm font-bold">Saved to calendar</p>
                   <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#7a2f0f]">
@@ -500,17 +448,24 @@ export default function BabyShowersLandingView() {
                 return (
                   <article key={item.number} className={styles.stepCard}>
                     <div className="flex items-center justify-between">
-                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#fff0e6] text-[#9a3c12]">
+                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[var(--marketing-soft)] text-[var(--marketing-accent)]">
                         <Icon className="h-5 w-5" aria-hidden="true" />
                       </div>
                       <span className={cx(styles.serif, "text-3xl font-bold text-[#526a7c]")}>
                         {item.number}
                       </span>
                     </div>
-                    <h3 className={cx(styles.serif, "mt-6 text-2xl font-bold text-[#13233d]")}>
+                    <h3
+                      className={cx(
+                        styles.serif,
+                        "mt-6 text-2xl font-bold text-[var(--marketing-ink)]",
+                      )}
+                    >
                       {item.title}
                     </h3>
-                    <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
+                    <p className="mt-3 text-sm leading-7 text-[var(--marketing-muted)]">
+                      {item.body}
+                    </p>
                   </article>
                 );
               })}
@@ -552,7 +507,7 @@ export default function BabyShowersLandingView() {
 
         <section
           id="host-notes"
-          className="scroll-mt-28 border-y border-[#e7edf2] bg-[#f6f9fc] px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
+          className="scroll-mt-28 border-y border-[#e7edf2] bg-[var(--marketing-paper)] px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
         >
           <div className="mx-auto max-w-7xl">
             <SectionHeading
@@ -563,25 +518,16 @@ export default function BabyShowersLandingView() {
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {hostNotes.map((note) => (
                 <article key={note.name} className={styles.quoteCard}>
-                  <div className="flex gap-1 text-[#f0a53b]" aria-hidden="true">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <Star
-                        key={`${note.initials}-${String(index)}`}
-                        className="h-4 w-4 fill-current"
-                        aria-hidden="true"
-                      />
-                    ))}
-                  </div>
                   <blockquote className="mt-5 flex-1 text-sm leading-7 text-slate-700">
-                    &ldquo;{note.quote}&rdquo;
+                    {note.quote}
                   </blockquote>
                   <div className="mt-6 flex items-center gap-3 border-t border-slate-100 pt-5">
-                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[#fff0e6] text-xs font-extrabold text-[#9a3c12]">
+                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[var(--marketing-soft)] text-xs font-extrabold text-[var(--marketing-accent)]">
                       {note.initials}
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#13233d]">{note.name}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{note.meta}</p>
+                      <p className="text-sm font-bold text-[var(--marketing-ink)]">{note.name}</p>
+                      <p className="mt-0.5 text-xs text-[var(--marketing-muted)]">{note.meta}</p>
                     </div>
                   </div>
                 </article>
@@ -600,10 +546,12 @@ export default function BabyShowersLandingView() {
             <div className="space-y-3">
               {faqItems.map((item) => (
                 <details key={item.question} className={styles.faqCard}>
-                  <summary className="cursor-pointer list-none pr-8 text-base font-bold text-[#13233d] marker:hidden">
+                  <summary className="cursor-pointer list-none pr-8 text-base font-bold text-[var(--marketing-ink)] marker:hidden">
                     {item.question}
                   </summary>
-                  <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">{item.answer}</p>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--marketing-muted)]">
+                    {item.answer}
+                  </p>
                 </details>
               ))}
             </div>
@@ -624,7 +572,9 @@ export default function BabyShowersLandingView() {
                 Create your baby shower invitation, add the registry, and give every guest one
                 beautiful place for the details.
               </p>
-              <Link href={createHref} className={cx(styles.primaryCta, "mt-8")}>Browse templates</Link>
+              <Link href={createHref} className={cx(styles.primaryCta, "mt-8")}>
+                Browse templates
+              </Link>
             </div>
           </div>
         </section>
@@ -636,6 +586,6 @@ export default function BabyShowersLandingView() {
       <Script id="ld-baby-showers-faq" type="application/ld+json">
         {JSON.stringify(faqLd)}
       </Script>
-    </div>
+    </MarketingPage>
   );
 }

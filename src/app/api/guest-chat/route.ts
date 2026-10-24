@@ -18,6 +18,7 @@ import {
   normalizeGuestChatHistory,
   shouldSuggestGuestSignup,
 } from "@/lib/guest-chat/respond";
+import { getQuickGuestChatAnswer } from "@/lib/guest-chat/quick-answer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,12 +48,12 @@ function cleanString(value: unknown, maxLength: number): string {
 function resolveGuestChatFirstTokenTimeoutMs() {
   const configured = Number(process.env.OPENAI_GUEST_CHAT_TIMEOUT_MS);
   if (Number.isFinite(configured) && configured > 0) {
-    return Math.min(Math.max(Math.round(configured), 1000), 20_000);
+    return Math.min(Math.max(Math.round(configured), 100), 2500);
   }
-  return 5000;
+  return 2500;
 }
 
-const GUEST_CHAT_TOTAL_TIMEOUT_MS = 20_000;
+const GUEST_CHAT_TOTAL_TIMEOUT_MS = 8000;
 
 function resolveGuestChatModel() {
   const configured = cleanString(process.env.OPENAI_GUEST_CHAT_MODEL, 100);
@@ -65,7 +66,10 @@ function getOpenAiClient(): OpenAI | null {
   const apiKey = cleanString(process.env.OPENAI_API_KEY, 400);
   if (!apiKey) return null;
   if (cachedClient?.apiKey !== apiKey) {
-    cachedClient = { apiKey, client: new OpenAI({ apiKey }) };
+    cachedClient = {
+      apiKey,
+      client: new OpenAI({ apiKey, maxRetries: 0, timeout: GUEST_CHAT_TOTAL_TIMEOUT_MS }),
+    };
   }
   return cachedClient.client;
 }
@@ -137,6 +141,20 @@ function buildAiMessages(params: {
   ];
 }
 
+/** Resolve references such as "Can I change that later?" only in a product conversation. */
+function isProductFollowup(message: string, history: ReturnType<typeof normalizeGuestChatHistory>) {
+  if (message.length > 180) return false;
+  if (!/\b(?:it|that|this|these|those|them)\b/i.test(message)) return false;
+  if (!/\b(?:change|edit|update|remove|delete|add|share|publish|save|use|download|open|close|enable|disable|work|need|choose|happens)\b/i.test(message)) return false;
+  if (!/^(?:and\s+|also\s+)?(?:can|could|do|does|how|what|where|when|will|would|is|are)\b/i.test(message)) return false;
+  const latestUser = [...history].reverse().find((entry) => entry.role === "user");
+  return Boolean(
+    latestUser &&
+      /\b(?:envitefy|live\s*cards?|event\s*pages?|sign[-\s]?up\s*forms?|rsvps?|snap|registr(?:y|ies))\b/i.test(latestUser.text) &&
+      buildDeterministicGuestChatAnswer(latestUser.text).aiAllowed,
+  );
+}
+
 /**
  * Streams the answer as it is written. Resolves with the full text, or null when
  * no words arrived before the first-token timeout so the caller can fall back.
@@ -145,40 +163,58 @@ async function streamAiAnswer(params: {
   message: string;
   history: ReturnType<typeof normalizeGuestChatHistory>;
   onDelta: (text: string) => void;
+  signal?: AbortSignal;
 }): Promise<string | null> {
   const client = getOpenAiClient();
-  if (!client) return null;
+  if (!client || params.signal?.aborted) return null;
 
   const model = resolveGuestChatModel();
   const controller = new AbortController();
   let receivedText = "";
-  const firstTokenTimer = setTimeout(() => {
-    if (!receivedText) controller.abort();
-  }, resolveGuestChatFirstTokenTimeoutMs());
-  const totalTimer = setTimeout(() => controller.abort(), GUEST_CHAT_TOTAL_TIMEOUT_MS);
+  let sentText = false;
+  let rejectDeadline: (error: Error) => void = () => {};
+  const deadline = new Promise<never>((_, reject) => { rejectDeadline = reject; });
+  const stop = () => {
+    controller.abort();
+    rejectDeadline(new Error("Guest chat answer deadline reached."));
+  };
+  const firstTokenTimer = setTimeout(stop, resolveGuestChatFirstTokenTimeoutMs());
+  const totalTimer = setTimeout(stop, GUEST_CHAT_TOTAL_TIMEOUT_MS);
+  params.signal?.addEventListener("abort", stop, { once: true });
 
   try {
-    const stream = await client.chat.completions.create(
-      {
-        model,
-        ...creationModelBudget(model, "guest_chat"),
-        stream: true,
-        messages: buildAiMessages(params),
-      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
-      { signal: controller.signal },
-    );
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (typeof delta === "string" && delta) {
-        receivedText += delta;
-        params.onDelta(delta);
+    const work = async () => {
+      const stream = await client.chat.completions.create(
+        {
+          model,
+          ...creationModelBudget(model, "guest_chat"),
+          stream: true,
+          messages: buildAiMessages(params),
+        } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
+        { signal: controller.signal, maxRetries: 0, timeout: GUEST_CHAT_TOTAL_TIMEOUT_MS },
+      );
+      for await (const chunk of stream) {
+        if (controller.signal.aborted) break;
+        const delta = chunk.choices[0]?.delta?.content;
+        if (typeof delta === "string" && delta) {
+          receivedText += delta;
+          if (receivedText.trim()) {
+            clearTimeout(firstTokenTimer);
+            params.onDelta(sentText ? delta : receivedText);
+            sentText = true;
+          }
+        }
       }
-    }
-  } catch (error) {
-    if (!receivedText) throw error;
+    };
+    // A provider or intermediary that ignores AbortSignal must not keep the chat waiting.
+    await Promise.race([work(), deadline]);
+  } catch {
+    // Keep any words already shown, otherwise return the fixed fallback immediately.
   } finally {
     clearTimeout(firstTokenTimer);
     clearTimeout(totalTimer);
+    params.signal?.removeEventListener("abort", stop);
+    controller.abort();
   }
 
   return receivedText.trim() ? sanitizeAssistantAnswer(receivedText) : null;
@@ -220,7 +256,19 @@ export async function POST(req: NextRequest) {
   // Clients include the new question as the last history entry; send it only once.
   const lastEntry = history.at(-1);
   if (lastEntry?.role === "user" && lastEntry.text === message) history.pop();
-  const deterministic = buildDeterministicGuestChatAnswer(message);
+  const quickAnswer = getQuickGuestChatAnswer(message, history);
+  let deterministic = quickAnswer || buildDeterministicGuestChatAnswer(message);
+  const contextualFollowup =
+    !quickAnswer &&
+    deterministic.answer === GUEST_CHAT_OUT_OF_SCOPE_ANSWER &&
+    isProductFollowup(message, history);
+  if (!quickAnswer && (deterministic.aiAllowed || contextualFollowup)) {
+    deterministic = {
+      ...deterministic,
+      answer: "I do not have a confirmed answer to that Envitefy question. Use the Contact page so the Envitefy team can help.",
+      aiAllowed: true,
+    };
+  }
   const signupSuggested =
     deterministic.signupSuggested ||
     shouldSuggestGuestSignup(message, history, {
@@ -235,10 +283,13 @@ export async function POST(req: NextRequest) {
 
   if (deterministic.aiAllowed && rawBody.stream === true && getOpenAiClient()) {
     const encoder = new TextEncoder();
+    const responseController = new AbortController();
+    let canceled = false;
     const body = new ReadableStream<Uint8Array>({
       async start(controller) {
-        const send = (event: Record<string, unknown>) =>
-          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        const send = (event: Record<string, unknown>) => {
+          if (!canceled) controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        };
         let answer = deterministic.answer;
         let usedAi = false;
         try {
@@ -246,6 +297,7 @@ export async function POST(req: NextRequest) {
             message,
             history,
             onDelta: (text) => send({ type: "delta", text }),
+            signal: responseController.signal,
           });
           if (aiAnswer) {
             answer = aiAnswer;
@@ -254,6 +306,7 @@ export async function POST(req: NextRequest) {
         } catch {
           // Nothing was streamed yet; fall through to the fixed answer.
         }
+        if (canceled) return;
         if (!usedAi) send({ type: "delta", text: answer });
         if (signupSuggested) {
           const suffix = guestSignupPromptSuffix(answer);
@@ -262,6 +315,10 @@ export async function POST(req: NextRequest) {
         }
         send({ type: "done", ok: true, answer, usedAi, ...responseMeta });
         controller.close();
+      },
+      cancel() {
+        canceled = true;
+        responseController.abort();
       },
     });
     return new Response(body, {

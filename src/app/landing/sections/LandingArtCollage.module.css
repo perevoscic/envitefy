@@ -1,0 +1,341 @@
+@font-face {
+  font-family: "Envitefy Mosaic";
+  src: url("/fonts/gallery/cormorantinfant-918ac7694663.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
+.section {
+  --scene-progress: 1;
+  position: relative;
+  isolation: isolate;
+  color: var(--marketing-ink);
+  background: var(--marketing-paper);
+}
+.stage {
+  padding: clamp(3.5rem, 5vw, 6rem) clamp(1.4rem, 2vw, 3rem);
+}
+.header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 25rem);
+  align-items: end;
+  gap: clamp(2rem, 5vw, 7rem);
+  margin-bottom: 2rem;
+}
+.eyebrow {
+  margin: 0 0 1.2rem;
+  color: var(--marketing-accent);
+  font-size: 0.625rem;
+  font-weight: 650;
+  line-height: 1.7;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.section .heading {
+  margin: 0;
+  color: var(--marketing-ink);
+  font-family: "Envitefy Mosaic", var(--font-playfair), Georgia, serif !important;
+  font-size: clamp(3.5rem, 5.8vw, 7rem) !important;
+  font-weight: 300 !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+.heading em {
+  color: var(--marketing-accent);
+  font-weight: 400;
+}
+.intro {
+  margin: 0;
+  color: var(--marketing-muted);
+  font-size: clamp(0.95rem, 1.05vw, 1.1rem);
+  line-height: 1.75;
+  text-wrap: pretty;
+}
+.board {
+  --mosaic-gap: clamp(0.6rem, 0.8vw, 1rem);
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-areas: "birthdays birthdays memories weddings people gender" "bridal date memories weddings community gender" "good good together baby community sports";
+  gap: var(--mosaic-gap);
+  height: clamp(30rem, 35vw, 43rem);
+  min-height: 0;
+  container-type: size;
+}
+.tile {
+  min-width: 0;
+  min-height: 0;
+  --motion-distance: 2rem;
+}
+.tile > :first-child {
+  width: 100%;
+  height: 100%;
+  border-radius: clamp(1rem, 1.5vw, 1.8rem);
+}
+.artwork {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  isolation: isolate;
+  background: #482b3e;
+  text-decoration: none;
+}
+.image {
+  object-fit: cover;
+  transition: scale 450ms ease;
+}
+.artwork:hover .image {
+  scale: 1.04;
+}
+.artwork:focus-visible {
+  outline: 3px solid var(--marketing-accent);
+  outline-offset: 4px;
+}
+.artwork::after {
+  content: "";
+  position: absolute;
+  inset: 35% 0 0;
+  z-index: 1;
+  background: linear-gradient(transparent, #251722b3);
+  pointer-events: none;
+}
+.caption {
+  position: absolute;
+  z-index: 2;
+  inset: auto 0 0;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: clamp(0.8rem, 1.25vw, 1.5rem);
+  color: #fff6f4;
+  font-family: "Envitefy Mosaic", var(--font-playfair), Georgia, serif;
+  font-size: clamp(1.25rem, 1.7vw, 2rem);
+  font-weight: 600;
+  line-height: 1.05;
+  text-shadow: 0 1px 8px #25172266;
+}
+.caption svg {
+  flex-shrink: 0;
+  margin-bottom: 0.15rem;
+}
+.typeTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 1.25rem;
+  text-align: center;
+  color: #853652;
+  font-family: "Envitefy Mosaic", var(--font-playfair), Georgia, serif;
+}
+.typeTile p {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 3.7rem);
+  font-weight: 300;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+}
+.typeTile strong {
+  font-weight: 700;
+}
+.memories {
+  background: #f0b9ce;
+  container-type: size;
+}
+.memories p {
+  display: flex;
+  flex-direction: column;
+  padding-block: 0.12em;
+  writing-mode: vertical-rl;
+  rotate: 180deg;
+  font-size: min(5.2vw, 20cqh, 38cqw);
+  line-height: 1.12;
+  text-transform: uppercase;
+}
+.people {
+  background: #853652;
+  color: #fff6f4;
+  container-type: size;
+}
+.people p {
+  font-size: min(2.5vw, 28cqh);
+  line-height: 0.9;
+}
+.people em {
+  font-weight: 400;
+}
+.date {
+  background-color: #fff6f4;
+  background-image:
+    linear-gradient(90deg, #b9d1e18c 50%, transparent 50%),
+    linear-gradient(#b9d1e18c 50%, transparent 50%);
+  background-size: 2rem 2rem;
+}
+.date p {
+  padding: 0.45rem 0.8rem;
+  border: 1px solid #853652;
+  border-radius: 999px;
+  background: #fff6f4;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+.good {
+  align-items: start;
+  gap: min(0.9rem, 4cqh);
+  padding-inline: clamp(1.25rem, 2.5vw, 3rem);
+  background: #f3e1e5;
+  text-align: left;
+  container-type: size;
+}
+.good p {
+  font-size: min(3.5vw, 28cqh);
+}
+.good > span {
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  font-size: 0.55rem;
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.together {
+  background: repeating-linear-gradient(90deg, #d4e4ec 0 12.5%, #fff6f4 12.5% 25%);
+  container-type: size;
+}
+.together p {
+  width: 100%;
+  padding: 0.7rem 0.3rem;
+  border-radius: 50%;
+  background: #fff6f4;
+  font-size: min(2.3vw, 22cqh);
+}
+.section:focus-within {
+  --scene-progress: 1 !important;
+}
+@media (min-width: 1100px) and (min-height: 700px) {
+  .section[data-motion-ready="true"] {
+    min-height: 270svh;
+  }
+  .section[data-motion-ready="true"] .stage {
+    position: sticky;
+    top: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100svh;
+    padding-block: clamp(2rem, 4svh, 3rem) 5.5rem;
+    overflow: clip;
+  }
+  .section[data-motion-ready="true"] .board {
+    height: auto;
+    --column-unit: calc((100cqw + var(--mosaic-gap)) / 6);
+    --row-unit: calc((100cqh + var(--mosaic-gap)) / 3);
+  }
+  .section[data-motion-ready="true"] .tile {
+    --tile-progress: clamp(0, calc((var(--scene-progress) - var(--tile-delay)) / 0.7), 1);
+    --tile-remaining: calc(1 - var(--tile-progress));
+  }
+  .section[data-motion-ready="true"] .tile > :first-child {
+    transform: translate(
+        calc(var(--gather-x) * var(--column-unit) * var(--tile-remaining)),
+        calc(var(--gather-y) * var(--row-unit) * var(--tile-remaining))
+      )
+      rotate(calc(var(--tile-tilt) * var(--tile-remaining)))
+      scale(calc(0.58 + 0.42 * var(--tile-progress)));
+  }
+}
+@media (max-width: 1099px) {
+  .header {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .intro {
+    max-width: 34rem;
+  }
+  .board {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(6, minmax(0, 1fr));
+    grid-template-areas: "birthdays birthdays memories" "bridal date memories" "weddings people gender" "weddings community gender" "good community together" "good baby sports";
+    height: clamp(50rem, 105vw, 72rem);
+  }
+  .memories p {
+    font-size: min(7vw, 20cqh, 38cqw);
+  }
+}
+@media (max-width: 599px) {
+  .stage {
+    padding: 3.5rem 1.25rem;
+  }
+  .header {
+    margin-bottom: 2rem;
+  }
+  .eyebrow {
+    font-size: 0.5625rem;
+    letter-spacing: 0.1em;
+  }
+  .section .heading {
+    font-size: clamp(3rem, 12vw, 4rem) !important;
+  }
+  .intro {
+    font-size: 0.95rem;
+  }
+  .board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(9, minmax(0, 1fr));
+    grid-template-areas: "birthdays birthdays" "memories weddings" "memories weddings" "bridal date" "people gender" "community gender" "community together" "good good" "baby sports";
+    height: clamp(70rem, 340vw, 120rem);
+    --mosaic-gap: 0.6rem;
+  }
+  .tile > :first-child {
+    border-radius: 1rem;
+  }
+  .caption {
+    padding: 0.75rem;
+    font-size: 1.25rem;
+    gap: 0.25rem;
+  }
+  .caption svg {
+    width: 13px;
+    height: 13px;
+  }
+  .typeTile {
+    padding: 0.75rem;
+  }
+  .typeTile p {
+    font-size: 2.1rem;
+  }
+  .memories p {
+    font-size: clamp(2.8rem, 11vw, 4.3rem);
+  }
+  .people p {
+    font-size: 1.85rem;
+  }
+  .date p {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.5rem;
+  }
+  .good {
+    padding-inline: 1.25rem;
+    gap: 0.5rem;
+  }
+  .good p {
+    font-size: clamp(2.15rem, 11vw, 2.6rem);
+  }
+  .together p {
+    font-size: clamp(1.4rem, 6.8vw, 1.7rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .image {
+    transition: none;
+  }
+  .artwork:hover .image {
+    scale: none;
+  }
+}

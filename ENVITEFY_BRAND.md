@@ -12,7 +12,7 @@ Effective September 8, 2026; pronunciation updated from the user-supplied record
 
 The existing locked lowercase `envitefy` wordmark and approved `envitefy.com` artwork/domain remain governed by the logo rules in [AGENTS.md](AGENTS.md#envitefy-logo-brand-lock) and the [Video Studio guide](video-studio/STUDIO-GUIDE.md#brand-and-product). This standard does not authorize altering those brand assets.
 
-The user's October 22, 2026 revision is the current global wordmark rule: **v–i and f–y touch at their serif edges without overlapping letter bodies**. Every current app placement, event branding, new email, ad and export uses the canonical `EnvitefyWordmark` component or the assets selected by `src/lib/brand-assets.ts`. Preserve the bundled Josefin Slab font, other letter spacing and approved colors; do not typeset independent approximations. Historical saved or delivered email/ad compositions retain their original assets. Exact source and generation rules are in the AGENTS.md brand lock.
+The user's October 24, 2026 revision is the current global wordmark rule: **v–i and f–y join continuously at their serif edges with no visible hairline seam, while their letter bodies remain clear**. A tiny serif overlap prevents antialiasing gaps. Every current app placement, event branding, new email, ad and export uses the canonical `EnvitefyWordmark` component or the assets selected by `src/lib/brand-assets.ts`. Preserve the bundled Josefin Slab font, other letter spacing and approved colors; do not typeset independent approximations. Historical saved or delivered email/ad compositions retain their original assets. Exact source and generation rules are in the AGENTS.md brand lock.
 
 ## Creation product name
 

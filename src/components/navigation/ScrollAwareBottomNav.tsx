@@ -76,6 +76,7 @@ export default function ScrollAwareBottomNav({
   return (
     <>
       <div
+        data-mobile-bottom-nav
         aria-hidden={!showNav}
         inert={!showNav}
         className={[

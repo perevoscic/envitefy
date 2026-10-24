@@ -1,26 +1,32 @@
 .page {
-  --intro-ink: #30233f;
-  --intro-muted: #70637d;
-  --intro-accent: #7052b4;
-  --intro-line: rgba(112, 82, 180, 0.16);
-  --intro-button: #7052b4;
+  --intro-ink: #442c3b;
+  --intro-muted: #77616b;
+  --intro-accent: #853652;
+  --intro-line: #e5d6d6;
+  --intro-button: #853652;
   --intro-button-ink: #fff;
+  --intro-paper: #fcf8f3;
+  --intro-soft: #f3e1e5;
   width: 100%;
   min-width: 0;
   container-type: inline-size;
   max-width: 1280px;
   margin: 0 auto;
   padding: 48px clamp(22px, 4vw, 64px) 64px;
+  border-radius: 32px;
+  background: var(--intro-paper);
   color: var(--intro-ink);
 }
 
 :global(html.dark) .page {
-  --intro-ink: var(--foreground, #f2eafa);
-  --intro-muted: var(--muted-foreground, #c0b3d0);
-  --intro-accent: var(--primary, #c5a7ff);
-  --intro-line: rgba(197, 167, 255, 0.2);
-  --intro-button: var(--primary, #c5a7ff);
-  --intro-button-ink: var(--primary-foreground, #251b47);
+  --intro-ink: #f6e9ed;
+  --intro-muted: #d1bec9;
+  --intro-accent: #f0b6ce;
+  --intro-line: #594451;
+  --intro-button: #f0b6ce;
+  --intro-button-ink: #261f2b;
+  --intro-paper: #261f2b;
+  --intro-soft: #44303f;
 }
 
 .hero {
@@ -119,9 +125,20 @@
 }
 
 .showcase {
+  position: relative;
+  isolation: isolate;
   grid-area: showcase;
   min-width: 0;
   margin: 0;
+}
+.showcase::before {
+  position: absolute;
+  z-index: -1;
+  inset: 1rem 0 3rem;
+  border-radius: 48% 48% 1rem 1rem;
+  background: var(--intro-soft);
+  content: "";
+  transform: rotate(3deg);
 }
 .demoPlayer {
   position: relative;
@@ -191,7 +208,7 @@
 .features {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 30px 28px;
+  gap: 36px 32px;
   padding-top: 32px;
   border-top: 1px solid var(--intro-line);
 }
@@ -208,14 +225,15 @@
 }
 .feature h2 {
   margin: 0 0 7px;
-  font-size: 14px;
-  font-weight: 650;
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: 19px;
+  font-weight: 400;
   line-height: 1.5;
 }
 .feature p {
   margin: 0;
   color: var(--intro-muted);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
   text-wrap: pretty;
 }
@@ -246,8 +264,8 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "copy"
-      "showcase"
-      "actions";
+      "actions"
+      "showcase";
     gap: 22px;
     padding: 0 0 30px;
   }
@@ -302,8 +320,8 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "copy"
-      "showcase"
-      "actions";
+      "actions"
+      "showcase";
     gap: 22px;
     padding: 0 0 30px;
   }

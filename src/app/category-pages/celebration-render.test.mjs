@@ -1,0 +1,137 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import { createRequire } from "node:module";
+import path from "node:path";
+import test from "node:test";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import ts from "typescript";
+
+const root = process.cwd();
+const require = createRequire(import.meta.url);
+const cache = new Map();
+
+// Render real route components and local previews; account chrome and the async
+// catalog have their own integration suites, so stand-ins expose their contracts.
+function load(file) {
+  const filename = path.resolve(root, file);
+  if (cache.has(filename)) return cache.get(filename).exports;
+  const module = { exports: {} };
+  cache.set(filename, module);
+  const { outputText } = ts.transpileModule(fs.readFileSync(filename, "utf8"), {
+    fileName: filename,
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2022,
+      jsx: ts.JsxEmit.ReactJSX,
+      esModuleInterop: true,
+    },
+  });
+  const localRequire = (name) => {
+    if (name.endsWith(".css"))
+      return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
+    if (name === "next/link")
+      return {
+        __esModule: true,
+        default: ({ children, ...props }) => React.createElement("a", props, children),
+      };
+    if (name === "next/image")
+      return {
+        __esModule: true,
+        default: ({ fill, priority, unoptimized, ...props }) => React.createElement("img", props),
+      };
+    if (name === "next/script")
+      return {
+        __esModule: true,
+        default: ({ children, ...props }) => React.createElement("script", props, children),
+      };
+    if (name === "lucide-react") return new Proxy({}, { get: () => () => null });
+    if (name === "@/components/navigation/SignedOutPageChrome")
+      return {
+        __esModule: true,
+        default: () => React.createElement("nav", { "aria-label": "Account navigation" }),
+      };
+    if (name === "@/components/templates/PublicTemplateGallery")
+      return {
+        __esModule: true,
+        default: ({ category }) =>
+          React.createElement("section", { id: "templates", "data-template-category": category }),
+      };
+    if (name.startsWith("@/") || name.startsWith(".")) {
+      const base = name.startsWith("@/")
+        ? path.join(root, "src", name.slice(2))
+        : path.resolve(path.dirname(filename), name);
+      const resolved = [base, `${base}.tsx`, `${base}.ts`].find(
+        (candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile(),
+      );
+      assert.ok(resolved, `Resolve ${name}`);
+      return load(resolved);
+    }
+    return require(name);
+  };
+  new Function("require", "module", "exports", outputText)(localRequire, module, module.exports);
+  return module.exports;
+}
+
+const { getUseCasePageByPath } = load("src/app/category-pages/category-page-data.ts");
+
+for (const [route, componentFile, createHref, previewAnchor] of [
+  ["weddings", "src/app/weddings/WeddingsLandingView.tsx", "#templates", "studio"],
+  [
+    "birthdays",
+    "src/app/birthdays/BirthdaysLandingView.tsx",
+    "/event/birthdays",
+    "birthday-prompt-studio",
+  ],
+  ["baby-showers", "src/app/baby-showers/BabyShowersLandingView.tsx", "#templates", "registries"],
+  [
+    "bridal-showers",
+    "src/app/bridal-showers/BridalShowersLandingView.tsx",
+    "#templates",
+    "bridal-studio",
+  ],
+  ["anniversaries", "src/app/anniversaries/page.tsx", "#templates", "your-celebration"],
+  [
+    "gender-reveal",
+    "src/app/category-pages/CategoryLandingView.tsx",
+    "/snap?auth=signup",
+    "reveal-start",
+  ],
+  [
+    "signup-forms",
+    "src/app/category-pages/CategoryLandingView.tsx",
+    "/signup-forms?auth=signup",
+    "how-it-works",
+  ],
+]) {
+  test(`${route} keeps a single readable hero, creation destination, gallery and relevant local content`, () => {
+    const Component = load(componentFile).default;
+    const html = renderToStaticMarkup(
+      React.createElement(Component, { page: getUseCasePageByPath(`/${route}`) }),
+    );
+    assert.equal((html.match(/<h1\b/g) || []).length, 1);
+    assert.match(html, /id="landing-hero"/);
+    assert.match(html, /aria-label="Sample guest page"/);
+    assert.match(html, /data-appearance-scope="authored"/);
+    assert.ok(
+      html.includes(`href="${createHref}"`),
+      "Keep the explicit creation or browsing destination",
+    );
+    assert.ok(
+      html.includes(`id="${previewAnchor}"`),
+      "Keep the existing local preview or section anchor",
+    );
+    assert.ok(
+      html.includes(`data-template-category="${route}"`),
+      "Keep this route's template gallery",
+    );
+    assert.doesNotMatch(
+      html,
+      /Loved by Brides|Loved by brides|Married in Tuscany|Principal Event Designer/,
+    );
+    for (const [, src] of html.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)) {
+      assert.ok(src.startsWith("/"), `Use original local artwork: ${src}`);
+      assert.ok(fs.existsSync(path.join(root, "public", src)), `Artwork exists: ${src}`);
+    }
+  });
+}

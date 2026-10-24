@@ -6,11 +6,13 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { type MouseEventHandler, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import AppearanceSelector from "@/components/AppearanceSelector";
 import LoginForm from "@/components/auth/LoginForm";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
-import AppearanceSelector from "@/components/AppearanceSelector";
-import appearanceStyles from "./navigation-appearance.module.css";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
+import appearanceStyles from "./navigation-appearance.module.css";
+import scrollStyles from "./scroll-aware-header.module.css";
+import useScrollAwareHeader from "./useScrollAwareHeader";
 
 export type HeroTopNavLink = {
   label: string;
@@ -153,6 +155,7 @@ export default function HeroTopNav({
   const { status } = useSession();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { headerRef, hidden: headerHidden } = useScrollAwareHeader(mobileMenuOpen);
   const [mobileLoginExpanded, setMobileLoginExpanded] = useState(false);
   const [mobileMenuPortalReady, setMobileMenuPortalReady] = useState(false);
   const [hasScrolledPastHero, setHasScrolledPastHero] = useState(false);
@@ -367,6 +370,16 @@ export default function HeroTopNav({
   }, [mobileMenuOpen]);
 
   useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => {
+      if (desktop.matches) setMobileMenuOpen(false);
+    };
+    closeOnDesktop();
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
+
+  useEffect(() => {
     if (status === "authenticated") {
       setMobileLoginExpanded(false);
     }
@@ -418,18 +431,17 @@ export default function HeroTopNav({
 
   return (
     <header
+      ref={headerRef}
+      data-scroll-hidden={headerHidden ? "true" : "false"}
       data-scrolled-past-hero={hasScrolledPastHero ? "true" : "false"}
       className={cx(
+        scrollStyles.header,
         appearanceStyles.chrome,
+        appearanceStyles.publicHeader,
         "fixed inset-x-0 top-0 z-50 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] sm:px-6 lg:px-8",
       )}
     >
-      <div
-        className={cx(
-          "relative mx-auto w-full",
-          isTransparentOverHero ? "max-w-none" : "max-w-[1760px]",
-        )}
-      >
+      <div className="relative w-full">
         <div
           className={cx(
             mobileLogoOnly
@@ -447,10 +459,8 @@ export default function HeroTopNav({
           <div
             className={cx(
               "flex items-center justify-between gap-4",
-              hasWideNavigation
-                ? "2xl:grid 2xl:grid-cols-[auto_minmax(0,1fr)_auto] 2xl:items-center"
-                : "xl:grid xl:grid-cols-[auto_minmax(0,1fr)_auto] xl:items-center",
-              isTransparentOverHero ? "xl:gap-5 2xl:gap-8" : "xl:gap-5 2xl:gap-6",
+              "lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center",
+              "lg:gap-3 xl:gap-5 2xl:gap-6",
             )}
           >
             <Link
@@ -473,10 +483,11 @@ export default function HeroTopNav({
 
             <nav
               className={cx(
+                appearanceStyles.publicLinks,
                 "hidden min-w-0 flex-nowrap items-center justify-center",
-                hasWideNavigation ? "gap-1 2xl:flex 2xl:gap-2" : "xl:flex",
+                hasWideNavigation ? "gap-1 lg:flex 2xl:gap-2" : "lg:flex",
                 !hasWideNavigation &&
-                  (isTransparentOverHero ? "gap-4 2xl:gap-7" : "gap-3 2xl:gap-5"),
+                  (isTransparentOverHero ? "gap-2 xl:gap-4 2xl:gap-7" : "gap-1 xl:gap-3 2xl:gap-5"),
               )}
               aria-label="Hero navigation"
             >
@@ -509,7 +520,7 @@ export default function HeroTopNav({
                             )
                           : cx(
                               "rounded-full py-2",
-                              hasWideNavigation ? "px-1.5" : "px-2.5 xl:px-3",
+                              hasWideNavigation ? "px-1.5" : "px-1.5 xl:px-3",
                               isActive
                                 ? isDarkGlass
                                   ? "text-white"
@@ -539,11 +550,11 @@ export default function HeroTopNav({
 
             <div
               className={cx(
+                appearanceStyles.publicActions,
                 "hidden shrink-0 items-center gap-3 justify-self-end",
-                hasWideNavigation ? "2xl:flex" : "xl:flex",
+                "lg:flex",
               )}
             >
-              <AppearanceSelector compact />
               {status === "authenticated" ? (
                 <Link
                   href={dashboardHref}
@@ -623,7 +634,7 @@ export default function HeroTopNav({
               className={cx(
                 mobileLogoOnly ? "hidden" : "inline-flex",
                 "nav-chrome-motion h-11 w-11 items-center justify-center shadow-sm",
-                hasWideNavigation ? "2xl:hidden" : "xl:hidden",
+                "lg:hidden",
                 isTransparentOverHero && isTransparentLight
                   ? "rounded-full border border-[#25172d]/10 bg-[#25172d]/8 text-[#25172d]"
                   : isDarkGlass
@@ -663,7 +674,7 @@ export default function HeroTopNav({
                   appearanceStyles.chrome,
                   appearanceStyles.mobileMenu,
                   "!fixed inset-0 z-[1000] h-dvh w-screen touch-pan-y !overflow-y-auto overscroll-y-contain px-4 pb-6 pt-[max(0.9rem,env(safe-area-inset-top))] transition-[transform,opacity] duration-300 ease-out will-change-transform [-webkit-overflow-scrolling:touch]",
-                  hasWideNavigation ? "2xl:hidden" : "xl:hidden",
+                  "lg:hidden",
                   mobileMenuOpen
                     ? "pointer-events-auto translate-x-0 opacity-100"
                     : "pointer-events-none translate-x-full opacity-0",

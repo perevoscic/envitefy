@@ -19,8 +19,15 @@ export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
     id: "guest-account",
     question: "Do guests need an account?",
     answer:
-      "No. Guests can open a shared Envitefy event page in their browser on phones or desktops. They can use available actions like RSVP, maps, calendar saves, registry links, and sign-ups without installing an app.",
+      "No. Guests can open a shared Envitefy event page or sign-up form in their browser on phones or desktops, without creating an account or installing an app. They can use the actions the host enables, such as RSVP, maps, calendar saves, registry links, and sign-ups.",
     keywords: ["guest", "account", "sign", "signin", "login", "install", "app", "browser"],
+  },
+  {
+    id: "create-event",
+    question: "How do I create an Event Page?",
+    answer:
+      "Create an account or sign in, then open Create. Choose an event type and design, or upload an invitation or flyer you already have. Add and review your event details and guest actions, save a draft if you need more time, then Publish and share the guest link when you are ready.",
+    keywords: ["create event", "get started", "start event", "make event page"],
   },
   {
     id: "uploads",
@@ -51,7 +58,7 @@ export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
     id: "live-card",
     question: "How do I create a Live Card?",
     answer:
-      "Sign in and open Live Card from Create. In Design, pick the event type and describe the look you want (you can add a reference image), then select Generate & continue. While the artwork is being made, fill in Event details: title, date and time, location, RSVP and registry. Review the card, then Publish and share the guest link. Guests tap buttons on the card for RSVP, details, location, calendar and registry.",
+      "Sign in and open Live Card from Create. In Your card, enter the event title and describe the look you want; choosing an occasion is optional. Select Generate & continue, then fill in Event details while the artwork is made. Review the card and details, select Publish invitation, and share the saved guest link. Guests use the enabled buttons for RSVP, details, location, calendar and registry.",
     keywords: ["live card", "livecard", "card", "animated", "artwork", "design", "generate", "invitation card"],
   },
   {
@@ -100,6 +107,20 @@ export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
     ],
   },
   {
+    id: "rsvp-fields",
+    question: "What information can an RSVP collect?",
+    answer:
+      "Supported RSVP flows can collect party size, adults, kids, siblings, plus-ones, guest messages, allergies, dietary needs, meal choices, and event-specific answers. The available fields vary by event type and the host's settings.",
+    keywords: ["rsvp fields", "party size", "plus ones", "allergies", "dietary", "meal choices"],
+  },
+  {
+    id: "rsvp-tracking",
+    question: "Can hosts track RSVP responses?",
+    answer:
+      "Yes, for events with RSVP enabled. Host views can organize response counts, yes, maybe, no, pending guests, recent replies, headcounts, and event-specific answers in one place. This chat cannot read your event's responses.",
+    keywords: ["track rsvp", "rsvp counts", "headcounts", "response counts"],
+  },
+  {
     id: "smart-signups",
     question: "Can I create volunteer or supply sign-ups?",
     answer:
@@ -119,6 +140,27 @@ export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
     answer:
       "Yes. Envitefy creates a draft first. Hosts can review names, dates, locations, RSVP settings, registry links, sign-up slots, and guest-facing copy before sharing the link.",
     keywords: ["edit", "draft", "publish", "review", "change", "update", "before", "sharing"],
+  },
+  {
+    id: "sharing",
+    question: "How do I share an event?",
+    answer:
+      "Review your event and Publish when it is ready, then share its guest link. Guests can open that link in a phone or desktop browser and use the actions you enable. If a supported event page has an access code, give guests that code as well.",
+    keywords: ["share event", "guest link", "sharing", "send invitation"],
+  },
+  {
+    id: "live-updates",
+    question: "If I change event details, do guests need a new link?",
+    answer:
+      "No. Save your event changes and the same shared link remains the place for guests to check the latest timing, locations, schedules, instructions, and other live details.",
+    keywords: ["same link", "new link", "update details", "change details"],
+  },
+  {
+    id: "maps-calendar",
+    question: "Can guests get directions and save the date?",
+    answer:
+      "Yes, when the host includes those actions. Guests can open maps or directions and save the event to their calendar from the shared event page.",
+    keywords: ["maps", "directions", "save the date", "calendar"],
   },
   {
     id: "templates",

@@ -1,6 +1,7 @@
 "use client";
 
 import { PRIVACY_PREFERENCES_STORAGE_KEY } from "@/lib/privacy-preferences";
+import { INSTALL_TOAST_DISMISSED_KEY } from "@/lib/pwa/install-toast-dismissal";
 
 const LOCAL_STORAGE_KEYS = new Set([
   "signupItemColors",
@@ -8,12 +9,14 @@ const LOCAL_STORAGE_KEYS = new Set([
   "envitefy:dashboard:last-origin:v1",
   "envitefy:event-actions:calendar-default:v1",
   "envitefy:snap:auto-add:v1",
-  "pwa-install-dismissed",
 ]);
 
 const SESSION_STORAGE_KEYS = new Set(["__snap_sw_reloaded__"]);
 
-const PRESERVED_LOCAL_STORAGE_KEYS = new Set([PRIVACY_PREFERENCES_STORAGE_KEY]);
+const PRESERVED_LOCAL_STORAGE_KEYS = new Set([
+  PRIVACY_PREFERENCES_STORAGE_KEY,
+  INSTALL_TOAST_DISMISSED_KEY,
+]);
 
 const STORAGE_PREFIXES = ["envitefy:", "profile-cache:", "sidebar:", "snapmydate:"];
 

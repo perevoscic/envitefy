@@ -1,0 +1,313 @@
+/* The document is the marketing scroll root, so sticky scenes follow the viewport.
+   Inline dialog scroll locks still take precedence over this route-scoped rule. */
+:global(body):has(.page) {
+  overflow: visible;
+}
+
+.page {
+  --marketing-paper: #fcf8f3;
+  --marketing-surface: #fffdfa;
+  --marketing-ink: #442c3b;
+  --marketing-muted: #77616b;
+  --marketing-accent: #853652;
+  --marketing-soft: #f3e1e5;
+  --marketing-line: #e5d6d6;
+  --marketing-serif: var(--font-playfair), Georgia, serif;
+  --marketing-sans: var(--font-geist-sans), Arial, sans-serif;
+  --marketing-gutter: clamp(1.25rem, 4vw, 4rem);
+  min-width: 0;
+  background: var(--marketing-paper);
+  color: var(--marketing-ink);
+  font-family: var(--marketing-sans);
+  -webkit-font-smoothing: antialiased;
+}
+.page[data-marketing-tone="sports"] {
+  --marketing-accent: #376252;
+  --marketing-soft: #e3ece5;
+  --marketing-line: #d6e0d8;
+}
+.page[data-marketing-tone="product"] {
+  --marketing-accent: #70516f;
+  --marketing-soft: #ece3ee;
+}
+:global(html.dark) .page {
+  --marketing-paper: #261f2b;
+  --marketing-surface: #322735;
+  --marketing-ink: #f6e9ed;
+  --marketing-muted: #d1bec9;
+  --marketing-accent: #f0b6ce;
+  --marketing-soft: #44303f;
+  --marketing-line: #594451;
+}
+:global(html.dark) .page[data-marketing-tone="sports"] {
+  --marketing-accent: #b5d6c4;
+  --marketing-soft: #303e38;
+  --marketing-line: #4c6055;
+}
+.page :where(a, button, summary):focus-visible {
+  outline: 3px solid var(--marketing-accent);
+  outline-offset: 5px;
+}
+.page :where(section[id], div[id]) {
+  scroll-margin-top: 6rem;
+}
+.page :global(.hero-top-nav-shell-light) {
+  border: 1px solid var(--marketing-line);
+  border-radius: 1.25rem;
+  background: var(--marketing-surface);
+  box-shadow: 0 5px 24px #442c3b08;
+  backdrop-filter: none;
+}
+.page :global(.hero-top-nav-shell-light)::before {
+  background: none;
+}
+.page :global(.nav-chrome-glass-header)::after {
+  display: none;
+}
+.page :global(.hero-top-nav-pill-light) {
+  color: var(--marketing-ink);
+  background: transparent;
+  box-shadow: none;
+}
+.page :global(.hero-top-nav-pill-light):hover {
+  background: var(--marketing-soft);
+  color: var(--marketing-accent);
+}
+.page :global(.nav-chrome-pill-primary) {
+  background: var(--marketing-accent);
+  color: var(--marketing-paper);
+  box-shadow: none;
+}
+.page :global(.nav-chrome-pill-secondary) {
+  background: var(--marketing-soft);
+  color: var(--marketing-ink);
+  box-shadow: none;
+}
+:global(html.dark) .page :global(.hero-top-nav-shell-light),
+:global(html.dark) .page :global(.nav-chrome-glass-header) {
+  background: var(--marketing-surface);
+  border-color: var(--marketing-line);
+}
+:global(html.dark) .page :global(.hero-top-nav-pill-light) {
+  color: var(--marketing-ink);
+  background: transparent;
+}
+:global(html.dark) .page :global(.nav-chrome-pill-primary) {
+  background: var(--marketing-accent);
+  color: var(--marketing-paper);
+}
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  align-items: center;
+  gap: clamp(2.5rem, 6vw, 6rem);
+  width: 100%;
+  margin-inline: auto;
+  padding: clamp(8rem, 11vw, 10rem) var(--marketing-gutter) 5rem;
+}
+.heroCopy {
+  min-width: 0;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--marketing-accent);
+  font: 650 0.6875rem / 1.6 var(--marketing-sans);
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+.eyebrow > span {
+  width: 1.75rem;
+  height: 1px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.heroTitle {
+  margin: 1.4rem 0 1.6rem;
+  color: var(--marketing-ink);
+  font-family: var(--marketing-serif);
+  font-size: clamp(3.15rem, 5.7vw, 5.5rem);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+.heroTitle em {
+  color: var(--marketing-accent);
+  font-weight: 400;
+}
+.heroDescription {
+  max-width: 32rem;
+  color: var(--marketing-muted);
+  font-size: 1.05rem;
+  line-height: 1.8;
+  text-wrap: pretty;
+}
+.heroActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.6rem;
+  margin-top: 1.9rem;
+}
+.primaryAction,
+.secondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  min-height: 48px;
+  max-width: 100%;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background-color 180ms,
+    transform 180ms;
+}
+.primaryAction {
+  border-radius: 999px;
+  padding: 0.85rem 1.5rem;
+  background: var(--marketing-accent);
+  color: var(--marketing-paper);
+}
+.primaryAction:hover {
+  transform: translateY(-2px);
+}
+.secondaryAction {
+  padding: 0.6rem 0;
+  color: var(--marketing-ink);
+  text-decoration: underline;
+  text-underline-offset: 6px;
+  text-decoration-color: var(--marketing-line);
+}
+.secondaryAction:hover {
+  text-decoration-color: currentColor;
+}
+.heroFootnote {
+  margin-top: 1.3rem;
+  color: var(--marketing-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.heroVisual {
+  position: relative;
+  min-width: 0;
+  padding: 1.5rem 0 2rem;
+  isolation: isolate;
+}
+.heroVisual::before {
+  content: "";
+  position: absolute;
+  inset: 0 2rem 1rem -1.5rem;
+  z-index: -1;
+  background: var(--marketing-soft);
+  border-radius: 48% 48% 1rem 1rem;
+  transform: rotate(-4deg);
+}
+.heroImage {
+  position: relative;
+  aspect-ratio: 0.96;
+  overflow: hidden;
+  border-radius: 46% 46% 0.75rem 0.75rem;
+  background: var(--marketing-soft);
+}
+.heroImage img {
+  object-fit: cover;
+}
+.heroPreview {
+  position: relative;
+  min-width: 0;
+}
+.heroImage + .heroPreview {
+  max-width: 88%;
+  margin: -4rem auto 0;
+}
+.visualMark {
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 1.5rem;
+}
+.visualMark span {
+  width: 1.4rem;
+  height: 2rem;
+  border-radius: 999px 999px 0 0;
+  background: var(--marketing-accent);
+  opacity: 0.8;
+}
+.visualMark span:nth-child(2) {
+  background: var(--marketing-muted);
+  opacity: 0.2;
+}
+.visualMark span:nth-child(3) {
+  background: var(--marketing-accent);
+  opacity: 0.25;
+}
+@media (max-width: 899px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 7.25rem 1.5rem 3.5rem;
+  }
+  .heroCopy {
+    width: min(100%, 620px);
+    margin-inline: auto;
+  }
+  .heroTitle {
+    font-size: clamp(2.8rem, 8.5vw, 4.7rem);
+  }
+  .heroVisual {
+    width: min(100%, 500px);
+    margin-inline: auto;
+  }
+  .heroImage {
+    aspect-ratio: 1.2;
+  }
+  .heroVisual::before {
+    inset-inline: 0 1.2rem;
+  }
+}
+@media (max-width: 480px) {
+  .hero {
+    padding: 6.5rem 1.25rem 2.75rem;
+    gap: 1.7rem;
+  }
+  .heroTitle {
+    font-size: clamp(2.65rem, 11vw, 3.4rem);
+    margin-block: 1.1rem 1.3rem;
+  }
+  .heroDescription {
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+  .heroActions {
+    gap: 0.55rem 1.1rem;
+    margin-top: 1.5rem;
+  }
+  .primaryAction {
+    padding-inline: 1.2rem;
+  }
+  .eyebrow {
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+  }
+  .heroVisual {
+    padding-top: 0.7rem;
+  }
+  .heroImage {
+    aspect-ratio: 1.1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .primaryAction,
+  .secondaryAction {
+    transition: none;
+  }
+  .primaryAction:hover {
+    transform: none;
+  }
+}

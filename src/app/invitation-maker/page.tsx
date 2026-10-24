@@ -1,7 +1,6 @@
 import {
   ArrowRight,
   CalendarDays,
-  Check,
   Clock3,
   Gift,
   Link2,
@@ -17,6 +16,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
+import MarketingPage from "@/components/marketing/MarketingPage";
+import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 
 const pageUrl = "https://envitefy.com/invitation-maker";
@@ -233,98 +234,67 @@ function JsonLd() {
 
 export default function InvitationMakerPage() {
   return (
-    <>
-      <SignedOutPageChrome brandHref="/" topNavVariant="transparent-dark" />
+    <MarketingPage tone="celebration" className={`${styles.editorial} ${styles.coordinated}`}>
+      <SignedOutPageChrome brandHref="/" topNavVariant="transparent-light" />
       <JsonLd />
-      <main className="min-h-screen bg-[#fbf8f1] text-[#2c2430]">
-        <section className="relative isolate overflow-hidden bg-[#211a25] px-5 pb-20 pt-32 text-white sm:px-8 sm:pb-24 lg:px-12 lg:pb-28 lg:pt-40">
-          <div className="absolute inset-0 opacity-45 [background-image:radial-gradient(circle_at_14%_22%,#694d78_0,transparent_34%),radial-gradient(circle_at_86%_76%,#80622f_0,transparent_30%)]" />
-          <div className="absolute inset-x-0 bottom-0 h-px bg-white/15" />
-          <div className="relative mx-auto grid w-full max-w-7xl items-center gap-14 lg:grid-cols-[minmax(0,1.02fr)_minmax(27rem,0.98fr)] lg:gap-20">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#f0d58f]">
-                Invitation maker + live guest page
-              </p>
-              <h1 className="mt-5 max-w-4xl text-[3.15rem] font-light leading-[0.96] !tracking-[-0.045em] !text-[#fffaf2] sm:text-6xl lg:text-[4.8rem]">
-                Create an online invitation with RSVP in minutes.
-              </h1>
-              <p className="mt-7 max-w-2xl text-lg leading-8 text-[#d9ceda] sm:text-xl">
-                Make the invitation beautiful, then make it useful. Guests get one live place to
-                RSVP, save the date, open directions, find the registry, and check what changed.
-              </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href="/live-cards"
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#f0d58f] px-7 text-sm font-bold text-[#211a25] shadow-[0_12px_32px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:bg-[#fff4cb] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0d58f]"
-                >
-                  Create your invitation
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
-                <Link
-                  href="/showcase"
-                  className="inline-flex h-12 items-center justify-center rounded-full border border-white/25 bg-white/[0.07] px-7 text-sm font-bold text-white transition hover:border-white/45 hover:bg-white/[0.13] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-                >
-                  See live examples
-                </Link>
-              </div>
-              <ul className="mt-8 grid max-w-2xl gap-3 border-t border-white/12 pt-6 text-sm text-[#d9ceda] sm:grid-cols-3">
-                {["No app for guests", "Edit after sharing", "Create or upload"].map((item) => (
-                  <li key={item} className="flex items-center gap-2.5">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#f0d58f] text-[#211a25]">
-                      <Check className="h-3 w-3" strokeWidth={3} aria-hidden="true" />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
+      <main>
+        <section id="hero" className={styles.hero}>
+          <div>
+            <p className={styles.eyebrow}>Invitation maker + live guest page</p>
+            <h1 className={styles.title}>
+              A lovely invite. <em>A clear plan.</em>
+            </h1>
+            <p className={styles.description}>
+              Create an online invitation with RSVP and all the details guests need. A beautiful
+              design, a clear plan, one link to share.
+            </p>
+            <div className={styles.actions}>
+              <Link href="/live-cards" className={styles.primary}>
+                Create your invitation <ArrowRight aria-hidden="true" />
+              </Link>
+              <Link href="/showcase" className={styles.secondary}>
+                See live examples
+              </Link>
             </div>
-
-            <div className="relative mx-auto w-full max-w-[36rem] pb-12 pt-8 sm:pb-16">
-              <div className="absolute inset-x-8 bottom-10 top-0 rounded-[2.5rem] border border-white/10 bg-white/[0.04] sm:inset-x-12" />
-              <div className="relative ml-auto aspect-[4/5] w-[78%] overflow-hidden rounded-[2rem] border border-white/15 bg-[#332b38] shadow-[0_40px_100px_rgba(0,0,0,0.46)]">
-                <Image
-                  src="/images/landing/live-cards/madeline-s-garden-brunch.webp"
-                  alt="Garden brunch invitation created with Envitefy"
-                  fill
-                  priority
-                  sizes="(min-width: 1024px) 34vw, 72vw"
-                  className="object-cover"
-                />
-              </div>
-
-              <div className="absolute left-0 top-0 rounded-2xl bg-[#f0d58f] px-5 py-4 text-[#211a25] shadow-[0_24px_60px_rgba(0,0,0,0.28)]">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#684c1c]">
-                  Saturday
-                </p>
-                <p className="mt-1 text-3xl font-light leading-none">16</p>
-                <p className="mt-1 text-xs font-semibold">August · 11:00 AM</p>
-              </div>
-
-              <div className="absolute bottom-0 left-2 w-[70%] rounded-2xl border border-[#e2d8c8] bg-[#fffaf2] p-4 text-[#2c2430] shadow-[0_28px_70px_rgba(0,0,0,0.32)] sm:left-0 sm:p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#755886]">
-                    Your guest page
-                  </p>
-                  <span className="rounded-full bg-[#dcebdc] px-2.5 py-1 text-[10px] font-bold text-[#285435]">
-                    Live
-                  </span>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold">
-                  {["RSVP", "Calendar", "Directions", "Registry"].map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-lg border border-[#e6ddcf] bg-white px-2 py-2.5 text-center text-[#4e4352]"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <p className={styles.note}>No app for guests. Your event, ready for their phone.</p>
           </div>
+          <figure className={styles.visual}>
+            <div className="relative mx-auto aspect-[4/5] w-[86%] overflow-hidden rounded-t-[46%] rounded-b-2xl shadow-xl">
+              <Image
+                src="/images/landing/live-cards/madeline-s-garden-brunch.webp"
+                alt="Garden brunch invitation created with Envitefy"
+                fill
+                priority
+                sizes="(min-width: 768px) 38vw, 80vw"
+                className="object-cover"
+              />
+            </div>
+            <div
+              data-authored-preview
+              data-appearance-scope="authored"
+              className="relative mx-auto -mt-10 w-[94%] rounded-2xl border border-[#e2d8c8] bg-[#fffaf2] p-5 text-[#2c2430] shadow-lg"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#755886]">
+                Sample guest page
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {["RSVP", "Calendar", "Directions", "Registry"].map((item) => (
+                  <span
+                    className="rounded-lg border border-[#e6ddcf] bg-white px-2 py-3 text-center text-xs font-semibold text-[#4e4352]"
+                    key={item}
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <figcaption className={styles.caption}>
+              Your design up front. The useful details, all together.
+            </figcaption>
+          </figure>
         </section>
 
-        <section className="bg-[#f0d58f] px-5 py-5 text-[#2a202c] sm:px-8 lg:px-12">
+        <section className="bg-[var(--marketing-soft)] px-5 py-5 text-[var(--marketing-ink)] sm:px-8 lg:px-12">
           <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-4 text-sm font-bold md:grid-cols-4">
             {trustItems.map(({ icon: Icon, label }) => (
               <div
@@ -338,18 +308,18 @@ export default function InvitationMakerPage() {
           </div>
         </section>
 
-        <section className="border-b border-[#dfd4c3] px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
+        <section className="border-b border-[var(--marketing-line)] px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-7 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-end">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#7d5e2a]">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--marketing-accent)]">
                   Choose your starting point
                 </p>
                 <h2 className="mt-4 text-4xl font-light leading-[1.04] !tracking-[-0.035em] sm:text-5xl">
                   How do you create an invite online?
                 </h2>
               </div>
-              <p className="max-w-2xl text-lg leading-8 text-[#655b68] lg:justify-self-end">
+              <p className="max-w-2xl text-lg leading-8 text-[var(--marketing-muted)] lg:justify-self-end">
                 Start with a blank canvas or bring the invitation you already designed. Either path
                 ends with a polished, shareable page that is ready for guests.
               </p>
@@ -359,7 +329,7 @@ export default function InvitationMakerPage() {
               <article className="group relative overflow-hidden rounded-[2rem] bg-[#35263e] p-7 text-white shadow-[0_24px_70px_rgba(58,41,64,0.15)] sm:p-10">
                 <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-[#76578a]/35 blur-3xl" />
                 <div className="relative">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f0d58f] text-[#2a202c]">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--marketing-soft)] text-[var(--marketing-ink)]">
                     <PenLine className="h-5 w-5" aria-hidden="true" />
                   </span>
                   <p className="mt-8 text-xs font-bold uppercase tracking-[0.2em] text-[#dbc98f]">
@@ -384,35 +354,38 @@ export default function InvitationMakerPage() {
 
                   <Link
                     href="/live-cards"
-                    className="mt-8 inline-flex items-center gap-2 font-bold text-[#f0d58f] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0d58f]"
+                    className="mt-8 inline-flex items-center gap-2 font-bold text-[#f2c6de] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--marketing-soft)]"
                   >
                     Create with Envitefy <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </div>
               </article>
 
-              <article className="relative overflow-hidden rounded-[2rem] border border-[#d8cbb9] bg-white p-7 shadow-[0_24px_70px_rgba(58,41,64,0.08)] sm:p-10">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eee6f2] text-[#5f4570]">
+              <article className="relative overflow-hidden rounded-[2rem] border border-[#d8cbb9] bg-[var(--marketing-surface)] p-7 shadow-[0_24px_70px_rgba(58,41,64,0.08)] sm:p-10">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--marketing-soft)] text-[var(--marketing-accent)]">
                   <ScanLine className="h-5 w-5" aria-hidden="true" />
                 </span>
-                <p className="mt-8 text-xs font-bold uppercase tracking-[0.2em] text-[#755886]">
+                <p className="mt-8 text-xs font-bold uppercase tracking-[0.2em] text-[var(--marketing-accent)]">
                   Already have an invite?
                 </p>
                 <h3 className="mt-3 text-3xl font-light !tracking-[-0.03em] sm:text-4xl">
                   Upload it. Skip the retyping.
                 </h3>
-                <p className="mt-4 max-w-xl leading-7 text-[#655b68]">
+                <p className="mt-4 max-w-xl leading-7 text-[var(--marketing-muted)]">
                   Use Envitefy Snap to read an image, screenshot, flyer, or PDF. Review the event
                   details, then turn them into an editable guest page.
                 </p>
 
-                <div className="mt-8 flex min-h-28 items-center justify-center rounded-2xl border-2 border-dashed border-[#b9a8c3] bg-[#f8f4f9] p-5 text-center">
+                <div className="mt-8 flex min-h-28 items-center justify-center rounded-2xl border-2 border-dashed border-[var(--marketing-line)] bg-[var(--marketing-surface)] p-5 text-center">
                   <div>
-                    <Upload className="mx-auto h-6 w-6 text-[#6b4d78]" aria-hidden="true" />
-                    <p className="mt-2 text-sm font-bold text-[#493652]">
+                    <Upload
+                      className="mx-auto h-6 w-6 text-[var(--marketing-accent)]"
+                      aria-hidden="true"
+                    />
+                    <p className="mt-2 text-sm font-bold text-[var(--marketing-ink)]">
                       Image, screenshot, or PDF
                     </p>
-                    <p className="mt-1 text-xs text-[#766c79]">
+                    <p className="mt-1 text-xs text-[var(--marketing-muted)]">
                       Review everything before publishing
                     </p>
                   </div>
@@ -420,7 +393,7 @@ export default function InvitationMakerPage() {
 
                 <Link
                   href="/snap"
-                  className="mt-8 inline-flex items-center gap-2 font-bold text-[#51385e] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#51385e]"
+                  className="mt-8 inline-flex items-center gap-2 font-bold text-[var(--marketing-accent)] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--marketing-accent)]"
                 >
                   Upload an existing invite <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
@@ -429,7 +402,7 @@ export default function InvitationMakerPage() {
           </div>
         </section>
 
-        <section className="bg-white px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
+        <section className="bg-[var(--marketing-surface)] px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
           <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[minmax(22rem,0.88fr)_minmax(0,1.12fr)] lg:gap-20">
             <div className="relative mx-auto w-full max-w-[31rem] pb-12 pl-5 sm:pl-10">
               <div className="absolute bottom-0 left-0 right-12 top-12 rounded-[2rem] bg-[#eee4d4]" />
@@ -443,10 +416,10 @@ export default function InvitationMakerPage() {
                 />
               </div>
               <div className="absolute bottom-0 right-0 max-w-[15rem] rounded-2xl bg-[#35263e] p-4 text-white shadow-[0_22px_55px_rgba(35,24,40,0.3)]">
-                <div className="flex items-center gap-2 text-[#f0d58f]">
+                <div className="flex items-center gap-2 text-[#f2c6de]">
                   <Clock3 className="h-4 w-4" aria-hidden="true" />
                   <p className="text-[10px] font-bold uppercase tracking-[0.18em]">
-                    Updated 2 minutes ago
+                    Example update
                   </p>
                 </div>
                 <p className="mt-2 text-sm leading-6 text-white/85">
@@ -456,13 +429,13 @@ export default function InvitationMakerPage() {
             </div>
 
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#7d5e2a]">
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--marketing-accent)]">
                 More than a pretty card
               </p>
               <h2 className="mt-4 max-w-3xl text-4xl font-light leading-[1.04] !tracking-[-0.035em] sm:text-5xl lg:text-6xl">
                 A beautiful invitation up front. A useful guest hub behind it.
               </h2>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-[#655b68]">
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--marketing-muted)]">
                 The design earns attention. The live page answers the questions that usually turn
                 into texts, missed dates, and last-minute confusion.
               </p>
@@ -471,14 +444,19 @@ export default function InvitationMakerPage() {
                 {guestEssentials.map((feature) => {
                   const Icon = feature.icon;
                   return (
-                    <article key={feature.title} className="border-t border-[#dfd5c6] pt-5">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#eee6f2] text-[#5f4570]">
+                    <article
+                      key={feature.title}
+                      className="border-t border-[var(--marketing-line)] pt-5"
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--marketing-soft)] text-[var(--marketing-accent)]">
                         <Icon className="h-4 w-4" aria-hidden="true" />
                       </span>
                       <h3 className="mt-4 text-xl font-semibold !tracking-[-0.02em]">
                         {feature.title}
                       </h3>
-                      <p className="mt-2 text-sm leading-7 text-[#655b68]">{feature.body}</p>
+                      <p className="mt-2 text-sm leading-7 text-[var(--marketing-muted)]">
+                        {feature.body}
+                      </p>
                     </article>
                   );
                 })}
@@ -486,7 +464,7 @@ export default function InvitationMakerPage() {
 
               <Link
                 href="/guides/live-card-invitations"
-                className="mt-9 inline-flex items-center gap-2 font-bold text-[#51385e] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#51385e]"
+                className="mt-9 inline-flex items-center gap-2 font-bold text-[var(--marketing-accent)] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--marketing-accent)]"
               >
                 Read the live invitation guide <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
@@ -499,7 +477,7 @@ export default function InvitationMakerPage() {
           <div className="relative mx-auto max-w-7xl">
             <div className="grid gap-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-end">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#f0d58f]">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#f2c6de]">
                   A simple workflow
                 </p>
                 <h2 className="mt-4 max-w-2xl text-4xl font-light leading-[1.04] !tracking-[-0.035em] !text-white sm:text-5xl">
@@ -518,7 +496,7 @@ export default function InvitationMakerPage() {
                   key={step.number}
                   className="rounded-[1.5rem] border border-white/12 bg-white/[0.06] p-7 backdrop-blur-sm sm:p-8"
                 >
-                  <span className="text-sm font-bold tracking-[0.18em] text-[#f0d58f]">
+                  <span className="text-sm font-bold tracking-[0.18em] text-[#f2c6de]">
                     {step.number}
                   </span>
                   <h3 className="mt-8 text-2xl font-semibold !tracking-[-0.025em] !text-white">
@@ -531,24 +509,24 @@ export default function InvitationMakerPage() {
           </div>
         </section>
 
-        <section className="border-b border-[#dfd4c3] bg-[#f3ede3] px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
+        <section className="border-b border-[var(--marketing-line)] bg-[var(--marketing-soft)] px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
           <div className="mx-auto max-w-7xl">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
               <div className="max-w-3xl">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#7d5e2a]">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--marketing-accent)]">
                   See what is possible
                 </p>
                 <h2 className="mt-4 text-4xl font-light leading-[1.04] !tracking-[-0.035em] sm:text-5xl">
                   Invitations for the events people actually host.
                 </h2>
-                <p className="mt-5 max-w-2xl text-lg leading-8 text-[#655b68]">
+                <p className="mt-5 max-w-2xl text-lg leading-8 text-[var(--marketing-muted)]">
                   Start with a style that feels right, then make the wording, details, and guest
                   actions your own.
                 </p>
               </div>
               <Link
                 href="/showcase"
-                className="inline-flex items-center gap-2 font-bold text-[#51385e] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#51385e]"
+                className="inline-flex items-center gap-2 font-bold text-[var(--marketing-accent)] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--marketing-accent)]"
               >
                 View every example <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
@@ -559,7 +537,7 @@ export default function InvitationMakerPage() {
                 <Link
                   key={example.title}
                   href={example.href}
-                  className="group overflow-hidden rounded-[1.5rem] border border-[#d8c9b4] bg-white shadow-[0_18px_50px_rgba(52,39,31,0.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(52,39,31,0.14)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#51385e]"
+                  className="group overflow-hidden rounded-[1.5rem] border border-[var(--marketing-line)] bg-[var(--marketing-surface)] shadow-[0_18px_50px_rgba(52,39,31,0.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(52,39,31,0.14)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--marketing-accent)]"
                 >
                   <div className="relative aspect-[5/6] overflow-hidden bg-[#ded2bd]">
                     <Image
@@ -572,8 +550,10 @@ export default function InvitationMakerPage() {
                   </div>
                   <div className="p-6">
                     <h3 className="text-2xl font-semibold !tracking-[-0.03em]">{example.title}</h3>
-                    <p className="mt-3 text-sm leading-7 text-[#655b68]">{example.body}</p>
-                    <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#51385e]">
+                    <p className="mt-3 text-sm leading-7 text-[var(--marketing-muted)]">
+                      {example.body}
+                    </p>
+                    <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[var(--marketing-accent)]">
                       Open invitation <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </span>
                   </div>
@@ -581,8 +561,8 @@ export default function InvitationMakerPage() {
               ))}
             </div>
 
-            <div className="mt-12 border-t border-[#d8c9b4] pt-8">
-              <p className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#7d5e2a]">
+            <div className="mt-12 border-t border-[var(--marketing-line)] pt-8">
+              <p className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[var(--marketing-accent)]">
                 Find your event type
               </p>
               <nav className="flex flex-wrap gap-3" aria-label="Invitation types">
@@ -597,7 +577,7 @@ export default function InvitationMakerPage() {
                   <Link
                     key={href}
                     href={href}
-                    className="rounded-full border border-[#bdaa90] bg-white/70 px-4 py-2 text-sm font-bold text-[#51385e] transition hover:border-[#51385e] hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51385e]"
+                    className="rounded-full border border-[var(--marketing-line)] bg-[var(--marketing-surface)] px-4 py-2 text-sm font-bold text-[var(--marketing-accent)] transition hover:border-[var(--marketing-accent)] hover:bg-[var(--marketing-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--marketing-accent)]"
                   >
                     {label}
                   </Link>
@@ -607,74 +587,76 @@ export default function InvitationMakerPage() {
           </div>
         </section>
 
-        <section className="bg-white px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
+        <section className="bg-[var(--marketing-surface)] px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
           <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)] lg:gap-20">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#7d5e2a]">
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--marketing-accent)]">
                 Good to know
               </p>
               <h2 className="mt-4 text-4xl font-light leading-[1.04] !tracking-[-0.035em] sm:text-5xl">
                 Online invitation questions, answered.
               </h2>
-              <p className="mt-5 leading-8 text-[#655b68]">
+              <p className="mt-5 leading-8 text-[var(--marketing-muted)]">
                 Need more detail? Visit the{" "}
                 <Link
                   href="/guides"
-                  className="font-bold text-[#51385e] underline underline-offset-4"
+                  className="font-bold text-[var(--marketing-accent)] underline underline-offset-4"
                 >
                   Envitefy guides
                 </Link>{" "}
                 or learn{" "}
                 <Link
                   href="/how-it-works"
-                  className="font-bold text-[#51385e] underline underline-offset-4"
+                  className="font-bold text-[var(--marketing-accent)] underline underline-offset-4"
                 >
                   how Envitefy works
                 </Link>
                 .
               </p>
             </div>
-            <div className="divide-y divide-[#d8cab6] border-y border-[#d8cab6]">
+            <div className="divide-y divide-[var(--marketing-line)] border-y border-[var(--marketing-line)]">
               {faqs.map((faq) => (
                 <details key={faq.question} className="group py-6">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-lg font-bold text-[#302635] marker:hidden focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#51385e]">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-lg font-bold text-[var(--marketing-ink)] marker:hidden focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--marketing-accent)]">
                     {faq.question}
                     <span
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#eee6f2] text-xl font-light text-[#654873] transition group-open:rotate-45"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--marketing-soft)] text-xl font-light text-[var(--marketing-accent)] transition group-open:rotate-45"
                       aria-hidden="true"
                     >
                       +
                     </span>
                   </summary>
-                  <p className="max-w-3xl pt-4 leading-8 text-[#655b68]">{faq.answer}</p>
+                  <p className="max-w-3xl pt-4 leading-8 text-[var(--marketing-muted)]">
+                    {faq.answer}
+                  </p>
                 </details>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="bg-[#fbf8f1] px-5 py-12 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
+        <section className="bg-[var(--marketing-paper)] px-5 py-12 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
           <div className="relative mx-auto flex max-w-7xl flex-col items-start overflow-hidden rounded-[2rem] bg-[#211a25] px-6 py-14 text-white shadow-[0_28px_80px_rgba(44,31,48,0.16)] sm:px-12 sm:py-16 lg:px-16">
             <div className="absolute -right-20 -top-28 h-80 w-80 rounded-full bg-[#76578a]/40 blur-3xl" />
             <div className="relative max-w-4xl">
-              <Link2 className="h-7 w-7 text-[#f0d58f]" aria-hidden="true" />
+              <Link2 className="h-7 w-7 text-[#f2c6de]" aria-hidden="true" />
               <h2 className="mt-5 text-4xl font-light leading-[1.04] !tracking-[-0.035em] !text-white sm:text-5xl lg:text-6xl">
                 Create the invite. Share one link. Keep every detail current.
               </h2>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-[#d9ceda]">
-                Describe your event to Envitefy Create or upload the invitation you already have. Guests can
-                open either experience in any modern browser—no app required.
+                Describe your event to Envitefy Create or upload the invitation you already have.
+                Guests can open either experience in any modern browser—no app required.
               </p>
               <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
                 <Link
                   href="/live-cards"
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#f0d58f] px-7 text-sm font-bold text-[#211a25] hover:bg-[#fff4cb] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0d58f]"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#f2c6de] px-7 text-sm font-bold text-[#442c3b] hover:bg-[#fff4cb] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--marketing-soft)]"
                 >
                   Create an invitation <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
                 <Link
                   href="/snap"
-                  className="inline-flex h-12 items-center justify-center rounded-full border border-white/25 px-7 text-sm font-bold text-white hover:bg-white/[0.1] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                  className="inline-flex h-12 items-center justify-center rounded-full border border-white/25 px-7 text-sm font-bold text-white hover:bg-[var(--marketing-soft)]/[0.1] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
                 >
                   Upload an invite
                 </Link>
@@ -683,6 +665,6 @@ export default function InvitationMakerPage() {
           </div>
         </section>
       </main>
-    </>
+    </MarketingPage>
   );
 }

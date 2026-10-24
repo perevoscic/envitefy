@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
+import CompanyTopNav from "@/components/company/CompanyTopNav";
+import styles from "@/components/company/supporting-public.module.css";
+import MarketingHero from "@/components/marketing/MarketingHero";
+import MarketingPage from "@/components/marketing/MarketingPage";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
-import UseCases from "../landing/sections/UseCases";
 
 const siteOgImageUrl = getRandomSiteOgImageUrl();
 
@@ -41,31 +44,74 @@ export default function WhoItsForPage() {
     ],
   };
   return (
-    <main className="min-h-screen w-full bg-transparent text-[#2b1b16]">
-      <section className="max-w-5xl mx-auto px-6 pt-10">
-        <h1 className="text-3xl sm:text-4xl font-bold text-center">Who it’s for</h1>
-        <p className="mt-3 text-center text-[#5a5377]">
-          Envitefy helps busy families and gymnastics communities stay coordinated.
-        </p>
-        <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link
-            href="/snap"
-            className="inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-[#7F8CFF] to-[#6d7af5] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#7F8CFF]/30 transition hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6d7af5]"
-          >
-            Snap account
-          </Link>
-          <Link
-            href="/gymnastics"
-            className="inline-flex items-center justify-center gap-2 overflow-hidden rounded-full border border-[#d9ceff] bg-white px-6 py-3 text-sm font-semibold text-[#433b66] transition hover:border-[#c6b8ff]"
-          >
-            Gymnastics account
-          </Link>
-        </div>
-      </section>
-      <UseCases />
-      <Script id="ld-breadcrumb-who" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify(breadcrumbLd)}
-      </Script>
-    </main>
+    <MarketingPage className={styles.content}>
+      <CompanyTopNav />
+      <main>
+        <MarketingHero
+          eyebrow="Who it’s for"
+          title={
+            <>
+              For your people.
+              <br />
+              <em>And all your plans.</em>
+            </>
+          }
+          description="From a family celebration to a team weekend, give everyone a thoughtful place to find the details and stay connected."
+          image="/images/about/hero/envitefy-about-hero-poster.webp"
+          imageAlt="Envitefy event pages for celebrations and community gatherings"
+          primaryHref="/create"
+          primaryLabel="Create your event"
+          secondaryHref="/showcase"
+          secondaryLabel="See examples"
+        />
+        <section className={styles.section} id="how-it-works">
+          <p className={styles.eyebrow}>Who it’s for</p>
+          <h2 className={styles.title}>Find the right page for your next occasion.</h2>
+          <div className={styles.grid}>
+            <article className={styles.card}>
+              <span className={styles.number}>Celebrations</span>
+              <h3>Families and hosts</h3>
+              <p>
+                Create birthdays, weddings, showers and gatherings with a beautiful invitation,
+                guest responses and useful links.
+              </p>
+            </article>
+            <article className={styles.card}>
+              <span className={styles.number}>School & community</span>
+              <h3>Teachers and volunteers</h3>
+              <p>
+                Keep class parties, supplies, potluck items and helper shifts organized with
+                shareable sign-up forms.
+              </p>
+            </article>
+            <article className={styles.card}>
+              <span className={styles.number}>Sports & teams</span>
+              <h3>Coaches and organizers</h3>
+              <p>
+                Turn schedules, meet packets and venue information into a page families can check on
+                the go.
+              </p>
+            </article>
+          </div>
+          <div className={styles.links}>
+            <Link href="/birthdays">
+              Celebrations<span aria-hidden="true">↗</span>
+            </Link>
+            <Link href="/signup-forms">
+              Sign-up forms<span aria-hidden="true">↗</span>
+            </Link>
+            <Link href="/sport-events">
+              Sports and teams<span aria-hidden="true">↗</span>
+            </Link>
+            <Link href="/gymnastics">
+              Gymnastics meet pages<span aria-hidden="true">↗</span>
+            </Link>
+          </div>
+        </section>
+        <Script id="ld-breadcrumb-who" type="application/ld+json" strategy="afterInteractive">
+          {JSON.stringify(breadcrumbLd)}
+        </Script>
+      </main>
+    </MarketingPage>
   );
 }

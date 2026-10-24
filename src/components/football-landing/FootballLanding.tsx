@@ -1,5 +1,4 @@
 "use client";
-
 import { ArrowRight, CalendarDays, Camera, MapPinned, Share2, Upload, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,59 +9,12 @@ import {
   TemplateMasonryCard,
   TemplateMasonryGrid,
 } from "@/components/events/TemplateMasonryGallery";
-import { FOOTBALL_GALLERY_DESIGNS } from "@/components/football-season-templates/footballGallery";
 import FootballThumbnail from "@/components/football-season-templates/FootballThumbnail";
-import LandingHeroMedia from "@/components/landing/LandingHeroMedia";
+import { FOOTBALL_GALLERY_DESIGNS } from "@/components/football-season-templates/footballGallery";
+import MarketingPage from "@/components/marketing/MarketingPage";
+import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
-import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
-const heroImages = [
-  {
-    src: "/images/landing/football/friday-night-team.webp",
-    alt: "A football coach and team on the sideline under Friday night stadium lights",
-    objectPosition: "65% center",
-    headline: "One team. One season.",
-    accent: "One place for every game.",
-    description:
-      "Keep your team on the same page. Bring schedules, travel details and updates together in one link for players and families.",
-  },
-  {
-    src: "/images/landing/football/overhead-field.webp",
-    alt: "An overhead view of a green football field with geometric yard lines in morning light",
-    objectPosition: "60% center",
-    headline: "See the whole season.",
-    accent: "Plan every game.",
-    description:
-      "From the opener to the final whistle, keep every matchup, kickoff time and stadium together in one easy-to-follow schedule.",
-  },
-  {
-    src: "/images/landing/football/daylight-game-action.webp",
-    alt: "A running back in crimson carrying the football through a sunlit autumn game",
-    objectPosition: "70% center",
-    headline: "It’s game day.",
-    accent: "Make every moment count.",
-    description:
-      "Give your crowd the kickoff time, ticket links and away-game directions before they leave. Let the action take it from there.",
-  },
-  {
-    src: "/images/landing/football/locker-room-gear.webp",
-    alt: "A leather football and cream helmet on a wooden locker-room bench in warm window light",
-    objectPosition: "70% center",
-    headline: "Ready before kickoff.",
-    accent: "Every detail in place.",
-    description:
-      "Keep practice plans, team details and the latest updates together. Help everyone arrive prepared for the game ahead.",
-  },
-  {
-    src: "/images/landing/football/sideline-families.webp",
-    alt: "Families cheering for their local football team from the stands",
-    objectPosition: "70% center",
-    headline: "Bring your people.",
-    accent: "We’ll help with the plan.",
-    description:
-      "Make it easier for families to show up and cheer. Share the schedule, parking notes and game-day updates in one familiar place.",
-  },
-];
 const features = [
   {
     icon: CalendarDays,
@@ -116,114 +68,102 @@ const faqs = [
       "Yes. Snap and Upload remain available for every account, whether you organize football, gymnastics or another kind of event.",
   },
 ];
-const primaryCta =
-  "cta-shell min-h-12 rounded-full bg-white px-6 py-3 text-sm font-semibold !text-[#183b2d] shadow-lg transition hover:bg-[#e8f3e5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white";
 
+function SeasonPreview() {
+  return (
+    <div className={styles.sample} data-authored-preview data-appearance-scope="authored">
+      <div className="relative -mx-2 -mt-2 mb-5 aspect-[16/7] overflow-hidden rounded-t-[5rem] rounded-b-xl">
+        <Image
+          src="/images/landing/football/friday-night-team.webp"
+          alt="A football team on the sideline under stadium lights"
+          fill
+          priority
+          sizes="(max-width: 767px) 85vw, 40vw"
+          className="object-cover"
+        />
+      </div>
+      <p className={styles.sampleLabel}>Sample season page</p>
+      <h2>Friday nights, together.</h2>
+      <p className={styles.sampleMeta}>Hawthorne Football · Your season at a glance</p>
+      <div className={styles.sampleRows}>
+        {[
+          ["SEP 05 · 7:30 PM", "vs Central High"],
+          ["SEP 12 · 7:00 PM", "at Northside"],
+          ["SEP 19 · 7:30 PM", "vs West Valley"],
+        ].map(([time, team]) => (
+          <div className={styles.sampleRow} key={time}>
+            <span>{time}</span>
+            <strong>{team}</strong>
+          </div>
+        ))}
+      </div>
+      <p className={styles.sampleFooter}>
+        Schedule · Venues · Team notes
+        <br />
+        One familiar link for players and families.
+      </p>
+    </div>
+  );
+}
 export default function FootballLanding() {
   const { status } = useSession();
   const [destination, setDestination] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   return (
-    <main className="min-h-screen overflow-x-clip bg-[#f5f8f1] text-[#203b30]">
-      <SignedOutPageChrome topNavVariant="transparent-dark" />
-      <section id="hero" className="relative isolate flex min-h-[100svh] items-end overflow-hidden">
-        <LandingHeroMedia images={heroImages} carousel>
-          {(activeIndex) => (
-            <div className="relative z-[1] mx-auto w-full max-w-7xl px-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-44 sm:px-8 sm:pt-36 md:pb-20 lg:px-10">
-              <div className="max-w-3xl text-white drop-shadow-[0_3px_18px_rgba(0,0,0,0.75)]">
-                <p className="mb-7 inline-flex rounded-full border border-white/30 bg-black/25 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] backdrop-blur-md">
-                  Football pages for teams & families
-                </p>
-                <h1 className="grid text-balance text-5xl font-light leading-[0.98] tracking-tight !text-white sm:text-6xl lg:text-[5.5rem]">
-                  {heroImages.map((slide, index) => (
-                    <span
-                      key={slide.src}
-                      data-hero-headline={index + 1}
-                      aria-hidden={index !== activeIndex}
-                      className={`col-start-1 row-start-1 transition-opacity duration-1000 motion-reduce:transition-none ${index === activeIndex ? "opacity-100" : "pointer-events-none select-none opacity-0"}`}
-                    >
-                      {slide.headline}
-                      <span className="mt-3 block font-serif text-[0.8em] italic">
-                        {slide.accent}
-                      </span>
-                    </span>
-                  ))}
-                </h1>
-                <p className="mt-7 grid max-w-2xl text-lg leading-relaxed text-white sm:text-xl">
-                  {heroImages.map((slide, index) => (
-                    <span
-                      key={slide.src}
-                      data-hero-description={index + 1}
-                      aria-hidden={index !== activeIndex}
-                      className={`col-start-1 row-start-1 transition-opacity duration-1000 motion-reduce:transition-none ${index === activeIndex ? "opacity-100" : "pointer-events-none select-none opacity-0"}`}
-                    >
-                      {slide.description}
-                    </span>
-                  ))}
-                </p>
-                <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                  <Link href="#templates" className={primaryCta}>
-                    <AnimatedButtonLabel label="Start your football page" icon={ArrowRight} />
-                  </Link>
-                  <Link
-                    href="#how-it-works"
-                    className="cta-shell min-h-12 rounded-full border border-white/40 bg-black/30 px-6 py-3 text-sm font-semibold !text-white backdrop-blur-md hover:bg-black/50"
-                  >
-                    See how it works
-                  </Link>
-                </div>
-                <p className="mt-5 text-sm text-white">
-                  Football first. Snap and Upload always included.
-                </p>
-              </div>
+    <MarketingPage tone="sports" className={styles.editorial}>
+      <SignedOutPageChrome topNavVariant="transparent-light" />
+      <main>
+        <section id="hero" className={styles.hero}>
+          <div>
+            <p className={styles.eyebrow}>Football pages for teams & families</p>
+            <h1 className={styles.title}>
+              One team. <em>A whole season together.</em>
+            </h1>
+            <p className={styles.description}>
+              Every matchup, away-game direction and team note in one link. Give players and
+              families a familiar place for the latest plan.
+            </p>
+            <div className={styles.actions}>
+              <a href="#templates" className={styles.primary}>
+                Start your football page <ArrowRight aria-hidden="true" />
+              </a>
+              <a href="#how-it-works" className={styles.secondary}>
+                See how it works
+              </a>
             </div>
-          )}
-        </LandingHeroMedia>
-      </section>
-
-      <section id="features" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#53734e]">
-          Built around your team
-        </p>
-        <h2 className="mt-4 max-w-3xl font-serif text-4xl leading-tight sm:text-5xl">
-          From the first kickoff to the final whistle.
-        </h2>
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
-          {features.map(({ icon: Icon, title, copy }) => (
-            <article
-              key={title}
-              className="rounded-3xl border border-[#dce5d6] bg-white p-7 shadow-sm"
-            >
-              <Icon className="h-7 w-7 text-[#466740]" aria-hidden="true" />
-              <h3 className="mt-6 text-xl font-semibold">{title}</h3>
-              <p className="mt-3 leading-7 text-[#506256]">{copy}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section
-        id="templates"
-        aria-label="Featured football templates"
-        className="scroll-mt-24 bg-[#fbf8f5] px-5 py-16 sm:px-8 lg:px-10"
-      >
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-9 flex flex-wrap items-end justify-between gap-5">
+            <p className={styles.note}>For a big game, a full season, and everyone cheering.</p>
+          </div>
+          <figure className={styles.visual}>
+            <SeasonPreview />
+            <figcaption className={styles.caption}>
+              Illustrative schedule · Make the season your own.
+            </figcaption>
+          </figure>
+        </section>
+        <section id="features" className={styles.section}>
+          <p className={styles.eyebrow}>Built around your team</p>
+          <h2>From the first kickoff to the final whistle.</h2>
+          <div className={styles.grid}>
+            {features.map(({ icon: Icon, title, copy }) => (
+              <article key={title} className={styles.item}>
+                <Icon aria-hidden="true" />
+                <h3>{title}</h3>
+                <p>{copy}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section id="templates" aria-label="Featured football templates" className={styles.section}>
+          <p className={styles.eyebrow}>Football designs</p>
+          <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#53734e]">
-                Football designs
-              </p>
-              <h2 className="mt-3 font-serif text-4xl sm:text-5xl">Make it your team’s.</h2>
-              <p className="mt-4 text-sm text-[#506256]">
+              <h2>Make it your team’s.</h2>
+              <p className={styles.intro}>
                 Choose a design, then add your schedule and team details.
               </p>
             </div>
-            <Link
-              href="/football/templates"
-              className="inline-flex min-h-12 items-center gap-2 rounded-full border border-[#dce5d6] bg-white px-6 py-3 text-sm font-semibold hover:bg-[#edf4e8]"
-            >
-              Browse all {FOOTBALL_GALLERY_DESIGNS.length} designs{" "}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            <Link href="/football/templates" className={styles.secondary}>
+              Browse all {FOOTBALL_GALLERY_DESIGNS.length} designs <ArrowRight aria-hidden="true" />
             </Link>
           </div>
           <TemplateMasonryGrid>
@@ -244,93 +184,73 @@ export default function FootballLanding() {
               </TemplateMasonryCard>
             ))}
           </TemplateMasonryGrid>
-        </div>
-      </section>
-
-      <section
-        id="how-it-works"
-        className="scroll-mt-24 bg-[#183b2d] px-5 py-20 text-white sm:px-8 lg:px-10"
-      >
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem]">
-            <Image
-              src="/images/landing/sports/sports-editorial-football.webp"
-              alt="Football players on the field under stadium lights"
-              fill
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#c7dec0]">
-              How it works
-            </p>
-            <h2 className="mt-4 font-serif text-4xl leading-tight !text-white sm:text-5xl">
-              Your next season starts here.
-            </h2>
-            <ol className="mt-9 space-y-7">
-              {steps.map((step, index) => (
-                <li key={step.title} className="flex gap-5">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/30 font-semibold">
-                    {index + 1}
-                  </span>
-                  <div>
-                    <h3 className="text-lg font-semibold !text-white">{step.title}</h3>
-                    <p className="mt-2 leading-7 text-[#dfebda]">{step.copy}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-10">
-        <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr]">
-          <div>
-            <div className="flex gap-4 text-[#53734e]">
-              <Camera aria-hidden="true" />
-              <Upload aria-hidden="true" />
-              <Share2 aria-hidden="true" />
+        </section>
+        <section id="how-it-works" className={styles.section}>
+          <p className={styles.eyebrow}>A clear way to get started</p>
+          <h2>Your next season starts here.</h2>
+          <ol className={styles.grid}>
+            {steps.map((step, index) => (
+              <li className={styles.item} key={step.title}>
+                <span className={styles.number}>0{index + 1}</span>
+                <h3>{step.title}</h3>
+                <p>{step.copy}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+        <section className={styles.section}>
+          <div className={styles.split}>
+            <div className="relative aspect-[4/3] overflow-hidden rounded-t-[42%] rounded-b-2xl">
+              <Image
+                src="/images/landing/football/sideline-families.webp"
+                alt="Families cheering for their local football team"
+                fill
+                sizes="(max-width: 767px) 90vw, 45vw"
+                className="object-cover"
+              />
             </div>
-            <h2 className="mt-6 font-serif text-4xl">
-              Football first.
-              <br />
-              Room for the rest of life.
-            </h2>
-            <p className="mt-5 max-w-md leading-7 text-[#506256]">
-              Start with the tools your team needs. Snap invitations, upload schedules and create
-              sign-up forms from the same account. Add other event categories in Settings whenever
-              you need them.
-            </p>
-            <Link
-              href="/snap"
-              className="mt-6 inline-flex min-h-12 items-center gap-2 font-semibold underline underline-offset-4"
-            >
-              Explore Snap <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
+            <div>
+              <div className="mb-6 flex gap-4" aria-hidden="true">
+                <Camera />
+                <Upload />
+                <Share2 />
+              </div>
+              <p className={styles.eyebrow}>Football first</p>
+              <h2>Room for the rest of life.</h2>
+              <p className={styles.intro}>
+                Start with the tools your team needs. Snap invitations, upload schedules and create
+                sign-up forms from the same account. Add other event categories in Settings whenever
+                you need them.
+              </p>
+              <div className={styles.actions}>
+                <Link href="/snap" className={styles.secondary}>
+                  Explore Snap <ArrowRight aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
           </div>
-          <div>
-            <h2 className="mb-5 text-2xl font-semibold">A few things to know</h2>
+        </section>
+        <section id="faq" className={styles.section}>
+          <p className={styles.eyebrow}>Before the season</p>
+          <h2>A few things to know.</h2>
+          <div className={styles.faq}>
             {faqs.map((faq) => (
-              <details key={faq.question} className="border-b border-[#d3dfcf] py-1">
-                <summary className="cursor-pointer py-5 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#466740]">
-                  {faq.question}
-                </summary>
-                <p className="pb-5 leading-7 text-[#506256]">{faq.answer}</p>
+              <details key={faq.question}>
+                <summary>{faq.question}</summary>
+                <p>{faq.answer}</p>
               </details>
             ))}
           </div>
-        </div>
-      </section>
-      <section className="bg-[#e4eddc] px-5 py-16 pb-[calc(7rem+env(safe-area-inset-bottom))] text-center md:pb-16">
-        <h2 className="mx-auto max-w-3xl font-serif text-4xl sm:text-5xl">
-          Give your team a home for the season.
-        </h2>
-        <Link href="/football/templates" className={`${primaryCta} mt-8 inline-flex`}>
-          <AnimatedButtonLabel label="Choose your football design" icon={ArrowRight} />
-        </Link>
-      </section>
+        </section>
+        <section className={styles.closing}>
+          <h2 className={styles.sectionTitle}>Give your team a home for the season.</h2>
+          <div className={styles.actions}>
+            <Link href="/football/templates" className={styles.primary}>
+              Choose your football design <ArrowRight aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+      </main>
       <AuthModal
         open={Boolean(destination)}
         mode={authMode}
@@ -342,6 +262,6 @@ export default function FootballLanding() {
           authMode === "signup" ? "Create your account to customize your Football page." : undefined
         }
       />
-    </main>
+    </MarketingPage>
   );
 }

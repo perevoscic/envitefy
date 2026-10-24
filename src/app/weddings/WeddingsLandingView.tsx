@@ -1,23 +1,14 @@
-import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
-import publicStyles from "@/styles/public-appearance.module.css";
-import {
-  ArrowRight,
-  Calendar,
-  Check,
-  Crown,
-  Gift,
-  ListChecks,
-  MapPin,
-  Star,
-  UtensilsCrossed,
-  Wine,
-} from "lucide-react";
+import { ArrowRight, Gift, ListChecks, UtensilsCrossed } from "lucide-react";
 import Link from "next/link";
 import Script from "next/script";
 import type { CSSProperties } from "react";
-import LandingHeroMedia from "@/components/landing/LandingHeroMedia";
+import MarketingHero from "@/components/marketing/MarketingHero";
+import MarketingPage from "@/components/marketing/MarketingPage";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
-import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import publicStyles from "@/styles/public-appearance.module.css";
+import editorialStyles from "../category-pages/CelebrationLanding.module.css";
+import CelebrationPreview from "../category-pages/CelebrationPreview";
 import type { UseCasePage } from "../category-pages/category-page-data";
 import WeddingStudioPreview from "./WeddingStudioPreview";
 
@@ -34,7 +25,7 @@ const collections: Array<{
 }> = [
   {
     id: "gold",
-    badge: "Most Popular",
+    badge: "A classic palette",
     title: "Versailles Grand Gold",
     body: "Heavy foil borders, classical European serif typography, and royal crest monograms for formal hotel ballrooms and historic estates.",
     couple: "Eleanor & Julian",
@@ -108,7 +99,10 @@ function SuiteStationeryPreview({
     .join("");
 
   return (
-    <div data-appearance-scope="authored" className={`relative h-56 overflow-hidden rounded-[1.75rem] ${shell.stage}`}>
+    <div
+      data-appearance-scope="authored"
+      className={`relative h-56 overflow-hidden rounded-[1.75rem] ${shell.stage}`}
+    >
       <div
         className="absolute inset-0 opacity-[0.18] [background-image:radial-gradient(#ab8a5f_1px,transparent_1px)] [background-size:16px_16px]"
         aria-hidden="true"
@@ -138,7 +132,9 @@ function SuiteStationeryPreview({
         <p className="mt-1.5 font-wedding-serif text-lg leading-none tracking-wide">{couple}</p>
         <div className={`my-3 h-px w-14 ${shell.rule} border-t`} />
         <p className={`font-wedding-script text-xl leading-none ${shell.script}`}>{script}</p>
-        <p className={`mt-2 text-[9px] uppercase tracking-[0.22em] ${shell.muted}`}>Invitation Suite</p>
+        <p className={`mt-2 text-[9px] uppercase tracking-[0.22em] ${shell.muted}`}>
+          Invitation Suite
+        </p>
       </div>
     </div>
   );
@@ -153,7 +149,7 @@ const concierge = [
   {
     icon: UtensilsCrossed,
     title: "Meal & Dietary Tracking",
-    body: "Automatically compile plated entrée selections, severe allergies, and table seating assignments with precise caterer reports.",
+    body: "Keep meal preferences and dietary notes alongside your guest replies so the important details are easy to find.",
   },
   {
     icon: Gift,
@@ -169,7 +165,7 @@ const timeline = [
   },
   {
     title: "Import Guest List",
-    body: "Upload your VIP guest list via CSV or send bespoke links directly through WhatsApp & SMS.",
+    body: "Share your wedding page with guests by text, email, or the messaging app you already use.",
   },
   {
     title: "Track RSVPs Live",
@@ -180,17 +176,17 @@ const timeline = [
 const reviews = [
   {
     quote:
-      "Envitefy made our Tuscany destination wedding feel like royalty from the very first text invitation. Our guests were blown away by the multi-event itinerary and seamless RSVP flow.",
-    initials: "E",
-    name: "Eleanor & Julian",
-    meta: "Married in Tuscany, 2026",
+      "Keep ceremony, reception, and wedding-weekend information together so guests can find the right detail from the same link.",
+    initials: "01",
+    name: "One place for the weekend",
+    meta: "A planning note",
   },
   {
     quote:
-      "As a luxury wedding planner, I recommend Envitefy to all my high-end clientele. The elegance of the typography and the precision of the meal tracking saves hours of stress.",
-    initials: "CM",
-    name: "Charlotte Montgomery",
-    meta: "Principal Event Designer, NYC",
+      "Start with a private draft. Review names, times, locations, and guest instructions before you publish and share your invitation.",
+    initials: "02",
+    name: "Make room for the final details",
+    meta: "Before you share",
   },
 ] as const;
 
@@ -235,121 +231,41 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
   };
 
   return (
-    <div
-      className={`${publicStyles.page} weddings-landing min-h-screen bg-[#fbf9f5] text-slate-800 antialiased selection:bg-[#e5d7c3] selection:text-[#523c2a]`}
-      style={
-        {
-          "--font-wedding-serif": "'Cormorant Garamond', Georgia, serif",
-          "--font-wedding-script": "'Great Vibes', cursive",
-          "--font-wedding-sans": "'Montserrat', 'Helvetica Neue', sans-serif",
-          fontFamily: "var(--font-wedding-sans)",
-        } as CSSProperties
-      }
-    >
-      <SignedOutPageChrome
-        activeBottomNavLabel="Menu"
-        brandHref="/"
-        topNavVariant="transparent-dark"
-      />
+    <MarketingPage className={`${publicStyles.page} ${editorialStyles.editorial} weddings-landing`}>
+      <SignedOutPageChrome activeBottomNavLabel="Menu" brandHref="/" />
 
-      <main>
-        <section className="relative isolate flex min-h-[100svh] items-end overflow-hidden">
-          <LandingHeroMedia images={landingHeroGalleries.weddings} />
-          <div className="relative z-[1] mx-auto grid w-full max-w-7xl items-end gap-12 px-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-32 sm:px-8 md:pb-16 lg:grid-cols-12 lg:px-10">
-            <div className="space-y-7 text-center lg:col-span-7 lg:text-left">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-[#e5d7c3]/70 bg-white/90 px-5 py-2 text-xs font-medium uppercase tracking-widest text-[#523c2a] shadow-sm backdrop-blur-sm">
-                <Crown className="h-3.5 w-3.5 text-[#94724c]" aria-hidden="true" />
-                The Gold Standard in Digital Wedding Stationery
-              </div>
-
-              <h1 className="font-wedding-serif text-4xl font-light leading-[1.08] tracking-wide !text-white drop-shadow-[0_4px_22px_rgba(0,0,0,0.82)] sm:text-6xl lg:text-7xl">
-                Haute Couture Digital Invitations for Your{" "}
-                <span className="mt-1 block bg-gradient-to-br from-[#d4bea0] via-[#ab8a5f] to-[#e5d7c3] bg-clip-text font-wedding-script text-5xl font-normal text-transparent sm:mt-0 sm:inline sm:text-7xl lg:text-8xl">
-                  Forever After
-                </span>
-              </h1>
-
-              <p className="mx-auto max-w-xl text-base font-light leading-relaxed text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-lg lg:mx-0">
-                An exquisite digital stationery and guest planning experience. From save-the-dates
-                to multi-day wedding weekend itineraries with live RSVP tracking, custom meal
-                selections, and seating charts.
-              </p>
-
-              <div className="flex flex-col items-center justify-center gap-4 pt-1 sm:flex-row lg:justify-start">
-                <Link
-                  href={primaryHref}
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-white px-9 py-4 text-xs font-medium uppercase tracking-widest text-slate-900 shadow-xl transition hover:-translate-y-0.5 sm:w-auto"
-                >Browse templates</Link>
-                <a
-                  href="#collections"
-                  className="inline-flex w-full items-center justify-center rounded-full border border-white/35 bg-white/10 px-9 py-4 text-xs font-medium uppercase tracking-widest text-white backdrop-blur-md transition hover:bg-white/18 sm:w-auto"
-                >
-                  View Collections
-                </a>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center gap-8 pt-2 text-xs font-light tracking-wider text-white drop-shadow-[0_2px_9px_rgba(0,0,0,0.9)] lg:justify-start">
-                <div className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-[#d4bea0]" aria-hidden="true" />
-                  Instant WhatsApp Delivery
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-[#d4bea0]" aria-hidden="true" />
-                  Real-Time Analytics Dashboard
-                </div>
-              </div>
-            </div>
-
-            <div className="hidden justify-center md:flex lg:col-span-5 lg:justify-end">
-              <div className="relative w-full max-w-md animate-[wedding-float_6s_ease-in-out_infinite]">
-                <div
-                  className="absolute -inset-3 animate-pulse rounded-[3rem] bg-gradient-to-tr from-[#d4bea0]/55 to-[#f2ece1]/40 blur-2xl"
-                  aria-hidden="true"
-                />
-                <div className="relative space-y-6 rounded-[2.5rem] border border-[rgba(171,138,95,0.35)] bg-white/95 p-8 text-center shadow-[0_30px_60px_-15px_rgba(121,91,61,0.2)] backdrop-blur-md sm:p-10">
-                  <div
-                    className="pointer-events-none absolute inset-[6px] rounded-[2.2rem] border border-[rgba(171,138,95,0.2)]"
-                    aria-hidden="true"
-                  />
-                  <div className="relative inline-block rounded-full border border-[#e5d7c3] bg-[#faf7f2] p-4 text-[#795b3d] shadow-sm">
-                    <Wine className="h-6 w-6" aria-hidden="true" />
-                  </div>
-                  <div className="relative space-y-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#94724c]">
-                      The Wedding Celebration of
-                    </span>
-                    <h2 className="font-wedding-serif text-3xl font-normal tracking-wide text-slate-900 sm:text-4xl">
-                      Eleanor & Julian
-                    </h2>
-                    <p className="font-wedding-script text-2xl text-[#795b3d]">
-                      Together with their families
-                    </p>
-                  </div>
-                  <div className="relative space-y-2.5 border-y border-[#f2ece1] py-5 text-xs font-light tracking-wider text-slate-600">
-                    <div className="flex items-center justify-center gap-2.5">
-                      <Calendar className="h-3.5 w-3.5 text-[#94724c]" aria-hidden="true" />
-                      <span>Saturday, September Twelfth, 2027</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-2.5">
-                      <MapPin className="h-3.5 w-3.5 text-[#94724c]" aria-hidden="true" />
-                      <span>Villa Cetinale • Tuscany, Italy</span>
-                    </div>
-                  </div>
-                  <div className="relative flex items-center justify-between rounded-2xl border border-[#f2ece1] bg-[#fbf9f5] p-3.5 text-[11px] tracking-wider text-slate-600">
-                    <span className="font-medium">Black Tie Attire Requested</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[#795b3d]">
-                      RSVP Open
-                    </span>
-                  </div>
-                  <Link
-                    href={primaryHref}
-                    className="relative block w-full rounded-xl bg-[#795b3d] py-4 text-xs font-medium uppercase tracking-widest text-white shadow-md transition hover:bg-[#634932]"
-                  >Browse templates</Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+      <main
+        style={
+          {
+            "--font-wedding-serif": "'Cormorant Garamond', Georgia, serif",
+            "--font-wedding-script": "'Great Vibes', cursive",
+            "--font-wedding-sans": "var(--font-sans), sans-serif",
+          } as CSSProperties
+        }
+      >
+        <MarketingHero
+          eyebrow="Wedding invitations & guest pages"
+          title={
+            <>
+              The beginning of
+              <br />
+              <em>your forever.</em>
+            </>
+          }
+          description="A beautiful invitation, every wedding detail, and your guest replies. Bring it all together in one thoughtful link."
+          image="/templates/weddings/generated-heroes/blush-linen-romance-hero.webp"
+          imageAlt="Original blush floral wedding invitation artwork"
+          primaryHref={primaryHref}
+          primaryLabel="Browse wedding designs"
+          secondaryHref="#collections"
+          secondaryLabel="Explore the collections"
+        >
+          <CelebrationPreview
+            title="Eleanor & Julian"
+            meta="Together with their families · September 12"
+            rows={[{ label: "The celebration", value: "Garden ceremony & dinner" }]}
+          />
+        </MarketingHero>
         <PublicTemplateGallery category="weddings" featured />
 
         <section id="collections" className="border-t border-[#f2ece1] bg-white py-24">
@@ -360,8 +276,8 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                 Uncompromising Wedding Aesthetics
               </h2>
               <p className="text-sm font-light leading-relaxed text-slate-600 sm:text-base">
-                Choose from editorial design palettes created by world-class wedding stylists and
-                typographers.
+                Choose an editorial palette that feels like you, then make the names, details, and
+                wording your own.
               </p>
             </div>
 
@@ -405,7 +321,9 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                     <Link
                       href={primaryHref}
                       className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#795b3d] transition group-hover:gap-3"
-                    >Browse templates</Link>
+                    >
+                      Browse templates
+                    </Link>
                   </div>
                 </article>
               ))}
@@ -460,9 +378,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#e5d7c3] bg-white text-[#795b3d] shadow-sm">
                       <Icon className="h-5 w-5" aria-hidden="true" />
                     </div>
-                    <h3 className="font-wedding-serif text-2xl text-slate-900">
-                      {item.title}
-                    </h3>
+                    <h3 className="font-wedding-serif text-2xl text-slate-900">{item.title}</h3>
                     <p className="text-xs font-light leading-relaxed text-slate-600 sm:text-sm">
                       {item.body}
                     </p>
@@ -478,7 +394,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
             <div className="mx-auto mb-16 max-w-3xl space-y-4 text-center">
               <SectionEyebrow>Seamless Process</SectionEyebrow>
               <h2 className="font-wedding-serif text-3xl font-light tracking-wide text-slate-900 sm:text-5xl">
-                From Design to Delivery in Minutes
+                From a first idea to a guest-ready link.
               </h2>
             </div>
 
@@ -504,9 +420,9 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
         <section id="reviews" className="border-t border-[#f2ece1] bg-white py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto mb-16 max-w-3xl space-y-4 text-center">
-              <SectionEyebrow>Testimonials</SectionEyebrow>
+              <SectionEyebrow>Thoughtful planning</SectionEyebrow>
               <h2 className="font-wedding-serif text-3xl font-light tracking-wide text-slate-900 sm:text-5xl">
-                Loved by Brides & Luxury Planners
+                Little details. A calmer celebration.
               </h2>
             </div>
 
@@ -516,27 +432,18 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                   key={review.name}
                   className="space-y-6 rounded-[2.5rem] border border-[#e5d7c3] bg-[#fbf9f5]/50 p-10"
                 >
-                  <div className="flex gap-1 text-sm text-[#94724c]">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <Star
-                        key={`${review.name}-star-${index}`}
-                        className="h-4 w-4 fill-current"
-                        aria-hidden="true"
-                      />
-                    ))}
-                  </div>
                   <p className="font-wedding-serif text-xl leading-relaxed text-slate-800 italic">
-                    &ldquo;{review.quote}&rdquo;
+                    {review.quote}
                   </p>
                   <div className="flex items-center gap-3 pt-2">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#e5d7c3] font-wedding-serif font-bold text-[#523c2a]">
                       {review.initials}
                     </div>
                     <div>
-                      <h4 className="font-wedding-serif text-lg text-slate-900">
-                        {review.name}
-                      </h4>
-                      <p className="text-xs uppercase tracking-widest text-slate-500">{review.meta}</p>
+                      <h4 className="font-wedding-serif text-lg text-slate-900">{review.name}</h4>
+                      <p className="text-xs uppercase tracking-widest text-slate-500">
+                        {review.meta}
+                      </p>
                     </div>
                   </div>
                 </article>
@@ -557,13 +464,16 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                   Begin Your Wedding Stationery Journey
                 </h3>
                 <p className="text-xs font-light tracking-wider text-[#f2ece1] sm:text-sm">
-                  Create your bespoke digital wedding suite in under 3 minutes.
+                  Start with a design you love, personalize the details, and share when you are
+                  ready.
                 </p>
                 <div className="pt-4">
                   <Link
                     href={primaryHref}
                     className="inline-block rounded-full bg-white px-10 py-4 text-xs font-semibold uppercase tracking-widest text-[#523c2a] shadow-xl transition hover:bg-[#fbf9f5]"
-                  >Browse templates</Link>
+                  >
+                    Browse templates
+                  </Link>
                 </div>
               </div>
             </div>
@@ -590,6 +500,6 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
       <Script id="ld-use-case-faq-weddings" type="application/ld+json">
         {JSON.stringify(faqLd)}
       </Script>
-    </div>
+    </MarketingPage>
   );
 }

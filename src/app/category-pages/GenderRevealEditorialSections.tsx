@@ -39,118 +39,12 @@ const moments = [
   },
 ] as const;
 
-export function GenderRevealHeroContent({ page }: { page: UseCasePage }) {
-  return (
-    <div className="relative z-[1] mx-auto grid w-full max-w-7xl items-end gap-10 px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-32 sm:px-8 md:pb-16 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.54fr)] lg:px-10">
-      <div className="max-w-4xl text-white">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/24 bg-black/15 px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-white/90 backdrop-blur-md">
-          <Sparkles className="h-3.5 w-3.5 text-[#ffd1e2]" aria-hidden="true" />
-          One link. One unforgettable moment.
-        </div>
-        <h1 className="mt-6 max-w-4xl font-serif text-[3rem] font-medium leading-[0.98] !text-white drop-shadow-[0_5px_28px_rgba(0,0,0,0.5)] sm:text-6xl lg:text-[5.2rem]">
-          Every RSVP. Every guess. All the way to the reveal.
-        </h1>
-        <p className="mt-6 max-w-2xl text-base leading-7 text-white/88 drop-shadow-[0_2px_14px_rgba(0,0,0,0.85)] sm:text-lg sm:leading-8">
-          A beautiful party page that keeps the invitation, Team Pink or Team Blue, guest counts,
-          gifts, maps, and updates together.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          <Link
-            href={page.primaryHref}
-            className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#241b29] shadow-[0_22px_54px_rgba(0,0,0,0.24)] transition hover:-translate-y-0.5"
-          >
-            Create your reveal page
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-          <Link
-            href={page.secondaryHref}
-            className="inline-flex min-h-12 items-center rounded-full border border-white/32 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/18"
-          >
-            Upload your invitation
-          </Link>
-        </div>
-
-        <div className="mt-9 flex max-w-xl items-center divide-x divide-white/22">
-          {[
-            ["54", "coming"],
-            ["49", "guesses"],
-            ["8", "pending"],
-          ].map(([value, label], index) => (
-            <div key={label} className={index === 0 ? "pr-6" : "px-6"}>
-              <p className="font-serif text-2xl leading-none text-white sm:text-3xl">{value}</p>
-              <p className="mt-1.5 text-[0.62rem] font-bold uppercase tracking-[0.17em] text-white/60">
-                {label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="hidden justify-self-end md:block">
-        <div className="w-full max-w-[25rem] overflow-hidden rounded-[2rem] border border-white/25 bg-[#21182c]/78 p-5 text-white shadow-[0_34px_100px_rgba(10,5,17,0.42)] backdrop-blur-xl sm:p-6">
-          <div className="flex items-start justify-between gap-5">
-            <div>
-              <p className="text-[0.62rem] font-bold uppercase tracking-[0.22em] text-white/52">
-                Saturday · September 12
-              </p>
-              <h2 className="mt-2 font-serif text-3xl !text-white">Little Spark Reveal</h2>
-              <div className="mt-3 flex items-center gap-2 text-xs font-medium text-white/62">
-                <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-                Cedar Park Pavilion · 2:00 PM
-              </div>
-            </div>
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/10">
-              <Heart className="h-4 w-4 text-[#f3b6cf]" aria-hidden="true" />
-            </div>
-          </div>
-
-          <div className="my-5 h-px bg-white/13" />
-
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#f1abc7]">
-                Team Pink
-              </p>
-              <p className="mt-1 font-serif text-4xl">28</p>
-            </div>
-            <div className="pb-1 text-center">
-              <p className="text-[0.58rem] font-bold uppercase tracking-[0.18em] text-white/38">
-                Live guesses
-              </p>
-              <p className="mt-1 text-sm font-semibold text-white/72">49 total</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#acd5fb]">
-                Team Blue
-              </p>
-              <p className="mt-1 font-serif text-4xl">21</p>
-            </div>
-          </div>
-          <div className="mt-4 flex h-2.5 overflow-hidden rounded-full bg-white/10">
-            <div className="w-[57%] bg-gradient-to-r from-[#d66796] to-[#f1abc7]" />
-            <div className="w-[43%] bg-gradient-to-r from-[#acd5fb] to-[#619ed7]" />
-          </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-2.5">
-            <div className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-bold text-[#251b2d]">
-              RSVP
-            </div>
-            <div className="rounded-2xl border border-white/20 bg-white/8 px-4 py-3 text-center text-sm font-bold text-white">
-              Add to calendar
-            </div>
-          </div>
-          <p className="mt-4 text-center text-[0.65rem] font-semibold text-white/44">
-            Guest counts update as replies come in
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ScoreboardPreview() {
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-[#21182c]/92 p-5 text-white shadow-[0_36px_100px_rgba(33,24,44,0.34)] backdrop-blur-xl sm:p-7">
+    <div
+      data-appearance-scope="authored"
+      className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-[#21182c]/92 p-5 text-white shadow-[0_36px_100px_rgba(33,24,44,0.34)] backdrop-blur-xl sm:p-7"
+    >
       <div className="flex items-center justify-between border-b border-white/15 pb-5">
         <div>
           <p className="text-[0.65rem] font-bold uppercase tracking-[0.24em] text-white/55">
@@ -407,8 +301,8 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
               SNAP the invite. Or tell Envitefy Create.
             </h2>
             <p className="mt-5 text-lg leading-8 text-[#6b5d68]">
-              Photograph the card you already printed, or describe the reveal in a message.
-              Envitefy turns that into a live page with RSVPs, guesses, gifts, and the plan.
+              Photograph the card you already printed, or describe the reveal in a message. Envitefy
+              turns that into a live page with RSVPs, guesses, gifts, and the plan.
             </p>
           </div>
 
@@ -426,8 +320,8 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                 </div>
               </div>
               <p className="mt-4 leading-7 text-[#6b5d68]">
-                SNAP reads the date, time, place, and host notes from a photo, screenshot, or
-                flyer. You review the draft, then share one guest link instead of a blurry image.
+                SNAP reads the date, time, place, and host notes from a photo, screenshot, or flyer.
+                You review the draft, then share one guest link instead of a blurry image.
               </p>
               <div className="mt-6 rounded-[1.5rem] bg-[#f8efe9] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7d3856]">
@@ -472,8 +366,8 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                 </div>
               </div>
               <p className="mt-4 leading-7 text-white/68">
-                Tell Envitefy Create who it is for, when, and where. It collects missing details, then
-                drafts the invitation, Team Pink or Team Blue, RSVP, and guest page.
+                Tell Envitefy Create who it is for, when, and where. It collects missing details,
+                then drafts the invitation, Team Pink or Team Blue, RSVP, and guest page.
               </p>
               <div className="mt-6 space-y-3">
                 <div className="ml-8 rounded-2xl rounded-tr-md bg-white px-4 py-3 text-sm leading-6 text-[#241b29]">

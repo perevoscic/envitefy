@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import LandingExperience from "@/app/landing/LandingExperience";
 import ThemeProvider from "@/components/AppearanceProvider";
 import PwaInstallToast from "@/components/PWAInstallToast";
+import ConditionalFooter from "@/components/ConditionalFooter";
 
 window.__landingProductNavigation = [];
 window.__landingProductAuth = [];
@@ -16,5 +17,6 @@ createRoot(document.getElementById("root")!).render(
   <ThemeProvider>
     <PwaInstallToast />
     <LandingExperience />
+    <ConditionalFooter serverSession={null} />
   </ThemeProvider>,
 );

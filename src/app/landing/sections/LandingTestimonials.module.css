@@ -1,0 +1,379 @@
+.section {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(4rem, 7vw, 7rem) clamp(1.25rem, 4vw, 4rem) 3rem;
+  color: var(--marketing-ink);
+  background: var(--marketing-surface);
+}
+.accessibleHeading,
+.accessibleQuote {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.numberInk {
+  display: block;
+}
+.numberDrift {
+  display: block;
+  transform: translate(var(--feedback-number-x, 0px), var(--feedback-number-y, 0px));
+  transition: transform 480ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.composition {
+  position: relative;
+  display: grid;
+  grid-template-columns: clamp(4rem, 7vw, 7rem) minmax(0, 1fr);
+  max-width: 80rem;
+  margin-inline: auto;
+}
+.number {
+  position: absolute;
+  top: 50%;
+  left: -0.07em;
+  transform: translateY(-53%);
+  color: var(--marketing-ink);
+  opacity: 0.045;
+  font-size: clamp(20rem, 37vw, 36rem);
+  font-weight: 700;
+  line-height: 0.8;
+  letter-spacing: -0.08em;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  user-select: none;
+}
+.rail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  border-right: 1px solid var(--marketing-line);
+  padding-right: 1rem;
+}
+.label {
+  writing-mode: vertical-rl;
+  color: var(--marketing-muted);
+  font:
+    400 0.625rem / 1.5 var(--font-geist-mono),
+    monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.progress {
+  width: 1px;
+  height: 7rem;
+  background: var(--marketing-line);
+}
+.progress > span {
+  display: block;
+  height: 100%;
+  background: var(--marketing-ink);
+  transform-origin: top;
+  transition: transform 200ms ease;
+}
+.body {
+  position: relative;
+  min-width: 0;
+  padding: 2.5rem 0 1.25rem clamp(2rem, 5vw, 5rem);
+}
+.track {
+  display: flex;
+  gap: 2rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding: 5px 0;
+}
+.track::-webkit-scrollbar {
+  display: none;
+}
+.track:focus-visible {
+  outline: 3px solid var(--marketing-accent);
+  outline-offset: 3px;
+}
+.quote {
+  position: relative;
+  display: flex;
+  flex: 0 0 100%;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  scroll-snap-align: start;
+}
+.occasion {
+  display: inline-flex;
+  align-self: start;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 100%;
+  margin: 0 0 2rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--marketing-line);
+  border-radius: 999px;
+  color: var(--marketing-muted);
+  background: var(--marketing-surface);
+  font:
+    400 0.6875rem / 1.5 var(--font-geist-mono),
+    monospace;
+}
+.occasion > span {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--marketing-accent);
+}
+.quote blockquote {
+  position: relative;
+  flex: 1;
+  min-height: 4.5em;
+  margin: 0 0 3.5rem;
+}
+.quote blockquote p {
+  margin: 0;
+  font-family: var(--marketing-sans);
+  font-size: clamp(2rem, 3.6vw, 3.5rem);
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: -0.045em;
+  text-wrap: pretty;
+}
+.word {
+  display: inline-block;
+}
+.section[data-feedback-motion="true"] .quote[data-feedback-active="true"] .word {
+  animation: feedbackWordEnter 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--word-index) * 18ms);
+}
+.section[data-feedback-motion="true"] .quote[data-feedback-active="true"] .occasion,
+.section[data-feedback-motion="true"] .quote[data-feedback-active="true"] figcaption {
+  animation: feedbackDetailEnter 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.section[data-feedback-motion="true"] .quote[data-feedback-active="true"] figcaption {
+  animation-delay: 140ms;
+}
+.section[data-feedback-motion="true"] .numberInk {
+  animation: feedbackNumberEnter 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes feedbackWordEnter {
+  from {
+    opacity: 0;
+    transform: translateY(0.35em) rotateX(55deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes feedbackDetailEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes feedbackNumberEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.quote figcaption {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 3rem;
+  padding-right: 12rem;
+}
+.authorLine {
+  width: 2rem;
+  height: 1px;
+  flex-shrink: 0;
+  background: var(--marketing-ink);
+}
+.author {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 550;
+  line-height: 1.5;
+}
+.role {
+  margin: 0.2rem 0 0;
+  color: var(--marketing-muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+.controls {
+  position: absolute;
+  right: 0;
+  bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-block: 5px;
+}
+.position {
+  margin: 0 0.5rem 0 0;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+.position span {
+  color: var(--marketing-muted);
+}
+.controls button {
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid var(--marketing-line);
+  border-radius: 50%;
+  color: var(--marketing-ink);
+  background: var(--marketing-surface);
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    background 180ms ease;
+}
+.controls button:hover:not(:disabled) {
+  color: var(--marketing-surface);
+  background: var(--marketing-ink);
+}
+.controls button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.controls button:focus-visible {
+  outline: 3px solid var(--marketing-accent);
+  outline-offset: 3px;
+}
+.ribbon {
+  position: relative;
+  width: 100%;
+  margin-top: clamp(2.5rem, 5vw, 5rem);
+  overflow: hidden;
+  color: var(--marketing-ink);
+  opacity: 0.07;
+  font-size: clamp(3rem, 5.5vw, 6rem);
+  font-weight: 700;
+  line-height: 1.16;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  mask-image: linear-gradient(90deg, transparent, black 3%, black 94%, transparent);
+}
+.ribbonTrack {
+  display: flex;
+  width: max-content;
+  animation: feedbackRibbonTravel 60s linear infinite;
+  animation-play-state: paused;
+}
+.ribbonGroup {
+  flex: none;
+  padding-right: 0.3em;
+}
+.section[data-feedback-autoplay="true"] .ribbonTrack {
+  animation-play-state: running;
+}
+@keyframes feedbackRibbonTravel {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (max-width: 767px) {
+  .section {
+    padding-block: 3rem 2.5rem;
+  }
+  .composition {
+    grid-template-columns: 2rem minmax(0, 1fr);
+  }
+  .number {
+    top: 9rem;
+    left: -0.08em;
+    transform: none;
+    font-size: clamp(15rem, 70vw, 24rem);
+  }
+  .rail {
+    justify-content: start;
+    gap: 1.5rem;
+    padding-top: 2rem;
+    padding-right: 0.75rem;
+  }
+  .label {
+    font-size: 0.5625rem;
+  }
+  .progress {
+    height: 5rem;
+  }
+  .body {
+    padding: 1.75rem 0 0 1.25rem;
+  }
+  .occasion {
+    margin-bottom: 1.75rem;
+    font-size: 0.625rem;
+  }
+  .quote blockquote {
+    margin-bottom: 2.5rem;
+  }
+  .quote blockquote p {
+    font-size: clamp(1.75rem, 6.8vw, 2.5rem);
+    line-height: 1.25;
+    letter-spacing: -0.04em;
+  }
+  .quote figcaption {
+    gap: 0.75rem;
+    padding-right: 0;
+  }
+  .authorLine {
+    width: 1.25rem;
+  }
+  .controls {
+    position: static;
+    justify-content: end;
+    gap: 0.65rem;
+    margin-top: 1.75rem;
+  }
+  .position {
+    margin-right: auto;
+  }
+  .ribbon {
+    margin-top: 2.5rem;
+    font-size: 3rem;
+  }
+  .ribbonTrack {
+    animation-duration: 40s;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .section[data-feedback-motion="true"] .quote .word,
+  .section[data-feedback-motion="true"] .quote .occasion,
+  .section[data-feedback-motion="true"] .quote figcaption,
+  .section[data-feedback-motion="true"] .numberInk,
+  .ribbonTrack {
+    animation: none;
+  }
+  .numberDrift {
+    transform: none;
+    transition: none;
+  }
+  .progress > span,
+  .controls button {
+    transition: none;
+  }
+}

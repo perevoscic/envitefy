@@ -1,0 +1,437 @@
+.editorial {
+  color: var(--marketing-ink);
+  background: var(--marketing-paper);
+  padding-bottom: calc(3rem + env(safe-area-inset-bottom));
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  align-items: center;
+  gap: clamp(2rem, 5vw, 5rem);
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(8rem, 12vw, 11rem) var(--marketing-gutter) clamp(3.5rem, 7vw, 6rem);
+  scroll-margin-top: 6rem;
+}
+
+.eyebrow {
+  margin: 0 0 1.4rem;
+  color: var(--marketing-accent);
+  font: 650 0.7rem / 1.5 var(--marketing-sans);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.title {
+  max-width: 12ch;
+  margin: 0;
+  color: var(--marketing-ink);
+  font-family: var(--marketing-serif);
+  font-size: clamp(2.85rem, 5.6vw, 5.25rem);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.title em {
+  color: var(--marketing-accent);
+  font-weight: 400;
+}
+
+.description {
+  max-width: 32rem;
+  margin: 1.5rem 0 0;
+  color: var(--marketing-muted);
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  line-height: 1.8;
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1.75rem;
+}
+
+.primary,
+.secondary {
+  display: inline-flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.5rem;
+  border: 1px solid var(--marketing-accent);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.primary {
+  color: var(--marketing-paper);
+  background: var(--marketing-accent);
+}
+
+.secondary {
+  color: var(--marketing-ink);
+  border-color: var(--marketing-line);
+  background: transparent;
+}
+
+.primary:hover,
+.secondary:hover {
+  transform: translateY(-2px);
+}
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 3px solid var(--marketing-accent);
+  outline-offset: 4px;
+}
+.primary svg,
+.secondary svg {
+  flex-shrink: 0;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.note {
+  margin: 1rem 0 0;
+  color: var(--marketing-muted);
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+
+.visual {
+  position: relative;
+  min-width: 0;
+  padding: 2rem 1.25rem 1.25rem;
+}
+.visual::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0 0.4rem 0 0;
+  border-radius: 48% 48% 1.5rem 1.5rem;
+  background: var(--marketing-soft);
+}
+.visual > * {
+  position: relative;
+}
+.visual > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 1.3rem;
+}
+.caption {
+  margin: 1rem 0 0;
+  font-size: 0.7rem;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--marketing-muted);
+}
+
+.section {
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(3rem, 7vw, 6rem) var(--marketing-gutter);
+  scroll-margin-top: 6rem;
+}
+.section + .section {
+  border-top: 1px solid var(--marketing-line);
+}
+.section h2,
+.sectionTitle {
+  max-width: 22ch;
+  margin: 0;
+  color: var(--marketing-ink);
+  font-family: var(--marketing-serif);
+  font-size: clamp(2.1rem, 3.5vw, 3.7rem);
+  font-weight: 400;
+  line-height: 1.13;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.intro {
+  max-width: 40rem;
+  margin: 1.2rem 0 0;
+  color: var(--marketing-muted);
+  line-height: 1.8;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+.four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.item {
+  padding: 1.5rem 0 0;
+  border-top: 1px solid var(--marketing-line);
+}
+.item > svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--marketing-accent);
+}
+.item h3 {
+  margin: 1.4rem 0 0;
+  color: var(--marketing-ink);
+  font-size: 1.12rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+.item p {
+  margin: 0.7rem 0 0;
+  color: var(--marketing-muted);
+  font-size: 0.95rem;
+  line-height: 1.8;
+}
+.number {
+  color: var(--marketing-accent);
+  font: 400 2.2rem / 1 var(--marketing-serif);
+}
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 5rem);
+}
+.closing {
+  width: calc(100% - var(--marketing-gutter) - var(--marketing-gutter));
+  margin: 1rem auto 3rem;
+  padding: clamp(2rem, 6vw, 5rem);
+  border-radius: 2rem;
+  background: var(--marketing-soft);
+  text-align: center;
+}
+.closing h2 {
+  max-width: 20ch;
+  margin: auto;
+}
+.closing .actions {
+  justify-content: center;
+}
+.closing .intro {
+  margin: 1.25rem auto 0;
+}
+.faq {
+  margin-top: 2rem;
+  border-top: 1px solid var(--marketing-line);
+}
+.faq details {
+  border-bottom: 1px solid var(--marketing-line);
+}
+.faq summary {
+  min-height: 3.5rem;
+  padding: 1.25rem 0;
+  cursor: pointer;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.faq summary:focus-visible {
+  outline: 2px solid var(--marketing-accent);
+  outline-offset: 3px;
+}
+.faq p {
+  max-width: 58rem;
+  margin: 0;
+  padding: 0 0 1.5rem;
+  color: var(--marketing-muted);
+  line-height: 1.8;
+}
+.packetPair {
+  display: grid;
+  grid-template-columns: 0.72fr 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+.packetPair img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 1rem;
+  box-shadow: 0 1rem 2.5rem #302a3820;
+}
+.packetPair figure:first-child {
+  transform: rotate(-4deg);
+}
+.packetPair figure {
+  margin: 0;
+}
+.sample {
+  border: 1px solid #d6dfd8;
+  border-radius: 1.4rem;
+  padding: clamp(1.1rem, 3vw, 1.8rem);
+  color: #233a31;
+  background: #fffdf6;
+  box-shadow: 0 1.5rem 3rem #233a3112;
+}
+.sample h2 {
+  max-width: none;
+  margin: 0.4rem 0;
+  font: 400 clamp(1.7rem, 2.7vw, 2.5rem) / 1.15 var(--marketing-serif);
+  color: #233a31;
+}
+.sampleLabel {
+  margin: 0;
+  color: #526d5f;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.sampleMeta {
+  margin: 0;
+  color: #617468;
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+.sampleRows {
+  margin-top: 1.4rem;
+  border-top: 1px solid #d6dfd8;
+}
+.sampleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid #d6dfd8;
+  padding: 1rem 0;
+  color: #405a4b;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.sampleRow strong {
+  color: #233a31;
+  text-align: right;
+}
+.sampleTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1.2rem 0;
+}
+.sampleTabs span {
+  border: 1px solid #d8e2d7;
+  padding: 0.5rem 0.7rem;
+  border-radius: 999px;
+  color: #405a4b;
+  font-size: 0.7rem;
+}
+.sampleTabs span:first-child {
+  color: white;
+  background: #405a4b;
+}
+.sampleFooter {
+  margin-top: 1.1rem;
+  color: #526d5f;
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+
+/* Existing detailed product sections share the editorial type rhythm. Preview papers remain authored. */
+.coordinated main > section {
+  scroll-margin-top: 6rem;
+}
+.coordinated main > section h2,
+.coordinated main > section h3 {
+  font-family: var(--marketing-serif);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.coordinated main > section h2 {
+  line-height: 1.12;
+}
+
+@media (max-width: 767px) {
+  .hero {
+    width: min(100% - 2.5rem, 34rem);
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding-top: 7rem;
+    padding-bottom: 3rem;
+    padding-inline: 0;
+  }
+  .title {
+    max-width: 12ch;
+    font-size: clamp(2.65rem, 11vw, 4rem);
+  }
+  .eyebrow {
+    margin-bottom: 1rem;
+    font-size: 0.65rem;
+  }
+  .description {
+    margin-top: 1.1rem;
+    line-height: 1.75;
+  }
+  .actions {
+    gap: 0.65rem;
+    margin-top: 1.4rem;
+  }
+  .primary,
+  .secondary {
+    min-height: 3rem;
+    padding: 0.8rem 1.15rem;
+    font-size: 0.8rem;
+  }
+  .visual {
+    padding: 1.1rem 0.6rem 0.6rem;
+  }
+  .section {
+    width: calc(100% - 2.5rem);
+    padding: 3rem 0;
+  }
+  .grid,
+  .four {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  .item {
+    padding-top: 1.3rem;
+  }
+  .item h3 {
+    margin-top: 0.8rem;
+  }
+  .split {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .closing {
+    width: calc(100% - 2.5rem);
+    border-radius: 1.5rem;
+    padding: 2rem 1.25rem;
+  }
+  .packetPair {
+    gap: 0.65rem;
+  }
+  .coordinated main > section {
+    padding-right: 1.25rem;
+    padding-left: 1.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary,
+  .secondary {
+    transition: none;
+  }
+  .primary:hover,
+  .secondary:hover {
+    transform: none;
+  }
+}

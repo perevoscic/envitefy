@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import marketingFooterStyles from "@/components/marketing/marketing-footer.module.css";
 import { PrivacyChoicesButton } from "@/components/PrivacyControls";
 import { isPublicTemplatePath } from "@/lib/template-categories";
 
@@ -71,6 +72,9 @@ const MARKETING_ROUTE_PATHS = new Set([
   "/bridal-showers",
   "/baby-showers",
   "/signup-forms",
+  "/anniversaries",
+  "/sport-events",
+  "/sports",
   "/gender-reveal",
   "/birthdays",
   "/who-its-for",
@@ -185,6 +189,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
   }
 
   const isMarketingRoot = normalizedPathname === "/" && hasNoSession;
+  const isHomepageFooter = isMarketingRoot || normalizedPathname === "/landing";
   const isMarketingRoute =
     isMarketingRoot ||
     (normalizedPathname ? MARKETING_ROUTE_PATHS.has(normalizedPathname) : false) ||
@@ -192,7 +197,10 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
 
   if (isMarketingRoute) {
     return (
-      <footer data-app-footer="marketing" className="relative z-[2] w-full bg-[#fcfbf7]">
+      <footer
+        data-app-footer="marketing"
+        className={`${marketingFooterStyles.footer} ${isHomepageFooter ? marketingFooterStyles.homepage : ""} relative z-[2] w-full`}
+      >
         <div className="isolate w-full overflow-hidden border-y border-[#d7c5a5] bg-[#fcfbf7]/96 shadow-[0_30px_80px_rgba(33,26,35,0.10)] backdrop-blur-[12px] [backface-visibility:hidden] [transform:translateZ(0)] [will-change:transform]">
           <div className="relative grid gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(268px,1.05fr)_repeat(5,minmax(0,0.62fr))] lg:px-10">
             <div className="max-lg:col-span-full pr-4">
@@ -200,7 +208,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                 <EnvitefyWordmark
                   className="text-[4rem] leading-none sm:text-[3.5rem]"
                   scaled={false}
-                  tone="gradient"
+                  tone={isHomepageFooter ? "light" : "gradient"}
                 />
               </Link>
               <p className="mt-4 max-w-sm text-sm leading-7 text-[#665d68]">
@@ -208,7 +216,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                 saves, maps, sign-ups, and guest updates from one shareable link.
               </p>
               <div className="mt-6">
-                <EnvitefySocialLinks />
+                <EnvitefySocialLinks tone={isHomepageFooter ? "white" : "auto"} />
               </div>
             </div>
 
@@ -221,7 +229,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                   <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
                     {group.title}
                   </h4>
-                  <div className="mt-4 space-y-3 text-sm text-[#62586a]">
+                  <div className="mt-4 text-sm text-[#62586a]">
                     {group.links.map((link) => (
                       <Link
                         key={`${group.title}-${link.href}-${link.label}`}

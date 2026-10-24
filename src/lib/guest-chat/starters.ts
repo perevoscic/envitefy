@@ -6,3 +6,12 @@ export const guestChatStarterQuestions = [
   "Can I turn a flyer or invite photo into an event?",
   "How do RSVPs work?",
 ] as const;
+
+/** Every visible starter has an authored answer; never infer its topic by ranking. */
+export const guestChatStarterKnowledgeIds = [
+  "product-overview",
+  "choose-product",
+  "guest-account",
+  "uploads",
+  "rsvp",
+] as const;

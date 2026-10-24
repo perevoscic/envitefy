@@ -56,19 +56,19 @@ export default function LiveCardIntro() {
           </p>
         </div>
 
-        <figure className={styles.showcase}>
-          <LiveCardIntroVideo />
-          <figcaption id="live-card-demo-caption">
-            See a Live Card in action. A short, silent walkthrough.
-          </figcaption>
-        </figure>
-
         <div className={styles.actions}>
           <Link href="/live-cards?create=1" className={styles.cta}>
             Create your Live Card <ArrowRight size={19} aria-hidden="true" />
           </Link>
           <p className={styles.ctaNote}>Start with your design. Publish when you’re ready.</p>
         </div>
+
+        <figure className={styles.showcase}>
+          <LiveCardIntroVideo />
+          <figcaption id="live-card-demo-caption">
+            See a Live Card in action. A short, silent walkthrough.
+          </figcaption>
+        </figure>
       </section>
 
       <section className={styles.features} aria-label="Live Card features">

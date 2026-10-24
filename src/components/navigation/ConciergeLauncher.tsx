@@ -1,29 +1,28 @@
 "use client";
 
-import { MessageCircle } from "lucide-react";
 import styles from "./concierge-launcher.module.css";
 
 export default function ConciergeLauncher({
-  visible,
+  visible = true,
+  open = false,
   onOpen,
 }: {
-  visible: boolean;
+  visible?: boolean;
+  open?: boolean;
   onOpen: () => void;
 }) {
   return (
-    <div className={styles.launcher} data-visible={visible} aria-hidden={!visible} inert={!visible}>
+    <div className={styles.launcher} data-concierge-launcher data-visible={visible} data-open={open} aria-hidden={!visible} inert={!visible}>
       <button
         type="button"
         className={styles.button}
         onClick={onOpen}
-        aria-label="Open Envitefy Concierge"
+        aria-label={open ? "Minimize Envitefy Concierge" : "Open Envitefy Concierge"}
+        title={open ? "Minimize Envitefy Concierge" : "Chat with Envitefy Concierge"}
         aria-haspopup="dialog"
+        aria-expanded={open}
       >
-        <MessageCircle size={24} aria-hidden="true" />
-        <span className={styles.copy}>
-          <span className={styles.title}>Concierge</span>
-          <span className={styles.subtitle}>Questions? Ask Envitefy</span>
-        </span>
+        <span className={styles.symbol} aria-hidden="true" />
       </button>
     </div>
   );

@@ -18,6 +18,8 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
+import MarketingPage from "@/components/marketing/MarketingPage";
+import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 
 const navigation = [
@@ -99,8 +101,7 @@ const faqs = [
   },
 ];
 
-const primaryButton =
-  "inline-flex min-h-14 items-center justify-center gap-3 rounded-full bg-[#7041d9] px-7 py-4 text-sm font-semibold text-white shadow-[0_10px_30px_#7041d924] transition hover:bg-[#5d30c0] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#7041d9]";
+const primaryButton = styles.primary;
 
 function StartButton({ authenticated, onStart }: { authenticated: boolean; onStart: () => void }) {
   const content = (
@@ -130,9 +131,10 @@ export default function CreateLandingPage() {
   }
 
   return (
-    <div className="bg-[#fcfbf7] text-[#282330]">
+    <MarketingPage tone="product" className={`${styles.editorial} ${styles.coordinated}`}>
       <HeroTopNav
         navLinks={navigation}
+        variant="transparent-light"
         mobileNavLinks={[{ label: "Home", href: "/" }, ...navigation]}
         primaryCtaLabel="Create with Envitefy"
         authenticatedPrimaryHref="/live-cards"
@@ -141,35 +143,34 @@ export default function CreateLandingPage() {
         onGuestPrimaryAction={() => openAuth("signup")}
       />
       <main>
-        <section className="relative overflow-hidden bg-[radial-gradient(ellipse_at_top_right,#eee7fb,transparent_65%)]">
-          <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 pb-16 pt-28 sm:px-8 sm:pt-32 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pb-20">
+        <section id="hero">
+          <div className={styles.hero}>
             <div>
-              <p className="mb-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#7041d9]">
+              <p className={styles.eyebrow}>
                 <Sparkles size={16} aria-hidden="true" /> Envitefy Create
               </p>
-              <h1 className="max-w-xl font-serif text-[2.8rem] leading-[1.06] tracking-[-0.035em] sm:text-6xl lg:text-[4.2rem]">
-                Your next celebration starts with{" "}
-                <span className="text-[#7041d9]">your design.</span>
+              <h1 className={styles.title}>
+                Your idea. <em>A beautiful invitation.</em>
               </h1>
-              <p className="mt-6 max-w-lg text-base leading-8 text-[#655b70] sm:text-lg">
-                An idea, a few details, or a flyer you already have. Envitefy Create helps turn it into a
-                beautiful invitation and a shareable event your guests can use.
+              <p className={styles.description}>
+                An idea, a few details, or a flyer you already have. Envitefy Create helps turn it
+                into a beautiful invitation and a shareable event your guests can use.
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-5">
+              <div className={styles.actions}>
                 <StartButton authenticated={authenticated} onStart={() => openAuth("signup")} />
                 <a
                   href="#how-it-works"
-                  className="inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-[#655b70] hover:text-[#7041d9]"
+                  className="inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-[var(--marketing-muted)] hover:text-[var(--marketing-accent)]"
                 >
                   See how it works <ArrowDown size={15} aria-hidden="true" />
                 </a>
               </div>
-              <p className="mt-5 text-xs leading-6 text-[#756b7c]">
+              <p className="mt-5 text-xs leading-6 text-[var(--marketing-muted)]">
                 Start with what you know. Preview before you publish.
               </p>
             </div>
-            <figure className="mx-auto w-full max-w-[420px]">
-              <div className="relative ml-8 overflow-hidden rounded-[2rem] shadow-[0_24px_70px_#59423826] sm:ml-12">
+            <figure className={`${styles.visual} mx-auto w-full max-w-[420px]`}>
+              <div className="relative ml-4 overflow-hidden rounded-t-[47%] rounded-b-2xl shadow-[0_24px_70px_#59423826] sm:ml-8">
                 <Image
                   src="/images/marketing/landing-hero-live-card.webp"
                   alt="A garden birthday dinner with lilac balloons, flowers, and string lights"
@@ -200,23 +201,26 @@ export default function CreateLandingPage() {
                   </div>
                 </div>
               </div>
-              <div className="relative -mt-5 mr-5 rounded-2xl border border-[#e6ddef] bg-white p-5 shadow-[0_12px_35px_#49316412] sm:mr-12">
-                <p className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7041d9]">
+              <div className="relative -mt-5 mr-5 rounded-2xl border border-[var(--marketing-line)] bg-[var(--marketing-surface)] p-5 shadow-[0_12px_35px_#49316412] sm:mr-12">
+                <p className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--marketing-accent)]">
                   <MessageCircle size={14} aria-hidden="true" /> It starts with your words
                 </p>
-                <blockquote className="text-sm leading-6 text-[#655b70]">
+                <blockquote className="text-sm leading-6 text-[var(--marketing-muted)]">
                   “A garden dinner for Maya’s 30th. Lilac flowers, warm lights, and our favorite
                   people.”
                 </blockquote>
               </div>
-              <figcaption className="mt-4 text-center text-xs text-[#756b7c]">
+              <figcaption className="mt-4 text-center text-xs text-[var(--marketing-muted)]">
                 Illustrative invitation · Your event, your details, your style
               </figcaption>
             </figure>
           </div>
         </section>
 
-        <section aria-label="Guest actions" className="border-y border-[#e8e2ec] bg-white/60">
+        <section
+          aria-label="Guest actions"
+          className="border-y border-[var(--marketing-line)] bg-[var(--marketing-surface)]"
+        >
           <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-6 py-7 sm:px-8 md:grid-cols-4">
             {[
               { icon: Users, label: "Collect RSVPs" },
@@ -225,7 +229,11 @@ export default function CreateLandingPage() {
               { icon: Share2, label: "Share one link" },
             ].map(({ icon: Icon, label }) => (
               <div key={label} className="flex items-center gap-3 text-sm font-medium">
-                <Icon size={19} className="shrink-0 text-[#8965b7]" aria-hidden="true" />
+                <Icon
+                  size={19}
+                  className="shrink-0 text-[var(--marketing-accent)]"
+                  aria-hidden="true"
+                />
                 {label}
               </div>
             ))}
@@ -236,7 +244,7 @@ export default function CreateLandingPage() {
           id="how-it-works"
           className="mx-auto max-w-6xl scroll-mt-24 px-6 py-16 sm:px-8 lg:py-24"
         >
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7041d9]">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
             How to use Envitefy Create
           </p>
           <h2 className="mt-4 font-serif text-4xl tracking-tight sm:text-5xl">
@@ -244,35 +252,40 @@ export default function CreateLandingPage() {
           </h2>
           <ol className="mt-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             {steps.map(({ title, description, icon: Icon }, index) => (
-              <li key={title} className="border-t border-[#dbd1e5] pt-5">
+              <li key={title} className="border-t border-[var(--marketing-line)] pt-5">
                 <div className="mb-6 flex items-center justify-between">
-                  <span className="font-serif text-3xl text-[#b4a0c9]">0{index + 1}</span>
-                  <Icon size={20} className="text-[#8965b7]" aria-hidden="true" />
+                  <span className="font-serif text-3xl text-[var(--marketing-accent)]">
+                    0{index + 1}
+                  </span>
+                  <Icon size={20} className="text-[var(--marketing-accent)]" aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-semibold leading-7">{title}</h3>
-                <p className="mt-3 text-sm leading-7 text-[#655b70]">{description}</p>
+                <p className="mt-3 text-sm leading-7 text-[var(--marketing-muted)]">
+                  {description}
+                </p>
               </li>
             ))}
           </ol>
         </section>
 
-        <section id="what-you-can-create" className="scroll-mt-24 bg-[#f1ecf7]">
+        <section id="what-you-can-create" className="scroll-mt-24 bg-[var(--marketing-soft)]">
           <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:px-8 lg:grid-cols-2 lg:gap-20 lg:py-20">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7041d9]">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
                 More than a pretty invitation
               </p>
               <h2 className="mt-4 font-serif text-4xl leading-tight tracking-tight sm:text-5xl">
                 Give the occasion
                 <br />a place of its own.
               </h2>
-              <p className="mt-5 text-base leading-8 text-[#655b70]">
+              <p className="mt-5 text-base leading-8 text-[var(--marketing-muted)]">
                 Birthday dinners, weddings, showers, school events, and everything you’re bringing
-                people together for. Choose what you want to make, and Envitefy Create helps you shape it.
+                people together for. Choose what you want to make, and Envitefy Create helps you
+                shape it.
               </p>
               <Link
                 href="/showcase"
-                className="mt-6 inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-[#7041d9]"
+                className="mt-6 inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-[var(--marketing-accent)]"
               >
                 Explore real Live Card examples <ArrowRight size={17} aria-hidden="true" />
               </Link>
@@ -293,10 +306,16 @@ export default function CreateLandingPage() {
                 },
               ].map((item) => (
                 <div key={item.title} className="flex gap-4 py-6 first:pt-0">
-                  <Check size={20} className="mt-1 shrink-0 text-[#7041d9]" aria-hidden="true" />
+                  <Check
+                    size={20}
+                    className="mt-1 shrink-0 text-[var(--marketing-accent)]"
+                    aria-hidden="true"
+                  />
                   <div>
                     <h3 className="text-xl font-semibold">{item.title}</h3>
-                    <p className="mt-2 text-sm leading-7 text-[#655b70]">{item.copy}</p>
+                    <p className="mt-2 text-sm leading-7 text-[var(--marketing-muted)]">
+                      {item.copy}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -305,20 +324,25 @@ export default function CreateLandingPage() {
         </section>
 
         <section className="mx-auto max-w-6xl px-6 py-16 sm:px-8 lg:py-24">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7041d9]">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
             Not sure what to say?
           </p>
           <h2 className="mt-4 font-serif text-4xl tracking-tight sm:text-5xl">
             Start something like this.
           </h2>
-          <p className="mt-4 text-base leading-7 text-[#655b70]">
+          <p className="mt-4 text-base leading-7 text-[var(--marketing-muted)]">
             Use these as inspiration for your design and event details.
           </p>
           <div className="mt-9 grid gap-5 md:grid-cols-3">
             {examples.map((example) => (
-              <div key={example.label} className="rounded-2xl border border-[#e5deeb] bg-white p-6">
-                <h3 className="text-sm font-semibold text-[#7041d9]">{example.label}</h3>
-                <blockquote className="mt-4 text-sm leading-7 text-[#655b70]">
+              <div
+                key={example.label}
+                className="rounded-2xl border border-[var(--marketing-line)] bg-[var(--marketing-surface)] p-6"
+              >
+                <h3 className="text-sm font-semibold text-[var(--marketing-accent)]">
+                  {example.label}
+                </h3>
+                <blockquote className="mt-4 text-sm leading-7 text-[var(--marketing-muted)]">
                   “{example.prompt}”
                 </blockquote>
               </div>
@@ -328,33 +352,39 @@ export default function CreateLandingPage() {
 
         <section id="faq" className="mx-auto max-w-3xl scroll-mt-24 px-6 pb-16 sm:px-8 lg:pb-24">
           <h2 className="mb-8 font-serif text-4xl tracking-tight">A few things to know.</h2>
-          <div className="divide-y divide-[#e5deeb] border-y border-[#e5deeb]">
+          <div className="divide-y divide-[var(--marketing-line)] border-y border-[var(--marketing-line)]">
             {faqs.map((faq) => (
               <details key={faq.question} className="group py-5">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-5 text-base font-semibold [&::-webkit-details-marker]:hidden">
                   {faq.question}
                   <ChevronDown
                     size={18}
-                    className="shrink-0 text-[#8965b7] transition group-open:rotate-180"
+                    className="shrink-0 text-[var(--marketing-accent)] transition group-open:rotate-180"
                     aria-hidden="true"
                   />
                 </summary>
-                <p className="pb-2 pt-3 text-sm leading-7 text-[#655b70]">{faq.answer}</p>
+                <p className="pb-2 pt-3 text-sm leading-7 text-[var(--marketing-muted)]">
+                  {faq.answer}
+                </p>
               </details>
             ))}
           </div>
         </section>
 
-        <section className="border-t border-[#e5deeb] bg-[#f1ecf7] px-6 py-16 text-center sm:px-8">
-          <Sparkles size={26} className="mx-auto text-[#7041d9]" aria-hidden="true" />
+        <section className="border-t border-[var(--marketing-line)] bg-[var(--marketing-soft)] px-6 py-16 text-center sm:px-8">
+          <Sparkles
+            size={26}
+            className="mx-auto text-[var(--marketing-accent)]"
+            aria-hidden="true"
+          />
           <h2 className="mx-auto mt-5 max-w-xl font-serif text-4xl leading-tight tracking-tight sm:text-5xl">
             What are we celebrating?
           </h2>
-          <p className="mx-auto mb-7 mt-4 max-w-md text-base leading-7 text-[#655b70]">
+          <p className="mx-auto mb-7 mt-4 max-w-md text-base leading-7 text-[var(--marketing-muted)]">
             Bring your idea. We’ll help with the invitation.
           </p>
           <StartButton authenticated={authenticated} onStart={() => openAuth("signup")} />
-          <p className="mt-4 text-xs text-[#756b7c]">
+          <p className="mt-4 text-xs text-[var(--marketing-muted)]">
             Sign in or create an account to get started.
           </p>
         </section>
@@ -366,6 +396,6 @@ export default function CreateLandingPage() {
         onModeChange={setAuthMode}
         successRedirectUrl="/"
       />
-    </div>
+    </MarketingPage>
   );
 }

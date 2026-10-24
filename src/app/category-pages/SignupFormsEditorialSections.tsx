@@ -8,7 +8,6 @@ import {
   Link as LinkIcon,
   PackageCheck,
   QrCode,
-  Sparkles,
   Users,
 } from "lucide-react";
 import Image from "next/image";
@@ -48,6 +47,7 @@ function SignupBoardPreview({ compact = false }: { compact?: boolean }) {
 
   return (
     <div
+      data-appearance-scope="authored"
       className={`overflow-hidden border border-white/22 bg-[#172044]/88 text-white shadow-[0_34px_100px_rgba(8,14,41,0.4)] backdrop-blur-xl ${
         compact ? "rounded-[1.8rem] p-5 sm:p-6" : "rounded-[2rem] p-5 sm:p-7"
       }`}
@@ -122,60 +122,6 @@ function SignupBoardPreview({ compact = false }: { compact?: boolean }) {
         Claim a spot
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </button>
-    </div>
-  );
-}
-
-export function SignupFormsHeroContent({ page }: { page: UseCasePage }) {
-  const createHref = `${page.path}?auth=signup`;
-
-  return (
-    <div className="relative z-[1] mx-auto grid w-full max-w-7xl items-end gap-10 px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-32 sm:px-8 md:pb-16 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.54fr)] lg:px-10">
-      <div className="max-w-4xl text-white">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/24 bg-black/15 px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-white/90 backdrop-blur-md">
-          <Sparkles className="h-3.5 w-3.5 text-[#c6d0ff]" aria-hidden="true" />
-          Signups without spreadsheet cleanup
-        </div>
-        <h1 className="mt-6 max-w-4xl text-[3rem] font-semibold leading-[0.98] !text-white drop-shadow-[0_5px_28px_rgba(0,0,0,0.5)] sm:text-6xl lg:text-[5rem]">
-          Put every slot, shift, and needed item in one beautiful place.
-        </h1>
-        <p className="mt-6 max-w-2xl text-base leading-7 text-white/88 drop-shadow-[0_2px_14px_rgba(0,0,0,0.85)] sm:text-lg sm:leading-8">
-          Create a polished signup page, share one link, and always know what is filled, what is
-          open, and who is bringing what.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          <Link
-            href={createHref}
-            className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#18214d] shadow-[0_22px_54px_rgba(0,0,0,0.24)] transition hover:-translate-y-0.5"
-          >
-            Browse templates
-          </Link>
-          <Link
-            href={page.secondaryHref}
-            className="inline-flex min-h-12 items-center rounded-full border border-white/32 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/18"
-          >
-            See how it works
-          </Link>
-        </div>
-        <div className="mt-9 flex max-w-xl items-center divide-x divide-white/22">
-          {[
-            ["31", "claimed"],
-            ["14", "open slots"],
-            ["4", "active lists"],
-          ].map(([value, label], index) => (
-            <div key={label} className={index === 0 ? "pr-6" : "px-6"}>
-              <p className="text-2xl font-semibold leading-none text-white sm:text-3xl">{value}</p>
-              <p className="mt-1.5 text-[0.62rem] font-bold uppercase tracking-[0.17em] text-white/60">
-                {label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="hidden w-full max-w-[25rem] justify-self-end md:block">
-        <SignupBoardPreview compact />
-      </div>
     </div>
   );
 }

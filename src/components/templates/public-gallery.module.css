@@ -1,0 +1,98 @@
+.gallery.gallery {
+  background: var(--marketing-paper);
+  color: var(--marketing-ink);
+  padding-top: calc(6.5rem + env(safe-area-inset-top));
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+.gallery > main > header,
+.gallery > section > div > [data-public-gallery-header] {
+  background: var(--marketing-soft);
+  border-color: var(--marketing-line);
+}
+.gallery > main {
+  background: transparent;
+}
+.gallery > main > header h1,
+.gallery [data-public-gallery-header] h1 {
+  font-family: var(--marketing-serif);
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+}
+.gallery [data-public-gallery-controls] :is(input, select),
+.gallery > main > section[aria-label="Filter designs"] :is(input, select) {
+  min-height: 48px;
+  font-size: 1rem;
+  border-color: var(--marketing-line);
+  background: var(--marketing-surface);
+  color: var(--marketing-ink);
+}
+.gallery [data-public-gallery-controls] :is(input, select):focus-visible,
+.gallery > main > section[aria-label="Filter designs"] :is(input, select):focus-visible {
+  outline: 2px solid var(--marketing-accent);
+  outline-offset: 3px;
+}
+.publicSection.publicSection,
+.featured.featured {
+  background: var(--marketing-paper, #fffaf5);
+  color: var(--marketing-ink, #412433);
+}
+.publicSection [data-public-gallery-header] {
+  padding-block: 3rem 2rem;
+}
+.publicSection [data-public-gallery-header] > :first-child[aria-hidden="true"] {
+  display: none;
+}
+.heading.heading {
+  font-family: var(--marketing-serif, Georgia, serif);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.heading {
+  color: var(--marketing-ink, #412433);
+}
+.eyebrow {
+  color: var(--marketing-accent, #853b55);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+.note {
+  color: var(--marketing-muted, #79636d);
+  font-size: 0.9rem;
+  line-height: 1.75;
+}
+.browse {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--marketing-line, #e8d6da);
+  border-radius: 999px;
+  padding: 0.75rem 1.3rem;
+  background: var(--marketing-surface, #fffdf9);
+  color: var(--marketing-ink, #412433);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.browse:hover {
+  background: var(--marketing-soft, #f8e8eb);
+}
+.browse:focus-visible {
+  outline: 2px solid var(--marketing-accent, #853b55);
+  outline-offset: 3px;
+}
+@media (max-width: 540px) {
+  .gallery.gallery {
+    padding-top: calc(5.5rem + env(safe-area-inset-top));
+  }
+  .publicSection [data-public-gallery-header] {
+    padding-block: 1.5rem 1.8rem;
+  }
+  .heading.heading {
+    font-size: 2.4rem;
+    line-height: 1.15;
+  }
+}

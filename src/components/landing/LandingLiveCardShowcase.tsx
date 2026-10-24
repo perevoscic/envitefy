@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Image from "next/image";
 import { type MouseEvent, useEffect, useRef, useState } from "react";
 import { type LiveCardActiveTab } from "@/components/studio/StudioLiveCardActionSurface";
 import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
@@ -535,9 +536,15 @@ export default function LandingLiveCardShowcase({
                         }
                       />
                     ) : (
-                      <div
-                        aria-hidden="true"
-                        className="aspect-[9/16] w-full rounded-[2.2rem] bg-white/45"
+                      <Image
+                        src={item.preview.imageUrl}
+                        alt=""
+                        width={1024}
+                        height={1536}
+                        loading="lazy"
+                        sizes="300px"
+                        data-appearance-scope="authored"
+                        className="aspect-[2/3] w-full rounded-[1.5rem] object-contain"
                       />
                     )}
                   </div>

@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   CalendarCheck,
   CheckCircle2,
   ClipboardCheck,
@@ -8,21 +7,22 @@ import {
   ImageIcon,
   Link2,
   ListChecks,
+  type LucideIcon,
   Sparkles,
   Trophy,
   UsersRound,
-  type LucideIcon,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
+import styles from "@/components/company/supporting-public.module.css";
+import MarketingHero from "@/components/marketing/MarketingHero";
+import MarketingPage from "@/components/marketing/MarketingPage";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import GuidesTopNav from "./GuidesTopNav";
-import publicStyles from "@/styles/public-appearance.module.css";
 
 const SITE_URL = "https://envitefy.com";
 const DEFAULT_IMAGE = getRandomSiteOgImageUrl(SITE_URL);
-const pageFont = "var(--font-montserrat), var(--font-sans), system-ui, sans-serif";
 
 export type GuideSlug =
   | "pdf-to-event-page"
@@ -1291,7 +1291,6 @@ export function buildGuideMetadata(slug: GuideSlug): Metadata {
 export function GuidePageView({ slug }: { slug: GuideSlug }) {
   const guide = guideBySlug[slug];
   const visual = guideVisuals[guide.slug];
-  const GuideIcon = visual.icon;
   const url = `${SITE_URL}/guides/${guide.slug}`;
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -1344,254 +1343,199 @@ export function GuidePageView({ slug }: { slug: GuideSlug }) {
   };
 
   return (
-    <main
-      className={`${publicStyles.page} min-h-screen overflow-hidden bg-[#f7f8f3] text-[#202124]`}
-      style={{ fontFamily: pageFont }}
-    >
+    <MarketingPage className={styles.content}>
       <GuidesTopNav />
-      <article>
-        <section className="relative border-b border-[#d9ded3]">
-          <img
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover opacity-[0.18]"
-            src={guide.heroImage}
-            style={{ objectPosition: guide.heroImagePosition ?? "center" }}
-          />
-          <div className={`${publicStyles.heroScrim} absolute inset-0 bg-[linear-gradient(90deg,rgba(247,248,243,0.99)_0%,rgba(247,248,243,0.92)_58%,rgba(247,248,243,0.72)_100%)]`} />
-
-          <div className="relative mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-32 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.78fr)] lg:px-8 lg:pb-16 lg:pt-36">
+      <main>
+        <MarketingHero
+          eyebrow={guide.eyebrow}
+          title={guide.h1}
+          description={guide.intro}
+          primaryHref={guide.cta.href}
+          primaryLabel={guide.cta.label}
+          secondaryHref={guide.secondaryCta.href}
+          secondaryLabel={guide.secondaryCta.label}
+          image={guide.heroImage}
+          imageAlt={guide.heroImageAlt}
+        />
+        <article className={styles.prose}>
+          <section className={styles.section}>
+            <nav aria-label="Breadcrumb" className={styles.links}>
+              <Link href="/guides">All guides</Link>
+              <span className={styles.number}>{guide.routeLabel}</span>
+            </nav>
+            <p className={styles.eyebrow}>The short answer</p>
+            <p className={styles.intro}>{guide.directAnswer}</p>
+          </section>
+          <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:px-8">
             <div>
-              <nav className="mb-8 text-sm font-semibold text-[#50605e]" aria-label="Breadcrumb">
-                <Link href="/guides" className="hover:text-[#202124]">
-                  Guides
-                </Link>
-                <span className="mx-2 text-[#8a938c]">/</span>
-                <span>{guide.routeLabel}</span>
-              </nav>
-
-              <p
-                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold ${visual.badge}`}
-              >
-                <GuideIcon className="h-4 w-4" />
-                {guide.eyebrow}
-              </p>
-              <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-[1.04] text-[#202124] sm:text-5xl lg:text-6xl">
-                {guide.h1}
-              </h1>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-[#4f5c5a] sm:text-xl">
-                {guide.intro}
-              </p>
-              <div className="mt-6 max-w-3xl rounded-lg border border-white/72 bg-white/58 p-5 shadow-[0_16px_44px_rgba(32,49,55,0.08)] backdrop-blur-md">
-                <p className="text-xs font-bold uppercase text-[#6f7b75]">Short answer</p>
-                <p className="mt-3 text-base leading-7 text-[#303735]">{guide.directAnswer}</p>
-              </div>
-
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href={guide.cta.href}
-                  className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold shadow-[0_16px_36px_rgba(32,33,36,0.14)] transition ${visual.button}`}
-                >
-                  {guide.cta.label}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  href={guide.secondaryCta.href}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-[#bfc9bd] bg-white/74 px-6 py-3 text-sm font-semibold text-[#202124] transition hover:bg-white"
-                >
-                  {guide.secondaryCta.label}
-                </Link>
-              </div>
-            </div>
-
-            <aside className="rounded-lg border border-[#d9ded3] bg-white/78 p-4 shadow-[0_20px_60px_rgba(32,33,36,0.10)] backdrop-blur-md">
-              <div className="aspect-[4/3] overflow-hidden rounded-lg bg-[#e8ece3]">
-                <img
-                  alt={guide.heroImageAlt}
-                  className="h-full w-full object-cover"
-                  src={guide.heroImage}
-                  style={{ objectPosition: guide.heroImagePosition ?? "center" }}
-                />
-              </div>
-              <dl className="mt-5 grid grid-cols-3 gap-4 border-t border-[#d9ded3] pt-5">
-                {guide.stats.map((stat) => (
-                  <div key={`${guide.slug}-${stat.label}`} className="min-w-0">
-                    <dt className="text-xs font-semibold text-[#6b746d]">{stat.label}</dt>
-                    <dd className={`mt-2 text-lg font-bold ${visual.accent}`}>{stat.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </aside>
-          </div>
-        </section>
-
-        <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:px-8">
-          <div>
-            <p className="text-sm font-bold text-[#68736d]">Guide fit</p>
-            <h2 className="mt-3 text-3xl font-semibold leading-tight text-[#202124]">
-              Use this path when these details matter.
-            </h2>
-            <p className="mt-4 leading-7 text-[#52605c]">
-              The strongest event pages are not generic. They match the source, the host workflow,
-              and the guest questions that show up after the invite is sent.
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {guide.useCases.map((item) => (
-              <div
-                key={item}
-                className="rounded-lg border border-[#d9ded3] bg-white p-5 shadow-[0_12px_34px_rgba(32,49,55,0.06)]"
-              >
-                <CheckCircle2 className={`h-5 w-5 ${visual.accent}`} />
-                <p className="mt-3 text-sm font-semibold leading-6 text-[#303735]">{item}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
-          <div className="grid gap-4 md:grid-cols-3">
-            {guide.sections.map((section) => (
-              <section
-                key={section.heading}
-                className="rounded-lg border border-[#d9ded3] bg-white p-6 shadow-[0_14px_40px_rgba(32,49,55,0.06)]"
-              >
-                <h2 className="text-xl font-bold leading-7 text-[#202124]">{section.heading}</h2>
-                <p className="mt-4 leading-7 text-[#52605c]">{section.body}</p>
-              </section>
-            ))}
-          </div>
-        </section>
-
-        <section className="border-y border-[#d9ded3] bg-white/72 px-4 py-12 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <div>
-                <p className="text-sm font-bold text-[#68736d]">Workflow</p>
-                <h2 className="mt-3 text-3xl font-semibold leading-tight text-[#202124]">
-                  Build it in {guide.productSurface}.
-                </h2>
-              </div>
-              <p className="max-w-md text-sm leading-6 text-[#52605c]">
-                Treat the source as a starting point, then publish a live page guests can use from
-                any browser.
-              </p>
-            </div>
-
-            <ol className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {guide.steps.map((step, index) => (
-                <li
-                  key={step.title}
-                  className="rounded-lg border border-[#d9ded3] bg-[#f7f8f3] p-5 shadow-[0_12px_30px_rgba(32,49,55,0.05)]"
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${visual.iconWrap}`}
-                    >
-                      {index + 1}
-                    </span>
-                    <span className="text-sm font-bold text-[#6b746d]">{step.label}</span>
-                  </div>
-                  <h3 className="mt-5 text-lg font-bold leading-7 text-[#202124]">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-[#52605c]">{step.body}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        <section className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:px-8">
-          <div className="rounded-lg bg-[#203137] p-6 text-white sm:p-8">
-            <div className="flex items-center gap-3">
-              <ListChecks className="h-6 w-6 text-[#b8e0d4]" />
-              <h2 className="text-2xl font-semibold text-white" style={{ color: "#ffffff" }}>
-                Before you publish
+              <p className="text-sm font-bold text-[#68736d]">Guide fit</p>
+              <h2 className="mt-3 text-3xl font-semibold leading-tight text-[#202124]">
+                Use this path when these details matter.
               </h2>
+              <p className="mt-4 leading-7 text-[#52605c]">
+                The strongest event pages are not generic. They match the source, the host workflow,
+                and the guest questions that show up after the invite is sent.
+              </p>
             </div>
-            <div className="mt-6 space-y-5">
-              {guide.checklist.map((item) => (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {guide.useCases.map((item) => (
                 <div
-                  key={item.title}
-                  className="border-t border-white/14 pt-5 first:border-t-0 first:pt-0"
+                  key={item}
+                  className="rounded-lg border border-[#d9ded3] bg-white p-5 shadow-[0_12px_34px_rgba(32,49,55,0.06)]"
                 >
-                  <h3 className="font-bold text-white" style={{ color: "#ffffff" }}>
-                    {item.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-white/76">{item.body}</p>
+                  <CheckCircle2 className={`h-5 w-5 ${visual.accent}`} />
+                  <p className="mt-3 text-sm font-semibold leading-6 text-[#303735]">{item}</p>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
 
-          <div className="rounded-lg border border-[#d9ded3] bg-white p-6 sm:p-8">
-            <div className="flex items-center gap-3">
-              <CalendarCheck className={`h-6 w-6 ${visual.accent}`} />
-              <h2 className="text-2xl font-semibold text-[#202124]">What guests get</h2>
-            </div>
-            <ul className="mt-6 space-y-4">
-              {guide.guestValue.map((item) => (
-                <li key={item} className="flex gap-3 text-sm leading-6 text-[#52605c]">
-                  <CheckCircle2 className={`mt-0.5 h-5 w-5 shrink-0 ${visual.accent}`} />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
-          <div className="grid gap-6 rounded-lg border border-[#d9ded3] bg-[#fefcf7] p-6 sm:p-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-center">
-            <div>
-              <p className="text-sm font-bold text-[#68736d]">Related Envitefy resources</p>
-              <h2 className="mt-3 text-2xl font-semibold leading-tight text-[#202124]">
-                Continue with the next best page.
-              </h2>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {guide.relatedLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="flex min-h-16 items-center justify-between gap-3 rounded-lg border border-[#d9ded3] bg-white px-4 py-3 text-sm font-semibold text-[#303735] transition hover:border-[#aebbac] hover:bg-[#f7f8f3]"
+          <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+            <div className="grid gap-4 md:grid-cols-3">
+              {guide.sections.map((section) => (
+                <section
+                  key={section.heading}
+                  className="rounded-lg border border-[#d9ded3] bg-white p-6 shadow-[0_14px_40px_rgba(32,49,55,0.06)]"
                 >
-                  {link.label}
-                  <ExternalLink className="h-4 w-4 shrink-0 text-[#7b847d]" />
-                </Link>
+                  <h2 className="text-xl font-bold leading-7 text-[#202124]">{section.heading}</h2>
+                  <p className="mt-4 leading-7 text-[#52605c]">{section.body}</p>
+                </section>
               ))}
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="mx-auto max-w-4xl px-4 pb-16 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <ClipboardCheck className={`h-6 w-6 ${visual.accent}`} />
-            <h2 className="text-2xl font-semibold text-[#202124]">FAQ</h2>
-          </div>
-          <div className="mt-5 space-y-3">
-            {guide.faq.map((item) => (
-              <details
-                key={item.question}
-                className="rounded-lg border border-[#d9ded3] bg-white p-5"
-              >
-                <summary className="cursor-pointer text-base font-semibold text-[#202124]">
-                  {item.question}
-                </summary>
-                <p className="mt-3 leading-7 text-[#52605c]">{item.answer}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-      </article>
+          <section className="border-y border-[#d9ded3] bg-white/72 px-4 py-12 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                <div>
+                  <p className="text-sm font-bold text-[#68736d]">Workflow</p>
+                  <h2 className="mt-3 text-3xl font-semibold leading-tight text-[#202124]">
+                    Build it in {guide.productSurface}.
+                  </h2>
+                </div>
+                <p className="max-w-md text-sm leading-6 text-[#52605c]">
+                  Treat the source as a starting point, then publish a live page guests can use from
+                  any browser.
+                </p>
+              </div>
 
-      <Script id={`ld-guide-webpage-${guide.slug}`} type="application/ld+json">
-        {JSON.stringify(webPageLd)}
-      </Script>
-      <Script id={`ld-guide-breadcrumb-${guide.slug}`} type="application/ld+json">
-        {JSON.stringify(breadcrumbLd)}
-      </Script>
-      <Script id={`ld-guide-faq-${guide.slug}`} type="application/ld+json">
-        {JSON.stringify(faqLd)}
-      </Script>
-    </main>
+              <ol className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {guide.steps.map((step, index) => (
+                  <li
+                    key={step.title}
+                    className="rounded-lg border border-[#d9ded3] bg-[#f7f8f3] p-5 shadow-[0_12px_30px_rgba(32,49,55,0.05)]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${visual.iconWrap}`}
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="text-sm font-bold text-[#6b746d]">{step.label}</span>
+                    </div>
+                    <h3 className="mt-5 text-lg font-bold leading-7 text-[#202124]">
+                      {step.title}
+                    </h3>
+                    <p className="mt-3 text-sm leading-6 text-[#52605c]">{step.body}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+
+          <section className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:px-8">
+            <div className="rounded-lg bg-[#203137] p-6 text-white sm:p-8">
+              <div className="flex items-center gap-3">
+                <ListChecks className="h-6 w-6 text-[#b8e0d4]" />
+                <h2 className="text-2xl font-semibold text-white" style={{ color: "#ffffff" }}>
+                  Before you publish
+                </h2>
+              </div>
+              <div className="mt-6 space-y-5">
+                {guide.checklist.map((item) => (
+                  <div
+                    key={item.title}
+                    className="border-t border-white/14 pt-5 first:border-t-0 first:pt-0"
+                  >
+                    <h3 className="font-bold text-white" style={{ color: "#ffffff" }}>
+                      {item.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-white/76">{item.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-[#d9ded3] bg-white p-6 sm:p-8">
+              <div className="flex items-center gap-3">
+                <CalendarCheck className={`h-6 w-6 ${visual.accent}`} />
+                <h2 className="text-2xl font-semibold text-[#202124]">What guests get</h2>
+              </div>
+              <ul className="mt-6 space-y-4">
+                {guide.guestValue.map((item) => (
+                  <li key={item} className="flex gap-3 text-sm leading-6 text-[#52605c]">
+                    <CheckCircle2 className={`mt-0.5 h-5 w-5 shrink-0 ${visual.accent}`} />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
+          <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+            <div className="grid gap-6 rounded-lg border border-[#d9ded3] bg-[#fefcf7] p-6 sm:p-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-center">
+              <div>
+                <p className="text-sm font-bold text-[#68736d]">Related Envitefy resources</p>
+                <h2 className="mt-3 text-2xl font-semibold leading-tight text-[#202124]">
+                  Continue with the next best page.
+                </h2>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {guide.relatedLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="flex min-h-16 items-center justify-between gap-3 rounded-lg border border-[#d9ded3] bg-white px-4 py-3 text-sm font-semibold text-[#303735] transition hover:border-[#aebbac] hover:bg-[#f7f8f3]"
+                  >
+                    {link.label}
+                    <ExternalLink className="h-4 w-4 shrink-0 text-[#7b847d]" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="mx-auto max-w-4xl px-4 pb-16 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3">
+              <ClipboardCheck className={`h-6 w-6 ${visual.accent}`} />
+              <h2 className="text-2xl font-semibold text-[#202124]">FAQ</h2>
+            </div>
+            <div className="mt-5 space-y-3">
+              {guide.faq.map((item) => (
+                <details
+                  key={item.question}
+                  className="rounded-lg border border-[#d9ded3] bg-white p-5"
+                >
+                  <summary className="cursor-pointer text-base font-semibold text-[#202124]">
+                    {item.question}
+                  </summary>
+                  <p className="mt-3 leading-7 text-[#52605c]">{item.answer}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+        </article>
+
+        <Script id={`ld-guide-webpage-${guide.slug}`} type="application/ld+json">
+          {JSON.stringify(webPageLd)}
+        </Script>
+        <Script id={`ld-guide-breadcrumb-${guide.slug}`} type="application/ld+json">
+          {JSON.stringify(breadcrumbLd)}
+        </Script>
+        <Script id={`ld-guide-faq-${guide.slug}`} type="application/ld+json">
+          {JSON.stringify(faqLd)}
+        </Script>
+      </main>
+    </MarketingPage>
   );
 }

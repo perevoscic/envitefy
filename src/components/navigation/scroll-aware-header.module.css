@@ -1,0 +1,21 @@
+.header {
+  transition: transform 200ms ease;
+}
+
+.header[data-scroll-hidden="true"] {
+  transform: translateY(calc(-100% - 1px));
+  pointer-events: none;
+}
+
+/* Offscreen navigation stays reachable by keyboard and assistive technology. */
+.header:has(:focus-visible) {
+  transform: none;
+  pointer-events: auto;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header {
+    transition: none;
+  }
+}

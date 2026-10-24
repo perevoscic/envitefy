@@ -11,7 +11,7 @@ test("invitation maker owns the create-an-invite search intent", () => {
 
   assert.match(page, /Online Invitation Maker with RSVP \| Envitefy/);
   assert.match(page, /alternates: \{ canonical: "\/invitation-maker" \}/);
-  assert.match(page, /Create an online invitation with RSVP in minutes/);
+  assert.match(page, /Create an online invitation with RSVP/);
   assert.match(page, /How do you create an invite online\?/);
   assert.match(page, /"@type": "WebApplication"/);
   assert.match(page, /"@type": "FAQPage"/);
@@ -36,9 +36,10 @@ test("invitation maker is public, discoverable, and internally linked", () => {
 });
 
 test("homepage keeps one stable invitation-focused H1", () => {
-  const landing = readSource("src/app/landing/LandingExperience.tsx");
+  const landing = readSource("src/app/landing/sections/ProductLandingHero.tsx");
 
-  assert.match(landing, /Create beautiful online invitations, from invite to RSVP/);
+  for (const phrase of ["Beautiful invites.", "All the details.", "One link."])
+    assert.ok(landing.includes(phrase));
+  assert.equal((landing.match(/<h1\b/g) || []).length, 1);
   assert.doesNotMatch(landing, /<h1[\s\S]*?\{activeSlide\.title\}[\s\S]*?<\/h1>/);
 });
-

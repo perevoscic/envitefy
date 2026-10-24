@@ -1,11 +1,4 @@
-import {
-  Eye,
-  LayoutTemplate,
-  Menu,
-  PlusCircle,
-  Sparkles,
-  type LucideIcon,
-} from "lucide-react";
+import { Eye, LayoutTemplate, type LucideIcon, Menu, PlusCircle, Sparkles } from "lucide-react";
 
 export type SignedOutBottomNavAction = "concierge" | "create" | "menu";
 
@@ -36,9 +29,7 @@ export const publicUseCaseNavLinks: SignedOutMobileMenuLink[] = [
   { label: "Football", href: "/football" },
 ];
 
-export const publicUseCasePrimaryNavLinks: SignedOutMobileMenuLink[] = [
-  ...publicUseCaseNavLinks,
-];
+export const publicUseCasePrimaryNavLinks: SignedOutMobileMenuLink[] = [...publicUseCaseNavLinks];
 
 export const signedOutBottomNav: SignedOutBottomNavItem[] = [
   {
@@ -104,7 +95,7 @@ const marketingSectionLinks: Record<string, SignedOutMobileMenuLink[]> = {
     { label: "Templates", href: "#templates" },
     { label: "Collections", href: "#collections" },
     { label: "Planning", href: "#timeline" },
-    { label: "Reviews", href: "#reviews" },
+    { label: "Planning notes", href: "#reviews" },
   ],
   "/baby-showers": [
     { label: "Templates", href: "#templates" },
@@ -151,9 +142,10 @@ export function marketingPageNavLinks(pathname: string): SignedOutMobileMenuLink
     { label: "Home", href: "/" },
     ...sectionLinks.map((link) => ({
       ...link,
-      href: path !== categoryPath && link.href.startsWith("#")
-        ? `${categoryPath}${link.href}`
-        : link.href,
+      href:
+        path !== categoryPath && link.href.startsWith("#")
+          ? `${categoryPath}${link.href}`
+          : link.href,
     })),
   ];
 }

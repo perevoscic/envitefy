@@ -1,35 +1,32 @@
-import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
-import publicStyles from "@/styles/public-appearance.module.css";
-import { templateCategoryForPath } from "@/lib/template-categories";
 import {
   ArrowRight,
   CalendarDays,
-  CheckCircle2,
   ClipboardList,
   Gift,
   Heart,
   Link as LinkIcon,
+  type LucideIcon,
   MapPinned,
   MessageCircle,
   Sparkles,
   TicketCheck,
   Upload,
   Users,
-  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import Script from "next/script";
 import type { CSSProperties } from "react";
-import LandingHeroMedia from "@/components/landing/LandingHeroMedia";
+import MarketingHero from "@/components/marketing/MarketingHero";
+import MarketingPage from "@/components/marketing/MarketingPage";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
-import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import { templateCategoryForPath } from "@/lib/template-categories";
+import publicStyles from "@/styles/public-appearance.module.css";
+import editorialStyles from "./CelebrationLanding.module.css";
+import CelebrationPreview from "./CelebrationPreview";
 import type { UseCaseIconId, UseCasePage } from "./category-page-data";
-import GenderRevealEditorialSections, {
-  GenderRevealHeroContent,
-} from "./GenderRevealEditorialSections";
-import SignupFormsEditorialSections, {
-  SignupFormsHeroContent,
-} from "./SignupFormsEditorialSections";
+import GenderRevealEditorialSections from "./GenderRevealEditorialSections";
+import SignupFormsEditorialSections from "./SignupFormsEditorialSections";
 
 const iconComponents: Record<UseCaseIconId, LucideIcon> = {
   calendar: CalendarDays,
@@ -56,47 +53,12 @@ function UseCaseIcon({ icon, className }: { icon: UseCaseIconId; className?: str
 
 function HeroPreview({ page }: { page: UseCasePage }) {
   return (
-    <div className="relative w-full max-w-[28rem] justify-self-end overflow-hidden rounded-lg border border-white/22 bg-white/90 p-4 text-[#18131f] shadow-[0_30px_90px_rgba(9,4,19,0.34)] backdrop-blur-xl sm:p-5">
-      <div className="flex items-start justify-between gap-4 border-b border-[#e5ded6] pb-4">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase text-[#6e6276]">{page.eyebrow}</p>
-          <h2 className="mt-2 text-xl font-semibold leading-tight text-[#17111e]">
-            {page.preview.eventTitle}
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-[#6b6070]">{page.preview.eventMeta}</p>
-        </div>
-        <div
-          className="grid h-12 w-12 shrink-0 place-items-center rounded-lg text-white shadow-[0_14px_30px_rgba(18,13,28,0.22)]"
-          style={{ backgroundColor: page.theme.accent }}
-        >
-          <Sparkles className="h-5 w-5" aria-hidden="true" />
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-2">
-        {page.preview.statusRows.map((row) => (
-          <div
-            key={`${page.slug}-${row.label}`}
-            className="flex items-center justify-between gap-3 rounded-lg border border-[#ece5dc] bg-[#fffaf5] px-3 py-2"
-          >
-            <span className="text-sm font-medium text-[#665d68]">{row.label}</span>
-            <span className="text-sm font-bold text-[#1e1725]">{row.value}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {page.preview.chips.map((chip) => (
-          <span
-            key={`${page.slug}-${chip}`}
-            className="inline-flex items-center gap-1 rounded-full border border-[#e8ded2] bg-white px-3 py-1 text-xs font-semibold text-[#312438]"
-          >
-            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-            {chip}
-          </span>
-        ))}
-      </div>
-    </div>
+    <CelebrationPreview
+      title={page.preview.eventTitle}
+      meta={page.preview.eventMeta}
+      rows={page.preview.statusRows}
+      chips={page.preview.chips}
+    />
   );
 }
 
@@ -146,80 +108,67 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
   };
 
   return (
-    <div
-      style={cssVars}
-      className={`${publicStyles.page} min-h-screen bg-[var(--use-case-surface)] text-[var(--use-case-ink)]`}
-    >
-      <SignedOutPageChrome
-        activeBottomNavLabel="Menu"
-        brandHref="/"
-        topNavVariant="transparent-dark"
-      />
+    <MarketingPage className={`${publicStyles.page} ${editorialStyles.editorial}`}>
+      <SignedOutPageChrome activeBottomNavLabel="Menu" brandHref="/" />
 
-      <main>
-        <section id="landing-hero" className="relative isolate flex min-h-[100svh] items-end overflow-hidden">
-          <LandingHeroMedia
-            images={
-              page.slug in landingHeroGalleries
-                ? landingHeroGalleries[page.slug as keyof typeof landingHeroGalleries]
-                : [
-                    {
-                      src: page.heroImage,
-                      alt: page.heroImageAlt,
-                      objectPosition: page.heroImagePosition,
-                    },
-                  ]
-            }
-          />
-          {page.slug === "gender-reveal" && <GenderRevealHeroContent page={page} />}
-          {page.slug === "signup-forms" && <SignupFormsHeroContent page={page} />}
-          {page.slug !== "gender-reveal" && page.slug !== "signup-forms" && (
-            <div className="relative z-[1] mx-auto grid w-full max-w-7xl items-end gap-10 px-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-32 sm:px-8 md:pb-14 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,0.48fr)] lg:px-10">
-              <div className="max-w-4xl text-white">
-                <p className="text-sm font-bold uppercase text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]">
-                  {page.eyebrow}
-                </p>
-                <h1 className="mt-5 max-w-4xl text-[2.65rem] font-semibold leading-[1.03] !text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] sm:text-6xl lg:text-7xl">
-                  {page.title}
-                </h1>
-                <p className="mt-6 max-w-2xl text-base leading-7 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-xl sm:leading-8">
-                  {page.description}
-                </p>
-                <div className="mt-8 flex flex-wrap items-center gap-3">
-                  <Link
-                    href={primaryHref}
-                    className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#17111e] shadow-[0_22px_54px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5"
-                  >
-                    Browse templates
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                  <Link
-                    href={page.secondaryHref}
-                    className="inline-flex min-h-12 items-center gap-2 rounded-full border border-white/28 bg-white/12 px-6 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/18"
-                  >
-                    {page.secondaryCta}
-                  </Link>
-                </div>
-                <div className="mt-8 hidden max-w-2xl grid-cols-3 gap-2 sm:grid sm:gap-3">
-                  {page.stats.map((stat) => (
-                    <div
-                      key={`${page.slug}-hero-stat-${stat.label}`}
-                      className="rounded-lg border border-white/20 bg-white/12 px-3 py-3 backdrop-blur-md"
-                    >
-                      <p className="text-2xl font-semibold leading-none text-white">{stat.value}</p>
-                      <p className="mt-1 text-xs font-semibold uppercase text-white/68">
-                        {stat.label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="hidden md:block">
-                <HeroPreview page={page} />
-              </div>
-            </div>
-          )}
-        </section>
+      <main style={cssVars}>
+        <MarketingHero
+          eyebrow={page.eyebrow}
+          title={
+            page.slug === "gender-reveal" ? (
+              <>
+                A little mystery.
+                <br />
+                <em>A moment together.</em>
+              </>
+            ) : page.slug === "signup-forms" ? (
+              <>
+                Many helping hands.
+                <br />
+                <em>One simple signup.</em>
+              </>
+            ) : (
+              page.title
+            )
+          }
+          description={
+            page.slug === "gender-reveal"
+              ? "Bring everyone into the moment. Your invitation, guest replies, Team Pink or Team Blue, and all the details in one beautiful page."
+              : page.slug === "signup-forms"
+                ? "From potluck dishes to volunteer shifts, give everyone a clear place to choose a spot. Share one link and keep the plan together."
+                : page.description
+          }
+          image={
+            page.slug === "gender-reveal"
+              ? "/templates/gender-reveal/collection-2026/secret-greenhouse.webp"
+              : page.slug === "signup-forms"
+                ? undefined
+                : page.heroImage
+          }
+          imageAlt={
+            page.slug === "gender-reveal"
+              ? "Original pastel greenhouse gender reveal invitation artwork"
+              : page.heroImageAlt
+          }
+          primaryHref={
+            page.slug === "gender-reveal"
+              ? page.primaryHref
+              : page.slug === "signup-forms"
+                ? `${page.path}?auth=signup`
+                : primaryHref
+          }
+          primaryLabel={
+            page.slug === "gender-reveal"
+              ? "Create your reveal page"
+              : page.slug === "signup-forms"
+                ? "Create a signup page"
+                : "Browse templates"
+          }
+          secondaryHref={page.slug === "signup-forms" ? "#how-it-works" : page.secondaryHref}
+          secondaryLabel={page.slug === "signup-forms" ? "See how it works" : page.secondaryCta}
+        >
+          <HeroPreview page={page} />
+        </MarketingHero>
         {templateCategory && <PublicTemplateGallery category={templateCategory.slug} featured />}
 
         {page.slug === "gender-reveal" && <GenderRevealEditorialSections page={page} />}
@@ -354,6 +303,6 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
       <Script id={`ld-use-case-faq-${page.slug}`} type="application/ld+json">
         {JSON.stringify(faqLd)}
       </Script>
-    </div>
+    </MarketingPage>
   );
 }

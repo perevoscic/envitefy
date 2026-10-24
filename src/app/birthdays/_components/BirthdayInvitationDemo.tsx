@@ -66,7 +66,10 @@ export default function BirthdayInvitationDemo({ primaryHref }: { primaryHref: s
   const [adults, setAdults] = useState(2);
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-white/65 bg-white/95 text-[#2d211c] shadow-[0_32px_90px_rgba(44,27,18,0.24)] backdrop-blur-xl">
+    <div
+      data-appearance-scope="authored"
+      className="overflow-hidden rounded-[2rem] border border-white/65 bg-white/95 text-[#2d211c] shadow-[0_32px_90px_rgba(44,27,18,0.24)] backdrop-blur-xl"
+    >
       <div className="flex items-center gap-3 border-b border-[#eadfd8] p-5">
         <Image
           src="/phone-placeholders/birthday-maya.jpeg"
