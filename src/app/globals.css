@@ -5,6 +5,12 @@
 @import "../styles/holiday-palettes.css";
 @import "../styles/app-appearance.css";
 
+/* PostCSS scans src/; colocated verification files do not ship application classes. */
+/* Retain the existing dynamic Shared Events/birthday gradient safelist. */
+@source "../../tailwind.config.js";
+@source not "../**/*.{test,spec,stories,story}.*";
+@source not "../**/{__tests__,__fixtures__,fixtures}/**";
+
 @custom-variant dark (&:where(.dark, .dark *):not(:where([data-appearance-scope="authored"], [data-appearance-scope="authored"] *)));
 
 @font-face {

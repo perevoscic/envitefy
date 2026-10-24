@@ -52,6 +52,10 @@ test("themed sports, bridal and General-backed occasions retain artwork, typogra
   await page.route("**/*", async (route) => {
     const request = route.request(), url = new URL(request.url());
     if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript; charset=utf-8", body: script });
+    if (url.origin === "http://localhost:43139" && url.pathname.endsWith(".js")) {
+      const chunk = path.join(output, path.basename(url.pathname));
+      if (fs.existsSync(chunk)) return route.fulfill({ contentType: "text/javascript; charset=utf-8", body: fs.readFileSync(chunk) });
+    }
     if (url.pathname.startsWith("/api/history")) {
       const id = url.pathname.split("/")[3];
       if (request.method() === "GET") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...records.get(id), permissions: { role: "owner", canEdit: true, canManageCollaborators: true } }) });

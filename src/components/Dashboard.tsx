@@ -30,8 +30,8 @@ import {
   isFootballOcrSkinCandidate,
   isOcrInviteCategory,
   isPickleballOcrSkinCandidate,
-  type OcrSkinSelection,
-} from "@/lib/ocr/skin";
+} from "@/lib/ocr/skin-background";
+import type { OcrSkinSelection } from "@/lib/ocr/skin";
 import { getRsvpDashboardGuestCount } from "@/lib/owner-rsvp-dashboard";
 import { type PendingSnapUpload, takePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { normalizeThumbnailFocus, type ThumbnailFocus } from "@/lib/thumbnail-focus";
@@ -351,7 +351,7 @@ export default function Dashboard({
     dashboardData: cachedDashboardData,
     dashboardLoading,
     dashboardError,
-    isHydrated: eventCacheHydrated,
+    isIdentityReady: eventCacheIdentityReady,
     refreshDashboard,
     setDashboardMetricsCache,
   } = useEventCache();
@@ -362,14 +362,14 @@ export default function Dashboard({
   }, [scanStatus]);
 
   useEffect(() => {
-    // The provider resets its cache when the signed-in identity is established.
-    // Starting before hydration can discard this request during that reset.
+    // Wait only for the account reset, allowing sidebar history and dashboard
+    // data to load concurrently.
     if (
-      snapProcessingMode || !isSignedIn || !eventCacheHydrated ||
+      snapProcessingMode || !isSignedIn || !eventCacheIdentityReady ||
       dashboardData || dashboardLoading || dashboardError
     ) return;
     void refreshDashboard();
-  }, [dashboardData, dashboardLoading, dashboardError, eventCacheHydrated, isSignedIn, refreshDashboard, snapProcessingMode]);
+  }, [dashboardData, dashboardLoading, dashboardError, eventCacheIdentityReady, isSignedIn, refreshDashboard, snapProcessingMode]);
 
   useEffect(() => {
     const focus = `${originIdentity}:${dashboardData?.nextEvent?.id || ""}`;

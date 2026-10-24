@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-test("Home waits for the session cache reset before starting its dashboard request", () => {
+test("Home waits for the account reset without waiting for sidebar history", () => {
   const source = readFileSync(new URL("../Dashboard.tsx", import.meta.url), "utf8");
-  assert.match(source, /isHydrated: eventCacheHydrated/);
-  assert.match(source, /!eventCacheHydrated[\s\S]*?dashboardError[\s\S]*?return;\s*void refreshDashboard\(\)/);
+  assert.match(source, /isIdentityReady: eventCacheIdentityReady/);
+  assert.match(source, /!eventCacheIdentityReady[\s\S]*?dashboardError[\s\S]*?return;\s*void refreshDashboard\(\)/);
+  assert.doesNotMatch(source, /eventCacheHydrated/);
   assert.match(source, /onRetry=\{\(\) => \{ void refreshDashboard\(\{ force: true \}\); void coHostInvitations.refresh\(\); \}\}/);
 });
 
@@ -89,7 +90,7 @@ test("scanned dashboard events expose touch-safe share and delete actions", () =
   assert.match(source, /import EventActions from "@\/components\/EventActions";/);
   assert.match(source, /import EventDeleteModal from "@\/components\/EventDeleteModal";/);
   assert.match(source, /isScannedInviteCreatedVia\(item\.createdVia\)/);
-  assert.match(source, /shareUrl=\{`\/event\/\$\{encodeURIComponent\(item\.id\)\}`\}/);
+  assert.match(source, /shareUrl=\{item\.publicHref \|\| `\/event\/\$\{encodeURIComponent\(item\.id\)\}`\}/);
   assert.doesNotMatch(source, /showLabels/);
   assert.match(source, /deleteMode=\{deleteMode\}/);
   assert.match(source, /navigateAfterDelete=\{false\}/);

@@ -10,6 +10,7 @@ import {
 } from "@/config/navigation";
 
 type BottomNavProps = {
+  onCreateSelect?: () => void;
   initialActiveLabel?: string;
   items?: SignedOutBottomNavItem[];
   onConciergeSelect?: () => void;
@@ -41,6 +42,7 @@ function scrollToHash(href: string) {
 }
 
 export default function BottomNav({
+  onCreateSelect,
   initialActiveLabel = "Concierge",
   items = signedOutBottomNav,
   onConciergeSelect,
@@ -67,6 +69,10 @@ export default function BottomNav({
     setActiveLabel(item.label);
 
     if (item.action === "create") {
+      if (onCreateSelect) {
+        onCreateSelect();
+        return;
+      }
       setCreateSheetOpen(true);
       return;
     }
@@ -175,7 +181,7 @@ export default function BottomNav({
                   }
                   aria-expanded={
                     item.action === "create"
-                      ? createSheetOpen
+                      ? onCreateSelect ? undefined : createSheetOpen
                       : item.action === "menu"
                         ? false
                         : undefined

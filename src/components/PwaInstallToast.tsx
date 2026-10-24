@@ -1,4 +1,6 @@
 "use client";
+import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useInstalledAppState } from "@/lib/pwa/install-state";
 import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
@@ -35,6 +37,10 @@ const shouldHideInstallUi = (): boolean => {
 };
 
 export default function PwaInstallToast() {
+  const pathname = usePathname();
+  const { status: sessionStatus } = useSession();
+  // Keep the product introduction visible before offering installation.
+  const isMarketingLanding = pathname === "/landing" || (pathname === "/" && sessionStatus !== "authenticated");
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null
   );
@@ -169,7 +175,7 @@ export default function PwaInstallToast() {
     }
   }, []);
 
-  if (shouldHideInstallUi()) return null;
+  if (isMarketingLanding || shouldHideInstallUi()) return null;
 
   // Don't show if installed, dismissed, no prompt, or not visible
   if (

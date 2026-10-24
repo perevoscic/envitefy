@@ -43,6 +43,7 @@ test("creation access survives transient outages without exposing another accoun
       window.creationAccessConfiguration = configuration;
     }, options.configuration);
     const requests = [];
+    await page.exposeFunction("creationAccessObservedRequests", () => requests.length);
     await page.route("**/*", async route => {
       const url = new URL(route.request().url());
       if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: script });
@@ -68,7 +69,9 @@ test("creation access survives transient outages without exposing another accoun
     await page.waitForFunction(() => Object.values(window.creationAccessFixture.current).every(state => !state.loading && state.error && !state.access));
   }
   async function waitRequests(page, count) {
-    await page.waitForFunction(expected => window.creationAccessFixture.requests.length >= expected, count);
+    // A fetch call can precede Playwright's route callback. Let the transport
+    // observe the attempt before advancing the fake clock to its next timeout.
+    await page.waitForFunction(async expected => (await window.creationAccessObservedRequests()) >= expected, count);
   }
   async function settleRender(page) {
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -161,7 +164,9 @@ test("creation access survives transient outages without exposing another accoun
       }, { clock: true });
       try {
         await waitRequests(page, 1);
-        await page.clock.runFor(10_001);
+        await page.clock.runFor(4_301);
+        await waitRequests(page, 2);
+        await page.clock.runFor(5_700);
         await waitBlocked(page);
         assert.equal(requests.length, 2, "both attempts fit under the shared ten-second deadline");
         const state = await page.evaluate(() => window.creationAccessFixture.current.A);
@@ -182,7 +187,9 @@ test("creation access survives transient outages without exposing another accoun
         await waitLoaded(page, ["weddings"]);
         await page.getByRole("button", { name: "Access changed", exact: true }).click();
         await waitRequests(page, 2);
-        await page.clock.runFor(10_001);
+        await page.clock.runFor(4_301);
+        await waitRequests(page, 3);
+        await page.clock.runFor(5_700);
         await waitLoaded(page, ["weddings"]);
         assert.equal(requests.length, 3, "background timeout also uses the bounded retry");
         const loaded = await page.evaluate(() => window.creationAccessFixture.renders.filter(state => state.access));

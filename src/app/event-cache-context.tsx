@@ -100,6 +100,7 @@ type EventCacheContextValue = {
   dashboardData: DashboardPayload | null;
   dashboardLoading: boolean;
   dashboardError: string | null;
+  isIdentityReady: boolean;
   isHydrated: boolean;
   refreshHistory: (opts?: { force?: boolean }) => Promise<void>;
   refreshDashboard: (opts?: { force?: boolean }) => Promise<void>;
@@ -176,6 +177,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [cacheIdentityKey, setCacheIdentityKey] = useState<string | null>(null);
 
   const historyRef = useRef<HistoryRow[]>([]);
   const removedKeysByIdentityRef = useRef(new Map<string, Set<string>>());
@@ -256,6 +258,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   }, [sessionIdentityKey]);
 
   const refreshHistory = useCallback(async (opts?: { force?: boolean }) => {
+    if (!sessionIdentityKey || identityKeyRef.current !== sessionIdentityKey) return;
     const revision = cacheRevisionRef.current;
     const resetEpoch = historyResetEpochRef.current;
     setHistoryLoading(true);
@@ -295,11 +298,12 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     } catch {
       // Keep the last good history state on transient failures.
     } finally {
-      setHistoryLoading(false);
+      if (resetEpoch === historyResetEpochRef.current) setHistoryLoading(false);
     }
-  }, [getRemovedKeys]);
+  }, [getRemovedKeys, sessionIdentityKey]);
 
   const refreshDashboard = useCallback(async (opts?: { force?: boolean }) => {
+    if (!sessionIdentityKey || identityKeyRef.current !== sessionIdentityKey) return;
     const revision = cacheRevisionRef.current;
     if (dashboardRefreshPromiseRef.current) {
       return await dashboardRefreshPromiseRef.current;
@@ -320,6 +324,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
         if (revision !== cacheRevisionRef.current) return;
         if (res.status === 401) {
           const latestSession = await updateSession().catch(() => null);
+          if (revision !== cacheRevisionRef.current) return;
           if (!latestSession?.user) {
             resetCacheState();
           } else if (!dashboardRef.current) {
@@ -347,8 +352,6 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
         if (revision === cacheRevisionRef.current) {
           setDashboardError("We couldn't load your events. Please try again.");
         }
-      } finally {
-        setDashboardLoading(false);
       }
     })();
     dashboardRefreshPromiseRef.current = refreshPromise;
@@ -357,18 +360,20 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     } finally {
       if (dashboardRefreshPromiseRef.current === refreshPromise) {
         dashboardRefreshPromiseRef.current = null;
+        setDashboardLoading(false);
       }
     }
   }, [resetCacheState, sessionIdentityKey, updateSession]);
 
   const refreshAll = useCallback(
     async (opts?: EventCacheRefreshOptions) => {
+      const resetEpoch = historyResetEpochRef.current;
       const work: Array<Promise<void>> = [refreshHistory(opts)];
       if (opts?.includeDashboard || dashboardRef.current) {
         work.push(refreshDashboard({ force: opts?.force }));
       }
       await Promise.all(work);
-      setIsHydrated(true);
+      if (resetEpoch === historyResetEpochRef.current) setIsHydrated(true);
     },
     [refreshDashboard, refreshHistory],
   );
@@ -469,6 +474,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     const previousIdentity = identityKeyRef.current;
     if (status !== "authenticated") {
       identityKeyRef.current = null;
+      setCacheIdentityKey(null);
       resetCacheState();
       return;
     }
@@ -476,6 +482,9 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       identityKeyRef.current = sessionIdentityKey;
       resetCacheState();
     }
+    // Establish the account before consumers request data. Sidebar history can
+    // keep loading independently of the dashboard's first request.
+    setCacheIdentityKey(sessionIdentityKey);
     if (status !== "authenticated" || isHydratedRef.current) return;
     let cancelled = false;
     (async () => {
@@ -583,15 +592,17 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     };
   }, [getRemovedKeys, persistRemovedKeys, queueRefresh, resetCacheState, removeUnavailableEvent]);
 
+  const isIdentityReady = Boolean(sessionIdentityKey && cacheIdentityKey === sessionIdentityKey);
   const value = useMemo<EventCacheContextValue>(
     () => ({
-      historySidebarItems,
-      historyDiagnostics,
-      historyLoading,
-      dashboardData,
-      dashboardLoading,
-      dashboardError,
-      isHydrated,
+      historySidebarItems: isIdentityReady ? historySidebarItems : [],
+      historyDiagnostics: isIdentityReady ? historyDiagnostics : null,
+      historyLoading: isIdentityReady && historyLoading,
+      dashboardData: isIdentityReady ? dashboardData : null,
+      dashboardLoading: isIdentityReady && dashboardLoading,
+      dashboardError: isIdentityReady ? dashboardError : null,
+      isIdentityReady,
+      isHydrated: isIdentityReady && isHydrated,
       refreshHistory,
       refreshDashboard,
       refreshAll,
@@ -608,6 +619,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       historySidebarItems,
       invalidateEventCache,
       removeUnavailableEvent,
+      isIdentityReady,
       isHydrated,
       refreshAll,
       refreshDashboard,

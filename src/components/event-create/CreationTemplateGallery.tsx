@@ -9,39 +9,26 @@ import {
   TemplateMasonryCard,
   TemplateMasonryGrid,
 } from "@/components/events/TemplateMasonryGallery";
-import FootballThumbnail from "@/components/football-season-templates/FootballThumbnail";
-import { FOOTBALL_GALLERY_DESIGNS } from "@/components/football-season-templates/footballGallery";
-import GymnasticsThumbnail from "@/components/gym-meet-templates/GymnasticsThumbnail";
-import { GYM_MEET_TEMPLATE_LIBRARY } from "@/components/gym-meet-templates/registry";
 import CategoryTemplateThumbnail from "@/components/templates/CategoryTemplateThumbnail";
-import type { CreationTemplate } from "@/lib/create/template-selection";
-import { GENERAL_EVENT_DESIGNS } from "@/lib/general-event-designs";
+import type { CreationTemplate } from "@/lib/create/creation-template";
+import type { TemplateArtwork } from "@/components/events/template-artwork";
+import dynamic from "next/dynamic";
+
+const FootballCreationThumbnail = dynamic(() => import("./FootballCreationThumbnail"));
 import { getTemplateCategory } from "@/lib/template-categories";
-import { getThemedEventDesign } from "@/lib/event-page-themed-designs";
 
 type CreationTemplateGalleryProps = {
   templates: CreationTemplate[];
+  previews?: Record<string, TemplateArtwork>;
   onSelect: (template: CreationTemplate) => void;
   compact?: boolean;
   selectedTemplateId?: string;
   scrollRoot?: RefObject<HTMLElement | null>;
 };
 
-function CreationTemplatePreview({ template }: { template: CreationTemplate }) {
-  const themed = getThemedEventDesign(template.id);
-  if (themed) return <TemplateArtworkThumbnail design={themed} />;
-  if (template.category === "gymnastics") {
-    const design = GYM_MEET_TEMPLATE_LIBRARY.find((item) => item.id === template.id);
-    if (design) return <GymnasticsThumbnail design={design} />;
-  }
-  if (template.family === "football") {
-    const design = FOOTBALL_GALLERY_DESIGNS.find((item) => item.id === template.id);
-    if (design) return <FootballThumbnail design={design} />;
-  }
-  if (template.family === "general") {
-    const design = GENERAL_EVENT_DESIGNS.find((item) => item.id === template.id);
-    if (design) return <TemplateArtworkThumbnail design={design} />;
-  }
+function CreationTemplatePreview({ template, preview }: { template: CreationTemplate; preview?: TemplateArtwork }) {
+  if (preview) return <TemplateArtworkThumbnail design={preview} />;
+  if (template.family === "football") return <FootballCreationThumbnail templateId={template.id} />;
   const category = getTemplateCategory(template.category);
   if (category && (template.family === "native" || template.family === "signup")) {
     return (
@@ -70,6 +57,7 @@ function CreationTemplatePreview({ template }: { template: CreationTemplate }) {
 
 function CreationTemplateGalleryContents({
   templates,
+  previews,
   onSelect,
   compact,
   selectedTemplateId,
@@ -87,7 +75,7 @@ function CreationTemplateGalleryContents({
             selected={template.id === selectedTemplateId}
             onSelect={() => onSelect(template)}
           >
-            <CreationTemplatePreview template={template} />
+            <CreationTemplatePreview template={template} preview={previews?.[template.id]} />
           </TemplateMasonryCard>
         ))}
       </TemplateMasonryGrid>

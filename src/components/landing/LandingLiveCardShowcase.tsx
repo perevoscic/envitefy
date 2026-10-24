@@ -23,6 +23,7 @@ type ShowcaseCardItem = {
 };
 
 type LandingLiveCardShowcaseProps = {
+  sectionId?: string;
   eyebrow?: string;
   title?: string;
   description?: string;
@@ -48,6 +49,7 @@ const showcaseCards: ShowcaseCardItem[] = landingShowcasePreviews.map((preview) 
 const INITIAL_SHOWCASE_INDEX = 3;
 
 export default function LandingLiveCardShowcase({
+  sectionId = "showcase",
   eyebrow,
   title = "Live Card Showcase",
   description = "See how hosts use Envitefy Create to create memorable event experiences.",
@@ -402,7 +404,7 @@ export default function LandingLiveCardShowcase({
   return (
     <>
       <motion.section
-        id="showcase"
+        id={sectionId}
         className="flex min-h-[100svh] flex-col justify-start overflow-x-clip pb-16 pt-[calc(2.25rem+env(safe-area-inset-top))] sm:pt-[calc(3rem+env(safe-area-inset-top))] lg:justify-center lg:pb-20 lg:pt-32"
         {...revealIn}
       >

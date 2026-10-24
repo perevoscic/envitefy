@@ -10,6 +10,12 @@ An optional website fixture mode creates twelve synthetic non-admin accounts and
 
 ## Revised closed-test plan — October 17, 2026
 
+### Manual activity session — October 24
+
+The owner authorized tests and app activity today for QA01–QA10 and QA12; QA11 remains deferred. The [dated plan](../output/maestro/closed-test/manual-20261024-1792860437782/activity-plan.json), [ledger](../output/maestro/closed-test/manual-20261024-1792860437782/activity-ledger.json) and [report](../output/maestro/closed-test/manual-20261024-1792860437782/index.html) start empty and exclude earlier dates. Reuse the original workshop and mapped private draft, verify the exact owner, inspect Preview and return when available, and read another QA workshop. QA01 uses its preserved secondary Play installation; all other profiles use the primary installation with one shared UI lock. Preserve actual timestamps, flow snapshots, JUnit/stdout, screenshots and Android/browser diagnostics, including failed attempts. No new records, saves, publishing, invitations, messages, RSVPs or camera checks are part of this browsing session. No future schedule is created.
+
+The separate October 23 [Play Console observation](../output/maestro/closed-test/play-enrollment-20261023/observation.json) recorded Google's aggregate of twelve testers continuously opted in for nine days after its October 14 review. It does not identify individual accounts, establish human feedback or turn Maestro activity into human testing. That counter must be rechecked separately; October 24 activity is counted only from successful current UI evidence.
+
 ### Manual activity session — October 23
 
 The owner authorized another session now on October 23. The new [dated plan](../output/maestro/closed-test/manual-20261023-1792762913181/activity-plan.json), [ledger](../output/maestro/closed-test/manual-20261023-1792762913181/activity-ledger.json) and [report](../output/maestro/closed-test/manual-20261023-1792762913181/index.html) are separate from the closed October 22 schedule. QA01–QA10 and QA12 are eligible; QA11 remains deferred. This is one manual session, with no new scheduled return or imported activity from another date.

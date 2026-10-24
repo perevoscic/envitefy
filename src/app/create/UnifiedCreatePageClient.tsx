@@ -18,7 +18,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import CreationTemplateGallery from "@/components/event-create/CreationTemplateGallery";
+import { useCreationTemplates } from "@/hooks/useCreationTemplates";
 import { getCreateEventSections } from "@/config/navigation-config";
 import { useMenuOptional } from "@/contexts/MenuContext";
 import { useCreationAccess } from "@/hooks/useCreationAccess";
@@ -41,19 +41,15 @@ import {
 } from "@/lib/create/creation-intake";
 import { creationChoicesFromLinks } from "@/lib/create/creation-navigation";
 import { availableEventTypeGroups, eventTypeChoiceSearchText, eventTypeGroup, expandEventTypeChoices } from "@/lib/create/event-type-groups";
-import { HOLIDAY_COLLECTIONS } from "@/lib/holiday-collections";
+import { HOLIDAY_OCCASIONS as HOLIDAY_COLLECTIONS } from "@/lib/holiday-occasions";
 import { localGalleryDay } from "@/lib/seasonal-template-order";
-import { getThemedEventDesign } from "@/lib/event-page-themed-designs";
-import {
-  informationForCreation,
-  prepareCreationEditor,
-  prepareOriginalCreationEditor,
-} from "@/lib/create/editor-handoff";
+import { informationForCreation } from "@/lib/create/creation-information";
 import {
   cancelSportDiscovery,
   runSportDiscovery,
 } from "@/lib/create/run-sport-discovery";
-import { type CreationTemplate, getCreationTemplates } from "@/lib/create/template-selection";
+import type { CreationTemplate } from "@/lib/create/creation-template";
+import { loadCreationCatalog } from "@/lib/create/creation-template-loader";
 import { CREATE_EXTRACTION_STAGE_LABELS, readCreateExtractionResponse } from "@/lib/create/extraction-progress";
 import { normalizeCustomEventInformation, type CustomEventInformation, type CustomEventPage } from "@/lib/event-custom-design";
 import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
@@ -66,6 +62,10 @@ import LinkImportPreview from "./LinkImportPreview";
 import UploadDocumentFan from "./UploadDocumentFan";
 import styles from "./create-workspace.module.css";
 import uploadStyles from "./upload-document-fan.module.css";
+
+const CreationTemplateGallery = dynamic(() => import("@/components/event-create/CreationTemplateGallery"));
+const prepareCreationEditor = async (...args: Parameters<typeof import("@/lib/create/editor-handoff").prepareCreationEditor>) => (await import("@/lib/create/editor-handoff")).prepareCreationEditor(...args);
+const prepareOriginalCreationEditor = async (...args: Parameters<typeof import("@/lib/create/editor-handoff").prepareOriginalCreationEditor>) => (await import("@/lib/create/editor-handoff")).prepareOriginalCreationEditor(...args);
 
 const EventCustomThemeDialog = dynamic(
   () => import("@/components/events/custom/EventCustomThemeDialog"),
@@ -230,21 +230,19 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
       ).flatMap((section) => section.items),
     ).filter((item) => allowedCreationGuess(item.guess, allowedCategories));
   }, [menu, ready, canCreatePage, allowedCategories.join(",")]);
-  const templates = useMemo(
-    () => (guess && supportedGuess ? getCreationTemplates(guess) : []),
-    [guess?.category, guess?.sport, guess?.occasion, supportedGuess],
-  );
+  const catalog = useCreationTemplates(guess && supportedGuess && accountReady ? guess : undefined, accountReady ? ownerId : "");
+  const templates = catalog.templates;
   const designThemes = useMemo(() => {
     const themes = new Map<string, string>();
     for (const template of templates) {
-      const design = getThemedEventDesign(template.id);
+      const design = catalog.themes[template.id];
       if (design) themes.set(design.subtype, design.label);
     }
     return [...themes].map(([id, label]) => ({ id, label }));
-  }, [templates]);
+  }, [templates, catalog.themes]);
   const activeDesignThemeFilter = designThemes.some((theme) => theme.id === designThemeFilter) ? designThemeFilter : "all";
-  const visibleDesigns = useMemo(() => activeDesignThemeFilter === "all" ? templates : templates.filter((template) => getThemedEventDesign(template.id)?.subtype === activeDesignThemeFilter), [templates, activeDesignThemeFilter]);
-  const defaultTemplateFor = (record: CreationIntake, confirmed = false) => {
+  const visibleDesigns = useMemo(() => activeDesignThemeFilter === "all" ? templates : templates.filter((template) => catalog.themes[template.id]?.subtype === activeDesignThemeFilter), [templates, activeDesignThemeFilter, catalog.themes]);
+  const defaultTemplateFor = async (record: CreationIntake, confirmed = false) => {
     const selected = record.guess || record.classification;
     if (
       !selected ||
@@ -257,7 +255,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
         : !allowedCreationGuess(selected, allowedCategories))
     )
       return;
-    const available = getCreationTemplates(selected);
+    const { templates: available } = await loadCreationCatalog(selected);
     return available.find((template) => template.id === record.selectedTemplateId) || available[0];
   };
   const preferredChoices = preferred
@@ -609,7 +607,14 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
       }
       if (version !== epoch.current) return;
       if (source.kind !== "scratch") {
-        const template = defaultTemplateFor(next, !!confirmedGuess);
+        let template: CreationTemplate | undefined;
+        try {
+          template = await defaultTemplateFor(next, !!confirmedGuess);
+        } catch {
+          if (version === epoch.current && !controller.signal.aborted)
+            setError("Your designs could not be loaded. Try again below.");
+        }
+        if (version !== epoch.current || controller.signal.aborted) return;
         if (template) {
           await openTemplate(template, next, { version, controller });
           return;
@@ -735,8 +740,14 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
         return;
       }
       if (saved.source.kind !== "scratch") {
-        const template = defaultTemplateFor(saved, true);
-        if (template) await openTemplate(template, saved);
+        try {
+          const template = await defaultTemplateFor(saved, true);
+          if (version !== epoch.current || saved.ownerId !== activeOwner.current) return;
+          if (template) await openTemplate(template, saved);
+        } catch {
+          if (version === epoch.current && saved.ownerId === activeOwner.current)
+            setError("Your designs could not be loaded. Try again below.");
+        }
       }
       return;
     }
@@ -1211,18 +1222,20 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                                   className={styles.urlInput}
                                 />
                               </label>
-                              <button
-                                type="button"
-                                className={styles.fallbackButton}
-                                onClick={() => {
-                                  invalidate();
-                                  setUsePastedText((value) => !value);
-                                }}
-                              >
-                                {usePastedText
-                                  ? "Read the public link instead"
-                                  : "Can’t open the link? Paste the event text instead"}
-                              </button>
+                              {usePastedText || error ? (
+                                <button
+                                  type="button"
+                                  className={styles.fallbackButton}
+                                  onClick={() => {
+                                    invalidate();
+                                    setUsePastedText((value) => !value);
+                                  }}
+                                >
+                                  {usePastedText
+                                    ? "Read the public link instead"
+                                    : "Paste event text instead"}
+                                </button>
+                              ) : null}
                             </>
                           )}
                           {usePastedText && mode === "url" ? (
@@ -1494,8 +1507,11 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                       className={primary}
                       onClick={() => {
                         const record = current.current;
-                        const template = record && defaultTemplateFor(record, true);
-                        if (template) void openTemplate(template);
+                        if (!record) return;
+                        const version = epoch.current;
+                        void defaultTemplateFor(record, true).then(template => {
+                          if (template && current.current === record && version === epoch.current) void openTemplate(template);
+                        }).catch(failure => { if (version === epoch.current) setError(failure instanceof Error ? failure.message : "Your designs could not be loaded."); });
                       }}
                     >
                       Continue to editor
@@ -1515,9 +1531,11 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                 ) : null}
                 <CreationTemplateGallery
                   templates={visibleDesigns}
+                  previews={catalog.previews}
                   onSelect={(template) => void openTemplate(template)}
                 />
-                {!templates.length ? (
+                {catalog.loading ? <p className="mt-5 text-sm text-[#75677e]" role="status">Loading designs…</p> : catalog.error ? <div className="mt-5 text-sm text-[#75677e]" role="alert"><p>Your designs could not be loaded.</p><button type="button" className={control} onClick={() => { setError(""); catalog.retry(); }}>Try again</button></div> : null}
+                {!templates.length && !catalog.loading && !catalog.error ? (
                   <p className="mt-5 text-sm text-[#75677e]">
                     Use a custom design below or choose another event type.
                   </p>

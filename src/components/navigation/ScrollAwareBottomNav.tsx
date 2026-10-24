@@ -7,6 +7,7 @@ import ConciergeLauncher from "@/components/navigation/ConciergeLauncher";
 import type { SignedOutBottomNavItem } from "@/config/navigation";
 
 type ScrollAwareBottomNavProps = {
+  onCreateSelect?: () => void;
   onConciergeSelect?: () => void;
   onMenuSelect?: () => void;
   onVisibilityChange?: (visible: boolean) => void;
@@ -16,6 +17,7 @@ type ScrollAwareBottomNavProps = {
 };
 
 export default function ScrollAwareBottomNav({
+  onCreateSelect,
   onConciergeSelect,
   onMenuSelect,
   onVisibilityChange,
@@ -84,6 +86,7 @@ export default function ScrollAwareBottomNav({
         ].join(" ")}
       >
         <BottomNav
+          onCreateSelect={onCreateSelect}
           initialActiveLabel={initialActiveLabel}
           items={items}
           onHashSelect={onHashSelect}

@@ -5,10 +5,8 @@ import { getTemplateCategory, templateEditorHref } from "../template-categories"
 import { customCategoryForGuess, type CreateGuess } from "./create-intent";
 import { getGeneralCreationDesigns } from "./event-page-collections";
 
-export type CreationTemplate = {
-  id: string; title: string; imageUrl: string; href: string; category: string;
-  description: string; style: string; family: "native" | "general" | "football" | "custom" | "signup" | "live-card";
-};
+import type { CreationTemplate } from "./creation-template";
+export type { CreationTemplate } from "./creation-template";
 /** Use the actual native catalogs, so recommendations never promise a fictional template. */
 export function getCreationTemplates(guess: CreateGuess): CreationTemplate[] {
   if (["appointments", "medical-appointments", "workshops", "special-events"].includes(guess.category)) return [];

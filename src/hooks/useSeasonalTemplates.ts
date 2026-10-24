@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { HOLIDAY_COLLECTIONS, type HolidayCollectionId } from "@/lib/holiday-collections";
+import { HOLIDAY_OCCASIONS as HOLIDAY_COLLECTIONS } from "@/lib/holiday-occasions";
+import type { HolidayCollectionId } from "@/lib/holiday-collections";
 import { localGalleryDay, orderSeasonalTemplates, templateOccasion, templateSeasonKey, type GalleryOrder, type SeasonalTemplate } from "@/lib/seasonal-template-order";
 
 export function useSeasonalTemplates<T extends SeasonalTemplate>(templates: readonly T[]) {

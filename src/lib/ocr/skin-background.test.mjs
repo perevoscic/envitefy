@@ -7,6 +7,14 @@ function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
 }
 
+test("browser OCR category checks return booleans without loading AI providers", async () => {
+  const { isOcrInviteCategory } = await import("./skin-background.ts");
+  for (const value of [" Birthday ", "Weddings", "baby showers", "football", "open house"])
+    assert.equal(isOcrInviteCategory(value), true);
+  for (const value of [null, undefined, 12, {}, "", "unsupported category"])
+    assert.equal(isOcrInviteCategory(value), false);
+});
+
 test("ocr skin background schema validates motifs and builds title-aware fallbacks", () => {
   const source = readSource("src/lib/ocr/skin-background.ts");
 

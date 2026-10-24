@@ -1,4 +1,5 @@
-import { HOLIDAY_COLLECTIONS, type HolidayCollectionId } from "./holiday-collections";
+import { HOLIDAY_OCCASIONS as HOLIDAY_COLLECTIONS } from "./holiday-occasions";
+import type { HolidayCollectionId } from "./holiday-collections";
 import type { HolidayDateRule } from "./holiday-collection-types";
 
 export type GalleryOrder = "seasonal" | "original";

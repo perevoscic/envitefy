@@ -163,21 +163,28 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
           if(width===1440) {
             await page.getByRole("button",{name:"Open Envitefy Concierge",exact:true}).click();
           } else {
-            await page.getByRole("button",{name:"Open the signed-out mobile menu.",exact:true}).click();
+            const navigation=page.getByRole("navigation",{name:"Signed-out mobile navigation",exact:true});
+            await navigation.getByRole("button",{name:"Open navigation",exact:true}).click();
             const sheet=page.getByRole("dialog",{name:"Menu",exact:true});
             await sheet.waitFor();
             assert.equal(await sheet.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(37, 31, 45)");
             await sheet.getByRole("switch",{name:"Dark mode",exact:true}).check();
-            assert.ok((await sheet.getByRole("img",{name:"Envitefy",exact:true}).getAttribute("src")).includes("/brand/white-v1/"));
+            assert.equal(await sheet.getByRole("img",{name:"Envitefy",exact:true}).getAttribute("src"),"/brand/wordmark-v2/envitefy-wordmark-white.webp","the signed-out menu uses the approved white wordmark");
             await sheet.screenshot({path:path.join(out,"signed-out-mobile-menu-dark.png")});
             await sheet.getByRole("button",{name:"Close menu",exact:true}).click();
-            await page.getByRole("button",{name:"Open signed-out creation choices.",exact:true}).click();
-            const choices=page.getByRole("dialog",{name:"Create options",exact:true});
+            // The landing Create action now opens signup. Its predecessor remains in
+            // the shared BottomNav, so retain that real component's appearance coverage.
+            const compatibility=await context.newPage();
+            await compatibility.setViewportSize({width,height:1080});
+            await compatibility.goto("https://dark-ui.test/landing?screen=create-options");
+            await compatibility.getByRole("button",{name:"Open signed-out creation choices.",exact:true}).click();
+            const choices=compatibility.getByRole("dialog",{name:"Create options",exact:true});
             await choices.waitFor();
             assert.equal(await choices.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(37, 31, 45)");
             await choices.screenshot({path:path.join(out,"signed-out-create-options-dark.png")});
             await choices.getByRole("button",{name:"Close create options",exact:true}).click();
-            await page.getByRole("button",{name:"Answer questions about Envitefy for signed-out visitors.",exact:true}).click();
+            await compatibility.close();
+            await navigation.getByRole("button",{name:"Ask Envitefy Concierge",exact:true}).click();
           }
           const concierge=page.getByRole("dialog",{name:"Envitefy Concierge",exact:true});
           await concierge.waitFor();

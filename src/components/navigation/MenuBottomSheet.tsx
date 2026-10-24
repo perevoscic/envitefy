@@ -24,6 +24,7 @@ import { useModalDialog } from "@/hooks/useModalDialog";
 type AuthMode = "login" | "signup";
 
 type MenuBottomSheetProps = {
+  allowDesktop?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   successRedirectUrl?: string;
@@ -38,6 +39,7 @@ const closeDragVelocity = 650;
 const sheetHeight = "calc(100svh - 0.75rem)";
 
 export default function MenuBottomSheet({
+  allowDesktop = false,
   open,
   onOpenChange,
   successRedirectUrl = "/",
@@ -95,7 +97,7 @@ export default function MenuBottomSheet({
   return (
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-[90] md:hidden" role="presentation">
+        <div className={`fixed inset-0 z-[90] ${allowDesktop ? "" : "md:hidden"}`} role="presentation">
           <motion.button
             type="button"
             className="absolute inset-0 cursor-default bg-[#120b1d]/30 backdrop-blur-[2px]"
@@ -113,7 +115,7 @@ export default function MenuBottomSheet({
             aria-modal="true"
             tabIndex={-1}
             aria-label={authActive ? (authMode === "signup" ? "Sign up" : "Sign in") : "Menu"}
-            className={`${appearanceStyles.mobileMenu} absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#150c29] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 text-white shadow-[0_-28px_90px_rgba(20,11,34,0.38)]`}
+            className={`${appearanceStyles.mobileMenu} ${allowDesktop ? "md:inset-x-auto md:right-4 md:bottom-3 md:rounded-[1.75rem]" : ""} absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#150c29] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 text-white shadow-[0_-28px_90px_rgba(20,11,34,0.38)]`}
             style={{
               height: authActive ? "auto" : sheetHeight,
               maxHeight: sheetHeight,

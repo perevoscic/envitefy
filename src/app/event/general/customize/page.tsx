@@ -763,7 +763,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </div>
           {/* biome-ignore lint/a11y/noNoninteractiveTabindex: This scrollable design region needs keyboard focus for scrolling. */}
           <div ref={designGalleryScrollRef} className="max-h-[65vh] overflow-y-auto overscroll-contain pr-1" role="region" aria-label={collectionLabel ? `${collectionLabel} designs` : "General event designs"} tabIndex={0}>
-            <CreationTemplateGallery templates={designTemplates} onSelect={selectDesign} selectedTemplateId={themeId} scrollRoot={designGalleryScrollRef} compact />
+            <CreationTemplateGallery templates={designTemplates} previews={Object.fromEntries(designTemplates.map(template => [template.id, resolveGeneralCreationDesign(template.id)]))} onSelect={selectDesign} selectedTemplateId={themeId} scrollRoot={designGalleryScrollRef} compact />
           </div>
 
           <div>

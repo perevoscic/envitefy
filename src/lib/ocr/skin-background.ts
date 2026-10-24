@@ -532,6 +532,10 @@ function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+export function isOcrInviteCategory(value: unknown): boolean {
+  return Boolean(normalizeOcrSkinCategory(value));
+}
+
 export function normalizeOcrSkinCategory(value: unknown): OcrSkinCategory | null {
   const normalized = safeString(value).toLowerCase();
   if (normalized === "birthday" || normalized === "birthdays") return "birthday";

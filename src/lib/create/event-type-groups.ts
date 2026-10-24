@@ -1,4 +1,4 @@
-import { HOLIDAY_COLLECTIONS } from "../holiday-collections";
+import { HOLIDAY_OCCASIONS as HOLIDAY_COLLECTIONS } from "../holiday-occasions";
 import { seasonalCollectionScores } from "../seasonal-template-order";
 import { type CreateGuess, createGuessLabel } from "./create-intent";
 

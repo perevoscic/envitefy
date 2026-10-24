@@ -31,6 +31,7 @@ export type {
 export {
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
+  isOcrInviteCategory,
   isPickleballOcrSkinCandidate,
   normalizeOcrSportKind,
 } from "@/lib/ocr/skin-background";
@@ -346,10 +347,6 @@ const DEFAULT_OCR_SKIN_PALETTES: Record<OcrSkinId, OcrSkinPalette> = {
 
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
-}
-
-export function isOcrInviteCategory(value: unknown): boolean {
-  return Boolean(normalizeOcrSkinCategory(value));
 }
 
 function normalizeHex(value: unknown): string | null {

@@ -1,11 +1,12 @@
-import { emptyCustomEventDetails, type CustomEventInformation } from "../event-custom-design";
+import { informationForCreation } from "./creation-information";
+import { type CustomEventInformation } from "../event-custom-design";
 import type { EventPageComposition } from "../event-page-composition";
 import { readTemplateDraft, writeTemplateDraft, type DraftValue, type EditorSnapshot, type TemplateDraft } from "../template-draft-storage";
 import { getPublicTemplate } from "../public-template-catalog";
 import { getTemplateCategory } from "../template-categories";
 import { createEmptySignupTemplateForm } from "../signup-starters";
 import { createLiveCardForm, type LiveCardEventType } from "../livecard-builder";
-import { customCategoryForGuess, discoveryTargetForSport } from "./create-intent";
+import { discoveryTargetForSport } from "./create-intent";
 import { writeCreationIntake, type CreationIntake } from "./creation-intake";
 import type { CreationTemplate } from "./template-selection";
 import { getGeneralEventDesign } from "../general-event-designs";
@@ -114,9 +115,7 @@ export async function prepareCreationEditor(intake: CreationIntake, template: Cr
   return url.pathname + url.search;
 }
 
-export function informationForCreation(intake: CreationIntake): CustomEventInformation {
-  return intake.information || { version: 1, kind: "information", category: intake.guess ? customCategoryForGuess(intake.guess) : "general", design: { version: 1, name: "Event page", description: "", layout: "banner", font: "editorial", colors: { page: "#ffffff", surface: "#ffffff", ink: "#251f3d", accent: "#675cf4" } }, details: emptyCustomEventDetails() };
-}
+export { informationForCreation } from "./creation-information";
 
 export async function prepareOriginalCreationEditor(intake: CreationIntake): Promise<string> {
   const file = intake.source.files[0];

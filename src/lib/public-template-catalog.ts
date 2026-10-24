@@ -1,194 +1,34 @@
-import { SIGNUP_TEMPLATES } from "@/assets/signup-templates";
-import { GYM_MEET_TEMPLATE_LIBRARY } from "@/components/gym-meet-templates/registry";
-import babyTemplates from "@/data/baby-shower-templates.json";
-import {
-  ANNIVERSARY_DESIGN_CATALOG,
-  BIRTHDAY_DESIGN_CATALOG,
-} from "@/data/birthday-design-catalog";
-import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
-import { genderRevealDesigns } from "@/lib/gender-reveal-designs";
-import { SIGNUP_THEMES } from "@/lib/signup-themes";
-import { SPORT_EVENT_PRESETS } from "@/lib/sport-event-presets";
-import { weddingDesignCatalog } from "@/lib/wedding-designs";
-import { getActiveThemedEventDesigns, getDeliveredThemedEventDesign, type ThemedEventDesign } from "@/lib/event-page-themed-designs";
 import type { TemplateCategory } from "./template-categories";
+import { getDeliveredThemedEventDesign } from "./event-page-themed-designs";
+import { SPORT_EVENT_PRESETS } from "./sport-event-presets";
+import { BRIDAL_PRESETS, getSportEventPresetLabel, styleNames, legacySportPublicTemplate, themedEventPublicTemplate, type PublicTemplate } from "./public-template-shared";
+export { BRIDAL_PRESETS, matchesPublicTemplateSearch, themedEventPublicTemplate } from "./public-template-shared";
+export type { PublicTemplate } from "./public-template-shared";
 
-export const BRIDAL_PRESETS = [
-  {
-    id: "champagne-gold",
-    name: "Champagne Gold",
-    style: "Timeless luxury",
-    description: "Warm ivory, champagne details, and an elegant celebration of the bride.",
-    heroImage: "/images/landing/hero/garden-brunch-desktop.webp",
-    themeId: "golden_hour",
-    accent: "#6e5638",
-    background: "#f4ede3",
-  },
-  {
-    id: "botanical-sage",
-    name: "Botanical Sage",
-    style: "Garden",
-    description: "A garden gathering with soft sage, brunch details, and thoughtful host notes.",
-    heroImage: "/images/landing/hero/galleries/bridal-hero-2.webp",
-    themeId: "sage_green",
-    accent: "#344c3b",
-    background: "#e9efe8",
-  },
-  {
-    id: "rose-quartz",
-    name: "Rose Quartz",
-    style: "Romantic",
-    description: "Blush stationery and romantic lettering for a toast to the bride.",
-    heroImage: "/images/landing/hero/galleries/bridal-hero-3.webp",
-    themeId: "blush_pink",
-    accent: "#6f3842",
-    background: "#f8e7e9",
-  },
-] as const;
-export type PublicTemplate = {
-  id: string;
-  name: string;
-  style: string;
-  description: string;
-  heroImage: string;
-  color?: string;
-  season?: string;
-  audience?: string;
-  milestone?: string | number | null;
-  sport?: string;
-  keywords?: string;
-  occasion?: string;
-};
-const styleNames = { stadium: "Stadium", club: "Club", tournament: "Tournament" };
-const schoolSignupKeywords =
-  "field day school classroom teacher parents pta pto volunteer supplies parent teacher conferences appointments class party classroom party room parent room mom class celebration";
-
-export function matchesPublicTemplateSearch(template: PublicTemplate, query: string): boolean {
-  const normalize = (text: string) =>
-    text
-      .normalize("NFKD")
-      .toLowerCase()
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\p{L}\p{N}]+/gu, " ")
-      .trim();
-  const searchable = normalize(
-    `${template.name} ${template.description} ${template.style} ${template.audience || ""} ${template.keywords || ""}`,
-  );
-  return normalize(query)
-    .split(/\s+/)
-    .every((word) => searchable.includes(word));
-}
-const sportGalleryArtwork: Record<string, string> = {
-  football: "/images/landing/sports/sports-editorial-football.webp",
-  baseball: "/images/landing/sports/sports-editorial-baseball.webp",
-  softball: "/templates/signup/photographic/sports-and-recreation/baseball-team.webp",
-  basketball: "/images/landing/sports/sports-editorial-basketball.webp",
-  soccer: "/templates/signup/photographic/sports-and-recreation/soccer-game.webp",
-  volleyball: "/templates/signup/photographic/health-and-fitness/volleyball-league.webp",
-  tennis: "/templates/signup/photographic/health-and-fitness/tennis-club.webp",
-  "track-field": "/templates/signup/photographic/sports-and-recreation/track-meet.webp",
-  swimming: "/templates/signup/photographic/sports-and-recreation/swim-team.webp",
-  cheerleading: "/templates/signup/photographic/sports-and-recreation/cheer-squad.webp",
-  dance: "/templates/signup/photographic/health-and-fitness/dance-class.webp",
-};
-export function themedEventPublicTemplate(design: ThemedEventDesign): PublicTemplate {
-  return {
-    id: design.id, name: design.name, style: design.style, description: design.description,
-    heroImage: design.artwork,
-    sport: design.collection === "bridal-showers" ? undefined : getSportEventPresetLabel(design.collection),
-    keywords: `${design.subtype} ${design.tags.join(" ")}`,
-  };
-}
-function getSportEventPresetLabel(key: string) {
-  return SPORT_EVENT_PRESETS.find((sport) => sport.key === key)?.label;
-}
-function legacySportPublicTemplate(sport: typeof SPORT_EVENT_PRESETS[number], style: string, label: string): PublicTemplate {
-  return {
-    id: `${sport.key}--${style}`, name: `${sport.label} · ${label}`, style: label,
-    sport: sport.label, description: sport.defaultDetails,
-    heroImage: sportGalleryArtwork[sport.key] || "/templates/hero-images/general-sport-hero.jpeg",
-  };
-}
+import { getTemplates as templates0 } from "./public-template-catalogs/weddings";
+import { getTemplates as templates1 } from "./public-template-catalogs/birthdays";
+import { getTemplates as templates2 } from "./public-template-catalogs/anniversaries";
+import { getTemplates as templates3 } from "./public-template-catalogs/baby-showers";
+import { getTemplates as templates4 } from "./public-template-catalogs/bridal-showers";
+import { getTemplates as templates5 } from "./public-template-catalogs/gender-reveal";
+import { getTemplates as templates6 } from "./public-template-catalogs/gymnastics";
+import { getTemplates as templates7 } from "./public-template-catalogs/sport-events";
+import { getTemplates as templates8 } from "./public-template-catalogs/signup-forms";
+/** Synchronous server/editor API. Discovery clients import category loaders instead. */
 export function getPublicTemplates(category: TemplateCategory): PublicTemplate[] {
   switch (category) {
-    case "weddings":
-      return weddingDesignCatalog;
-    case "birthdays":
-      return BIRTHDAY_DESIGN_CATALOG;
-    case "anniversaries":
-      return ANNIVERSARY_DESIGN_CATALOG;
-    case "baby-showers":
-      return babyTemplates.map((template) => ({
-        id: template.templateId,
-        name: template.name,
-        description: template.description,
-        style: template.style,
-        heroImage: getFamilyTemplateDesign("baby-showers", template.templateId).heroImage,
-      }));
-    case "bridal-showers":
-      return getActiveThemedEventDesigns("bridal-showers").length
-        ? getActiveThemedEventDesigns("bridal-showers").map(themedEventPublicTemplate)
-        : [...BRIDAL_PRESETS];
-    case "gender-reveal":
-      return genderRevealDesigns.map((design) => ({ ...design, style: design.style }));
-    case "gymnastics":
-      return GYM_MEET_TEMPLATE_LIBRARY.map((design) => ({
-        ...design,
-        heroImage: design.artwork || "",
-      }));
-    case "sport-events":
-      return SPORT_EVENT_PRESETS.filter((sport) => sport.key !== "football").flatMap((sport) => {
-        const themed = getActiveThemedEventDesigns(sport.key);
-        return themed.length ? themed.map(themedEventPublicTemplate)
-          : Object.entries(styleNames).map(([style, label]) => legacySportPublicTemplate(sport, style, label));
-      });
-    case "signup-forms":
-      return [
-        ...SIGNUP_THEMES.map((theme) => ({
-          id: `editorial--${theme.id}`,
-          name: theme.name,
-          description: theme.description,
-          style: "Editorial collection",
-          ...(theme.id === "school-days"
-            ? {
-                audience: "School & Education",
-                keywords: schoolSignupKeywords,
-              }
-            : {}),
-          heroImage: theme.artwork,
-        })),
-        ...Object.entries(SIGNUP_TEMPLATES)
-          .flatMap(([group, designs]) =>
-            designs.map((design) => ({
-              id: design.path
-                .replace("/templates/signup/", "")
-                .replace(/\.webp$/, "")
-                .replaceAll("/", "--"),
-              name: design.name,
-              description:
-                design.description ||
-                `Make ${design.name.toLowerCase()} your own with signup sections, questions, and slots.`,
-              style: group,
-              ...(design.audience
-                ? { audience: design.audience }
-                : /school|classroom|teacher|field.day|pta|pto|recess|conference/i.test(design.name)
-                  ? {
-                      audience: "School & Education",
-                      keywords: schoolSignupKeywords,
-                    }
-                  : {}),
-              ...(design.keywords ? { keywords: design.keywords } : {}),
-              ...(design.occasion ? { occasion: design.occasion } : {}),
-              heroImage: design.artworkPath || design.path,
-            })),
-          )
-          .filter(
-            (template, index, templates) =>
-              templates.findIndex((candidate) => candidate.id === template.id) === index,
-          ),
-      ];
+    case "weddings": return templates0();
+    case "birthdays": return templates1();
+    case "anniversaries": return templates2();
+    case "baby-showers": return templates3();
+    case "bridal-showers": return templates4();
+    case "gender-reveal": return templates5();
+    case "gymnastics": return templates6();
+    case "sport-events": return templates7();
+    case "signup-forms": return templates8();
   }
 }
+
 export function getPublicTemplate(category: TemplateCategory, id: string) {
   const themed = getDeliveredThemedEventDesign(id);
   if (themed && ((category === "bridal-showers" && themed.collection === "bridal-showers") ||

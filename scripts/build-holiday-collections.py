@@ -612,6 +612,12 @@ def main():
                         'export const HOLIDAY_COLLECTIONS = ' + json.dumps(collections, indent=2, ensure_ascii=False)
                         + ' as const satisfies readonly HolidayCollection[];\n\n'
                         'export type HolidayCollectionId = (typeof HOLIDAY_COLLECTIONS)[number]["id"];\n')
+    occasion_content = ('import type { HolidayCollection } from "./holiday-collection-types";\n\n'
+                        '// Generated alongside holiday-collections.ts. Discovery never needs the artwork scenes.\n'
+                        'export const HOLIDAY_OCCASIONS = ' + json.dumps(
+                            [{key: value for key, value in collection.items() if key != "designs"}
+                             for collection in collections], indent=2, ensure_ascii=False)
+                        + ' as const satisfies readonly Omit<HolidayCollection, "designs">[];\n')
     plan_path = ROOT / "docs/holiday-template-artwork.json"
     old = json.loads(plan_path.read_text()) if plan_path.exists() else {}
     previous = {a["id"]: a for a in old.get("assets", [])}
@@ -661,6 +667,7 @@ def main():
     if "approvedFallback" in plan:
         plan["approvedFallbackScope"] = "Historical original 440 designs only. The 2200-design expansion uses built-in image_gen."
     write_or_check(registry, registry_content, args.check)
+    write_or_check(ROOT / "src/lib/holiday-occasions.ts", occasion_content, args.check)
     write_or_check(plan_path, json.dumps(plan, indent=2, ensure_ascii=False) + "\n", args.check)
     verb = "Validated" if args.check else "Prepared"
     print(f"{verb} {len(collections)} collections and {len(assets)} distinct artwork prompts; generation and review status is preserved per asset")

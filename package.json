@@ -20,7 +20,7 @@
     "lint:vscode": "node scripts/vscode-lint.mjs",
     "pretypecheck": "next typegen",
     "typecheck": "node --max-old-space-size=8192 node_modules/typescript/bin/tsc --noEmit --pretty false -p tsconfig.application.json",
-    "test:appearance": "node --test --test-concurrency=1 scripts/appearance-browser.test.cjs scripts/white-brand-assets.test.mjs scripts/wordmark-contact-browser.test.mjs scripts/brand-image-delivery.test.mjs scripts/dark-ui-browser.test.mjs scripts/signed-in-navigation-browser.test.mjs src/app/layout.pwa-metadata.source.test.mjs src/app/settings/settings-workspace.source.test.mjs src/lib/event-page-chrome.test.mjs src/lib/event-preview-chrome.test.mjs",
+    "test:appearance": "node --test --test-concurrency=1 scripts/runtime-css-parity.test.mjs scripts/appearance-browser.test.cjs scripts/white-brand-assets.test.mjs scripts/wordmark-contact-browser.test.mjs scripts/brand-image-delivery.test.mjs scripts/dark-ui-browser.test.mjs scripts/signed-in-navigation-browser.test.mjs src/app/layout.pwa-metadata.source.test.mjs src/app/settings/settings-workspace.source.test.mjs src/lib/event-page-chrome.test.mjs src/lib/event-preview-chrome.test.mjs",
     "test:email-appearance": "node scripts/run-email-tests.mjs && node --test scripts/email-appearance-browser.test.cjs",
     "test:customer-entrypoints": "node scripts/run-customer-entrypoint-tests.mjs",
     "maestro:install": "powershell -NoProfile -File scripts/maestro-install.ps1 -WithPostgres",

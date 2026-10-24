@@ -23,13 +23,14 @@ import ConditionalFooter from "../../src/components/ConditionalFooter";
 import SettingsPage from "../../src/app/settings/page";
 import PwaInstallToast from "../../src/components/PwaInstallToast";
 import HeroTopNav from "../../src/components/navigation/HeroTopNav";
+import BottomNav from "../../src/components/navigation/BottomNav";
 import LeftSidebar from "../../src/app/left-sidebar";
 import TopNav from "../../src/components/navigation/TopNav";
 import {EventCacheProvider} from "../../src/app/event-cache-context";
 import {MenuProvider} from "../../src/contexts/MenuContext";
 const screen = new URLSearchParams(location.search).get("screen");
 if(screen==="install") window.__snapInstallDeferredPrompt={prompt:async()=>{throw new Error("QA must not request actual installation");},userChoice:Promise.resolve({outcome:"dismissed",platform:"test"})};
-const view = screen === "navigation" ? <EventCacheProvider><MenuProvider><LeftSidebar/><div data-testid="signed-in-navbar"><TopNav/></div><main data-testid="navigation-workspace" style={{minHeight:1800,paddingLeft:360,paddingTop:160}}><h1>Navigation QA workspace</h1></main></MenuProvider></EventCacheProvider> : screen === "install" ? <main><h1 className="p-8 text-foreground">Install Envitefy</h1><PwaInstallToast/></main> : screen === "settings" ? <SettingsPage/> : screen === "landing" ? <><LandingExperience/><ConditionalFooter/></>
+const view = screen === "navigation" ? <EventCacheProvider><MenuProvider><LeftSidebar/><div data-testid="signed-in-navbar"><TopNav/></div><main data-testid="navigation-workspace" style={{minHeight:1800,paddingLeft:360,paddingTop:160}}><h1>Navigation QA workspace</h1></main></MenuProvider></EventCacheProvider> : screen === "create-options" ? <main><h1>Creation options</h1><BottomNav/></main> : screen === "install" ? <main><h1 className="p-8 text-foreground">Install Envitefy</h1><PwaInstallToast/></main> : screen === "settings" ? <SettingsPage/> : screen === "landing" ? <><LandingExperience/><ConditionalFooter/></>
   : screen === "gallery" ? <><HeroTopNav navLinks={[{label:"Home",href:"/"},{label:"Templates",href:"#templates"}]} authenticatedPrimaryHref="/" onGuestLoginAction={()=>{}} onGuestPrimaryAction={()=>{}}/><BirthdayDesignGallery/><ConditionalFooter/></>
   : <><div className="p-3"><AppearanceSelector compact/></div><LiveCardBuilder initialEventId={null}/></>;
 createRoot(document.getElementById("root")!).render(<ThemeProvider><SidebarProvider><UnsavedProgressProvider>{view}</UnsavedProgressProvider></SidebarProvider></ThemeProvider>);`);

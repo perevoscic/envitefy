@@ -25,7 +25,7 @@ import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import { hydrateCreationValue } from "@/lib/create/editor-handoff";
 import { attachCreationIntakeEvent, creationIntakeOwner, readCreationIntake } from "@/lib/create/creation-intake";
 import type { CustomEventInformation } from "@/lib/event-custom-design";
-import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
+import { trackTemplateEvent } from "@/lib/template-tracking";
 import { BRIDAL_PRESETS, getPublicTemplate } from "@/lib/public-template-catalog";
 import { getThemedEventDesign, getThemedEventTheme } from "@/lib/event-page-themed-designs";
 import { allowsPublicSignup } from "@/lib/signup-access";
@@ -58,10 +58,7 @@ import type { SignupForm } from "@/types/signup";
 import { validateClientUploadFile } from "@/utils/media-upload-client";
 import styles from "./template-editor.module.css";
 
-export function trackTemplateEvent(name: string, category: string, templateId?: string) {
-  if (hasAnalyticsConsent() && typeof window.gtag === "function")
-    window.gtag("event", name, { category, template_id: templateId });
-}
+export { trackTemplateEvent } from "@/lib/template-tracking";
 export type { TemplateHistoryPayload } from "@/lib/template-draft-handoff";
 export type TemplateEditorRuntime = {
   category: TemplateCategory;

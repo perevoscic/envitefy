@@ -5,16 +5,14 @@ const test = require("node:test");
 const React = require("react");
 const { renderToStaticMarkup } = require("react-dom/server");
 const { chromium } = require("playwright");
-const ts = require("typescript");
+const loadTs = require("./lib/event-messages-test-loader.cjs");
 
 const file = path.resolve("src/components/templates/ThemedEventHeader.tsx");
-const source = ts.transpileModule(fs.readFileSync(file, "utf8"), {
-  fileName: file, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
-}).outputText;
-const mod = { exports: {} };
-new Function("require", "module", "exports", source)((name) => name.endsWith(".css")
-  ? name.includes("module.css") ? { shell: "shell", header: "header", artwork: "artworkSlot", copy: "copySlot" } : {} : require(name), mod, mod.exports);
-const Header = mod.exports.default;
+const Header = loadTs(file, {
+  "./themed-event-header.module.css": {
+    shell: "shell", header: "header", artwork: "artworkSlot", copy: "copySlot",
+  },
+}).default;
 const css = fs.readFileSync(path.resolve("src/components/templates/themed-event-header.module.css"), "utf8")
   .replace(/\.artwork\b/g, ".artworkSlot").replace(/\.copy\b/g, ".copySlot");
 const h = React.createElement;

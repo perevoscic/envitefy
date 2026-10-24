@@ -412,7 +412,8 @@ test("unified creation retains sources, recommends native templates and protects
       const scroller = page.locator("[data-category-scroller]");
       const readsBefore = extracts.length, writesBefore = forbidden.length;
       const geometry = [];
-      const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      let touchClockPaused = false;
+      const settle = () => touchClockPaused ? page.clock.runFor(34) : page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const readPosition = () => page.evaluate(() => {
         const panel = document.querySelector("[data-category-panel]");
         const list = document.querySelector("[data-category-scroller]");
@@ -435,13 +436,14 @@ test("unified creation retains sources, recommends native templates and protects
         await settle();
       };
       const cdp = await page.context().newCDPSession(page);
-      let fingerX = 0, fingerY = 0, touching = false;
+      let fingerX = 0, fingerY = 0, fingerTimestamp = 0, touching = false;
       const startTouch = async () => {
         const { bounds, height } = await readPosition();
         fingerX = (bounds.left + bounds.right) / 2;
         fingerY = Math.min(bounds.bottom - 20, height - 36);
         assert.ok(fingerY > bounds.top + 20, "the trusted gesture starts over the visible category list");
-        await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: fingerX, y: fingerY, id: 1 }] });
+        fingerTimestamp = await page.evaluate(() => (performance.timeOrigin + performance.now()) / 1000);
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", timestamp: fingerTimestamp, touchPoints: [{ x: fingerX, y: fingerY, id: 1 }] });
         touching = true;
       };
       const moveTouch = async deltaY => {
@@ -449,12 +451,19 @@ test("unified creation retains sources, recommends native templates and protects
         for (let step = 1; step <= steps; step++) {
           fingerY = startY + deltaY * step / steps;
           assert.ok(fingerY > 0 && fingerY < 900, "the trusted swipe stays inside the mobile viewport");
-          await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: fingerX, y: fingerY, id: 1 }] });
+          // Model a continuous 60Hz gesture independently of protocol/CI latency.
+          // The application's 80ms release cutoff must measure the simulated
+          // finger movement, not time spent awaiting geometry over CDP.
+          fingerTimestamp += 1 / 60;
+          if (touchClockPaused) await page.clock.runFor(17);
+          await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", timestamp: fingerTimestamp, touchPoints: [{ x: fingerX, y: fingerY, id: 1 }] });
         }
         await settle();
       };
       const endTouch = async () => {
-        await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        fingerTimestamp += 1 / 60;
+        if (touchClockPaused) await page.clock.runFor(17);
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", timestamp: fingerTimestamp, touchPoints: [] });
         touching = false;
         await settle();
       };
@@ -558,28 +567,49 @@ test("unified creation retains sources, recommends native templates and protects
         await page.setViewportSize({ width: 390, height: 900 });
         await page.emulateMedia({ reducedMotion: "no-preference" });
         await openCreate("?chrome=1");
+        await page.evaluate(() => document.fonts.ready);
         await page.keyboard.press("Escape");
         await resetPosition();
         const beforeFlick = await readPosition();
         await page.evaluate(top => window.scrollTo({ top, behavior: "instant" }), beforeFlick.dockY);
         await settle();
+        // setFixedTime also replaces Event.timeStamp, so native CDP timestamps
+        // alone cannot isolate this gesture from protocol/CI latency. Advance
+        // the fixture clock explicitly while sending the same trusted touches.
+        await page.clock.pauseAt(new Date(fixtureNow));
+        touchClockPaused = true;
         await startTouch();
         await moveTouch(-120);
         const flickDragged = await readPosition();
         await endTouch();
-        await page.waitForTimeout(120);
+        await page.clock.runFor(120);
         const flickCoasting = await readPosition();
-        assert.ok(flickCoasting.inner > flickDragged.inner + 25, "a trusted flick retains momentum after the finger lifts");
+        fs.writeFileSync(path.join(output, "category-touch-flick-geometry.json"), JSON.stringify({ flickDragged, flickCoasting }, null, 2));
+        assert.ok(flickCoasting.inner > flickDragged.inner + 25, "a trusted flick retains momentum after the finger lifts: " + JSON.stringify({ flickDragged, flickCoasting }));
         assert.ok(Math.abs(flickCoasting.outer - flickCoasting.dockY) <= 3, "momentum keeps the category panel docked");
         await startTouch();
         await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
         touching = false;
         await settle();
         const flickStopped = await readPosition();
-        await page.waitForTimeout(200);
+        await page.clock.runFor(200);
         assert.ok(Math.abs((await readPosition()).inner - flickStopped.inner) <= 1, "a new touch immediately stops momentum");
+        await resetPosition();
+        await page.evaluate(top => window.scrollTo({ top, behavior: "instant" }), beforeFlick.dockY);
+        await settle();
+        await startTouch();
+        await moveTouch(-120);
+        const heldDragged = await readPosition();
+        await page.clock.runFor(100);
+        await endTouch();
+        await page.clock.runFor(120);
+        const heldReleased = await readPosition();
+        assert.ok(Math.abs(heldReleased.inner - heldDragged.inner) <= 1, "holding the finger for more than 80ms before release does not start momentum: " + JSON.stringify({ heldDragged, heldReleased }));
+        assert.equal(await scroller.getAttribute("data-gesture-scroll"), null, "a held release finishes the gesture");
         assert.equal(await templates.count(), 0, "a trusted flick and stop over category buttons select no design");
-        geometry.push({ flickDragged, flickCoasting, flickStopped });
+        geometry.push({ flickDragged, flickCoasting, flickStopped, heldDragged, heldReleased });
+        await page.clock.resume();
+        touchClockPaused = false;
         await page.emulateMedia({ reducedMotion: "reduce" });
         for (const width of [768, 1440]) {
           await page.setViewportSize({ width, height: 1000 });
@@ -601,6 +631,8 @@ test("unified creation retains sources, recommends native templates and protects
         if (touching) await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] }).catch(() => {});
         await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: false }).catch(() => {});
         await cdp.detach();
+        if (touchClockPaused) await page.clock.resume();
+        await page.emulateMedia({ reducedMotion: "reduce" });
       }
     });
     if (process.env.UNIFIED_CREATE_SCROLL_QA === "1") return;
@@ -961,7 +993,8 @@ test("unified creation retains sources, recommends native templates and protects
         assert.equal(await searchPanel.evaluate(element => !!element.closest("[inert]")), false);
         const expanded = await searchControl.boundingBox(), filterBounds = await filter.boundingBox();
         assert.ok(expanded && expanded.width > collapsed.width + 70 && expanded.x < collapsed.x - 70, width + "px search expands left");
-        assert.ok(Math.abs(expanded.x + expanded.width - collapsed.x - collapsed.width) <= 1, width + "px search keeps its right edge");
+        fs.writeFileSync(path.join(output, "category-search-edge-" + width + ".json"), JSON.stringify({ collapsed, expanded, filterBounds }, null, 2));
+        assert.ok(Math.abs(expanded.x + expanded.width - collapsed.x - collapsed.width) <= 1, width + "px search keeps its right edge: " + JSON.stringify({ collapsed, expanded, filterBounds }));
         assert.ok(filterBounds && filterBounds.x + filterBounds.width + 8 <= expanded.x, width + "px expanded search stops beside the left filter: " + JSON.stringify({ filterBounds, expanded }));
         assert.ok(Math.abs(filterBounds.y + filterBounds.height / 2 - expanded.y - expanded.height / 2) <= 1, width + "px expanded search stays on the filter row");
         assert.equal((await toolbar.boundingBox()).height, toolbarBefore.height, width + "px opening search does not add a toolbar row");
@@ -2020,7 +2053,7 @@ test("unified creation retains sources, recommends native templates and protects
     await openUploadCreate(); await mode("Paste URL").click();
     await page.getByLabel("Public event URL", { exact: true }).fill("https://blocked.test/event/831");
     await click("Read event information"); await page.getByRole("alert").filter({ hasText: "That page could not be opened" }).waitFor();
-    await click("Can’t open the link? Paste the event text instead");
+    await click("Paste event text instead");
     await page.getByRole("textbox", { name: /^Paste event text/ }).fill("Maya's 7th birthday, May 3 at Riverside Park. Use the east entrance.");
     await waitForStored(() => page.evaluate(async () => { const row = await window.__creationBrowser.readCreationIntake("unified-host", new URL(location.href).searchParams.get("intake")); return row?.source.kind === "text" && row?.source.text.includes("Maya"); }), "pasted fallback source");
     const beforeFallback = extracts.length;
@@ -2271,7 +2304,9 @@ test("unified creation retains sources, recommends native templates and protects
     });
     await t.test("slow IndexedDB saves retain the newest pasted source across concurrent debounces and refresh", async () => {
       workspaceMode = false; await openUploadCreate(); await mode("Paste URL").click();
-      await click("Can’t open the link? Paste the event text instead");
+      await page.getByLabel("Public event URL", { exact: true }).fill("https://blocked.test/event/831");
+      await click("Read event information"); await page.getByRole("alert").filter({ hasText: "That page could not be opened" }).waitFor();
+      await click("Paste event text instead");
       await page.evaluate(() => { window.__idbOpenDelayMs = 500; window.__idbDelayedOpenCount = 0; });
       await pastedText().fill("First event text while browser storage is slow");
       // Delay the real IDB open callbacks, retaining real transactions and the actual account store.
