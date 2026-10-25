@@ -46,6 +46,19 @@
 .footer > div > div:last-child {
   border-color: var(--footer-line);
 }
+.copyright {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  width: 100%;
+  max-width: min(80rem, calc(100% - 10rem));
+  text-align: center;
+}
+.copyright > * {
+  white-space: nowrap;
+}
 .footer :where(a, button):focus-visible {
   outline: 3px solid currentColor;
   outline-offset: 4px;
@@ -88,11 +101,6 @@
 .footer.homepage > div > div:last-child {
   background: var(--footer-strip);
 }
-@media (max-width: 767px) {
-  :global(body):has([data-concierge-launcher]) .footer > div > div:last-child > div {
-    padding-inline-end: calc(5.5rem + env(safe-area-inset-right, 0px));
-  }
-}
 @media (max-width: 600px) {
   .footer > div > div:first-child {
     padding: 1.5rem 1.4rem 1rem;
@@ -104,14 +112,30 @@
   .footer > div > div:last-child > div {
     padding-block: 0.75rem;
   }
-  .footer > div > div:last-child > div > div {
-    row-gap: 0;
+}
+@media (max-width: 767px) {
+  .copyright {
+    max-width: 25rem;
+    column-gap: 0.5rem;
+    /* Keep the upper row above Concierge while the shorter final row clears it. */
+    row-gap: 1rem;
+    padding: 0.75rem;
+    font-size: 0.75rem;
   }
-  .footer > div > div:last-child a,
-  .footer > div > div:last-child button {
+  .copyright > * {
     display: inline-flex;
     align-items: center;
-    min-height: 32px;
-    font-size: 0.75rem;
+    min-height: 44px;
+  }
+}
+@media (min-width: 360px) and (max-width: 374px) {
+  .copyright {
+    font-size: 0.71875rem;
+  }
+}
+@media (max-width: 359px) {
+  .copyright {
+    max-width: 20rem;
+    padding-inline: 1rem;
   }
 }

@@ -246,20 +246,18 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
             </div>
           </div>
           <div className="relative border-t border-[#d7c5a5]">
-            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-6 text-sm text-[#665d68] sm:px-8 lg:px-10">
+            <div className={`${marketingFooterStyles.copyright} mx-auto max-w-7xl px-6 py-6 text-sm text-[#665d68] sm:px-8 lg:px-10`}>
               <p>© {new Date().getFullYear()} Envitefy</p>
-              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                {MARKETING_FOOTER_UTILITY_LINKS.map((link) => (
-                  <Link
-                    key={`utility-${link.href}-${link.label}`}
-                    href={link.href}
-                    className="hover:text-[#2b1b16]"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                <PrivacyChoicesButton className="hover:text-[#2b1b16]" />
-              </div>
+              <PrivacyChoicesButton className="hover:text-[#2b1b16]" />
+              {MARKETING_FOOTER_UTILITY_LINKS.map((link) => (
+                <Link
+                  key={`utility-${link.href}-${link.label}`}
+                  href={link.href}
+                  className="hover:text-[#2b1b16]"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
         </div>

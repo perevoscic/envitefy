@@ -1321,12 +1321,12 @@ async function exerciseAuthentication(page) {
   await page.keyboard.press("Escape");
   assert.equal(await page.getByRole("dialog").count(), 0);
   await showHeaderBelowWordmark(page);
-  await page.locator("header").getByRole("button", { name: "Join", exact: true }).click();
-  dialog = page.getByRole("dialog", { name: "Log in", exact: true });
+  await page.locator("header").getByRole("button", { name: "Let's create", exact: true }).click();
+  dialog = page.getByRole("dialog", { name: "Create an account", exact: true });
   assert.equal(
     await dialog.locator("form").getAttribute("data-auth-redirect"),
-    "/",
-    "Ordinary login resets the previous creation destination",
+    "/create",
+    "The header creation action opens signup with the creation destination",
   );
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
   assert.equal(await page.getByRole("dialog").count(), 0);
