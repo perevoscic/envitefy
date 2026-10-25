@@ -117,6 +117,7 @@ export default function GymnasticsLanding() {
         brandHref="/"
         loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}
+        onGuestSignupAction={() => openAuth("signup")}
         onGuestPrimaryAction={() =>
           document.getElementById("templates")?.scrollIntoView({
             behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches

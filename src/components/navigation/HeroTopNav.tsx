@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -8,11 +8,14 @@ import { type MouseEventHandler, useEffect, useMemo, useRef, useState } from "re
 import { createPortal } from "react-dom";
 import AppearanceSelector from "@/components/AppearanceSelector";
 import LoginForm from "@/components/auth/LoginForm";
+import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import type { MarketingTone } from "@/components/marketing/MarketingPage";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
+import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
 import appearanceStyles from "./navigation-appearance.module.css";
 import editorialStyles from "./editorial-navigation.module.css";
+import landingHeaderStyles from "./public-landing-header.module.css";
 import scrollStyles from "./scroll-aware-header.module.css";
 import useScrollAwareHeader from "./useScrollAwareHeader";
 
@@ -33,6 +36,7 @@ type HeroTopNavProps = {
   mobileLogoOnly?: boolean;
   onGuestLoginAction: () => void;
   onGuestPrimaryAction: () => void;
+  onGuestSignupAction?: () => void;
   showMobileMenuAuthActions?: boolean;
   editorialTone?: MarketingTone;
   variant?: "default" | "glass-dark" | "transparent-dark" | "transparent-light";
@@ -152,6 +156,7 @@ export default function HeroTopNav({
   mobileLogoOnly = false,
   onGuestLoginAction,
   onGuestPrimaryAction,
+  onGuestSignupAction = onGuestPrimaryAction,
   showMobileMenuAuthActions = true,
   editorialTone,
   variant = "default",
@@ -438,223 +443,313 @@ export default function HeroTopNav({
       ref={headerRef}
       data-scroll-hidden={headerHidden ? "true" : "false"}
       data-scrolled-past-hero={hasScrolledPastHero ? "true" : "false"}
+      data-public-landing-header={editorialTone ? "" : undefined}
       className={cx(
         scrollStyles.header,
-        appearanceStyles.chrome,
-        appearanceStyles.publicHeader,
-        "fixed inset-x-0 top-0 z-50 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] sm:px-6 lg:px-8",
+        editorialTone
+          ? landingHeaderStyles.header
+          : cx(
+              appearanceStyles.chrome,
+              appearanceStyles.publicHeader,
+              "fixed inset-x-0 top-0 z-50 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] sm:px-6 lg:px-8",
+            ),
       )}
     >
-      <div className="relative w-full">
-        <div
-          className={cx(
-            mobileLogoOnly
-              ? cx("px-1 py-2", isTransparentLight ? "text-[#25172d]" : "text-white")
-              : isTransparentOverHero
-                ? cx("px-1 py-2", isTransparentLight ? "text-[#25172d]" : "text-white")
-                : cx(
-                    "nav-chrome-glass-header px-4 py-3 sm:px-6",
-                    isDarkGlass
-                      ? "theme-glass-nav rounded-[2rem] border-white/14 shadow-[0_18px_40px_rgba(3,1,10,0.24)]"
-                      : "hero-top-nav-shell-light rounded-[2rem]",
-                  ),
-          )}
-        >
-          <div
-            className={cx(
-              "flex items-center justify-between gap-4",
-              "lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center",
-              "lg:gap-3 xl:gap-5 2xl:gap-6",
-            )}
-          >
-            <Link
-              href={brandHref}
-              className="group flex shrink-0 items-center overflow-hidden justify-self-start"
-              aria-label="Envitefy"
-            >
-              <EnvitefyWordmark
-                scaled={false}
-                tone={mobileLogoOnly || !isDarkGlass ? "gradient" : "light"}
-                className={cx(
-                  "max-w-full leading-none transition-transform duration-300 group-hover:scale-[1.02]",
-                  isTransparentOverHero
-                    ? "text-[2.5rem] sm:text-[2.8rem] md:text-[3.1rem]"
-                    : "text-[2.25rem] sm:text-[2.5rem] md:text-[2.7rem]",
-                  (mobileLogoOnly || !isDarkGlass) && "hero-top-nav-brand-light",
-                )}
+      <div className={editorialTone ? landingHeaderStyles.inner : "relative w-full"}>
+        {editorialTone ? (
+          <>
+            <Link href={brandHref} className={landingHeaderStyles.brand} aria-label="Envitefy home">
+              <EnvitefyBrandImage
+                src={ENVITEFY_BRAND_ASSETS.wordmark.color}
+                whiteSrc={ENVITEFY_BRAND_ASSETS.wordmark.white}
+                alt="Envitefy"
+                width={150}
+                height={55}
+                priority
               />
             </Link>
-
-            <nav
-              className={cx(
-                appearanceStyles.publicLinks,
-                "hidden min-w-0 flex-nowrap items-center justify-center",
-                hasWideNavigation ? "gap-1 lg:flex 2xl:gap-2" : "lg:flex",
-                !hasWideNavigation &&
-                  (isTransparentOverHero ? "gap-2 xl:gap-4 2xl:gap-7" : "gap-1 xl:gap-3 2xl:gap-5"),
-              )}
-              aria-label="Hero navigation"
-            >
-              {navLinks.map((link) => {
-                const isActive = resolvedActiveHref === link.href;
-                return (
-                  <span key={`${link.label}:${link.href}`} className="relative inline-flex">
-                    <NavLinkItem
-                      href={link.href}
-                      label={link.label}
-                      ariaCurrent={
-                        isActive ? (link.href.startsWith("#") ? "location" : "page") : undefined
-                      }
-                      onClick={
-                        link.href.startsWith("#") ? handleHashLinkClick(link.href) : undefined
-                      }
-                      className={cx(
-                        "nav-chrome-menu-entry nav-chrome-motion relative whitespace-nowrap font-semibold transition",
-                        hasWideNavigation ? "text-[13px]" : "text-sm",
-                        isTransparentOverHero
-                          ? cx(
-                              "px-1 py-2",
-                              isActive
-                                ? isTransparentLight
-                                  ? "text-[#1d1224]"
-                                  : "text-white"
-                                : isTransparentLight
-                                  ? "text-[#2c2035]/78 hover:text-[#171019]"
-                                  : "text-white/82 hover:text-white",
-                            )
-                          : cx(
-                              "rounded-full py-2",
-                              hasWideNavigation ? "px-1.5" : "px-1.5 xl:px-3",
-                              isActive
-                                ? isDarkGlass
-                                  ? "text-white"
-                                  : "text-[#4f39dd]"
-                                : isDarkGlass
-                                  ? "text-white hover:bg-white/[0.12]"
-                                  : lightNavPillClass,
-                            ),
-                      )}
-                    />
-                    {isActive ? (
-                      <span
-                        className={cx(
-                          "pointer-events-none absolute inset-x-0 -bottom-0.5 h-[2.5px] origin-center rounded-full",
-                          getActiveUnderlineClass({
-                            isTransparentOverHero,
-                            isTransparentLight,
-                            isDarkGlass,
-                          }),
-                        )}
-                      />
-                    ) : null}
-                  </span>
-                );
-              })}
+            <nav className={landingHeaderStyles.nav} aria-label="Hero navigation">
+              {navLinks.map((link) => (
+                <NavLinkItem
+                  key={`${link.label}:${link.href}`}
+                  href={link.href}
+                  label={link.label}
+                  className={landingHeaderStyles.navLink}
+                  ariaCurrent={
+                    resolvedActiveHref === link.href
+                      ? link.href.startsWith("#")
+                        ? "location"
+                        : "page"
+                      : undefined
+                  }
+                  onClick={link.href.startsWith("#") ? handleHashLinkClick(link.href) : undefined}
+                />
+              ))}
             </nav>
-
-            <div
-              className={cx(
-                appearanceStyles.publicActions,
-                "hidden shrink-0 items-center gap-3 justify-self-end",
-                "lg:flex",
-              )}
-            >
+            <div className={landingHeaderStyles.actions}>
               {status === "authenticated" ? (
-                <Link
-                  href={dashboardHref}
-                  className={cx(
-                    "nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
-                    isTransparentOverHero
-                      ? isTransparentLight
-                        ? "text-[#25172d]"
-                        : "text-white"
-                      : isDarkGlass
-                        ? "text-white"
-                        : lightNavPillClass,
-                  )}
-                >
+                <Link href={dashboardHref} className={landingHeaderStyles.join} data-header-join>
                   Dashboard
                 </Link>
               ) : (
                 <button
                   type="button"
-                  onClick={onGuestLoginAction}
-                  className={cx(
-                    isTransparentOverHero && isTransparentLight
-                      ? "cta-shell nav-chrome-motion h-11 shrink-0 rounded-full border border-[#25172d]/10 bg-[#25172d]/8 px-6 text-sm font-bold text-[#25172d] transition-all hover:bg-[#25172d]/12"
-                      : isDarkGlass
-                        ? glassGhostLoginClass
-                        : "cta-shell nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
-                    !isTransparentOverHero && !isDarkGlass && lightNavPillClass,
-                  )}
+                  onClick={onGuestSignupAction}
+                  className={landingHeaderStyles.join}
+                  data-header-join
                 >
-                  <AnimatedButtonLabel label="Login" />
+                  Let&apos;s create
                 </button>
               )}
-
-              {status === "authenticated" ? (
+              {status === "authenticated" || guestPrimaryHref ? (
                 <Link
-                  href={authenticatedPrimaryHref}
-                  className={cx(
-                    "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
-                    isDarkGlass
-                      ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
-                      : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
-                  )}
+                  href={status === "authenticated" ? authenticatedPrimaryHref : guestPrimaryHref!}
+                  className={landingHeaderStyles.primary}
+                  data-header-primary
                 >
-                  <AnimatedButtonLabel label={primaryCtaLabel} />
+                  {primaryCtaLabel} <ArrowRight size={15} aria-hidden="true" />
                 </Link>
-              ) : guestPrimaryHref ? (
-                <Link
-                  href={guestPrimaryHref}
-                  className={cx(
-                    "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
-                    isDarkGlass || isTransparentOverHero
-                      ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
-                      : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
-                  )}
-                >
-                  <AnimatedButtonLabel label={primaryCtaLabel} />
-                </Link>
-              ) : (
+              ) : primaryCtaLabel !== "Let's create" ? (
                 <button
                   type="button"
                   onClick={onGuestPrimaryAction}
-                  className={cx(
-                    "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
-                    isDarkGlass || isTransparentOverHero
-                      ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
-                      : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
-                  )}
+                  className={landingHeaderStyles.primary}
+                  data-header-primary
                 >
-                  <AnimatedButtonLabel label={primaryCtaLabel} />
+                  {primaryCtaLabel} <ArrowRight size={15} aria-hidden="true" />
                 </button>
-              )}
+              ) : null}
+              <button
+                ref={mobileMenuToggleRef}
+                type="button"
+                className={landingHeaderStyles.menuButton}
+                aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
+                aria-haspopup="dialog"
+                aria-expanded={mobileMenuOpen}
+                aria-controls="hero-top-nav-mobile"
+                onClick={() => setMobileMenuOpen((value) => !value)}
+              >
+                {mobileMenuOpen ? (
+                  <X size={22} aria-hidden="true" />
+                ) : (
+                  <Menu size={22} aria-hidden="true" />
+                )}
+              </button>
             </div>
-
-            <button
-              ref={mobileMenuToggleRef}
-              type="button"
+          </>
+        ) : (
+          <div
+            className={cx(
+              mobileLogoOnly
+                ? cx("px-1 py-2", isTransparentLight ? "text-[#25172d]" : "text-white")
+                : isTransparentOverHero
+                  ? cx("px-1 py-2", isTransparentLight ? "text-[#25172d]" : "text-white")
+                  : cx(
+                      "nav-chrome-glass-header px-4 py-3 sm:px-6",
+                      isDarkGlass
+                        ? "theme-glass-nav rounded-[2rem] border-white/14 shadow-[0_18px_40px_rgba(3,1,10,0.24)]"
+                        : "hero-top-nav-shell-light rounded-[2rem]",
+                    ),
+            )}
+          >
+            <div
               className={cx(
-                mobileLogoOnly ? "hidden" : "inline-flex",
-                "nav-chrome-motion h-11 w-11 items-center justify-center shadow-sm",
-                "lg:hidden",
-                isTransparentOverHero && isTransparentLight
-                  ? "rounded-full border border-[#25172d]/10 bg-[#25172d]/8 text-[#25172d]"
-                  : isDarkGlass
-                    ? "rounded-full border border-white/14 bg-white/[0.08] text-white"
-                    : "nav-chrome-pill-secondary rounded-full text-[#31264f]",
-                isTransparentOverHero && "justify-self-end",
+                "flex items-center justify-between gap-4",
+                "lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center",
+                "lg:gap-3 xl:gap-5 2xl:gap-6",
               )}
-              onClick={() => setMobileMenuOpen((value) => !value)}
-              aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
-              aria-expanded={mobileMenuOpen}
-              aria-controls="hero-top-nav-mobile"
             >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+              <Link
+                href={brandHref}
+                className="group flex shrink-0 items-center overflow-hidden justify-self-start"
+                aria-label="Envitefy"
+              >
+                <EnvitefyWordmark
+                  scaled={false}
+                  tone={mobileLogoOnly || !isDarkGlass ? "gradient" : "light"}
+                  className={cx(
+                    "max-w-full leading-none transition-transform duration-300 group-hover:scale-[1.02]",
+                    isTransparentOverHero
+                      ? "text-[2.5rem] sm:text-[2.8rem] md:text-[3.1rem]"
+                      : "text-[2.25rem] sm:text-[2.5rem] md:text-[2.7rem]",
+                    (mobileLogoOnly || !isDarkGlass) && "hero-top-nav-brand-light",
+                  )}
+                />
+              </Link>
+
+              <nav
+                className={cx(
+                  appearanceStyles.publicLinks,
+                  "hidden min-w-0 flex-nowrap items-center justify-center",
+                  hasWideNavigation ? "gap-1 lg:flex 2xl:gap-2" : "lg:flex",
+                  !hasWideNavigation &&
+                    (isTransparentOverHero
+                      ? "gap-2 xl:gap-4 2xl:gap-7"
+                      : "gap-1 xl:gap-3 2xl:gap-5"),
+                )}
+                aria-label="Hero navigation"
+              >
+                {navLinks.map((link) => {
+                  const isActive = resolvedActiveHref === link.href;
+                  return (
+                    <span key={`${link.label}:${link.href}`} className="relative inline-flex">
+                      <NavLinkItem
+                        href={link.href}
+                        label={link.label}
+                        ariaCurrent={
+                          isActive ? (link.href.startsWith("#") ? "location" : "page") : undefined
+                        }
+                        onClick={
+                          link.href.startsWith("#") ? handleHashLinkClick(link.href) : undefined
+                        }
+                        className={cx(
+                          "nav-chrome-menu-entry nav-chrome-motion relative whitespace-nowrap font-semibold transition",
+                          hasWideNavigation ? "text-[13px]" : "text-sm",
+                          isTransparentOverHero
+                            ? cx(
+                                "px-1 py-2",
+                                isActive
+                                  ? isTransparentLight
+                                    ? "text-[#1d1224]"
+                                    : "text-white"
+                                  : isTransparentLight
+                                    ? "text-[#2c2035]/78 hover:text-[#171019]"
+                                    : "text-white/82 hover:text-white",
+                              )
+                            : cx(
+                                "rounded-full py-2",
+                                hasWideNavigation ? "px-1.5" : "px-1.5 xl:px-3",
+                                isActive
+                                  ? isDarkGlass
+                                    ? "text-white"
+                                    : "text-[#4f39dd]"
+                                  : isDarkGlass
+                                    ? "text-white hover:bg-white/[0.12]"
+                                    : lightNavPillClass,
+                              ),
+                        )}
+                      />
+                      {isActive ? (
+                        <span
+                          className={cx(
+                            "pointer-events-none absolute inset-x-0 -bottom-0.5 h-[2.5px] origin-center rounded-full",
+                            getActiveUnderlineClass({
+                              isTransparentOverHero,
+                              isTransparentLight,
+                              isDarkGlass,
+                            }),
+                          )}
+                        />
+                      ) : null}
+                    </span>
+                  );
+                })}
+              </nav>
+
+              <div
+                className={cx(
+                  appearanceStyles.publicActions,
+                  "hidden shrink-0 items-center gap-3 justify-self-end",
+                  "lg:flex",
+                )}
+              >
+                {status === "authenticated" ? (
+                  <Link
+                    href={dashboardHref}
+                    className={cx(
+                      "nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
+                      isTransparentOverHero
+                        ? isTransparentLight
+                          ? "text-[#25172d]"
+                          : "text-white"
+                        : isDarkGlass
+                          ? "text-white"
+                          : lightNavPillClass,
+                    )}
+                  >
+                    Dashboard
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onGuestLoginAction}
+                    className={cx(
+                      isTransparentOverHero && isTransparentLight
+                        ? "cta-shell nav-chrome-motion h-11 shrink-0 rounded-full border border-[#25172d]/10 bg-[#25172d]/8 px-6 text-sm font-bold text-[#25172d] transition-all hover:bg-[#25172d]/12"
+                        : isDarkGlass
+                          ? glassGhostLoginClass
+                          : "cta-shell nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
+                      !isTransparentOverHero && !isDarkGlass && lightNavPillClass,
+                    )}
+                  >
+                    <AnimatedButtonLabel label="Login" />
+                  </button>
+                )}
+
+                {status === "authenticated" ? (
+                  <Link
+                    href={authenticatedPrimaryHref}
+                    className={cx(
+                      "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
+                      isDarkGlass
+                        ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
+                        : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
+                    )}
+                  >
+                    <AnimatedButtonLabel label={primaryCtaLabel} />
+                  </Link>
+                ) : guestPrimaryHref ? (
+                  <Link
+                    href={guestPrimaryHref}
+                    className={cx(
+                      "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
+                      isDarkGlass || isTransparentOverHero
+                        ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
+                        : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
+                    )}
+                  >
+                    <AnimatedButtonLabel label={primaryCtaLabel} />
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onGuestPrimaryAction}
+                    className={cx(
+                      "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
+                      isDarkGlass || isTransparentOverHero
+                        ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
+                        : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
+                    )}
+                  >
+                    <AnimatedButtonLabel label={primaryCtaLabel} />
+                  </button>
+                )}
+              </div>
+
+              <button
+                ref={mobileMenuToggleRef}
+                type="button"
+                className={cx(
+                  mobileLogoOnly ? "hidden" : "inline-flex",
+                  "nav-chrome-motion h-11 w-11 items-center justify-center shadow-sm",
+                  "lg:hidden",
+                  isTransparentOverHero && isTransparentLight
+                    ? "rounded-full border border-[#25172d]/10 bg-[#25172d]/8 text-[#25172d]"
+                    : isDarkGlass
+                      ? "rounded-full border border-white/14 bg-white/[0.08] text-white"
+                      : "nav-chrome-pill-secondary rounded-full text-[#31264f]",
+                  isTransparentOverHero && "justify-self-end",
+                )}
+                onClick={() => setMobileMenuOpen((value) => !value)}
+                aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="hero-top-nav-mobile"
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {mobileMenuPortalReady && typeof document !== "undefined"
           ? createPortal(
@@ -847,7 +942,7 @@ export default function HeroTopNav({
                                     onSwitchMode={() => {
                                       setMobileLoginExpanded(false);
                                       setMobileMenuOpen(false);
-                                      onGuestPrimaryAction();
+                                      onGuestSignupAction();
                                     }}
                                     onSuccess={() => {
                                       setMobileLoginExpanded(false);

@@ -73,6 +73,7 @@ export default function SignedOutPageChrome({
         variant={topNavVariant}
         loginSuccessRedirectUrl={loginSuccessRedirectUrl}
         onGuestLoginAction={() => openAuth("login")}
+        onGuestSignupAction={() => openAuth("signup")}
         onGuestPrimaryAction={() =>
           templateCategory ? router.push(primaryCreateHref) : openAuth("signup")
         }

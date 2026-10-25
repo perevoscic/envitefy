@@ -24,8 +24,27 @@ async function buildFixture() {
     window.__landingProductNavigation = [];
     window.__landingProductAuth = [];
     function App() {
+      const params = new URLSearchParams(location.search);
+      const editorial = params.has("editorial");
+      const primaryLabel = params.has("wide") ? "Browse all invitation and event page templates" : "Create your event";
+      const links = params.has("wide")
+        ? ["Introduction", "Template collections", "Live preview", "How it works", "Planning tools", "Guest responses", "Questions"].map((label) => ({ label, href: "#examples" }))
+        : [{ label: "Examples", href: "#examples" }, { label: "Questions", href: "#questions" }];
       return <ThemeProvider>
-        {new URLSearchParams(location.search).has("hero") ? <MarketingPage>
+        {editorial ? <MarketingPage tone={(params.get("tone") || "celebration") as "celebration" | "sports" | "product"}>
+          <HeroTopNav editorialTone={(params.get("tone") || "celebration") as "celebration" | "sports" | "product"}
+            navLinks={links} primaryCtaLabel={primaryLabel}
+            authenticatedPrimaryHref="/create" guestPrimaryHref={params.has("href") ? "/birthdays/templates" : undefined}
+            loginSuccessRedirectUrl="/category-login"
+            onGuestLoginAction={() => window.__landingProductAuth.push({ mode: "login", redirect: "/category-login" })}
+            onGuestSignupAction={params.has("signup") ? () => window.__landingProductAuth.push({ mode: "signup", redirect: "/category-signup" }) : undefined}
+            onGuestPrimaryAction={() => window.__landingProductAuth.push({ mode: "signup", redirect: "/category-create" })} />
+          <main style={{ minHeight: 6000, paddingTop: 140 }}>
+            <h1>Public category page</h1>
+            <section id="examples" style={{ marginTop: 900, scrollMarginTop: 100 }}>Examples</section>
+            <section id="questions" style={{ marginTop: 900, scrollMarginTop: 100 }}>Questions</section>
+          </main>
+        </MarketingPage> : params.has("hero") ? <MarketingPage>
           <HeroTopNav navLinks={[{ label: "Examples", href: "#examples" }]}
             authenticatedPrimaryHref="/create" onGuestLoginAction={() => {}}
             onGuestPrimaryAction={() => {}} />
@@ -235,6 +254,58 @@ async function assertLogo(header, hidden, label, focused = false) {
     assert.equal(await brand.evaluate((node) => node.matches(":focus-visible")), true, label);
 }
 
+async function headerPresentation(header, primaryLabel = "Create your event") {
+  return header.evaluate((node, label) => {
+    const read = (element, properties) => {
+      if (!element) return null;
+      const style = getComputedStyle(element);
+      return Object.fromEntries(properties.map((property) => [property, style[property]]));
+    };
+    const text = ["fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "textTransform", "color"];
+    const action = [...text, "display", "alignItems", "justifyContent", "minHeight", "paddingTop", "paddingBottom", "paddingLeft", "paddingRight", "backgroundColor", "borderTopColor", "borderTopStyle", "borderTopWidth", "borderRadius", "boxShadow"];
+    const join = [...node.querySelectorAll("button")].find((button) => ["Join", "Let's create"].includes(button.textContent.trim()));
+    const primary = [...node.querySelectorAll("button, a")].find((control) => control.textContent.trim() === label);
+    const menu = node.querySelector('button[aria-label="Open navigation"]');
+    const brand = node.querySelector('a[aria-label="Envitefy home"]');
+    const nav = node.querySelector("nav");
+    const layout = node.firstElementChild?.tagName === "DIV" ? node.firstElementChild : node;
+    const rect = node.getBoundingClientRect();
+    return {
+      header: read(node, ["display", "alignItems", "minHeight", "paddingTop", "paddingBottom", "paddingLeft", "paddingRight", "backgroundColor", "borderBottomColor", "borderBottomStyle", "borderBottomWidth", "borderRadius", "boxShadow", "backdropFilter"]),
+      layout: read(layout, ["display", "alignItems", "justifyContent"]),
+      geometry: { x: rect.x, width: rect.width, height: rect.height },
+      brand: read(brand, ["display", "alignItems", "minHeight"]),
+      images: [...(brand?.querySelectorAll("img") || [])].map((image) => ({ src: image.getAttribute("src"), width: getComputedStyle(image).width, height: getComputedStyle(image).height })),
+      join: read(join, action),
+      primary: read(primary, action),
+      primaryIcon: read(primary?.querySelector("svg"), ["width", "height"]),
+      menu: read(menu, ["display", "alignItems", "justifyContent", "width", "height", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "backgroundColor", "borderTopStyle", "borderTopWidth", "borderRadius", "boxShadow", "color"]),
+      menuIcon: read(menu?.querySelector("svg"), ["width", "height"]),
+      nav: read(nav, ["display"]),
+      navLink: read(nav?.querySelector("a"), text),
+    };
+  }, primaryLabel);
+}
+
+async function assertBoundedHeader(page, header, label) {
+  const geometry = await header.evaluate((node) => {
+    const viewport = document.documentElement.clientWidth;
+    const controls = [...node.querySelectorAll('a[aria-label="Envitefy home"], button, a')]
+      .filter((control) => !control.closest("nav"))
+      .map((control) => control.getBoundingClientRect())
+      .filter((rect) => rect.width > 0 && rect.height > 0);
+    return {
+      viewport,
+      pageWidth: document.documentElement.scrollWidth,
+      controls: controls.map((rect) => ({ left: rect.left, right: rect.right })),
+    };
+  });
+  assert.ok(geometry.pageWidth <= geometry.viewport + 1, `${label}: navigation does not widen the document`);
+  for (const rect of geometry.controls) {
+    assert.ok(rect.left >= -1 && rect.right <= geometry.viewport + 1, `${label}: visible header actions fit inside the viewport`);
+  }
+}
+
 test("public headers follow scroll direction while the homepage avoids duplicate wordmarks", {
   timeout: 120000,
 }, async () => {
@@ -270,7 +341,7 @@ test("public headers follow scroll direction while the homepage avoids duplicate
           await page.evaluate(() => document.fonts.ready);
           await assertVisibility(header, true, `${label}: navigation controls initially visible`);
           const control = header.getByRole("button", {
-            name: width < 1024 ? "Open navigation" : kind === "landing" ? "Join" : "Login",
+            name: width < 1024 ? "Open navigation" : kind === "landing" ? /^(?:Join|Let's create)$/ : "Login",
             exact: true,
           });
           assert.equal(
@@ -460,6 +531,162 @@ test("public headers follow scroll direction while the homepage avoids duplicate
           await context.close();
         }
       }
+
+    // Compare the opted-in public header with the real, unchanged homepage.
+    // Positioning and content-dependent widths/gaps may differ; the public
+    // header keeps its fixed placement and each page's own destinations.
+    for (const scheme of ["light", "dark"])
+      for (const width of [390, 768, 961, 1024, 1440]) {
+        const context = await browser.newContext({
+          viewport: { width, height: 900 },
+          colorScheme: scheme,
+          reducedMotion: "reduce",
+        });
+        const errors = [], unexpected = [];
+        await serve(context, css, unexpected);
+        const page = await context.newPage();
+        page.setDefaultTimeout(7000);
+        page.on("pageerror", (error) => errors.push(error.message));
+        try {
+          await page.goto(base);
+          const mainHeader = page.locator("header[data-scroll-hidden]").first();
+          await mainHeader.waitFor();
+          await page.waitForFunction((dark) => document.documentElement.classList.contains("dark") === dark, scheme === "dark");
+          await page.evaluate(() => document.fonts.ready);
+          const reference = await headerPresentation(mainHeader);
+
+          for (const tone of ["celebration", "sports", "product"]) {
+            const label = `${tone} ${scheme} ${width}px`;
+            await page.goto(`${base}/?editorial&tone=${tone}`);
+            const header = page.locator("header[data-public-landing-header]");
+            await header.waitFor();
+            await page.waitForFunction((dark) => document.documentElement.classList.contains("dark") === dark, scheme === "dark");
+            await page.evaluate(() => document.fonts.ready);
+            const actual = await headerPresentation(header);
+            for (const part of ["header", "layout", "geometry", "brand", "images", "join", "primary", "primaryIcon", "menu", "menuIcon", "nav", "navLink"]) {
+              assert.deepEqual(actual[part], reference[part], `${label}: ${part} matches the current main landing header`);
+            }
+            assert.equal(await header.evaluate((node) => getComputedStyle(node).position), "fixed", `${label}: other public pages retain fixed positioning`);
+            assert.equal(await header.getByRole("link", { name: "Envitefy home", exact: true }).isVisible(), true, `${label}: other pages always show the approved brand`);
+            const join = header.getByRole("button", { name: "Let's create", exact: true });
+            assert.equal(await join.isVisible(), true, `${label}: Let's create stays available at every width`);
+            await join.click();
+            assert.deepEqual(await page.evaluate(() => window.__landingProductAuth), [{ mode: "signup", redirect: "/category-create" }], `${label}: Let's create falls back to this page's signup action`);
+            const create = header.getByRole("button", { name: "Create your event", exact: true });
+            assert.equal(await create.isVisible(), width > 960, `${label}: primary action follows the main landing breakpoint`);
+            if (width > 960) {
+              await create.click();
+              assert.deepEqual((await page.evaluate(() => window.__landingProductAuth)).at(-1), { mode: "signup", redirect: "/category-create" }, `${label}: primary action invokes this page's creation action`);
+            }
+            const menu = header.getByRole("button", { name: "Open navigation", exact: true });
+            assert.equal(await menu.isVisible(), width < 1024, `${label}: menu switches to inline navigation at 1024px`);
+            assert.equal(await header.getByRole("navigation", { name: "Hero navigation", exact: true }).isVisible(), width >= 1024);
+            await assertBoundedHeader(page, header, label);
+
+            await page.evaluate(() => document.activeElement?.blur());
+            await scrollTo(page, 500);
+            await assertVisibility(header, false, `${label}: downward reading hides the public header`);
+            await scrollTo(page, 470);
+            await assertVisibility(header, true, `${label}: upward reading reveals the public header`);
+            if (width < 1024) {
+              await menu.click();
+              const dialog = page.getByRole("dialog", { name: "Hero navigation", exact: true });
+              await dialog.waitFor();
+              assert.equal(await header.getAttribute("data-scroll-hidden"), "false", `${label}: open navigation keeps the header visible`);
+              await page.keyboard.press("Escape");
+              await dialog.waitFor({ state: "hidden" });
+              await page.waitForFunction(() => Math.abs(scrollY - 470) < 1);
+              assert.equal(await menu.evaluate((node) => node === document.activeElement), true, `${label}: Escape restores the menu button's focus`);
+            }
+            results.push(label);
+          }
+
+          {
+            const label = `separate signup action ${scheme} ${width}px`;
+            await page.goto(`${base}/?editorial&signup`);
+            const header = page.locator("header[data-public-landing-header]");
+            await header.waitFor();
+            await header.getByRole("button", { name: "Let's create", exact: true }).click();
+            assert.deepEqual(await page.evaluate(() => window.__landingProductAuth), [{ mode: "signup", redirect: "/category-signup" }], `${label}: Let's create invokes the explicit signup action`);
+            if (width > 960) {
+              await header.getByRole("button", { name: "Create your event", exact: true }).click();
+              assert.deepEqual((await page.evaluate(() => window.__landingProductAuth)).at(-1), { mode: "signup", redirect: "/category-create" }, `${label}: the primary action keeps its separate creation callback`);
+            }
+            results.push(label);
+          }
+
+          if (width >= 1024) {
+            const label = `wide header ${scheme} ${width}px`;
+            await page.goto(`${base}/?editorial&wide&href`);
+            const header = page.locator("header[data-public-landing-header]");
+            await header.waitFor();
+            const primary = header.getByRole("link", { name: "Browse all invitation and event page templates", exact: true });
+            assert.equal(await primary.getAttribute("href"), "/birthdays/templates", `${label}: a page-specific primary link remains a link`);
+            await assertBoundedHeader(page, header, label);
+            const finalLink = header.getByRole("navigation", { name: "Hero navigation", exact: true }).getByRole("link", { name: "Questions", exact: true });
+            await page.keyboard.press("Tab");
+            await finalLink.focus();
+            const focused = await finalLink.boundingBox();
+            const viewport = await page.evaluate(() => document.documentElement.clientWidth);
+            assert.ok(focused.x >= -1 && focused.x + focused.width <= viewport + 1, `${label}: all seven local links remain reachable by keyboard`);
+            assert.equal(await finalLink.evaluate((node) => node === document.activeElement), true);
+            const ring = await finalLink.evaluate((node) => {
+              const style = getComputedStyle(node);
+              const nav = node.closest("nav");
+              const navStyle = getComputedStyle(nav);
+              const link = node.getBoundingClientRect();
+              const container = nav.getBoundingClientRect();
+              return {
+                focusVisible: node.matches(":focus-visible"),
+                extent: style.outlineStyle === "none" ? 0 : Math.max(0, parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset)),
+                overflowX: navStyle.overflowX,
+                overflowY: navStyle.overflowY,
+                link: { top: link.top, bottom: link.bottom, left: link.left, right: link.right },
+                nav: { top: container.top, bottom: container.bottom, left: container.left, right: container.right },
+              };
+            });
+            assert.equal(ring.focusVisible, true, `${label}: local navigation exposes keyboard focus`);
+            assert.ok(ring.extent > 0, `${label}: local navigation has a visible focus outline`);
+            if (ring.overflowY !== "visible") {
+              assert.ok(ring.link.top - ring.extent >= ring.nav.top - 1 && ring.link.bottom + ring.extent <= ring.nav.bottom + 1, `${label}: scrolling navigation does not clip the focus outline vertically`);
+            }
+            if (ring.overflowX !== "visible") {
+              assert.ok(ring.link.left - ring.extent >= ring.nav.left - 1 && ring.link.right + ring.extent <= ring.nav.right + 1, `${label}: the last local link keeps its complete focus outline inside the scrollport`);
+            }
+          }
+          assert.deepEqual(errors, [], `${scheme} ${width}px: no browser errors`);
+          assert.deepEqual(unexpected, [], `${scheme} ${width}px: no external or write requests`);
+        } finally {
+          await context.close();
+        }
+      }
+
+    // Compact public pages still fit small phones, including the longer
+    // authenticated Dashboard label. The main landing remains unchanged.
+    for (const scheme of ["light", "dark"]) {
+      const context = await browser.newContext({ viewport: { width: 320, height: 800 }, colorScheme: scheme, reducedMotion: "reduce" });
+      const unexpected = [];
+      await serve(context, css, unexpected);
+      const page = await context.newPage();
+      try {
+        for (const authenticated of [false, true]) {
+          const label = `small phone ${scheme} ${authenticated ? "authenticated" : "guest"}`;
+          await page.goto(`${base}/?editorial${authenticated ? "&authenticated" : ""}`);
+          const header = page.locator("header[data-public-landing-header]");
+          await header.waitFor();
+          await page.evaluate(() => document.fonts.ready);
+          await assertBoundedHeader(page, header, label);
+          const account = header.getByRole(authenticated ? "link" : "button", { name: authenticated ? "Dashboard" : "Let's create", exact: true });
+          assert.equal(await account.isVisible(), true, `${label}: account action remains available`);
+          if (authenticated) assert.equal(await account.getAttribute("href"), "/", `${label}: Dashboard keeps its existing destination`);
+          assert.equal(await header.getByRole("button", { name: "Open navigation", exact: true }).isVisible(), true);
+          assert.equal(await header.locator("[data-header-primary]").isVisible(), false);
+        }
+        assert.deepEqual(unexpected, [], `small phone ${scheme}: no external or write requests`);
+      } finally {
+        await context.close();
+      }
+    }
   } finally {
     await browser.close();
   }
