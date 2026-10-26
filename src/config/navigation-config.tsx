@@ -198,6 +198,7 @@ export function getCreateEventSections(
       .filter((link) => link.section === section && link.key !== "general")
       .map(({ label, href, icon }) => ({ label, href, icon })),
   })).filter((section) => section.items.length > 0);
+  if (generalEvent) sections.push({ title: "School & classroom", items: [{ label: "School & classroom", href: "/event/school", description: "Weekly memos, field trips, celebrations and parent meetings" }] });
   sections.push({
     title: "Sign-ups",
     items: [{
@@ -227,7 +228,7 @@ export function getCreateEventSections(
 export function isCreateEventRoute(path: string | null | undefined): boolean {
   if (!path) return false;
   const pathname = normalizeNavigationPath(path);
-  if (pathname === "/create") return true;
+  if (pathname === "/create" || pathname === "/event/school") return true;
   if (pathname === "/event/new" || pathname.startsWith("/event/new/")) return true;
   if (pathname === "/event/design/customize") return true;
   if (matchesCreateEventHrefPath(pathname, "/signup-forms/templates")) return true;

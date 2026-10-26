@@ -212,7 +212,7 @@ test("school memos bypass holiday model guesses and named holiday evidence reach
   } } } })) as any;
   try {
     const memo = await classifyCreateSource({ text: "Weekly Memo\nSchool classes\nBible test Friday\nTurkey Trot November 16" }, signal());
-    expect(memo).toMatchObject({ category: "general", confidence: "high" });
+    expect(memo).toMatchObject({ category: "school", schoolTemplate: "weekly-memo", confidence: "high" });
     expect(calls).toBe(0);
     const invitation = await classifyCreateSource({ text: "School New Year's Eve Celebration\nDecember 31 at 6 PM" }, signal());
     expect(invitation).toMatchObject({ category: "holidays-seasonal", occasion: "new-years-eve", confidence: "high", occasionEvidence: evidence });

@@ -70,6 +70,7 @@ export function useEventPageEditor({
   savePage,
   published: suppliedPublished,
   initialDirty = false,
+  initialComposition,
   cancelHref,
 }: {
   snapshot: object;
@@ -86,6 +87,7 @@ export function useEventPageEditor({
   savePage?: (publish: boolean) => Promise<{ id: string; href: string; snapshot: object }>;
   published?: boolean;
   initialDirty?: boolean;
+  initialComposition?: EventPageComposition;
   cancelHref?: string;
 }): EventPageEditorSession {
   const router = useRouter();
@@ -110,7 +112,7 @@ export function useEventPageEditor({
   const published =
     suppliedPublished ?? template?.published ?? (loaded ? !isEventDraft(loaded.data) : false);
   const [composition, setComposition] = useState<EventPageComposition | undefined>(() =>
-    normalizeEventPageComposition(template?.initial.pageComposition),
+    normalizeEventPageComposition(template?.initial.pageComposition || initialComposition),
   );
   const [compositionReady, setCompositionReady] = useState(!id.current || Boolean(template));
   const hydratedComposition = useRef(Boolean(template) || !id.current);

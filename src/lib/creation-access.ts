@@ -29,7 +29,7 @@ export function normalizeCreationCategory(value: unknown): CreationCategory | nu
     "sport-cheerleading": "cheerleading", "cheerleading-season": "cheerleading", "sport-dance-ballet": "dance-ballet",
     "dance-ballet-season": "dance-ballet", dance: "dance-ballet", ballet: "dance-ballet", cheer: "cheerleading",
     sports: "sport-events", "sport-event": "sport-events", "sport-events": "sport-events", "general-event": "general",
-    "general-events": "general", "gender-reveals": "gender-reveal",
+    "general-events": "general", school: "general", "school-&-classroom": "general", "school-and-classroom": "general", "gender-reveals": "gender-reveal",
   };
   return aliases[key] || null;
 }

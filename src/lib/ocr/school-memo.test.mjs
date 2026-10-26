@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import test from "node:test";
 import sharp from "sharp";
 import { extractSchoolMemo, extractSchoolMemoDates, schoolMemoPrompt } from "./school-memo.ts";
+import { isSchoolMemoText, schoolMemoLocation } from "../school-memo.ts";
 import { normalizeScanSchedule } from "../scan-schedule.ts";
 
 const source = fs.readFileSync(new URL("../../../scripts/fixtures/school-memo.txt", import.meta.url), "utf8");
@@ -126,6 +127,8 @@ test("the PDF upload pipeline consumes both native-text pages without a live OCR
   assert.equal(result.category, "General Events");
   assert.equal(result.fieldsGuess.start, null);
   assert.equal(result.fieldsGuess.end, null);
+  assert.equal(result.fieldsGuess.venue, null);
+  assert.equal(result.fieldsGuess.location, null);
   assert.equal(result.fieldsGuess.scanPersonalization.subject, "school event");
   assert.match(result.ocrText, /No School Wednesday November 11/);
 });
@@ -177,4 +180,12 @@ test("OCR consumes complete PDF memo text and skips sports/holiday routing", () 
   assert.match(pipeline, /schoolMemoDetected \? "General Events"/);
   assert.match(pipeline, /schoolMemoDetected \? "school event"/);
   assert.match(pipeline, /!schoolMemoDetected && hasSportsScheduleText\(raw\)/);
+});
+
+test("classroom note patterns distinguish tasks from explicitly labelled places", () => {
+  assert.equal(isSchoolMemoText("Peek at our week\nSpelling test Friday October 30\nBring binders daily"), true);
+  assert.equal(isSchoolMemoText("Weekly news\nSoccer practice Friday October 30"), false);
+  assert.deepEqual(schoolMemoLocation("Binders are taken home and returned to school daily.\n1. Bible Test this Friday October 30 th"), { venue: null, location: null });
+  assert.deepEqual(schoolMemoLocation("Location: Binders are taken home daily\nAddress: Spelling Test Friday October 30"), { venue: null, location: null });
+  assert.deepEqual(schoolMemoLocation("School name: Oak Academy\nSchool address: 123 Main St, Chicago"), { venue: "Oak Academy", location: "123 Main St, Chicago" });
 });

@@ -30,7 +30,7 @@ test("the client handles a Snap destination before loading any automatic Event P
   expect(handoff).toContain('allowedProducts.includes("snap")');
   expect(handoff).toContain("snapUploadForCreateSource(source, result.sourceText)");
   expect(handoff).toContain('router.push("/snap?action=upload")');
-  expect(source).toContain("schoolMemoCapture");
-  expect(source).toContain("!intake?.information && guess?.category === \"general\"");
+
+  expect(source).not.toContain("schoolMemoCapture");
   expect(source).toContain("Continue with Snap a Flyer");
 });

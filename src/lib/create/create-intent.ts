@@ -2,7 +2,7 @@ import type { CustomEventCategory } from "../event-custom-design";
 import { detectSportActivity } from "../sports-discovery/detect";
 import { getSportActivityProfile, SPORT_ACTIVITY_PROFILES } from "../sports-discovery/profiles";
 import type { HolidayCollectionId } from "../holiday-collections";
-import { isSchoolMemoText } from "../school-memo";
+import { recognizeSchoolSource, type SchoolTemplateKind } from "../school-events";
 
 /** Categories the Create page can route to. Sports carry a separate sport key. */
 export const CREATE_CATEGORIES = [
@@ -23,6 +23,7 @@ export const CREATE_CATEGORIES = [
   "signup-forms",
   "sports",
   "holidays-seasonal",
+  "school",
   "general",
 ] as const;
 export type CreateCategory = (typeof CREATE_CATEGORIES)[number];
@@ -45,13 +46,14 @@ export const CREATE_CATEGORY_LABELS: Record<CreateCategory, string> = {
   "signup-forms": "Sign-up form",
   sports: "Sports",
   "holidays-seasonal": "Holidays & seasonal",
+  school: "School & classroom",
   general: "General event",
 };
 
 export const CREATE_SPORT_KEYS = SPORT_ACTIVITY_PROFILES.map((profile) => profile.key);
 
 export type CreateConfidence = "high" | "low";
-export type CreateGuess = { category: CreateCategory; sport: string | null; occasion?: HolidayCollectionId | null };
+export type CreateGuess = { category: CreateCategory; sport: string | null; occasion?: HolidayCollectionId | null; schoolTemplate?: SchoolTemplateKind };
 export type CreateClassification = CreateGuess & {
   confidence: CreateConfidence;
   /** Exact observed source wording supporting a named holiday, when supplied. */
@@ -132,8 +134,8 @@ const CATEGORY_SIGNALS: Array<{ category: Exclude<CreateCategory, "sports" | "ge
 export function classifyCreateText(input: string): CreateClassification {
   // A school newsletter can mention holidays, races and Bible tests without
   // becoming a holiday invitation, sports competition or religious ceremony.
-  if (isSchoolMemoText(input))
-    return { category: "general", sport: null, confidence: "high", alternatives: [] };
+  const school = recognizeSchoolSource(input);
+  if (school) return { category: "school", sport: null, ...(school.kind ? { schoolTemplate: school.kind } : {}), confidence: school.kind ? "high" : "low", alternatives: [] };
   // Treat URL punctuation as word breaks so paths like /football-schedule are read.
   const text = String(input || "").replace(/[/_.?=&#-]+/g, " ").replace(/\s+/g, " ").trim();
   const scores = new Map<CreateCategory, number>();
@@ -182,7 +184,7 @@ export function classifyCreateText(input: string): CreateClassification {
 /** The custom Event Page category used by Create with Envitefy and information uploads. */
 export function customCategoryForGuess(guess: CreateGuess): CustomEventCategory {
   if (guess.category !== "sports") {
-    if (["medical-appointments", "graduations", "housewarming", "open-house", "religious-events", "holidays-seasonal", "signup-forms"].includes(guess.category)) return "general";
+    if (["medical-appointments", "graduations", "housewarming", "open-house", "religious-events", "holidays-seasonal", "signup-forms", "school"].includes(guess.category)) return "general";
     return guess.category as CustomEventCategory;
   }
   switch (guess.sport) {

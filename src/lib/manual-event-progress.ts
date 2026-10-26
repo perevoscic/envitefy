@@ -1,3 +1,5 @@
+import { normalizeSchoolTemplate } from "./school-events";
+import { normalizeScanSchedule, scanScheduleHistoryFields } from "./scan-schedule";
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
 import { normalizeEventPageComposition } from "./event-page-composition";
 import { normalizeFootballPageText } from "./football-page-text";
@@ -137,6 +139,16 @@ export async function saveManualEventProgress({
       } : literalTheme,
     } : {}),
   } : {};
+  const schoolTemplate = normalizeSchoolTemplate(data.schoolTemplate);
+  const schoolSchedule = normalizeScanSchedule(data.scanSchedule);
+  const schoolFields = schoolTemplate || schoolSchedule?.kind === "school-memo" ? {
+    category: "School & classroom", creationCollection: "school", schoolTemplate: schoolTemplate || "weekly-memo",
+    bodyDesignId, themeId: saved.themeId || existing.themeId || bodyDesignId,
+    ...(literalTheme ? { theme: literalTheme } : {}),
+    ...(schoolSchedule?.kind === "school-memo" ? {
+      scanSchedule: schoolSchedule, ...scanScheduleHistoryFields(schoolSchedule), visibility: "private", noindex: true,
+    } : {}),
+  } : {};
   const response = await historyFetch(
     eventId ? `/api/history/${encodeURIComponent(eventId)}` : "/api/history",
     {
@@ -174,6 +186,7 @@ export async function saveManualEventProgress({
                 createdManually: true,
                 eventPageComposition: normalizeEventPageComposition(saved.pageComposition) ?? null,
                 ...holidayFields,
+                ...schoolFields,
                 ...(templateId === "football-season"
                   ? {
                       footballPageText: normalizeFootballPageText(data.footballPageText),

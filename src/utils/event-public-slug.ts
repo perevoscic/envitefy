@@ -25,6 +25,7 @@ const RESERVED_EVENT_PUBLIC_SLUGS = new Set([
   "owner-toolbar-qa",
   "scan-artwork-preview",
   "schedule",
+  "school",
   "soccer",
   "special-events",
   "sport-events",

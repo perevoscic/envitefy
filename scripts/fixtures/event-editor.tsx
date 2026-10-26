@@ -1,3 +1,6 @@
+import { createCreationIntake, writeCreationIntake } from "../../src/lib/create/creation-intake";
+import { prepareCreationEditor } from "../../src/lib/create/editor-navigation";
+import { normalizeScanSchedule } from "../../src/lib/scan-schedule";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
@@ -52,6 +55,20 @@ const customPage = {
       { title: "Parking", body: "Use the north lot." },
     ],
   },
+};
+
+(window as any).__seedSchoolMemoCreate = async () => {
+  const source = "Weekly school memo\nBinders are returned to school daily.\nBible test October 30\nSpelling test October 30";
+  const schedule = normalizeScanSchedule({ kind: "school-memo", title: "Oak classroom memo", issueDate: "2026-10-26", timezone: "America/Chicago", items: [
+    { id: "bible", title: "Bible Test", type: "test", date: "2026-10-30" },
+    { id: "spelling", title: "Spelling Test", type: "test", date: "2026-10-30" },
+  ] })!;
+  const intake = await writeCreationIntake({ ...createCreationIntake("qa-host", { kind: "files", files: [new File([source], "memo.pdf", { type: "application/pdf" })], text: "" }),
+    guess: { category: "school", schoolTemplate: "weekly-memo", sport: null }, sourceText: source,
+    information: { version: 1, kind: "information", category: "general", design: customPage.design,
+      details: { ...emptyCustomEventDetails(), title: schedule.title, schoolTemplate: "weekly-memo", scanSchedule: schedule, timezone: schedule.timezone, sections: [{ title: "School memo", body: source }] } },
+  });
+  return prepareCreationEditor(intake, { id: "school--weekly-memo", family: "general", category: "general", title: "Weekly memo", description: "", style: "", imageUrl: "", href: "/event/general/customize?collection=school&templateId=school--weekly-memo" });
 };
 
 const navigate = (url: string, replace = false) => {

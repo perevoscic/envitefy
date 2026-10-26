@@ -1,3 +1,5 @@
+import { normalizeSchoolTemplate } from "../school-events";
+import { normalizeScanSchedule, scanScheduleHistoryFields } from "../scan-schedule";
 import type { DraftValue } from "../template-draft-storage";
 import type { CreationIntake } from "./creation-intake";
 import { informationForCreation } from "./creation-information";
@@ -29,6 +31,10 @@ export function creationNativePayload(payload: EventEditorPayload, snapshot: obj
       facts.builderDraft = { ...builder, event: { ...object(builder.event), ...facts } };
     }
   }
+  const schoolTemplate = normalizeSchoolTemplate(data.schoolTemplate);
+  if (schoolTemplate) Object.assign(facts, { schoolTemplate, creationCollection: "school", category: "School & classroom" });
+  const schedule = normalizeScanSchedule(data.scanSchedule);
+  if (schedule?.kind === "school-memo") Object.assign(facts, { scanSchedule: schedule, ...scanScheduleHistoryFields(schedule), visibility: "private", noindex: true });
   return { ...payload, data: { ...payload.data, ...facts } };
 }
 const object = (value: unknown): Record<string, any> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : {};
@@ -37,6 +43,11 @@ export function hydrateCreationValue<S>(category: string, key: string, initial: 
   if (!information || key !== "data") return initial;
   const d = information.details, data = structuredClone(initial) as Record<string, any>;
   Object.assign(data, { date: d.date, time: d.time, endDate: d.endDate, endTime: d.endTime, timezone: d.timezone, venue: d.venue, address: d.location, city: "", state: "", title: d.title, details: d.description, rsvpEnabled: d.rsvpEnabled, rsvpDeadline: "", hostName: d.host, rsvpPhone: d.rsvpPhone, rsvpEmail: d.rsvpEmail });
+  if (d.schoolTemplate) { data.schoolTemplate = d.schoolTemplate; data.creationCollection = "school"; }
+  if (d.scanSchedule?.kind === "school-memo") {
+    data.scanSchedule = structuredClone(d.scanSchedule);
+    if (!templateId?.startsWith("school--")) data.hero = "/templates/signup/school-and-education/classroom-supply-drive.webp";
+  }
   if ("rsvp" in data) data.rsvp = { ...object(data.rsvp), isEnabled: d.rsvpEnabled, deadline: "", phone: d.rsvpPhone, email: d.rsvpEmail };
   if ("hosts" in data) data.hosts = d.host ? [{ id: 1, name: d.host, role: "Host" }] : [];
   for (const key of ["gallery", "weddingParty", "thingsToDo", "schedule"]) if (key in data) data[key] = [];

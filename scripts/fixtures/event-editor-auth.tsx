@@ -8,6 +8,7 @@ export function useSession() {
     update: async () => {},
   };
 }
+export async function getSession() { return useSession().data; }
 export function useSidebar() {
   return { setEventEditAction() {} };
 }

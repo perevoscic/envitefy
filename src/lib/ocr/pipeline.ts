@@ -2,7 +2,7 @@ import { checkCreationAccess } from "@/lib/creation-access-server";
 import { parseEventDates } from "@/lib/event-date-parser";
 import { extractSportsSchedule, hasSportsScheduleText } from "./sports-schedule.ts";
 import { extractSchoolMemo } from "./school-memo.ts";
-import { isSchoolMemoText } from "../school-memo.ts";
+import { isSchoolMemoText, schoolMemoLocation } from "../school-memo.ts";
 import { scanScheduleFromOcr } from "../scan-schedule.ts";
 import { randomUUID } from "node:crypto";
 import { getServerSession } from "next-auth";
@@ -1683,8 +1683,8 @@ export async function handleOcrRequest(request: Request) {
       start: toLocalNoZ(finalStart),
       end: toLocalNoZ(finalEnd),
       timeFound: !schoolMemoDetected && (rawHasExplicitTime || parsedHadExplicitTime),
-      location: normalizedFieldLocation.location,
-      venue: normalizedFieldLocation.venue,
+      location: schoolMemoDetected ? schoolMemoLocation(raw).location : normalizedFieldLocation.location,
+      venue: schoolMemoDetected ? schoolMemoLocation(raw).venue : normalizedFieldLocation.venue,
       description,
       timezone: schoolMemoSchedule?.timezone || "",
       rsvp: normalizedFieldRsvp.rsvp,
@@ -2060,7 +2060,7 @@ export async function handleOcrRequest(request: Request) {
     }
 
     const locationStartedAt = Date.now();
-    const locationEnrichment = await enrichOcrVenueAddress({
+    const locationEnrichment = schoolMemoDetected ? null : await enrichOcrVenueAddress({
       venue: fieldsGuess.venue,
       location: fieldsGuess.location,
       hostName: fieldsGuess.hostName,

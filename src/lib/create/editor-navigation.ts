@@ -1,3 +1,5 @@
+import { getSchoolEventDesign } from "../school-event-designs";
+import { schoolStarterSections } from "../school-events";
 import { informationForCreation, creationComposition } from "./creation-information";
 import { readTemplateDraft, writeTemplateDraft, type DraftValue, type EditorSnapshot, type TemplateDraft } from "../template-draft-storage";
 import { getTemplateCategory } from "../template-categories";
@@ -7,6 +9,14 @@ import type { CreationTemplate } from "./creation-template";
 
 /** This prepares a browser draft only. Explicit editor Save/Publish owns server persistence. */
 export async function prepareCreationEditor(intake: CreationIntake, template: CreationTemplate): Promise<string> {
+  const school = getSchoolEventDesign(template.id);
+  if (school) {
+    const information = informationForCreation(intake);
+    intake = { ...intake, information: { ...information, details: { ...information.details,
+      schoolTemplate: school.schoolTemplate,
+      sections: information.details.sections.length ? information.details.sections : schoolStarterSections(school.schoolTemplate),
+    } } };
+  }
   const guess = intake.guess || intake.classification;
   const changingFamily = intake.editorFamily && intake.editorFamily !== template.family;
   const current = await writeCreationIntake({ ...intake, phase: "editor", selectedTemplateId: template.id, editorFamily: template.family, ...(changingFamily ? { editorSnapshot: undefined, eventId: undefined } : {}) });

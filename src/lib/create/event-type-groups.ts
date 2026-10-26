@@ -16,7 +16,7 @@ export function eventTypeChoiceLabel(choice: CreateGuess) {
 export function eventTypeChoiceSearchText(choice: CreateGuess) {
   const holiday = choice.category === "holidays-seasonal" && choice.occasion
     ? holidays.get(choice.occasion) : undefined;
-  return `${eventTypeChoiceLabel(choice)} ${holiday?.aliases || ""} ${choice.category === "general" ? "thematic" : ""}`;
+  return `${eventTypeChoiceLabel(choice)} ${holiday?.aliases || ""} ${choice.category === "school" ? "weekly memo newsletter field trip school celebration parent meeting classroom conference" : choice.category === "general" ? "thematic" : ""}`;
 }
 
 /** Put timely occasions first while keeping every category and occasion identity. */
@@ -48,12 +48,14 @@ export const EVENT_TYPE_GROUPS = [
   { id: "home", label: "Home & property" },
   { id: "religious", label: "Religious & cultural" },
   { id: "gatherings", label: "Gatherings & more" },
+  { id: "school", label: "School & classroom" },
   { id: "sports", label: "Sports & teams" },
 ] as const;
 
 export type EventTypeGroup = (typeof EVENT_TYPE_GROUPS)[number]["id"];
 
 export function eventTypeGroup(choice: CreateGuess): EventTypeGroup {
+  if (choice.category === "school") return "school";
   if (choice.category === "sports") return "sports";
   if (choice.category === "holidays-seasonal") return "holidays";
   if (choice.category === "housewarming" || choice.category === "open-house") return "home";
@@ -75,6 +77,7 @@ const featuredTypes: Record<EventTypeGroup, readonly string[]> = {
   home: ["housewarming", "open-house"],
   religious: [],
   gatherings: ["general"],
+  school: ["school"],
   sports: ["football", "basketball", "soccer", "baseball", "gymnastics", "volleyball", "softball", "tennis", "swimming"],
 };
 
@@ -90,6 +93,7 @@ export function eventTypeGroupExamples(choices: CreateGuess[], group: EventTypeG
   const labels = members.flatMap((choice) => {
     // These are supported designs within the parent category, not separate grants.
     if (choice.category === "religious-events") return ["Baptism", "First Communion", "Bar/Bat Mitzvah", "Iftar", "Confirmation", "Aqiqah", "Puja", "Langar"];
+    if (choice.category === "school") return ["Weekly memo", "Field trip", "School celebration", "Parent meeting"];
     if (choice.category === "general") return ["Meetup", "Picnic", "Potluck", "Game night", "Book club", "Networking", "Garden party", "Community gathering"];
     return [eventTypeChoiceLabel(choice)];
   });

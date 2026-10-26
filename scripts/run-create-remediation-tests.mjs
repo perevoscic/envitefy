@@ -60,6 +60,7 @@ const files = [
   "src/lib/signup-themes-workflow.test.mjs",
   "src/app/event/general/page.test.mjs",
   "src/lib/general-event-presentation.test.cjs",
+  "src/lib/school-events.test.cjs",
   "src/lib/holiday-backgrounds.test.cjs",
   "src/lib/holiday-background-expansion.test.cjs",
   "src/lib/manual-event-backgrounds.test.cjs",

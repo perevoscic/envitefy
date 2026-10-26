@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, CalendarDays, Check, ChevronDown, Gift, House, Landmark, PartyPopper, Trophy } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Check, ChevronDown, Gift, House, Landmark, PartyPopper, School, Trophy } from "lucide-react";
 import Image from "next/image";
 import { type ReactNode, useRef, useState } from "react";
 import type { CreateGuess } from "@/lib/create/create-intent";
@@ -15,6 +15,7 @@ const groupIcons = {
   religious: Landmark,
   gatherings: CalendarDays,
   sports: Trophy,
+  school: School,
 };
 
 // Existing Envitefy artwork introduces each group without choosing a template.
@@ -39,6 +40,7 @@ const groupPreviews = {
     artwork: "/templates/signup/photographic/general/monthly-meetup.webp",
     position: "center",
   },
+  school: { artwork: "/templates/signup/school-and-education/classroom-supply-drive.webp", position: "center" },
   sports: {
     artwork: "/studio/game-day.webp",
     position: "center 70%",

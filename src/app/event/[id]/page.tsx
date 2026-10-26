@@ -29,7 +29,7 @@ import EventViewTracker from "@/components/EventViewTracker";
 import FirstScanCalendarPrompt from "@/components/FirstScanCalendarPrompt";
 import FootballSkin from "@/components/FootballSkin";
 import GenericEventSkin from "@/components/GenericEventSkin";
-import { ScannedScheduleProvider } from "@/components/ScannedSchedule";
+import ScannedSchedule, { ScannedScheduleProvider } from "@/components/ScannedSchedule";
 import { normalizeScanSchedule } from "@/lib/scan-schedule";
 import ScanArtworkProvider from "@/components/ScanArtworkProvider";
 import { normalizeScanArtwork } from "@/lib/ocr/scan-artwork-state";
@@ -1272,6 +1272,7 @@ export default async function EventPage({
         <EventPageCompositionProvider value={normalizeEventPageComposition(data.eventPageComposition)}>
           {scanMediaPolicy && isValidElement<{ imageUrl?: string | null }>(children) && "imageUrl" in children.props && (scanMediaPolicy.heroMode === "generated" || scanMediaPolicy.medical)
             ? cloneElement(children, { imageUrl: generatedScanHero(data) }) : children}
+          {savedScanSchedule?.kind === "school-memo" && (data.createdVia === "template" || data.customEventPage) ? <div className="mx-auto my-6 w-full max-w-5xl px-6"><ScannedSchedule /></div> : null}
         </EventPageCompositionProvider>
       </ScanArtworkProvider>
       </ScannedScheduleProvider>

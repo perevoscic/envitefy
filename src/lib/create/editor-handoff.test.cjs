@@ -77,3 +77,19 @@ test("explicit product adapters preserve source facts while importing no partici
   assert.equal(sportsCard.creationCategory, "gymnastics");
   assert.equal(readLiveCardForm(sportsCard).creationCategory, "gymnastics", "source category survives the card form boundary");
 });
+
+test("school memo facts and stable calendar items survive native hydration, save and reload", () => {
+  const { normalizeCustomEventInformation } = require("../event-custom-design.ts");
+  const { extractSchoolMemoDates } = require("../ocr/school-memo.ts");
+  const source = fs.readFileSync("scripts/fixtures/school-memo.txt", "utf8");
+  const schedule = extractSchoolMemoDates(source, "America/Chicago", new Date("2026-10-26T15:00:00Z"));
+  const information = normalizeCustomEventInformation({ ...info, category: "general", details: { ...emptyCustomEventDetails(), title: schedule.title, scanSchedule: schedule } });
+  assert.deepEqual(information.details.scanSchedule.items, schedule.items);
+  const hydrated = hydrateCreationValue("general", "data", { title: "Sample", venue: "Sample place" }, information);
+  const saved = creationNativePayload({ title: schedule.title, data: { createdVia: "template", startISO: "incorrect-parent-date" } }, { data: hydrated });
+  assert.equal(saved.data.startISO, null);
+  assert.equal(saved.data.visibility, "private");
+  assert.equal(saved.data.noindex, true);
+  assert.equal(hydrated.venue, "");
+  assert.deepEqual(JSON.parse(JSON.stringify(saved.data)).scanSchedule.items, schedule.items);
+});

@@ -29,6 +29,7 @@ export async function POST(request: Request) {
     entry.count++;
     requests.set(userId, entry);
     const contentType = request.headers.get("content-type") || "";
+    let timezone = "UTC";
     let files: File[] = [], text = "", sourceText: string | undefined, url: string | undefined, rawCategory: unknown, rawSport: unknown, clientIntakeId: string | null = null;
     if (Number(request.headers.get("content-length")) > 55 * 1024 * 1024) return json({ error: "Choose smaller files for this import." }, 413);
     if (contentType.includes("multipart/form-data")) {
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
       if (items.some((item) => !(item instanceof File))) throw new CreateSourceError("Choose an event document or photo.");
       files = items as File[];
       text = String(form.get("text") || "");
+      timezone = String(form.get("timezone") || "UTC");
       url = String(form.get("url") || "").trim() || undefined;
       rawCategory = form.get("category");
       rawSport = form.get("sport");
@@ -46,6 +48,7 @@ export async function POST(request: Request) {
       if (body.length > 150_000) return json({ error: "Paste a shorter event description." }, 413);
       const raw = JSON.parse(body);
       text = typeof raw.text === "string" ? raw.text : "";
+      timezone = typeof raw.timezone === "string" ? raw.timezone : "UTC";
       url = typeof raw.url === "string" ? raw.url.trim() || undefined : undefined;
       rawCategory = raw.category;
       rawSport = raw.sport;
@@ -55,10 +58,11 @@ export async function POST(request: Request) {
     if (text.length > 12_000) throw new CreateSourceError("Keep your event notes under 12,000 characters.");
     if (sourceText && (sourceText.length > 120_000 || files.length || url || clientIntakeId))
       throw new CreateSourceError("Use retained event text by itself, up to 120,000 characters.");
+    try { new Intl.DateTimeFormat("en", { timeZone: timezone }); } catch { throw new CreateSourceError("Choose a valid timezone."); }
     const category = customEventCategory(rawCategory) || undefined;
     if (rawCategory && !category) throw new CreateSourceError("Choose a supported event page category.");
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(260_000)]);
-    const extract = (onStage?: (stage: string) => void) => extractCreateInformation({ files, text, sourceText, url, category }, signal, async (classification) => {
+    const extract = (onStage?: (stage: string) => void) => extractCreateInformation({ files, text, sourceText, url, category, timezone }, signal, async (classification) => {
       // A host's explicit corrected category takes priority for authorization, while the
       // returned classification still reports what the source reader actually found.
       const operation = category ? { product: "event_page" as const, category }

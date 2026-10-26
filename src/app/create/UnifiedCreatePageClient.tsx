@@ -55,7 +55,6 @@ import { CREATE_EXTRACTION_STAGE_LABELS, readCreateExtractionResponse } from "@/
 import { normalizeCustomEventInformation, type CustomEventInformation, type CustomEventPage } from "@/lib/event-custom-design";
 import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { snapUploadForCreateSource } from "@/lib/create/snap-source-handoff";
-import { isSchoolMemoText } from "@/lib/school-memo";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
 import { validateClientUploadFile } from "@/utils/media-upload-client";
 import CategoryScrollPicker from "./CategoryScrollPicker";
@@ -183,9 +182,8 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
   // this account's verified access, and saved-source restoration stays exclusive.
   const sourceAvailable = accountReady && (!access.access || canCreatePage) && !restoring;
   const guess = intake?.guess || intake?.classification;
-  const schoolMemoCapture = !intake?.information && guess?.category === "general" && isSchoolMemoText(intake?.sourceText || "");
   const personalCapture =
-    schoolMemoCapture || guess?.category === "medical-appointments" || guess?.category === "appointments";
+    guess?.category === "medical-appointments" || guess?.category === "appointments";
   const signupIntent = guess?.category === "signup-forms";
   const supportedGuess =
     !!guess &&
@@ -203,7 +201,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
       ? requestedDate
       : "";
   const withCalendarDate = (next: CreationIntake, facts?: CustomEventInformation) => {
-    if (!calendarDate || facts?.details.date) return facts;
+    if (!calendarDate || facts?.details.date || facts?.details.scanSchedule?.kind === "school-memo") return facts;
     const base = facts || informationForCreation(next);
     return { ...base, details: { ...base.details, date: calendarDate } };
   };
@@ -572,6 +570,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
           for (const file of source.files) form.append("file", file);
           form.set("text", source.text);
           form.set("clientIntakeId", next.id);
+          form.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
           if (confirmedGuess) form.set("category", customCategoryForGuess(confirmedGuess));
           if (confirmedGuess?.sport) form.set("sport", confirmedGuess.sport);
           body = form;
@@ -581,6 +580,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
             url: source.kind === "url" ? source.url : undefined,
             text: source.text,
             clientIntakeId: next.id,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             ...(confirmedGuess ? { category: customCategoryForGuess(confirmedGuess) } : {}),
             ...(confirmedGuess?.sport ? { sport: confirmedGuess.sport } : {}),
           });
@@ -603,7 +603,9 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
         next = await persist({
           ...next,
           classification: result.classification,
-          guess: confirmedGuess || result.classification,
+          guess: confirmedGuess?.category === "school" && result.classification.category === "school"
+            ? { ...confirmedGuess, schoolTemplate: result.classification.schoolTemplate }
+            : confirmedGuess || result.classification,
           information: result.information ? withCalendarDate(next, result.information) : undefined,
           sourceText: result.sourceText,
           discoveryEventId: result.discoveryEventId,
@@ -1464,9 +1466,9 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
             ) : null}
             {personalCapture && supportedGuess ? (
               <div className="mt-5 rounded-2xl border border-[#e2d9eb] bg-white p-5">
-                <h3 className="font-semibold">{schoolMemoCapture ? "Review this school memo with Snap a Flyer" : "Save this appointment with Snap a Flyer"}</h3>
+                <h3 className="font-semibold">Save this appointment with Snap a Flyer</h3>
                 <p className="mt-2 text-sm text-[#75677e]">
-                  {schoolMemoCapture ? "Keep the original document, review every date and choose which dates to add to your calendar." : "Keep the original document and use the appointment and calendar tools."}
+                  Keep the original document and use the appointment and calendar tools.
                 </p>
                 <button
                   type="button"

@@ -1,3 +1,5 @@
+import { normalizeSchoolTemplate, type SchoolTemplateKind } from "./school-events";
+import { normalizeScanSchedule, scanScheduleHistoryFields, type ScanSchedule } from "./scan-schedule";
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
 import { normalizeArrivalMap, type EventArrivalMap } from "./event-arrival-map";
 import { normalizeEventGuestActions, type EventGuestActionVisibility } from "./event-guest-actions";
@@ -85,6 +87,8 @@ export const EVENT_DETAIL_FIELDS = [
   "rsvpPhone",
 ] as const;
 export type CustomEventDetails = Record<(typeof EVENT_DETAIL_FIELDS)[number], string> & {
+  schoolTemplate?: SchoolTemplateKind;
+  scanSchedule?: ScanSchedule;
   guestActions?: EventGuestActionVisibility;
   weather?: { enabled: boolean; units: "f" | "c" };
   arrivalMapEnabled?: boolean;
@@ -242,6 +246,10 @@ export function normalizeCustomEventDetails(value: unknown): CustomEventDetails 
   const raw = record(value);
   if (!raw) return null;
   const details = emptyCustomEventDetails();
+  const schoolTemplate = normalizeSchoolTemplate(raw.schoolTemplate);
+  if (schoolTemplate) details.schoolTemplate = schoolTemplate;
+  const scanSchedule = normalizeScanSchedule(raw.scanSchedule);
+  if (scanSchedule?.kind === "school-memo") details.scanSchedule = scanSchedule;
   for (const field of EVENT_DETAIL_FIELDS) {
     if (raw[field] != null && typeof raw[field] !== "string") return null;
     const text = String(raw[field] || "").trim();
@@ -360,7 +368,8 @@ export function customEventPageData(page: CustomEventPage) {
   return {
     title: d.title,
     description: d.description,
-    category: CUSTOM_EVENT_CATEGORIES[page.category],
+    category: d.schoolTemplate ? "School & classroom" : CUSTOM_EVENT_CATEGORIES[page.category],
+    ...(d.schoolTemplate ? { creationCollection: "school", schoolTemplate: d.schoolTemplate } : {}),
     customEventPage: page,
     customEventPageDraft: null,
     createdVia: "custom-event-page",
@@ -386,6 +395,7 @@ export function customEventPageData(page: CustomEventPage) {
     rsvpEmail: d.rsvpEmail,
     rsvpPhone: d.rsvpPhone,
     registryLinks: d.registryLinks,
+    ...(d.scanSchedule?.kind === "school-memo" ? { scanSchedule: d.scanSchedule, ...scanScheduleHistoryFields(d.scanSchedule), visibility: "private", noindex: true } : {}),
   };
 }
 

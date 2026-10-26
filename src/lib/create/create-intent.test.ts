@@ -80,12 +80,12 @@ describe("Create page routing", () => {
 
   test("a school memo keeps its document purpose despite incidental occasions", () => {
     expect(isSchoolMemoText(schoolMemo)).toBe(true);
-    expect(classifyCreateText(schoolMemo)).toEqual({ category: "general", sport: null, confidence: "high", alternatives: [] });
-    expect(classifyCreateText(`${schoolMemo}\nChristmas rehearsal December 15\nWelcome to the new school year!`).category).toBe("general");
+    expect(classifyCreateText(schoolMemo)).toEqual({ category: "school", schoolTemplate: "weekly-memo", sport: null, confidence: "high", alternatives: [] });
+    expect(classifyCreateText(`${schoolMemo}\nChristmas rehearsal December 15\nWelcome to the new school year!`).category).toBe("school");
     expect(isSchoolMemoText("School New Year's Eve Celebration\nDecember 31 at 6 PM")).toBe(false);
     expect(isSchoolMemoText("Company weekly memo\nNew Year's Eve office party")).toBe(false);
     expect(isSchoolMemoText("High School Football Team Weekly Memo\nPractice Monday\nGame Friday")).toBe(false);
-    expect(normalizeCreateClassification({ category: "holidays-seasonal", sport: "none", occasion: "new-years-day", occasionEvidence: "Bible Test", confident: true, alternatives: [] }, schoolMemo)?.category).toBe("general");
+    expect(normalizeCreateClassification({ category: "holidays-seasonal", sport: "none", occasion: "new-years-day", occasionEvidence: "Bible Test", confident: true, alternatives: [] }, schoolMemo)?.category).toBe("school");
   });
 
   test("a named holiday survives recognition only with matching observed evidence", () => {

@@ -45,7 +45,7 @@ test("medical sources remain in Snap without entering the public Event Page plan
   expect(result.information).toBeUndefined();
 });
 
-test("school memos hand off after authorization without generic event planning or sports shells", async () => {
+test("school memos stay in Create after authorization without generic planning or sports shells", async () => {
   const sourceText = readFileSync(new URL("../../../scripts/fixtures/school-memo.txt", import.meta.url), "utf8");
   const file = new File([sourceText], "school-memo.pdf", { type: "application/pdf" });
   const stages: string[] = [];
@@ -65,9 +65,17 @@ test("school memos hand off after authorization without generic event planning o
     prepareSports: async () => { throw new Error("A school memo must not create a sports shell"); },
   });
   expect(authorized).toBe(1);
-  expect(result).toMatchObject({ destination: "snap", sourceText });
-  expect(result.information).toBeUndefined();
-  expect(stages).toEqual(["reading", "classifying"]);
+  expect(result.destination).toBeUndefined();
+  expect(result.classification).toMatchObject({ category: "school", schoolTemplate: "weekly-memo" });
+  expect(result.information?.details.schoolTemplate).toBe("weekly-memo");
+  expect(result.sourceText).toBe(sourceText);
+  expect(result.information?.category).toBe("general");
+  expect(result.information?.details.scanSchedule?.items).toHaveLength(6);
+  expect(result.information?.details.venue).toBe("");
+  expect(result.information?.details.location).toBe("");
+  expect(result.information?.details.date).toBe("");
+  expect(result.information?.details.sections[0].body).toBe(sourceText);
+  expect(stages).toEqual(["reading", "classifying", "extracting_details"]);
   const denied = await extractCreateInformation({ files: [file] }, new AbortController().signal, async () => false);
   expect(denied.accessRequired).toBe(true);
   expect(denied.destination).toBeUndefined();
@@ -114,4 +122,24 @@ test("restricted sports never prepare a durable import", async () => {
   });
   expect(result.accessRequired).toBe(true);
   expect(result.discoveryEventId).toBeUndefined();
+});
+
+test.each([
+  ["field-trip", "Grade 3 class field trip November 6. School bus leaves at 9 AM. Bring lunch."],
+  ["school-celebration", "Oak Elementary School Spirit Day November 6. Wear school colors."],
+  ["parent-meeting", "Oak School parent-teacher conferences November 6. Agenda: student progress."],
+])("school upload %s stays in the Create planner with supported school sections", async (kind, sourceText) => {
+  const { classifyCreateText } = await import("./create-intent");
+  createExtractionDeps.read = async () => ({ text: sourceText, images: [], pageCount: 1 });
+  createExtractionDeps.classify = async () => classifyCreateText(sourceText);
+  createExtractionDeps.information = async input => {
+    expect(input.prompt).toContain(`School & classroom ${kind}`);
+    return { version: 1, kind: "information", category: "general", design: { version: 1, name: "School", description: "", layout: "editorial", font: "editorial", colors: { page: "#ffffff", surface: "#ffffff", ink: "#111111", accent: "#607e68" } }, details: { ...emptyCustomEventDetails(), title: "School activity", description: sourceText } };
+  };
+  const result = await extractCreateInformation({ text: sourceText }, new AbortController().signal, async () => true);
+  expect(result.destination).toBeUndefined();
+  expect(result.classification.category).toBe("school");
+  expect(result.information?.details.schoolTemplate).toBe(kind);
+  expect(result.information?.details.sections.length).toBeGreaterThan(0);
+  expect(result.information?.details.scanSchedule).toBeUndefined();
 });

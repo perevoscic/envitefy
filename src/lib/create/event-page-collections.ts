@@ -1,8 +1,9 @@
+import { SCHOOL_EVENT_DESIGNS, getSchoolEventDesign } from "../school-event-designs";
 import { GENERAL_EVENT_DESIGNS, getGeneralEventDesign } from "../general-event-designs";
 import { getActiveThemedEventDesigns, getDeliveredThemedEventDesign } from "../event-page-themed-designs";
 
 const collectionLabels: Record<string, string> = {
-  graduations: "Graduation", housewarming: "Housewarming", "open-house": "Open house",
+  school: "School & classroom", graduations: "Graduation", housewarming: "Housewarming", "open-house": "Open house",
   "religious-events": "Religious celebration", "holidays-seasonal": "Holidays & seasonal",
 };
 
@@ -12,6 +13,7 @@ export function generalCreationCollectionLabel(collection?: string | null) {
 
 /** Gallery scope is independent of the shared General editor and its account grant. */
 export function getGeneralCreationDesigns(collection?: string | null, occasion?: string | null) {
+  if (collection === "school") return SCHOOL_EVENT_DESIGNS;
   if (collection === "holidays-seasonal") {
     return GENERAL_EVENT_DESIGNS.filter((design) => design.occasion && (!occasion || design.occasion === occasion));
   }
@@ -22,5 +24,5 @@ export function getGeneralCreationDesigns(collection?: string | null, occasion?:
 }
 
 export function resolveGeneralCreationDesign(id?: string | null) {
-  return getDeliveredThemedEventDesign(id) || getGeneralEventDesign(id);
+  return getSchoolEventDesign(id) || getDeliveredThemedEventDesign(id) || getGeneralEventDesign(id);
 }

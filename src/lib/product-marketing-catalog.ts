@@ -741,6 +741,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           customerPromise:
             "Use the same live-page and coordination foundation for events beyond social invitations.",
           proofPoints: [
+            "School & classroom has four starting templates: Weekly memo, Field trip, School celebration and Parent meeting. Create uploads recognize the school document and keep its facts in the shared Event Page editor; school memos retain individual calendar dates and complete notes.",
             "Supported creation paths include field trips/days, class events, workshops, appointments, open houses, housewarmings, special events, and general events.",
             "The page can emphasize the actions relevant to the event, such as schedule, directions, RSVP, sign-up, calendar, or updates.",
             "Smart sign-ups can coordinate school, church, volunteer, team, community, and workplace needs.",

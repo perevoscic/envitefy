@@ -1,5 +1,8 @@
 // @ts-nocheck
 "use client";
+import { getSchoolEventDesign } from "@/lib/school-event-designs";
+import { schoolStarterSections } from "@/lib/school-events";
+import ScannedSchedule from "@/components/ScannedSchedule";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import ThemedEventHeader from "@/components/templates/ThemedEventHeader";
 import HolidayPageBackground, { HolidayBackgroundPicker } from "@/components/events/HolidayPageBackground";
@@ -170,7 +173,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const editEventId = search?.get("edit") ?? undefined;
     const defaultDate = search?.get("d") ?? undefined;
     const initialDesign = resolveGeneralCreationDesign(search?.get("templateId"));
-    const initialCollection = search?.get("collection") || getThemedEventDesign(initialDesign?.id)?.collection || (initialDesign?.occasion ? "holidays-seasonal" : "general");
+    const initialCollection = (getSchoolEventDesign(initialDesign?.id) ? "school" : search?.get("collection")) || getThemedEventDesign(initialDesign?.id)?.collection || (initialDesign?.occasion ? "holidays-seasonal" : "general");
     const initialDate = useMemo(() => {
       if (!defaultDate) {
         if (initialDesign && !editEventId) return "";
@@ -205,6 +208,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       details: initialDesign ? "" : config.prefill?.details || "Tell guests what to expect.",
       heroImageFilterEnabled: true,
       hero: initialDesign?.artwork || config.prefill?.hero || "",
+      schoolTemplate: getSchoolEventDesign(initialDesign?.id)?.schoolTemplate,
       creationCollection: initialCollection,
       holidayOccasion: search?.get("occasion") || initialDesign?.occasion || null,
       bodyDesignId: initialDesign?.id || null,
@@ -276,6 +280,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         const keepBackground = previousChoice && previousBackground?.id === previousChoice.presetId && previousBackground.occasion === nextDefault?.occasion && (previousChoice.source === "custom" || (!previousChoice.source && previousChoice.presetId !== previousDefault?.id));
         return {
           ...previous,
+          schoolTemplate: getSchoolEventDesign(design.id)?.schoolTemplate,
           bodyDesignId: design.id,
           pageBackground: nextDefault
             ? keepBackground ? previousChoice : getHolidayBackgroundChoice(nextDefault.id, "template")
@@ -349,6 +354,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           time: existing.time ?? start.time,
           endTime: existing.endTime ?? end.time,
           endDate: existing.endDate ?? end.date,
+          schoolTemplate: existing.schoolTemplate || getSchoolEventDesign(existing.bodyDesignId)?.schoolTemplate,
+          scanSchedule: existing.scanSchedule,
           guestActions: normalizeEventGuestActions(existing.guestActions),
           guestPlanning: normalizeEventGuestPlanning(existing.guestPlanning),
           city: existing.city ?? "",
@@ -492,7 +499,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         title: data.title || pageDesign?.coverTitle || displayName,
         data: {
           ...savedEventData,
-          category: config.category,
+          category: data.schoolTemplate ? "School & classroom" : config.category,
+          schoolTemplate: data.schoolTemplate,
           createdVia: "template",
           createdManually: true,
           startISO,
@@ -588,7 +596,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       router,
     ]);
 
-    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId, theme: currentTheme }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting && creationReady, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
+    const initialSchoolComposition = !editEventId && !search?.get("intake") && data.schoolTemplate ? {
+      version: 1 as const,
+      sections: schoolStarterSections(data.schoolTemplate).map((section, index) => ({ id: `info:school-${index}`, ...section })),
+    } : undefined;
+    const editor = useEventPageEditor({ initialComposition: initialSchoolComposition, snapshot: { data, advancedState, themeId, theme: currentTheme }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting && creationReady, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
@@ -1101,7 +1113,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     Details
                   </h2>
 
-                  <EventGuestActions
+                  {data.scanSchedule?.kind !== "school-memo" && <EventGuestActions
                     visibility={data.guestActions}
                     onVisibilityChange={(guestActions) => setData((prev) => ({ ...prev, guestActions }))}
                     title={data.title}
@@ -1110,7 +1122,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     description={data.details}
                     location={[data.venue, data.city, data.state].filter(Boolean).join(", ")}
                     preview
-                  />
+                  />}
+                  {data.scanSchedule?.kind === "school-memo" ? <ScannedSchedule schedule={data.scanSchedule} interactive={false} /> : null}
                   <EventGuestPlanningNotes value={data.guestPlanning} />
                   {data.details ? (
                     <p

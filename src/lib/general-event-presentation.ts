@@ -1,3 +1,4 @@
+import { getSchoolEventDesign } from "./school-event-designs";
 import type { BodyPresentation } from "@/components/templates/TemplateBodyLayout";
 import type {
   ThemedEventBodyPresentation,
@@ -187,6 +188,11 @@ const generalDirections: Record<string, PageDirection> = {
 };
 
 function directionFor(design: GeneralEventDesign): PageDirection {
+  const school = getSchoolEventDesign(design.id);
+  if (school) {
+    if (school.schoolTemplate === "field-trip") return { ...occasionDirections[1], editorLayout: "split", alignment: "left" };
+    return occasionDirections[{ "weekly-memo": 0, "school-celebration": 2, "parent-meeting": 3 }[school.schoolTemplate]];
+  }
   if (!design.occasion) return generalDirections[design.id];
   // The collection's source order is authored, and never the sorted gallery order.
   const slug = design.id.split("--")[2];
@@ -208,7 +214,7 @@ export type GeneralEventPageDesign = GeneralEventDesign & {
 
 /** Resolve the same complete design in the editor, read-only preview and guest page. */
 export function getGeneralEventPageDesign(id?: string | null): GeneralEventPageDesign | undefined {
-  const design = getGeneralEventDesign(id);
+  const design = getSchoolEventDesign(id) || getGeneralEventDesign(id);
   if (!design) return undefined;
   const direction = directionFor(design);
   return {
@@ -226,6 +232,6 @@ export function getGeneralEventPageDesign(id?: string | null): GeneralEventPageD
 }
 
 export function getGeneralEventBodyPresentation(id?: string | null): BodyPresentation | undefined {
-  const design = getGeneralEventDesign(id);
+  const design = getSchoolEventDesign(id) || getGeneralEventDesign(id);
   return design ? { ...directionFor(design).body, preserveSurfaceShape: true } : undefined;
 }

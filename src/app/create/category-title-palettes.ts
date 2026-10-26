@@ -97,6 +97,7 @@ const categoryPalettes: Record<CreateCategory, PaletteName> = {
   "signup-forms": "ocean",
   sports: "ocean",
   "holidays-seasonal": "harvest",
+  school: "evergreen",
   general: "lavender",
 };
 
