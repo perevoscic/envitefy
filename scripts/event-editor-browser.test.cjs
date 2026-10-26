@@ -353,7 +353,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
       assert.equal(await preview.isVisible(), true, `Preview shows the clean template at ${width}×${height}`);
       assert.equal(await controls.isVisible(), false, "Preview collapses the editing panel");
       assert.equal(await preview.getByRole("button", { name: "Add section", exact: true }).count(), 0, "clean page hides section editing tools");
-      assert.equal(await preview.getByRole("button", { name: "Change", exact: true }).count(), 0, "clean page hides artwork replacement controls");
+      assert.equal(await preview.getByRole("button", { name: "Change hero image", exact: true }).count(), 0, "clean page hides artwork replacement controls");
       assert.equal(await preview.locator("[data-hero-image-control]").count(), 0, "initial page omits the artwork editing surface");
       const checkTouchActions = async () => {
         const actions = page.getByRole("group", { name: "Save event", exact: true });
@@ -375,7 +375,24 @@ test("one Event Page editor protects saves and navigation across creation modes 
       assert.equal(writes.length, before, "leaving a clean template never saves or publishes");
       await page.goto(`${base}/event/general/customize?mode=manual&templateId=holidays--cinco-de-mayo--community-table&collection=holidays-seasonal&occasion=cinco-de-mayo`);
       await openControls();
-      assert.ok(await workspace.locator('[aria-label="Event page preview panel"] [data-hero-image-control]').count() > 0, "Edit restores artwork tools on the mounted page");
+      const imageTools = (width < 768 ? controls : preview).locator("[data-hero-image-control]");
+      await imageTools.getByRole("button", { name: "Change hero image", exact: true }).waitFor();
+      assert.equal(await workspace.locator("[data-hero-image-control]").count(), 1, "Edit exposes one picker in the visible editing surface");
+      assert.equal(await imageTools.getByRole("button", { name: "Change hero image", exact: true }).innerText(), "Change image");
+      const mountedPreview = workspace.locator('[aria-label="Event page preview panel"]');
+      const heroImage = mountedPreview.locator("img.template-hero-image").first();
+      const chooser = page.waitForEvent("filechooser");
+      await imageTools.getByRole("button", { name: "Change hero image", exact: true }).click();
+      await (await chooser).setFiles({ name: "replacement.png", mimeType: "image/png", buffer: galleryPixel });
+      await page.waitForFunction(() => document.querySelector('[aria-label="Event page preview panel"] img.template-hero-image')?.getAttribute("src")?.startsWith("data:image/png"));
+      assert.match(await heroImage.getAttribute("src"), /^data:image\/png/);
+      assert.equal(writes.length, before, "choosing an image updates editor memory without saving");
+      await switchView("Preview");
+      assert.match(await preview.locator("img.template-hero-image").first().getAttribute("src"), /^data:image\/png/, "preview retains the selected image");
+      assert.equal(await workspace.locator("[data-hero-image-control]").count(), 0, "clean preview hides the picker");
+      await switchView("Edit");
+      await imageTools.getByRole("button", { name: "Use template image", exact: true }).click();
+      assert.ok(!(await heroImage.getAttribute("src")).startsWith("data:"), "reset restores template artwork");
       const toolRow = controls.getByRole("group", { name: "Page tools", exact: true });
       const rail = await toolRow.evaluate((element) => {
         const style = getComputedStyle(element);
@@ -1099,6 +1116,15 @@ test("one Event Page editor protects saves and navigation across creation modes 
       await page.getByLabel("Title font", { exact: true }).selectOption("montserrat");
       assert.equal(writes.length, beforeGym, "wording and settings remain unsaved until an explicit save");
       if (width === 390) await viewActions.getByRole("button", { name: "Close settings", exact: true }).click();
+      const gymImageTools = preview.locator("[data-hero-image-control]");
+      await gymImageTools.getByRole("button", { name: "Change hero image", exact: true }).waitFor();
+      if (width === 390) {
+        await viewActions.getByRole("button", { name: "Page settings", exact: true }).click();
+        await gymControls.getByRole("button", { name: "Change hero image", exact: true }).waitFor();
+        assert.equal(await workspace.locator("[data-hero-image-control]").count(), 1, "gymnastics settings moves the same picker off the hidden phone artwork");
+        await viewActions.getByRole("button", { name: "Close settings", exact: true }).click();
+        await gymImageTools.getByRole("button", { name: "Change hero image", exact: true }).waitFor();
+      }
       assert.match(await preview.locator("h1").evaluate((element) => element.style.fontFamily), /Gym Montserrat/);
       await preview.getByRole("button", { name: "Preview event", exact: true }).click();
       const fullscreen = page.getByRole("dialog", { name: "Event preview", exact: true });
@@ -1136,6 +1162,35 @@ test("one Event Page editor protects saves and navigation across creation modes 
       for (const value of Object.values(wording)) assert.ok((await preview.textContent()).includes(value), `saved wording reloads: ${value}`);
       assert.match(await preview.locator("h1").evaluate((element) => element.style.fontFamily), /Gym Montserrat/);
       await page.screenshot({ path: path.join(output, `gymnastics-wording-${width}.png`) });
+    }
+
+    // Saved owner pages use an embedded gymnastics editor without a preview canvas.
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto(`${base}/gymnastics/templates/airborne-atlas/customize?edit=gym-event&embed=1`);
+      const imageTools = gymControls.locator("[data-hero-image-control]");
+      const changeImage = imageTools.getByRole("button", { name: "Change hero image", exact: true });
+      await changeImage.waitFor();
+      assert.equal(await workspace.locator("[data-hero-image-control]").count(), 1, "embedded settings mounts one image picker without a canvas");
+      assert.equal(await imageTools.evaluate((element) => getComputedStyle(element).position), "static", "embedded picker stays in settings flow");
+      const resetImage = imageTools.getByRole("button", { name: "Use template image", exact: true });
+      if (await resetImage.isVisible()) await resetImage.click();
+      const writesBefore = writes.length, uploadsBefore = galleryUploadCount;
+      const chooser = page.waitForEvent("filechooser");
+      await changeImage.click();
+      await (await chooser).setFiles({ name: "meet-image.png", mimeType: "image/png", buffer: galleryPixel });
+      await imageTools.getByRole("button", { name: "Use template image", exact: true }).waitFor();
+      assert.equal(writes.length, writesBefore, "image selection never saves automatically");
+      assert.equal(galleryUploadCount, uploadsBefore, "image selection stays local until saving");
+      await click("Save draft");
+      await page.getByText("Draft saved.", { exact: true }).waitFor();
+      assert.ok(galleryUploadCount > uploadsBefore, "explicit save persists the selected image");
+      assert.match(writes.at(-1).body.data.heroImage || writes.at(-1).body.data.hero, /^\/test-gallery-\d+\.png$/);
+      await page.reload();
+      await openControls();
+      await workspace.getByRole("button", { name: "Use template image", exact: true }).waitFor();
+      assert.equal(writes.length, writesBefore + 1, "saved image reloads without another save");
+      await page.screenshot({ path: path.join(output, `gymnastics-image-settings-${width}.png`) });
     }
 
     // Typed sections retain uploaded photos and working links through each editor's save/reload path.

@@ -34,6 +34,7 @@ const batches = [
       "scripts/event-page-themed-artwork.test.mjs",
       "src/app/left-sidebar.create-access.test.mjs",
       "src/app/left-sidebar.signup-forms.test.mjs",
+      "src/app/left-sidebar.gymnastics.test.mjs",
       "src/app/left-sidebar.my-events.test.mjs",
     ],
   ],

@@ -195,6 +195,13 @@
   padding-top: 64px;
   padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 }
+.mobileImageControls { display: none; }
+@media (max-width: 767px) {
+  .mobileImageControls:not(:empty) {
+    display: block;
+    padding: 16px;
+  }
+}
 .workspace[data-page-editing="false"][data-embedded="false"] .controls {
   padding-top: 0;
 }

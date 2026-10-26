@@ -138,6 +138,8 @@ export type LeftSidebarControllerViewModel = {
   setMenuOpen: Dispatch<SetStateAction<boolean>>;
   hasCreateEventAccess: boolean;
   hasSignupFormAccess: boolean;
+  showGymnasticsCreate: boolean;
+  isGymnasticsCreateActive: boolean;
   createEntryLabel: string;
   isSignupFormsDefault: boolean;
   createMenuOptionCount: number;
@@ -181,6 +183,7 @@ export type LeftSidebarControllerViewModel = {
   handleRootSnapNavigate: () => void;
   handleRootLiveCardNavigate: () => void;
   handleRootSignupFormNavigate: () => void;
+  handleRootGymnasticsNavigate: () => void;
   isSignupFormCreateActive: boolean;
   openCreateEventPage: () => void;
   openMyEventsPage: () => void;
@@ -1010,6 +1013,12 @@ export function useLeftSidebarController({
   const hasSignupFormAccess = canRenderCreateEventNavigation && (UNIFIED_CREATION_ENABLED
     ? creationAccess.access?.allowedProducts.includes("signup_form") === true && featureVisibility.hasLoadedPreferences && (featureVisibility.quickAccess || []).includes("smart_signup")
     : hasCreateEventAccess);
+  const showGymnasticsCreate = hasCreateEventAccess &&
+    creationAccess.access?.allowedCategories.includes("gymnastics") === true &&
+    (effectivePrimarySignupSource === "gymnastics" || normalizeSignupIntent(defaultCreateIntent) === "gymnastics");
+  const isGymnasticsCreateActive = showGymnasticsCreate && Boolean(
+    pathname && matchesCreateEventHrefPath(pathname, "/event/gymnastics"),
+  );
 
   useEffect(() => {
     if (activeCreateItem) {
@@ -1099,6 +1108,15 @@ export function useLeftSidebarController({
     collapseSidebarOnTouch();
     router.push("/signup-forms/templates");
   }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage]);
+
+  const handleRootGymnasticsNavigate = useCallback(() => {
+    if (!showGymnasticsCreate) return;
+    clearEventContext();
+    setForcedCreateActiveLabel(null);
+    setSidebarPage("root");
+    collapseSidebarOnTouch();
+    router.push("/event/gymnastics");
+  }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage, showGymnasticsCreate]);
 
   const openMyEventsPage = useCallback(
     () => openCompactEventsPage("myEvents"),
@@ -1807,6 +1825,8 @@ export function useLeftSidebarController({
     setMenuOpen,
     hasCreateEventAccess,
     hasSignupFormAccess,
+    showGymnasticsCreate,
+    isGymnasticsCreateActive,
     createEntryLabel,
     isSignupFormsDefault,
     createMenuOptionCount,
@@ -1846,6 +1866,7 @@ export function useLeftSidebarController({
     handleRootLiveCardNavigate,
     openCreateEventPage,
     handleRootSignupFormNavigate,
+    handleRootGymnasticsNavigate,
     isSignupFormCreateActive,
     openMyEventsPage,
     openSchedulesPage,

@@ -2,7 +2,9 @@
 
 import { ImagePlus, RotateCcw } from "lucide-react";
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { HeroImageSettings } from "@/lib/hero-image-settings";
+import { useEventEditorImageControls } from "./EventEditorImageControlsContext";
 import { useEventPageReadOnly } from "./EventPageReadOnlyContext";
 import HeroImageAdjustments from "./HeroImageAdjustments";
 
@@ -89,15 +91,17 @@ export default function HeroImageEditor({
   prepareImage,
   onBusyChange,
   className = "",
-  label = "Change",
+  label = "Change image",
   settings,
   onSettingsChange,
 }: Props) {
   const picker = useHeroImagePicker(onChange, { prepareImage, onBusyChange });
   const readOnly = useEventPageReadOnly();
+  const mobileControls = useEventEditorImageControls();
+  const mobileTarget = label === "Change" || label === "Change image" ? mobileControls : null;
   if (readOnly) return null;
-  return (
-    <div className={className} data-hero-image-control>
+  const controls = (
+    <div className={mobileTarget ? undefined : className} data-hero-image-control>
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -144,4 +148,5 @@ export default function HeroImageEditor({
       ) : null}
     </div>
   );
+  return mobileTarget ? createPortal(controls, mobileTarget) : controls;
 }

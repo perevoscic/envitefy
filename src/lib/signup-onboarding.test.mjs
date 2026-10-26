@@ -285,8 +285,8 @@ test("signup-source primes category cookies for Google and generic forms and rej
   assert.equal((await POST(request({ intent: "admin" }))).status, 400);
 });
 
-for (const intent of ["football", "signup_forms"]) test(`email signup forwards ${intent} and original path into account creation`, async () => {
-  const signupPath = intent === "signup_forms" ? "/signup-forms" : "/football";
+for (const intent of ["football", "gymnastics", "signup_forms"]) test(`email signup forwards ${intent} and original path into account creation`, async () => {
+  const signupPath = intent === "signup_forms" ? "/signup-forms" : `/${intent}`;
   let saved;
   let notice;
   const { POST } = load("src/app/api/auth/signup/route.ts", {
@@ -369,8 +369,8 @@ test("middleware records visits, but ignores prefetches and signed-in browsing",
   );
 });
 
-for (const intent of ["football", "signup_forms"]) test(`Google signup preserves ${intent} defaults, while existing accounts remain unchanged`, async () => {
-  const signupPath = intent === "signup_forms" ? "/signup-forms" : "/football";
+for (const intent of ["football", "gymnastics", "signup_forms"]) test(`Google signup preserves ${intent} defaults, while existing accounts remain unchanged`, async () => {
+  const signupPath = intent === "signup_forms" ? "/signup-forms" : `/${intent}`;
   let saved;
   let notice = null;
   let existing = false;

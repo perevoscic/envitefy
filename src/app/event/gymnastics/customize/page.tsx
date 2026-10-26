@@ -2020,6 +2020,22 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const designsHref = templateEditor ? `/${templateEditor.category}/templates` : `/event/gymnastics/customize?${new URLSearchParams({ ...(data.date ? { d: data.date } : {}), ...(demoMode ? { demo: "1" } : {}) }).toString()}`;
 
+    const renderHeroImageEditor = (className?: string) => (
+      <HeroImageEditor
+        className={className}
+        value={data.hero}
+        onChange={(hero) => setData((prev) => ({
+          ...prev,
+          hero,
+          heroImageSettings: hero
+            ? { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY: 50 }
+            : { ...DEFAULT_HERO_IMAGE_SETTINGS },
+        }))}
+        settings={normalizeHeroImageSettings(data.heroImageSettings)}
+        onSettingsChange={(heroImageSettings) => setData((prev) => ({ ...prev, heroImageSettings }))}
+      />
+    );
+
     const renderMainMenu = () => (
       <div className="flex flex-col gap-6 pb-8 animate-fade-in">
         <WebsiteImportCoverage value={loadedDiscoverySource?.websiteImport} />
@@ -3119,7 +3135,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           if (activeView === "main" || activeView === "images") return false;
           setActiveView("main");
           return true;
-        }} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} controls={sidebarPanel} compositionMenu="inline" />
+        }} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} controls={(headerAction) => <>{renderHeroImageEditor("px-4 pt-4 md:px-6")}{sidebarPanel(headerAction)}</>} compositionMenu="inline" />
       );
     }
 
@@ -3159,20 +3175,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     ...prev,
                     heroImageSettings: { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY },
                   }))}
-                  heroImageAction={
-                    <HeroImageEditor
-                      value={data.hero}
-                      onChange={(hero) => setData((prev) => ({
-                        ...prev,
-                        hero,
-                        heroImageSettings: hero
-                          ? { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY: 50 }
-                          : { ...DEFAULT_HERO_IMAGE_SETTINGS },
-                      }))}
-                      settings={normalizeHeroImageSettings(data.heroImageSettings)}
-                      onSettingsChange={(heroImageSettings) => setData((prev) => ({ ...prev, heroImageSettings }))}
-                    />
-                  }
+                  heroImageAction={renderHeroImageEditor()}
                   eventId={previewEventId}
                   eventData={previewEventData}
                   eventTitle={data.title || config.displayName}

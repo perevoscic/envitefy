@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink, Eye, Link2, ListPlus, PanelsTopLeft, Pencil, S
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 import type { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { eventEditorActions } from "@/lib/event-editor";
+import { EventEditorImageControlsContext } from "./EventEditorImageControlsContext";
 import { EventEditorMenuCard, EventEditorSection, EventEditorToolsRow } from "./EventEditorFields";
 import { EventPageCompositionProvider } from "./EventPageCompositionContext";
 import EventPageLayoutPicker from "./EventPageLayoutPicker";
@@ -158,6 +159,7 @@ export default function EventEditorWorkspace({
   };
   const [editing, setEditing] = useState(embedded || !pageEditing);
   const [mobile, setMobile] = useState(false);
+  const [mobileImageControls, setMobileImageControls] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     const query = window.matchMedia("(max-width: 767px)");
     const sync = () => setMobile(query.matches);
@@ -246,6 +248,7 @@ export default function EventEditorWorkspace({
   );
   const settingsInFooter = pageEditing && !currentEditing;
   const workspace = (
+    <EventEditorImageControlsContext.Provider value={mobile && currentEditing ? mobileImageControls : null}>
     <section
       className={styles.workspace}
       data-event-page-editor
@@ -299,6 +302,7 @@ export default function EventEditorWorkspace({
             data-inline-header={inlineHeader}
             inert={editor.busy ? true : undefined}
           >
+            <div ref={setMobileImageControls} className={styles.mobileImageControls} />
             {compositionMenu === "cards" &&
               ((editor.setComposition && sectionEditors) ||
                 (customUrlMenu && editor.urlEditor)) && (
@@ -410,6 +414,7 @@ export default function EventEditorWorkspace({
       </div>
       {children}
     </section>
+    </EventEditorImageControlsContext.Provider>
   );
   if (!editor.setComposition || !sectionEditors) return workspace;
   const composed = nativeBuilder ? (

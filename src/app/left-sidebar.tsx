@@ -420,6 +420,8 @@ function RootNavigationPanel({
   eventContextSourcePage,
   hasCreateEventAccess,
   hasSignupFormAccess = hasCreateEventAccess,
+  showGymnasticsCreate = false,
+  isGymnasticsCreateActive = false,
   unifiedCreation = false,
   createEntryLabel,
   isCreateEntryActive,
@@ -435,6 +437,7 @@ function RootNavigationPanel({
   onLiveCard,
   onCreate,
   onSignupForm,
+  onGymnastics,
   isSignupFormCreateActive,
   onMyEvents,
   onSchedules,
@@ -447,6 +450,8 @@ function RootNavigationPanel({
   eventContextSourcePage: string;
   hasCreateEventAccess: boolean;
   hasSignupFormAccess?: boolean;
+  showGymnasticsCreate?: boolean;
+  isGymnasticsCreateActive?: boolean;
   unifiedCreation?: boolean;
   createEntryLabel: string;
   isCreateEntryActive: boolean;
@@ -462,6 +467,7 @@ function RootNavigationPanel({
   onLiveCard: () => void;
   onCreate: () => void;
   onSignupForm: () => void;
+  onGymnastics: () => void;
   isSignupFormCreateActive: boolean;
   onMyEvents: () => void;
   onSchedules: () => void;
@@ -499,7 +505,10 @@ function RootNavigationPanel({
         <SidebarLink link={{ label: unifiedCreation ? "Snap a Flyer" : "Snap / Upload", icon: <Upload />, onClick: onSnapUpload, active: isSnapUploadActive }} />
         <SidebarLink link={{ label: "Live Card", icon: <LiveCardIcon />, onClick: onLiveCard, active: pathname === "/live-cards" }} />
         {hasCreateEventAccess ? (
-          <SidebarLink link={{ label: createEntryLabel, icon: <Plus />, onClick: onCreate, active: isCreateEntryActive }} />
+          <SidebarLink link={{ label: createEntryLabel, icon: <Plus />, onClick: onCreate, active: isCreateEntryActive && !isGymnasticsCreateActive }} />
+        ) : null}
+        {hasCreateEventAccess && showGymnasticsCreate ? (
+          <SidebarLink link={{ label: "Gymnastics", icon: <SidebarGymnasticsMenuIcon />, onClick: onGymnastics, active: isGymnasticsCreateActive }} />
         ) : null}
         {hasSignupFormAccess ? (
           <SidebarLink link={{ label: "Sign-up Form", icon: <ClipboardList aria-hidden="true" />, onClick: onSignupForm, active: isSignupFormCreateActive }} />
@@ -1394,6 +1403,8 @@ export default function LeftSidebar() {
                       eventContextSourcePage={viewModel.eventContextSourcePage}
                       hasCreateEventAccess={viewModel.hasCreateEventAccess}
                       hasSignupFormAccess={viewModel.hasSignupFormAccess}
+                      showGymnasticsCreate={viewModel.showGymnasticsCreate}
+                      isGymnasticsCreateActive={viewModel.isGymnasticsCreateActive}
                       unifiedCreation={UNIFIED_CREATION_ENABLED}
                       createEntryLabel={viewModel.createEntryLabel}
                       isCreateEntryActive={viewModel.isCreateEntryActive}
@@ -1409,6 +1420,7 @@ export default function LeftSidebar() {
                       onLiveCard={viewModel.handleRootLiveCardNavigate}
                       onCreate={viewModel.openCreateEventPage}
                       onSignupForm={viewModel.handleRootSignupFormNavigate}
+                      onGymnastics={viewModel.handleRootGymnasticsNavigate}
                       isSignupFormCreateActive={viewModel.isSignupFormCreateActive}
                       onMyEvents={viewModel.openMyEventsPage}
                       onSchedules={viewModel.openSchedulesPage}

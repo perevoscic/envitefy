@@ -40,7 +40,7 @@ function pickerHarness({ readError = false, decodeError = false, options = {}, r
   }
   const module = { exports: {} };
   new Function("require", "module", "exports", "FileReader", "window", code)(
-    (name) => (name === "react" ? hooks : name === "./EventPageReadOnlyContext" ? { useEventPageReadOnly: () => readOnly } : name === "lucide-react" || name === "./HeroImageAdjustments" ? {} : require(name)),
+    (name) => (name === "react" ? hooks : name === "./EventPageReadOnlyContext" ? { useEventPageReadOnly: () => readOnly } : name === "./EventEditorImageControlsContext" ? { useEventEditorImageControls: () => null } : name === "lucide-react" || name === "./HeroImageAdjustments" ? {} : require(name)),
     module,
     module.exports,
     FileReader,
