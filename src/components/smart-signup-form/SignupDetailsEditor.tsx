@@ -6,9 +6,9 @@ import {
   formatCalendarDateTimeInTimeZone,
   normalizeCalendarTimeZone,
 } from "@/lib/calendar-date-time";
-import type { SignupForm } from "@/types/signup";
 import { changeSignupStart } from "@/lib/signup-editor";
 import { validateSignupPublish } from "@/lib/signup-validation";
+import type { SignupForm } from "@/types/signup";
 import styles from "./signup-editor.module.css";
 
 export type SignupDetailsSection = "schedule" | "location" | "planning";
@@ -17,10 +17,12 @@ export default function SignupDetailsEditor({
   form,
   onChange,
   section,
+  idPrefix = "signup",
 }: {
   form: SignupForm;
   onChange: (form: SignupForm) => void;
   section?: SignupDetailsSection;
+  idPrefix?: string;
 }) {
   const field = (
     key: "title" | "description" | "venue" | "location" | "start" | "end" | "timezone",
@@ -37,9 +39,9 @@ export default function SignupDetailsEditor({
       {!section && (
         <>
           <div className={styles.field}>
-            <label htmlFor="signup-title">What are you getting together for?</label>
+            <label htmlFor={`${idPrefix}-title`}>Event title</label>
             <input
-              id="signup-title"
+              id={`${idPrefix}-title`}
               value={form.title}
               onChange={(event) => onChange({ ...form, title: event.target.value })}
               placeholder="Our neighborhood potluck"
@@ -48,9 +50,9 @@ export default function SignupDetailsEditor({
           </div>
           <div className={styles.twoColumns}>
             <div className={styles.field}>
-              <label htmlFor="signup-group">Group or organization</label>
+              <label htmlFor={`${idPrefix}-group`}>Group or organization</label>
               <input
-                id="signup-group"
+                id={`${idPrefix}-group`}
                 value={form.header?.groupName || ""}
                 onChange={(event) =>
                   onChange({ ...form, header: { ...form.header, groupName: event.target.value } })
@@ -59,9 +61,9 @@ export default function SignupDetailsEditor({
               />
             </div>
             <div className={styles.field}>
-              <label htmlFor="signup-host">Organizer name</label>
+              <label htmlFor={`${idPrefix}-host`}>Organizer name</label>
               <input
-                id="signup-host"
+                id={`${idPrefix}-host`}
                 value={form.header?.creatorName || ""}
                 onChange={(event) =>
                   onChange({ ...form, header: { ...form.header, creatorName: event.target.value } })
@@ -71,9 +73,9 @@ export default function SignupDetailsEditor({
             </div>
           </div>
           <div className={styles.field}>
-            <label htmlFor="signup-description">A short welcome</label>
+            <label htmlFor={`${idPrefix}-description`}>A short welcome</label>
             <textarea
-              id="signup-description"
+              id={`${idPrefix}-description`}
               value={form.description || ""}
               onChange={(event) => field("description", event.target.value)}
               rows={3}
@@ -109,9 +111,9 @@ export default function SignupDetailsEditor({
           </label>
           <div className={styles.twoColumns}>
             <div className={styles.field}>
-              <label htmlFor="signup-start">Starts</label>
+              <label htmlFor={`${idPrefix}-start`}>Starts</label>
               <input
-                id="signup-start"
+                id={`${idPrefix}-start`}
                 type={allDay ? "date" : "datetime-local"}
                 value={dateValue(form.start)}
                 onChange={(event) => onChange(changeSignupStart(form, event.target.value))}
@@ -119,29 +121,37 @@ export default function SignupDetailsEditor({
               <span className={styles.help}>Leave blank if the date is still being planned.</span>
             </div>
             <div className={styles.field}>
-              <label htmlFor="signup-end">
+              <label htmlFor={`${idPrefix}-end`}>
                 Ends <span>(optional)</span>
               </label>
               <input
-                id="signup-end"
+                id={`${idPrefix}-end`}
                 type={allDay ? "date" : "datetime-local"}
                 value={dateValue(form.end)}
                 onChange={(event) => field("end", event.target.value)}
                 aria-invalid={Boolean(endIssue)}
-                aria-describedby={endIssue ? "signup-end-error" : undefined}
+                aria-describedby={endIssue ? `${idPrefix}-end-error` : undefined}
               />
-              {endIssue && <p id="signup-end-error" role="alert" className={styles.error}>{endIssue.message}</p>}
+              {endIssue && (
+                <p id={`${idPrefix}-end-error`} role="alert" className={styles.error}>
+                  {endIssue.message}
+                </p>
+              )}
               {form.end && (
-                <button type="button" className="min-h-11 text-sm underline" onClick={() => field("end", "")}>
+                <button
+                  type="button"
+                  className="min-h-11 text-sm underline"
+                  onClick={() => field("end", "")}
+                >
                   Remove end time
                 </button>
               )}
             </div>
           </div>
           <div className={styles.field}>
-            <label htmlFor="signup-timezone">Timezone</label>
+            <label htmlFor={`${idPrefix}-timezone`}>Timezone</label>
             <input
-              id="signup-timezone"
+              id={`${idPrefix}-timezone`}
               value={form.timezone || ""}
               placeholder={Intl.DateTimeFormat().resolvedOptions().timeZone}
               onChange={(event) => field("timezone", event.target.value)}
@@ -153,9 +163,9 @@ export default function SignupDetailsEditor({
                   ),
                 })
               }
-              list="signup-timezones"
+              list={`${idPrefix}-timezones`}
             />
-            <datalist id="signup-timezones">
+            <datalist id={`${idPrefix}-timezones`}>
               {[
                 "America/New_York",
                 "America/Chicago",
@@ -195,9 +205,9 @@ export default function SignupDetailsEditor({
             <div className={styles.twoColumns}>
               {form.locationMode !== "online" && (
                 <div className={styles.field}>
-                  <label htmlFor="signup-venue">Venue</label>
+                  <label htmlFor={`${idPrefix}-venue`}>Venue</label>
                   <input
-                    id="signup-venue"
+                    id={`${idPrefix}-venue`}
                     value={form.venue || ""}
                     onChange={(event) => field("venue", event.target.value)}
                     placeholder="Community center"
@@ -205,11 +215,11 @@ export default function SignupDetailsEditor({
                 </div>
               )}
               <div className={styles.field}>
-                <label htmlFor="signup-location">
+                <label htmlFor={`${idPrefix}-location`}>
                   {form.locationMode === "online" ? "Meeting link" : "Address"}
                 </label>
                 <input
-                  id="signup-location"
+                  id={`${idPrefix}-location`}
                   type={form.locationMode === "online" ? "url" : "text"}
                   value={form.location || ""}
                   onChange={(event) => field("location", event.target.value)}
@@ -236,9 +246,9 @@ export default function SignupDetailsEditor({
             ] as const
           ).map(([key, name]) => (
             <div className={styles.field} key={key}>
-              <label htmlFor={`signup-${key}`}>{name}</label>
+              <label htmlFor={`${idPrefix}-${key}`}>{name}</label>
               <textarea
-                id={`signup-${key}`}
+                id={`${idPrefix}-${key}`}
                 rows={2}
                 value={form[key] || ""}
                 onChange={(event) => onChange({ ...form, [key]: event.target.value })}

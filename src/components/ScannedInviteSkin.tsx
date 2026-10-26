@@ -86,6 +86,7 @@ type Props = {
   imageUrl?: string | null;
   shareUrl?: string | null;
   calendarLinks?: CalendarLinks | null;
+  schoolMemo?: boolean;
   skinId?: string | null;
   sportKind?: string | null;
   palette?: Palette;
@@ -307,6 +308,7 @@ export default function ScannedInviteSkin({
   imageUrl: originalImageUrl,
   shareUrl,
   calendarLinks,
+  schoolMemo = false,
   skinId,
   sportKind,
   palette,
@@ -701,14 +703,14 @@ export default function ScannedInviteSkin({
             ) : null}
           </AnimatePresence>
 
-          <ActionTile
+          {!schoolMemo && <ActionTile
             icon={<CalendarPlus className="h-5 w-5" />}
             label={calendar.label}
             backgroundColor="var(--theme-primary)"
             textColor={primaryTileTextColor}
             onClick={calendar.open}
             disabled={!calendarLinks || previewMode}
-          />
+          />}
 
           {mobile ? null : renderContactCard()}
         </div>
@@ -900,7 +902,7 @@ export default function ScannedInviteSkin({
               </div>
             </motion.section>
 
-            <div className="grid auto-rows-fr grid-cols-2 gap-3 sm:gap-6">
+            <div className={`grid grid-cols-2 gap-3 sm:gap-6 ${schoolMemo ? "" : "auto-rows-fr"}`}>
               {displayDetailCopy ? (
                 <HubDetailCard
                   label="Good to Know"

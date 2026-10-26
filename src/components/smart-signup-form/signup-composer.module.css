@@ -475,6 +475,7 @@
 .footer[data-auth-publish="true"] .footerActions {
   flex-wrap: wrap;
   justify-content: flex-end;
+  padding-inline-end: 72px;
 }
 @media (max-width: 1100px) {
   .sidebar[data-mobile-open="false"] .toolBody {

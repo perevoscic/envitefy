@@ -49,7 +49,7 @@ export default function SignupTemplatesPage() {
         form.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
       );
       if (templateEditor) {
-        await templateEditor.persist(payload, "published");
+        await templateEditor.persist(payload, "published", { navigate: !templateEditor.published });
         return;
       }
       const res = await fetch("/api/history", {
@@ -76,6 +76,8 @@ export default function SignupTemplatesPage() {
     e.preventDefault();
     await publishForm();
   };
+
+  if (templateEditor) return <SmartSignupWizard form={form} onChange={setForm} onSubmit={submit} submitting={submitting} />;
 
   return (
     <main

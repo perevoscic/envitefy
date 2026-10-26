@@ -97,3 +97,12 @@ test("the category picker and public weddings exclude unrelated catalogs and edi
   assert.equal(preview.has(path.resolve("src/lib/holiday-backgrounds.ts")), false);
   assert.equal(preview.has(path.resolve("src/components/weddings/WeddingRenderer.tsx")), false);
 });
+
+test("opening a selected template excludes unrelated catalog and editor dependencies", () => {
+  const opening = eagerImports("src/lib/create/editor-navigation.ts");
+  for (const file of ["src/lib/public-template-catalog.ts", "src/lib/general-event-designs.ts", "src/lib/create/editor-handoff.ts", "src/lib/signup-starters.ts", "src/lib/livecard-builder.ts"]) {
+    assert.equal(opening.has(path.resolve(file)), false, file);
+  }
+  const helpers = eagerImports("src/lib/create/editor-handoff.ts");
+  assert.equal(helpers.has(path.resolve("src/lib/public-template-catalog.ts")), false);
+});

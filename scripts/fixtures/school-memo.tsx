@@ -24,7 +24,7 @@ function App() {
   const [schedule, setSchedule] = useState<ScanSchedule>(() => query.has("restore") ? JSON.parse(localStorage.getItem("school-memo-fixture") || "null") || initial : initial);
   const [review, setReview] = useState(query.has("review"));
   return <main className="mx-auto max-w-3xl p-4 sm:p-8">
-    <button type="button" className="mb-4 min-h-11 rounded-xl border px-4" onClick={() => setReview(true)}>Review memo</button>
+    <button type="button" className="mb-4 min-h-11 rounded-xl border px-4" onClick={() => setReview(true)}>Edit memo</button>
     {review ? <ScheduleReviewDialog initialSchedule={schedule} saved savedStatus="draft" onDiscard={() => setReview(false)} onSave={async (next, status) => {
       (window as any).__memoSaves.push({ schedule: structuredClone(next), status });
       localStorage.setItem("school-memo-fixture", JSON.stringify(next)); setSchedule(next); setReview(false);

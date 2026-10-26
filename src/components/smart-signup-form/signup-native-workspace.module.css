@@ -1,0 +1,119 @@
+.root {
+  height: 100%;
+  min-height: 0;
+  --editor-ink: var(--app-foreground, var(--foreground, #302a3a));
+  --editor-muted: var(--app-muted-foreground, var(--muted-foreground, #746775));
+  --editor-line: var(--app-border, var(--border, #ded5ca));
+  --editor-paper: var(--app-surface, var(--surface, #fff));
+  --editor-accent: var(--primary, #7b5fb8);
+  --editor-on-accent: var(--primary-foreground, #fff);
+  --editor-soft: var(--surface-alt, #f5f1f8);
+}
+.menu {
+  display: grid;
+  gap: 12px;
+  padding: 24px 16px 16px;
+}
+.panel {
+  padding: 16px;
+}
+.menu h2 {
+  margin: 0 0 4px;
+  font:
+    600 24px / 1.25 var(--font-playfair, Georgia),
+    serif;
+}
+.menu p,
+.sections > p,
+.warning {
+  color: var(--app-muted-foreground, var(--muted-foreground, #746775));
+  font-size: 14px;
+  line-height: 1.6;
+}
+.sections {
+  display: grid;
+  gap: 12px;
+}
+.secondary {
+  min-height: 44px;
+  padding: 10px 16px;
+  margin-block: 8px;
+  border: 1px solid var(--app-border, var(--border, #ded5ca));
+  border-radius: 12px;
+  background: var(--app-surface, var(--surface, #fff));
+  color: var(--app-foreground, var(--foreground, #302a3a));
+}
+.secondary:focus-visible {
+  outline: 2px solid var(--focus-ring, #7b5fb8);
+  outline-offset: 3px;
+}
+
+.back {
+  min-height: 44px;
+  margin-bottom: 8px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--muted-foreground, #746775);
+}
+
+.layoutGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.layoutOption {
+  min-height: 112px;
+  padding: 10px;
+  border: 1px solid var(--editor-line);
+  border-radius: 12px;
+  background: var(--editor-paper);
+  color: var(--editor-ink);
+  text-align: left;
+  font-size: 13px;
+}
+.layoutOption[aria-pressed="true"] {
+  border-color: var(--editor-accent);
+  outline: 2px solid var(--editor-accent);
+  outline-offset: 1px;
+}
+.layoutPreview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 72px;
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #f5f0e8;
+  color: #493d5c;
+}
+.layoutPreview i {
+  display: block;
+  flex: 1;
+  height: 38px;
+  border-radius: 4px;
+  background: #c7bdd7;
+}
+.layoutPreview > span {
+  font:
+    12px Georgia,
+    serif;
+  text-align: center;
+}
+.layoutPreview[data-layout="header-2"] {
+  flex-direction: row-reverse;
+}
+.layoutPreview:is([data-layout="designed"], [data-layout="header-3"]) i {
+  flex-basis: 100%;
+  height: 32px;
+}
+.layoutPreview[data-layout="header-4"] i:last-child {
+  max-width: 18px;
+  border-radius: 50%;
+}
+.layoutPreview:is([data-layout="header-5"], [data-layout="header-6"]) > span {
+  order: 1;
+  flex-basis: 100%;
+}

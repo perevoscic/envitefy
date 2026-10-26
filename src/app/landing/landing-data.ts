@@ -50,6 +50,13 @@ export const landingCategoryCards: LandingCategoryCard[] = [
     featured: true,
   },
   {
+    id: "gymnastics",
+    href: "/gymnastics",
+    label: "Gymnastics",
+    promise: "Meet schedules, parking, documents, and family updates on one page.",
+    cta: "Explore gymnastics",
+  },
+  {
     id: "baby-showers",
     href: "/baby-showers",
     label: "Baby Showers",
@@ -83,13 +90,6 @@ export const landingCategoryCards: LandingCategoryCard[] = [
     label: "Sports",
     promise: "Kickoff times, venues, maps, and team updates families can reopen.",
     cta: "Explore sports",
-  },
-  {
-    id: "gymnastics",
-    href: "/gymnastics",
-    label: "Gymnastics",
-    promise: "Meet schedules, parking, documents, and family updates on one page.",
-    cta: "Explore gymnastics",
   },
 ];
 

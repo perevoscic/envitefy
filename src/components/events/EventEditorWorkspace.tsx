@@ -52,29 +52,10 @@ export function EventEditorActions({
           onClick={() => void editor.saveDraft().catch(() => {})}
         >
           <Save size={17} aria-hidden="true" />
-          {editor.authenticated ? "Save draft" : "Save and continue"}
+          Save draft
         </button>
       )}
-      {actions.showPrimary && !editor.authenticated && editor.publishWithAccount && (
-        <>
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => void editor.publishWithAccount?.("login").catch(() => {})}
-          >
-            Sign in &amp; publish
-          </button>
-          <button
-            type="button"
-            className={styles.primary}
-            disabled={disabled}
-            onClick={() => void editor.publishWithAccount?.("signup").catch(() => {})}
-          >
-            Create an account &amp; publish
-          </button>
-        </>
-      )}
-      {actions.showPrimary && editor.authenticated && (
+      {actions.showPrimary && (
         <button
           type="button"
           className={styles.primary}

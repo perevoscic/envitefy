@@ -1287,7 +1287,14 @@ export default function Dashboard({
               openHouse: openHouseFromScan,
             },
           };
-          if (scannedParams.ocrMeta?.scanSchedule) {
+          if (scannedParams.ocrMeta?.scanSchedule?.kind === "school-memo") {
+            const schedule = {
+              ...scannedParams.ocrMeta.scanSchedule,
+              items: scannedParams.ocrMeta.scanSchedule.items.map(item => ({ ...item, calendarSelected: true })),
+            };
+            scannedParams.ocrMeta = { ...scannedParams.ocrMeta, scanSchedule: schedule, status: "draft" };
+            scannedParams.eventInput = { ...scannedParams.eventInput, ...scanScheduleHistoryFields(schedule), title: schedule.title };
+          } else if (scannedParams.ocrMeta?.scanSchedule) {
             const firstDated = scannedParams.ocrMeta.scanSchedule.items.find((item) => item.startAt);
             scannedParams.eventInput = { ...scannedParams.eventInput, start: firstDated?.startAt || null, end: firstDated?.endAt || null, timeFound: Boolean(firstDated?.startAt) };
             setPendingSchedule(scannedParams);
@@ -1711,7 +1718,7 @@ export default function Dashboard({
             startISO: ready.start,
             endISO: ready.end,
             timeFound: eventInput.timeFound,
-            allDay: eventInput.timeFound === false || undefined,
+            allDay: ocrMeta?.scanSchedule?.kind === "school-memo" ? false : eventInput.timeFound === false || undefined,
             location: ready.location || undefined,
             venue:
               typeof eventInput.venue === "string" && eventInput.venue.trim()
@@ -1874,7 +1881,8 @@ export default function Dashboard({
       if (isSubmittingRef.current) return false;
       isSubmittingRef.current = true;
       try {
-        const ready = buildSubmissionEvent(eventInput);
+        const schoolMemo = ocrMeta?.scanSchedule?.kind === "school-memo";
+        const ready = { ...buildSubmissionEvent(eventInput), ...(schoolMemo ? scanScheduleHistoryFields(ocrMeta.scanSchedule!) : {}) };
         const saveResult = await saveToEnvitefyHistory({
           eventInput,
           ready,
@@ -1900,7 +1908,7 @@ export default function Dashboard({
           ownership === "owned"
             ? {
                 created: true,
-                tab: "dashboard",
+                tab: schoolMemo ? "event" : "dashboard",
               }
             : {
                 created: true,
@@ -1910,7 +1918,7 @@ export default function Dashboard({
         if (ownership === "owned") {
           const editHref = resolveEditHref(
             eventId,
-            { sourceContext: { type: "upload" } },
+            { sourceContext: { type: "upload" }, ...(ocrMeta?.scanSchedule ? { scanSchedule: ocrMeta.scanSchedule } : {}) },
             eventTitle,
           );
           setSelectedEventId(eventId);
@@ -1918,7 +1926,7 @@ export default function Dashboard({
           setSelectedEventHref(ownerEventHref);
           setSelectedEventOwnerHref(ownerEventHref);
           setSelectedEventEditHref(editHref);
-          setActiveEventTab("dashboard");
+          setActiveEventTab(schoolMemo ? "design" : "dashboard");
           setEventContextSourcePage("myEvents");
           if (typeof window !== "undefined") {
             try {
@@ -1932,7 +1940,7 @@ export default function Dashboard({
                   editHref,
                   eventHref,
                   sourcePage: "myEvents",
-                  activeTab: "dashboard",
+                  activeTab: schoolMemo ? "design" : "dashboard",
                 }),
               );
             } catch {}

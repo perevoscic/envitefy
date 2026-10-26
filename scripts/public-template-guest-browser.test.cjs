@@ -26,7 +26,6 @@ async function buildFixture(output) {
         "@/app/event-cache-context": path.resolve("scripts/fixtures/public-template-guest/wrapper.tsx"),
         "@/contexts/MenuContext": path.resolve("scripts/fixtures/public-template-guest/wrapper.tsx"),
         "@/components/CalendarAction": path.resolve("scripts/fixtures/signup-editor/calendar.tsx"),
-        "./SignupDesignPanel": path.resolve("scripts/fixtures/signup-editor/design.tsx"),
         "@": path.resolve("src"),
       } },
       plugins: [new compiled.webpack.DefinePlugin({ "process.env": JSON.stringify({ NODE_ENV: "development" }) }),
@@ -44,7 +43,7 @@ async function buildFixture(output) {
   return { script: fs.readFileSync(path.join(output, "fixture.js")), css };
 }
 
-test("guests retain public navigation and template edits until an authenticated explicit save", { timeout: 240000 }, async () => {
+test("guests use the native workspace without marketing navigation and retain edits through account saves", { timeout: 240000 }, async () => {
   const output = path.resolve("output/public-template-guest-browser");
   const { script, css } = await fixture(output);
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
@@ -53,7 +52,7 @@ test("guests retain public navigation and template edits until an authenticated 
   const eventPath = "/birthdays/templates/party-pop/customize";
   try {
     for (const { width, colorScheme } of [{ width: 390, colorScheme: "light" }, { width: 1280, colorScheme: "light" }, { width: 390, colorScheme: "dark" }, { width: 1280, colorScheme: "dark" }]) {
-      for (const scenario of colorScheme === "dark" ? ["save"] : ["save", "header-signup", ...(width < 1024 ? ["header-login"] : []), "save-and-leave", "cancel-save-and-leave", "event-save"]) {
+      for (const scenario of colorScheme === "dark" ? ["save"] : ["save", "save-login", "save-and-leave", "cancel-save-and-leave", "event-save"]) {
         const context = await browser.newContext({ viewport: { width, height: 960 }, reducedMotion: "reduce", colorScheme });
         const page = await context.newPage();
         page.setDefaultTimeout(12000);
@@ -84,22 +83,21 @@ test("guests retain public navigation and template edits until an authenticated 
           await page.goto(`${base}/previous`);
           await page.goto(`${base}${editorPath}`);
           const header = page.locator("header[data-public-landing-header]");
-          await header.getByRole("link", { name: "Envitefy home", exact: true }).waitFor();
-          assert.equal(await header.getByRole("button", { name: "Let's create", exact: true }).isVisible(), true);
-          const actionBar = isEvent ? page.getByRole("textbox", { name: "Event title", exact: true }) : page.getByRole("navigation", { name: "Signup editor", exact: true });
-          const [headerBounds, actionBounds] = await Promise.all([header.boundingBox(), actionBar.boundingBox()]);
-          assert.ok(actionBounds.y >= headerBounds.y + headerBounds.height, `public header must clear editor controls at ${width}px`);
-          if (width < 1024) {
-            await header.getByRole("button", { name: "Open navigation", exact: true }).click();
-            await page.getByRole("dialog").waitFor();
-            await page.keyboard.press("Escape");
+          assert.equal(await header.count(), 0, "editing has no marketing navigation");
+          const actionBar = isEvent ? page.getByRole("textbox", { name: "Event title", exact: true }) : page.getByRole("complementary", { name: "Event editing controls", exact: true });
+          await actionBar.waitFor();
+          if (!isEvent) {
+            for (const label of ["Page sections", "Layout", "Custom URL"]) assert.equal(await page.getByRole("button", { name: label, exact: true }).isVisible(), true);
+            await page.getByRole("heading", { name: "Add your details", exact: true }).waitFor();
+            assert.equal(await page.getByText("Build your signup form", { exact: true }).count(), 0);
+            assert.equal(await page.getByRole("button", { name: "Add sections", exact: true }).count(), 0);
           }
+          if (scenario === "save") await page.screenshot({ path: path.join(output, `native-workspace-${colorScheme}-${width}.png`) });
           const title = `Guest ${scenario} ${width}`;
-          if (!isEvent) await page.getByRole("button", { name: "Edit event title", exact: true }).click();
+          if (!isEvent) await page.getByRole("button", { name: /^Headline/ }).click();
           await page.getByRole("textbox", { name: "Event title", exact: true }).fill(title);
-          if (!isEvent) await page.getByRole("button", { name: "Done editing event title", exact: true }).click();
           assert.equal(writes.length, 0, "editing public templates never saves or uploads");
-          await page.evaluate(() => { window.__guestEditorBeforeAuth = document.querySelector("#signup-title") || document.querySelector('input'); });
+          await page.evaluate(() => { window.__guestEditorBeforeAuth = document.querySelector("#signup-panel-title") || document.querySelector("#signup-title") || document.querySelector('input'); });
           if (scenario === "save") {
             await page.screenshot({ path: path.join(output, `guest-editor-${colorScheme}-${width}.png`) });
             const toolbarPaper = await actionBar.evaluate((element) => getComputedStyle(element.parentElement).backgroundColor);
@@ -111,7 +109,8 @@ test("guests retain public navigation and template edits until an authenticated 
           }
 
           if (scenario === "save-and-leave" || scenario === "cancel-save-and-leave") {
-            await page.getByRole("button", { name: "← Back", exact: true }).click();
+            await page.getByRole("button", { name: "Back to details", exact: true }).click();
+            await page.getByRole("button", { name: "← All sign-up designs", exact: true }).click();
             const progress = page.getByRole("dialog", { name: "Save your progress?", exact: true });
             await progress.getByRole("button", { name: "Save and leave", exact: true }).click();
             const account = page.getByRole("dialog", { name: "Account required", exact: true });
@@ -123,8 +122,10 @@ test("guests retain public navigation and template edits until an authenticated 
               await account.getByRole("button", { name: "Close account dialog", exact: true }).click();
               await account.waitFor({ state: "hidden" });
               assert.equal(new URL(page.url()).pathname, editorPath, "closing account signup keeps the current editor");
-              await page.getByText(title, { exact: true }).waitFor();
-              await page.getByRole("button", { name: "← Back", exact: true }).click();
+              await page.getByRole("button", { name: /^Headline/ }).click();
+              assert.equal(await page.getByRole("textbox", { name: "Event title", exact: true }).inputValue(), title);
+              await page.getByRole("button", { name: "Back to details", exact: true }).click();
+              await page.getByRole("button", { name: "← All sign-up designs", exact: true }).click();
               await progress.waitFor();
               assert.equal(writes.length, 0, "cancelled authentication preserves unsaved changes without a write");
             } else {
@@ -137,26 +138,17 @@ test("guests retain public navigation and template edits until an authenticated 
             continue;
           }
 
-          if (scenario === "header-login") {
-            await header.getByRole("button", { name: "Open navigation", exact: true }).click();
-            await page.getByRole("button", { name: "Login", exact: true }).click();
-          } else if (scenario === "header-signup") await header.getByRole("button", { name: "Let's create", exact: true }).click();
-          else await page.getByRole("button", { name: isEvent ? "Save event draft" : "Save as draft", exact: true }).click();
+          await page.getByRole("button", { name: isEvent ? "Save event draft" : "Save draft", exact: true }).click();
           const account = page.getByRole("dialog", { name: "Account required", exact: true });
           await account.waitFor();
           const returnHref = await account.getAttribute("data-auth-return");
           assert.ok(returnHref.startsWith(`${editorPath}?draft=`), "authentication returns to the exact retained template draft");
           assert.equal(writes.length, 0, "the account prompt precedes all history/media writes");
           await page.screenshot({ path: path.join(output, `${scenario}-account-${colorScheme}-${width}.png`) });
-          await account.getByRole("button", { name: scenario === "header-login" ? "Complete login" : "Complete account signup", exact: true }).click();
-          if (scenario === "header-signup" || scenario === "header-login") {
-            await account.waitFor({ state: "hidden" });
-            await page.getByText(title, { exact: true }).waitFor();
-            assert.equal(writes.length, 0, "creating an account from navigation does not implicitly save");
-            await page.getByRole("button", { name: "Save as draft", exact: true }).click();
-          }
+          if (scenario === "save-login") await account.getByRole("button", { name: "Switch to sign in", exact: true }).click();
+          await account.getByRole("button", { name: scenario === "save-login" ? "Complete login" : "Complete account signup", exact: true }).click();
           await page.waitForURL(/edit=account-draft/);
-          assert.equal(await page.evaluate(() => window.__guestEditorBeforeAuth === (document.querySelector("#signup-title") || document.querySelector('input'))), true, "app chrome changes keep the actual editor mounted across authentication");
+          assert.equal(await page.evaluate(() => window.__guestEditorBeforeAuth === (document.querySelector("#signup-panel-title") || document.querySelector("#signup-panel-title") || document.querySelector("#signup-title") || document.querySelector('input'))), true, "app chrome changes keep the actual editor mounted across authentication");
           assert.equal(writes.length, 1, "the explicit save becomes one account write after authentication");
           assert.equal(writes[0].pathname, "/api/history");
           assert.equal(writes[0].payload.data.status, "draft");
@@ -224,22 +216,19 @@ test("guest account and sign-in publishing resumes the native editor action exac
           const editorPath = isEvent ? eventPath : signupPath;
           const title = invalid ? "" : `Publish ${scenario} ${width}`;
           await page.goto(`${base}${editorPath}`);
-          if (!isEvent) await page.getByRole("button", { name: "Edit event title", exact: true }).click();
+          if (!isEvent) await page.getByRole("button", { name: /^Headline/ }).click();
           await page.getByRole("textbox", { name: "Event title", exact: true }).fill(title);
           if (!isEvent) {
-            await page.getByRole("button", { name: "Done editing event title", exact: true }).click();
-            await page.getByRole("button", { name: "+ Add section", exact: true }).first().click();
+            await page.getByRole("button", { name: "Page sections", exact: true }).click();
             await page.getByRole("button", { name: /^\+ Registration places/ }).click();
-            await page.getByRole("button", { name: "Preview & publish →", exact: true }).click();
+            await page.getByRole("button", { name: "Preview", exact: true }).click();
           }
           const chooseSignIn = scenario.endsWith("-signin");
-          const publishAction = chooseSignIn ? "Sign in & publish" : "Create an account & publish";
-          assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "guest publishing choices fit the native editor width");
-          for (const action of ["Create an account & publish", "Sign in & publish"]) {
-            const bounds = await page.getByRole("button", { name: action, exact: true }).boundingBox();
-            assert.ok(bounds && bounds.height >= 44 && bounds.x >= -1 && bounds.x + bounds.width <= width + 1,
-              `${action} must remain a reachable native editor action at ${width}px: ${JSON.stringify(bounds)}`);
-          }
+          const publishAction = "Publish";
+          assert.equal(await page.locator("header[data-public-landing-header]").count(), 0);
+          assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "native controls fit the editor width");
+          const bounds = await page.getByRole("button", { name: publishAction, exact: true }).boundingBox();
+          assert.ok(bounds && bounds.height >= 44 && bounds.x >= -1 && bounds.x + bounds.width <= width + 1);
           if (scenario === "signup-create" || scenario === "event-create") await page.screenshot({ path: path.join(output, `${scenario}-choices-${width}.png`) });
           await page.getByRole("button", { name: publishAction, exact: true }).click();
           const account = page.getByRole("dialog", { name: "Account required", exact: true });
@@ -251,6 +240,7 @@ test("guest account and sign-in publishing resumes the native editor action exac
             continue;
           }
           await account.waitFor();
+          if (chooseSignIn) await account.getByRole("button", { name: "Switch to sign in", exact: true }).click();
           assert.equal(await account.getAttribute("data-auth-action"), "publish", "publishing retains explicit intent while authenticating");
           const returnHref = await account.getAttribute("data-auth-return");
           assert.ok(returnHref.startsWith(`${editorPath}?draft=`));
@@ -269,16 +259,12 @@ test("guest account and sign-in publishing resumes the native editor action exac
               };
             }));
             await page.goto(`${base}${returnHref}`);
-            await page.getByRole("button", { name: "Edit event title", exact: true }).waitFor();
+            await page.getByRole("button", { name: /^Headline/ }).waitFor();
             assert.equal(writes.length, 0, "cancelled publishing does not resume after reload");
-            await page.locator("header[data-public-landing-header]").getByRole("button", { name: "Let's create", exact: true }).click();
+            await page.getByRole("button", { name: "Save draft", exact: true }).click();
             await account.waitFor();
             assert.equal(await account.getAttribute("data-auth-action"), "save");
             await account.getByRole("button", { name: "Complete account signup", exact: true }).click();
-            await account.waitFor({ state: "hidden" });
-            await page.getByText(title, { exact: true }).waitFor();
-            assert.equal(writes.length, 0, "an unrelated account signup cannot replay cancelled publishing");
-            await page.getByRole("button", { name: "Save as draft", exact: true }).click();
             await page.waitForURL(/edit=account-draft/);
             assert.equal(writes.length, 1);
             assert.equal(writes[0].payload.data.status, "draft", "a later Save stays a private draft");
@@ -327,7 +313,7 @@ test("guest account and sign-in publishing resumes the native editor action exac
             const consumed = await readDraft(page);
             assert.equal(Boolean(consumed.pendingPublish), false, "failed publication consumes the old request instead of replaying it");
             await page.goto(`${base}${returnHref}`);
-            await page.getByRole(isEvent ? "textbox" : "button", { name: isEvent ? "Event title" : "Edit event title", exact: true }).waitFor();
+            await page.getByRole(isEvent ? "textbox" : "button", { name: isEvent ? "Event title" : /^Headline/, exact: isEvent }).waitFor();
             assert.equal(writes.length, 0, "reloading after a publish validation failure never republishes");
             assert.deepEqual(errors, []);
             continue;

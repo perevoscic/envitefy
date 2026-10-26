@@ -468,6 +468,7 @@ export function LandingGuestPreview() {
 const occasions = [
   { label: "Weddings", href: "/weddings" },
   { label: "Birthdays", href: "/birthdays" },
+  { label: "Gymnastics", href: "/gymnastics" },
   { label: "Baby showers", href: "/baby-showers" },
   { label: "Anniversaries", href: "/anniversaries" },
   { label: "Teams & schools", href: "/sport-events" },

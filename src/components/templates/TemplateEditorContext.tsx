@@ -15,8 +15,6 @@ import {
   useState,
 } from "react";
 import AuthModal from "@/components/auth/AuthModal";
-import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
-import SignupEditorToolbar from "@/components/smart-signup-form/SignupEditorToolbar";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import type { EventUrlUpdate } from "@/components/events/EventUrlEditor";
@@ -66,6 +64,9 @@ export type TemplateEditorRuntime = {
   templateId: string;
   initial: EditorSnapshot;
   authenticated: boolean;
+  ready: boolean;
+  busy: boolean;
+  startOver: () => void;
   published?: boolean;
   hasUnpublishedChanges?: boolean;
   signupRequiresInvitation?: boolean;
@@ -762,23 +763,6 @@ export default function TemplateEditorProvider({
     });
   }, [initial, editorReady, authenticated, category, templateId, saveDraft, publisherReady, flush]);
 
-  const requestAuth = useCallback(async (mode: "login" | "signup") => {
-    // Header authentication resumes editing; only an explicit save sets pendingSave.
-    if (draft.current) {
-      draft.current.pendingSave = false;
-      draft.current.pendingPublish = false;
-    }
-    try {
-      await flush();
-    } catch {
-      setStorageReady(false);
-      setError("Browser storage is unavailable. Use email to keep editing in this tab.");
-    }
-    setAuthMode(mode);
-    setAuthAction("save");
-    setAuthOpen(true);
-  }, [flush]);
-
   const leave = useCallback(() => {
     if (window.history.length > 1) router.back();
     else router.push(draft.current?.eventId ? `/smart-signup-form/${draft.current.eventId}` : "/");
@@ -816,6 +800,9 @@ export default function TemplateEditorProvider({
           router.push(`${templateEditorHref(category, templateId)}?themePreview=${token}`);
         });
       },
+      ready: editorReady,
+      busy,
+      startOver: () => setResetOpen(true),
       record,
       requestSave,
       requestPublish,
@@ -833,23 +820,17 @@ export default function TemplateEditorProvider({
         return url;
       },
     }),
-    [category, templateId, initial, eventData, eventHistoryClient, authenticated, published, dirty, canManageCollaborators, currentEventId, record, requestSave, requestPublish, registerPublisher, persist, leave, progress, router],
+    [category, templateId, initial, eventData, eventHistoryClient, authenticated, published, dirty, canManageCollaborators, currentEventId, record, requestSave, requestPublish, registerPublisher, persist, leave, progress, router, editorReady, busy],
   );
 
   const returnUrl = `${templateEditorHref(category, templateId)}?${editId && !draft.current ? `edit=${encodeURIComponent(editId)}` : `draft=${draft.current?.id || ""}`}`;
   return (
     <Context.Provider value={runtime}>
-      {!authenticated && <SignedOutPageChrome onAuthRequest={requestAuth} authReturnHref={returnUrl} />}
-      <div className={`${styles.shell}${!authenticated ? ` ${styles.publicEditor}` : ""}`}>
-        <div data-app-surface="true" className={styles.toolbar} hidden={category !== "signup-forms" && !error}>
-          {category === "signup-forms" ? (
-            <SignupEditorToolbar onBack={leave} onReset={() => setResetOpen(true)} onSave={() => void requestSave()} busy={busy} ready={editorReady} loaded={Boolean(initial)} saveLabel={published && !canManageCollaborators ? "Save changes" : "Save as draft"} />
-          ) : null}
-          {!authenticated && (
-            <p className={styles.notice}>
-              {storageReady
-                ? "Customize this template freely. Create an account or log in to save or publish. Temporary browser drafts are kept for 7 days."
-                : "Browser storage is unavailable. Keep this tab open until your draft is saved to your account."}
+      <div className={styles.shell}>
+        <div data-app-surface="true" className={styles.toolbar} hidden={!error && !message && !resetOpen && (authenticated || storageReady)}>
+          {!authenticated && !storageReady && (
+            <p role="status" className={styles.notice}>
+              Browser storage is unavailable. Keep this tab open until your draft is saved to your account.
             </p>
           )}
           {resetOpen && (

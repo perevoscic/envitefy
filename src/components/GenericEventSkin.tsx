@@ -32,6 +32,7 @@ type Props = {
   imageUrl?: string | null;
   shareUrl?: string | null;
   calendarLinks?: CalendarLinks | null;
+  schoolMemo?: boolean;
   skinId?: string | null;
   palette?: Palette;
   background?: OcrSkinBackground | null;

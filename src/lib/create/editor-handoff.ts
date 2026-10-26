@@ -1,26 +1,16 @@
+import type { DraftValue } from "../template-draft-storage";
+import type { CreationIntake } from "./creation-intake";
 import { informationForCreation } from "./creation-information";
+export { creationComposition } from "./creation-information";
 import { type CustomEventInformation } from "../event-custom-design";
-import type { EventPageComposition } from "../event-page-composition";
-import { readTemplateDraft, writeTemplateDraft, type DraftValue, type EditorSnapshot, type TemplateDraft } from "../template-draft-storage";
-import { getPublicTemplate } from "../public-template-catalog";
-import { getTemplateCategory } from "../template-categories";
+import { getTemplates as getSignupTemplates } from "../public-template-catalogs/signup-forms";
 import { createEmptySignupTemplateForm } from "../signup-starters";
 import { createLiveCardForm, type LiveCardEventType } from "../livecard-builder";
-import { discoveryTargetForSport } from "./create-intent";
-import { writeCreationIntake, type CreationIntake } from "./creation-intake";
-import type { CreationTemplate } from "./template-selection";
 import { getGeneralEventDesign } from "../general-event-designs";
 import { parseCalendarDateTimeToIso } from "../calendar-date-time";
 import type { EventEditorPayload } from "../event-editor";
 import { normalizeCreationCategory } from "../creation-access";
 import { buildGymnasticsEventDateTimes } from "../gymnastics-event-dates";
-
-export function creationComposition(information?: CustomEventInformation): EventPageComposition | undefined {
-  if (!information) return;
-  const d = information.details;
-  const contact = [d.host ? `Host: ${d.host}` : "", d.rsvpPhone ? `Phone: ${d.rsvpPhone}` : "", d.rsvpEmail ? `Email: ${d.rsvpEmail}` : ""].filter(Boolean).join("\n");
-  return { version: 1, sections: [...d.sections.map((section, index) => ({ id: `info:import-${index}`, ...section })), ...(contact ? [{ id: "info:import-contact", title: "Host & RSVP", body: contact }] : [])] };
-}
 
 /** Imported event-local clocks keep their supplied zone through native writers. */
 export function creationNativePayload(payload: EventEditorPayload, snapshot: object): EventEditorPayload {
@@ -66,7 +56,7 @@ export function hydrateCreationValue<S>(category: string, key: string, initial: 
 }
 
 export function creationSignupForm(information: CustomEventInformation | undefined, templateId: string) {
-  const template = getPublicTemplate("signup-forms", templateId);
+  const template = getSignupTemplates().find(template => template.id === templateId);
   const form = createEmptySignupTemplateForm(template || undefined);
   if (!information) return form;
   const d = information.details;
@@ -80,40 +70,8 @@ export function creationLiveCardForm(information?: CustomEventInformation) {
   return { ...form, title: d.title, creationCategory: normalizeCreationCategory(information.category) || "general", eventType: types[information.category] || "General event", overview: d.description, date: d.date, startTime: d.time, endDate: d.endDate, endTime: d.endTime, timezone: d.timezone, hostName: d.host, hostPhone: d.rsvpPhone, hostEmail: d.rsvpEmail, rsvpEnabled: d.rsvpEnabled, registryEnabled: Boolean(d.registryLinks.length), registryUrl: d.registryLinks[0]?.url || "", instructions: d.sections.map(section => `${section.title}\n${section.body}`).join("\n\n"), locations: [{ ...form.locations[0], venue: d.venue, address: d.location, resolution: "unresolved" as const }] };
 }
 
-/** This prepares a browser draft only. Explicit editor Save/Publish owns server persistence. */
-export async function prepareCreationEditor(intake: CreationIntake, template: CreationTemplate): Promise<string> {
-  const guess = intake.guess || intake.classification;
-  const changingFamily = intake.editorFamily && intake.editorFamily !== template.family;
-  const current = await writeCreationIntake({ ...intake, phase: "editor", selectedTemplateId: template.id, editorFamily: template.family, ...(changingFamily ? { editorSnapshot: undefined, eventId: undefined } : {}) });
-  if (["native", "football"].includes(template.family) && intake.discoveryEventId && guess?.category === "sports" && guess.sport) {
-    const url = new URL(discoveryTargetForSport(guess.sport).builderHref(intake.discoveryEventId), "https://envitefy.local");
-    url.searchParams.set("templateId", template.id);
-    if (guess.sport !== "gymnastics" && guess.sport !== "football") url.searchParams.set("style", template.id.split("--")[1] || "stadium");
-    url.searchParams.set("intake", current.id);
-    return url.pathname + url.search;
-  }
-  const url = new URL(template.href, "https://envitefy.local");
-  if (current.eventId) { url.searchParams.set("edit", current.eventId); return url.pathname + url.search; }
-  url.searchParams.set("intake", current.id);
-  if (template.family === "native" || template.family === "signup") {
-    const category = getTemplateCategory(template.category);
-    if (!category) throw new Error("This design could not be opened. Choose another design.");
-    const previous = await readTemplateDraft(category.slug, current.id);
-    if (previous?.ownerId && previous.ownerId !== current.ownerId) throw new Error("Sign in to the account that started this event.");
-    const snapshot: EditorSnapshot = previous?.category === category.slug ? previous.snapshot : {};
-    if (!previous) {
-      snapshot.creationInformation = JSON.parse(JSON.stringify(informationForCreation(current))) as DraftValue;
-      const composition = creationComposition(current.information);
-      if (composition) snapshot.pageComposition = JSON.parse(JSON.stringify(composition)) as DraftValue;
-      if (category.slug === "signup-forms") snapshot.form = JSON.parse(JSON.stringify(creationSignupForm(current.information, template.id))) as DraftValue;
-    }
-    const draft: TemplateDraft = { version: 1, id: current.id, ownerId: current.ownerId, category: category.slug, templateId: previous?.templateId || template.id, updatedAt: Date.now(), snapshot, assets: previous?.assets || {} };
-    await writeTemplateDraft(draft);
-    url.searchParams.set("draft", draft.id);
-  }
-  if (template.family === "custom" && !current.customPage) throw new Error("Create a design before opening this event page.");
-  return url.pathname + url.search;
-}
+export { prepareCreationEditor } from "./editor-navigation";
+import { prepareCreationEditor } from "./editor-navigation";
 
 export { informationForCreation } from "./creation-information";
 

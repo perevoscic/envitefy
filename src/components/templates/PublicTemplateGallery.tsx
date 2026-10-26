@@ -2,6 +2,9 @@
 
 import dynamic from "next/dynamic";
 import type { TemplateCategory } from "@/lib/template-categories";
+// Load the shared mosaic frame with the page, before a category's lazy preview
+// chunk arrives. Otherwise its server-rendered cards can paint at full width.
+import "@/components/events/template-masonry-gallery.module.css";
 
 export type PublicTemplateGalleryProps = {
   category: TemplateCategory;

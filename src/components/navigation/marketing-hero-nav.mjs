@@ -4,13 +4,13 @@
 
 const MARKETING_PRODUCT_LINKS = [
   { page: "birthdays", label: "Birthdays", href: "/birthdays" },
+  { page: "gymnastics", label: "Gymnastics", href: "/gymnastics" },
   { page: "weddings", label: "Weddings", href: "/weddings" },
   { page: "baby-showers", label: "Baby Showers", href: "/baby-showers" },
   { page: "bridal-showers", label: "Bridal Showers", href: "/bridal-showers" },
   { page: "gender-reveal", label: "Gender Reveals", href: "/gender-reveal" },
   { page: "signup-forms", label: "Signup Forms", href: "/signup-forms" },
   { page: "sports", label: "Sports", href: "/sport-events" },
-  { page: "gymnastics", label: "Gymnastics", href: "/gymnastics" },
 ];
 
 const MARKETING_HOME_LINK = { label: "Home", href: "/" };

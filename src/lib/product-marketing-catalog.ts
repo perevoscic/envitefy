@@ -115,7 +115,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Good to know keeps useful extra instructions and plans, such as what to bring, where to enter or dinner and dancing to follow, while omitting generic reminders and repeated event details.",
             "For recognized paperwork and appointments, unique hero and background artwork can begin while the remaining scan details are processed. Saving reuses that work and opens the event without waiting for the artwork.",
             "Received social invitation cards can be kept with Invited events, while source material for events the customer owns belongs with My events.",
-            "School memos keep tests, deadlines, activities and no-school days as individually reviewable dates. Select all, clear all or choose individual items, then explicitly add the selected dates to a connected Google/Outlook calendar or download one calendar file. Saving a memo does not automatically add its dates.",
+            "School memo uploads finish on their saved Event page, with tests, deadlines, activities and no-school days listed together and initially selected. Select all, clear all or choose individual items directly on the page, then explicitly add the selected dates to a connected Google/Outlook calendar or download one calendar file. Capturing a memo does not automatically add its dates or require a review popup.",
           ],
           sellWhen: [
             "The brief mentions snapping, scanning, photographing, uploading, a printed invitation, flyer, screenshot, schedule, or PDF.",

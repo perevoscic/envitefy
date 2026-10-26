@@ -67,7 +67,7 @@ import styles from "./create-workspace.module.css";
 import uploadStyles from "./upload-document-fan.module.css";
 
 const CreationTemplateGallery = dynamic(() => import("@/components/event-create/CreationTemplateGallery"));
-const prepareCreationEditor = async (...args: Parameters<typeof import("@/lib/create/editor-handoff").prepareCreationEditor>) => (await import("@/lib/create/editor-handoff")).prepareCreationEditor(...args);
+const prepareCreationEditor = async (...args: Parameters<typeof import("@/lib/create/editor-navigation").prepareCreationEditor>) => (await import("@/lib/create/editor-navigation")).prepareCreationEditor(...args);
 const prepareOriginalCreationEditor = async (...args: Parameters<typeof import("@/lib/create/editor-handoff").prepareOriginalCreationEditor>) => (await import("@/lib/create/editor-handoff")).prepareOriginalCreationEditor(...args);
 
 const EventCustomThemeDialog = dynamic(
@@ -831,8 +831,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
         href = target.pathname + target.search;
       } else href = await prepareCreationEditor(next, template);
       if (controller.signal.aborted || version !== epoch.current) return;
-      await persist({ ...next, phase: "editor" });
-      if (controller.signal.aborted || version !== epoch.current) return;
+      // The handoff (or sports discovery) has already retained the editor state.
       router.push(href);
     } catch (failure) {
       if (version === epoch.current && !controller.signal.aborted) {
@@ -1363,7 +1362,11 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                     )
                   }
                 >
-                  Cancel {phase === "opening" ? "import" : "reading"}
+                  Cancel {phase === "opening"
+                    ? guess?.category === "sports" && intake && ["files", "url", "text"].includes(intake.source.kind)
+                      ? "import"
+                      : "opening"
+                    : "reading"}
                 </button>
               </div>
             </div>

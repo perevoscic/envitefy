@@ -145,11 +145,11 @@ export default function LandingExperience() {
           ))}
         </nav>
         <div className={styles.headerActions}>
-          <button type="button" onClick={onCreateEvent} className={styles.login}>
-            Let&apos;s create
+          <button type="button" onClick={() => openAuth("login")} className={styles.login}>
+            Login
           </button>
           <button type="button" onClick={onCreateEvent} className={styles.headerCreate}>
-            Create your event <ArrowRight size={15} aria-hidden="true" />
+            Let&apos;s create <ArrowRight size={15} aria-hidden="true" />
           </button>
           <button
             type="button"

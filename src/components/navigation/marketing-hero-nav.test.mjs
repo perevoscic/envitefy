@@ -10,13 +10,13 @@ test("buildMarketingHeroNav keeps product switching rules consistent across gues
 
   const categoryLabels = [
     "Birthdays",
+    "Gymnastics",
     "Weddings",
     "Baby Showers",
     "Bridal Showers",
     "Gender Reveals",
     "Signup Forms",
     "Sports",
-    "Gymnastics",
   ];
 
   assert.deepEqual(
@@ -36,6 +36,6 @@ test("buildMarketingHeroNav keeps product switching rules consistent across gues
     ["Home", ...categoryLabels, "FAQ"],
   );
   assert.equal(studioLinks[0]?.href, "/");
-  assert.equal(snapLinks[2]?.href, "/weddings");
-  assert.equal(gymnasticsLinks[8]?.href, "/gymnastics");
+  assert.equal(snapLinks[3]?.href, "/weddings");
+  assert.equal(gymnasticsLinks[2]?.href, "/gymnastics");
 });

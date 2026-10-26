@@ -103,7 +103,7 @@ test("dashboard OCR save returns owned uploads to My Events owner workspace", ()
   );
   assert.match(
     source,
-    /ownership === "owned"\s*\? \{\s*created: true,\s*tab: "dashboard",?\s*\}\s*: \{\s*created: true,?\s*\}/,
+    /ownership === "owned"\s*\? \{\s*created: true,\s*tab: schoolMemo \? "event" : "dashboard",?\s*\}\s*: \{\s*created: true,?\s*\}/,
   );
   assert.match(source, /setEventContextSourcePage\("myEvents"\);/);
   assert.match(source, /setEventContextSourcePage\("invitedEvents"\);/);
@@ -124,7 +124,7 @@ test("dashboard scan save seeds owned upload selection before event navigation",
   assert.match(source, /setSelectedEventTitle\(eventTitle\);/);
   assert.match(source, /setSelectedEventHref\(ownerEventHref\);/);
   assert.match(source, /setSelectedEventOwnerHref\(ownerEventHref\);/);
-  assert.match(source, /setActiveEventTab\("dashboard"\);/);
+  assert.match(source, /setActiveEventTab\(schoolMemo \? "design" : "dashboard"\);/);
   assert.match(source, /setEventContextSourcePage\("myEvents"\);/);
   assert.match(source, /window\.sessionStorage\.setItem\(/);
   assert.match(source, /"envitefy:created-event-context:v1"/);

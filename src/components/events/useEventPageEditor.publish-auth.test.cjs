@@ -43,14 +43,14 @@ function editorHarness() {
     "@/lib/create/editor-handoff": { creationNativePayload: (payload) => payload },
     "@/lib/template-draft-handoff": { saveTemplateDraftToAccount: () => { throw new Error("Native publishing must not use the generic draft builder."); } },
   });
-  function render() {
+  function render(ready = true) {
     refIndex = stateIndex = effectIndex = 0;
     // biome-ignore lint/correctness/useHookAtTopLevel: This harness injects synchronous hook state for a native lifecycle test.
-    return useEventPageEditor({ snapshot: { data: { title } }, category: "Birthdays", ready: true, historyClient,
+    return useEventPageEditor({ snapshot: { data: { title } }, category: "Birthdays", ready, historyClient,
       buildPayload: async () => { builds++; if (failure) throw new Error(failure); return { title, data: { title, nativeValidation: true } }; },
     });
   }
-  return { render, requests, publications, destinations, builds: () => builds, publish: () => publisher(),
+  return { render, requests, publications, destinations, builds: () => builds, publish: () => publisher(), registered: () => Boolean(publisher),
     authenticate(nextTitle) { authenticated = true; if (nextTitle) title = nextTitle; },
     fail(message) { failure = message; },
   };
@@ -100,7 +100,18 @@ test("draft saves retain their draft-only authentication intent", async () => {
   assert.equal(fixture.builds(), 0);
 });
 
-test("the shared action area retains signed-in controls and offers explicit guest publish choices", () => {
+test("authentication return waits for the native editor's own readiness before registering publication", () => {
+  const fixture = editorHarness();
+  fixture.authenticate();
+  const opening = fixture.render(false);
+  assert.equal(opening.ready, false);
+  assert.equal(fixture.registered(), false, "the provider must retain its pending intent while the native editor hydrates");
+  fixture.render(true);
+  assert.equal(fixture.registered(), true);
+  assert.deepEqual(fixture.publications, []);
+});
+
+test("the shared action area retains signed-in controls and keeps the same guest controls and account-gated handlers", () => {
   const { EventEditorActions } = loadTs("src/components/events/EventEditorWorkspace.tsx", {
     "lucide-react": new Proxy({}, { get: () => () => null }),
   });
@@ -111,7 +122,7 @@ test("the shared action area retains signed-in controls and offers explicit gues
   assert.match(signedIn, />Publish</);
   assert.doesNotMatch(signedIn, /Create an account|Sign in &amp; publish/);
   const guest = renderToStaticMarkup(React.createElement(EventEditorActions, { editor: { ...editor, authenticated: false } }));
-  assert.match(guest, /Create an account &amp; publish/);
-  assert.match(guest, /Sign in &amp; publish/);
-  assert.match(guest, /Save and continue/);
+  assert.match(guest, />Save draft</);
+  assert.match(guest, />Publish</);
+  assert.doesNotMatch(guest, /Create an account|Sign in &amp; publish|Save and continue/);
 });

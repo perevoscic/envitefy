@@ -16,6 +16,13 @@ export const TEMPLATE_CATEGORIES = [
     editor: "/event/birthdays/customize",
   },
   {
+    slug: "gymnastics",
+    name: "Gymnastics",
+    intent: "gymnastics",
+    historyCategory: "Gymnastics",
+    editor: "/event/gymnastics/customize",
+  },
+  {
     slug: "anniversaries",
     name: "Anniversaries",
     intent: "anniversaries",
@@ -42,13 +49,6 @@ export const TEMPLATE_CATEGORIES = [
     intent: "gender_reveal",
     historyCategory: "Gender Reveal",
     editor: "/event/gender-reveal/customize",
-  },
-  {
-    slug: "gymnastics",
-    name: "Gymnastics",
-    intent: "gymnastics",
-    historyCategory: "Gymnastics",
-    editor: "/event/gymnastics/customize",
   },
   {
     slug: "sport-events",

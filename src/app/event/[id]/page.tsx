@@ -1219,6 +1219,7 @@ export default async function EventPage({
         `${buildEventPath(row.id, title, undefined, publicSlug)}?tab=dashboard`
       : "";
   const eventPageBackgroundColor = resolveEventPageBackgroundColor(data);
+  const savedScanSchedule = normalizeScanSchedule(data.scanSchedule);
   const celebrationKind = resolveEventCelebrationKind(data as any, title);
   const guestCelebrationKind = sessionEmail ? null : celebrationKind;
   let publicEventStructuredData: Record<string, unknown> | null = null;
@@ -1244,7 +1245,7 @@ export default async function EventPage({
           category={typeof (data as any)?.category === "string" ? (data as any).category : null}
         />
       ) : null}
-      <ScannedScheduleProvider schedule={normalizeScanSchedule(data.scanSchedule)} eventId={row.id} canManage={isOwner}>
+      <ScannedScheduleProvider schedule={savedScanSchedule} eventId={row.id} canManage={isOwner}>
       <ScanArtworkProvider
         eventId={row.id}
         initialArtwork={normalizeScanArtwork(data.scanArtwork)}
@@ -1306,6 +1307,7 @@ export default async function EventPage({
   });
   const showOwnerEventView =
     collaborationPermissions.canEdit &&
+    savedScanSchedule?.kind !== "school-memo" &&
     !ownerPreviewMode &&
     (requestedTab === "event" ||
       (!requestedTab &&
@@ -1828,8 +1830,9 @@ export default async function EventPage({
     ...formattedTimeAndDateBase,
     date: collapseDuplicateRangeLabel(formattedTimeAndDateBase.date),
   };
-  const scannedInviteDateLabel =
-    formatInviteWeekdayDateLabel(startForDisplay, {
+  const scannedInviteDateLabel = savedScanSchedule?.kind === "school-memo"
+    ? `${savedScanSchedule.items.length} school ${savedScanSchedule.items.length === 1 ? "date" : "dates"}`
+    : formatInviteWeekdayDateLabel(startForDisplay, {
       timeZone: (typeof data?.timezone === "string" && data.timezone) || undefined,
     }) ||
     formattedTimeAndDate.date ||
@@ -3293,6 +3296,7 @@ export default async function EventPage({
     return renderWithEventPageBackground(
       <GenericEventSkin
         eventId={row.id}
+        schoolMemo={savedScanSchedule?.kind === "school-memo"}
         title={title}
         categoryLabel={categoryRaw || "General Event"}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
@@ -3334,6 +3338,7 @@ export default async function EventPage({
     return renderWithEventPageBackground(
       <GenericEventSkin
         eventId={row.id}
+        schoolMemo={savedScanSchedule?.kind === "school-memo"}
         title={title}
         categoryLabel={categoryRaw || "General Event"}
         dateLabel={scannedInviteDateLabel || whenLabel || null}

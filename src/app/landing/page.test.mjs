@@ -169,6 +169,10 @@ test("guest benefits retain four useful capabilities with an upright bold celebr
 test("the rendered design directory keeps all eight public category destinations and real artwork", () => {
   const html = renderLanding();
   assert.equal((html.match(/data-category=/g) || []).length, 8);
+  assert.deepEqual(
+    [...html.matchAll(/data-category="([^"]+)"/g)].map((match) => match[1]),
+    ["weddings", "birthdays", "gymnastics", "baby-showers", "bridal-showers", "gender-reveal", "signup-forms", "sports"],
+  );
   for (const [id, href, label] of [
     ["weddings", "/weddings", "Weddings"],
     ["birthdays", "/birthdays", "Birthdays"],

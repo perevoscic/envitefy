@@ -153,10 +153,11 @@ export function getTemplateLinks(
 
   const preferences = normalizeSportPreferences(sportPreferences);
   const primary = preferences.setupCompleted ? preferences.primarySport : null;
-  // Gymnastics leads the sports rows, ahead of Football.
+  // Keep Gymnastics immediately after Birthdays across category menus.
   const gymnastics = ALL_TEMPLATE_LINKS.find((link) => link.key === "gymnastics");
   if (gymnastics && (primary === "gymnastics" || !visible || visible.has("gymnastics"))) {
-    standardLinks.push(gymnastics);
+    const birthdayIndex = standardLinks.findIndex((link) => link.key === "birthdays");
+    standardLinks.splice(birthdayIndex + 1, 0, gymnastics);
   }
   const football = ALL_TEMPLATE_LINKS.find((link) => link.key === "football_season");
   if (football && (!visible || visible.has("football_season"))) standardLinks.push(football);

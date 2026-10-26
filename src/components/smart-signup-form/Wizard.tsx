@@ -19,6 +19,7 @@ import {
   validateSignupPublish,
 } from "@/lib/signup-validation";
 import type { SignupForm } from "@/types/signup";
+import SignupEditorWorkspace from "./SignupEditorWorkspace";
 import SignupContentEditor from "./SignupContentEditor";
 import SignupDesignPanel from "./SignupDesignPanel";
 import type { SignupDetailsSection } from "./SignupDetailsEditor";
@@ -108,7 +109,13 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
       );
     }
   };
-  return (
+  const nativeWorkspace = editor ? <SignupEditorWorkspace form={form} onChange={onChange} submitting={submitting} editor={editor}
+    requiresInvitation={requiresInvitation}
+    onPublish={async () => {
+      if (!editor.authenticated) await editor.requestPublish();
+      else await onSubmit({ preventDefault() {} } as React.FormEvent);
+    }} /> : null;
+  return nativeWorkspace || (
     <EventCanvas appearanceScope="app" style={resolveSignupThemeStyle(form)}>
       <div className={`${styles.editor} ${composer.composer}`}>
         <div className={composer.topbar}>
@@ -301,7 +308,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
             {submitError}
           </p>
         )}
-        <div className={`${styles.footer} ${composer.footer}`} data-review={review} data-auth-publish={review && editor && !editor.authenticated ? "true" : undefined}>
+        <div className={`${styles.footer} ${composer.footer}`} data-review={review}>
           {review ? (
             <button
               type="button"
@@ -324,16 +331,6 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
             )}
             {review ? (
               <>
-                {editor && !editor.authenticated && (
-                  <button
-                    type="button"
-                    className={styles.secondary}
-                    disabled={publishDisabled}
-                    onClick={(event) => void publish(event, "login")}
-                  >
-                    Sign in &amp; publish
-                  </button>
-                )}
                 <button
                   type="button"
                   className={styles.primary}
@@ -343,9 +340,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
                 >
                   {submitting
                     ? "Publishing…"
-                    : editor && !editor.authenticated
-                      ? "Create an account & publish"
-                      : "Publish signup"}
+                    : "Publish signup"}
                 </button>
               </>
             ) : (

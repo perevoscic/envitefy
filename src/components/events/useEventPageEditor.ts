@@ -345,7 +345,7 @@ export function useEventPageEditor({
   const currentPublisher = useRef<() => Promise<void>>(async () => {});
   currentPublisher.current = () => perform(true, true);
   const registerPublisher = template?.registerPublisher;
-  useEffect(() => registerPublisher?.(() => currentPublisher.current()), [registerPublisher]);
+  useEffect(() => editorReady ? registerPublisher?.(() => currentPublisher.current()) : undefined, [registerPublisher, editorReady]);
   const progress = useEventProgress({
     snapshot: content,
     ready: editorReady,

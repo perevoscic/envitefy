@@ -958,3 +958,39 @@
     transition: none;
   }
 }
+
+/* Account choices occupy the existing action area without widening a phone
+   canvas. Authenticated editors retain their ordinary single-row controls. */
+.workspace[data-page-editing="false"][data-embedded="false"] .actions[data-auth-publish="true"] {
+  flex-wrap: wrap;
+}
+
+@media (min-width: 768px) {
+  .workspace .actions[data-auth-publish="true"] {
+    max-width: 100%;
+    padding-inline-end: 72px;
+  }
+}
+
+@media (max-width: 767px) {
+  .workspace .actions[data-auth-publish="true"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    min-width: 0;
+    width: 100%;
+  }
+  .workspace .actions[data-auth-publish="true"] > .views {
+    min-width: 0;
+  }
+  .workspace .actions[data-auth-publish="true"] button {
+    min-width: 0;
+    white-space: normal;
+  }
+  .workspace[data-page-editing="false"][data-embedded="false"] .actions[data-auth-publish="true"] button {
+    white-space: normal;
+  }
+  .workspace .actions[data-auth-publish="true"] > button:nth-last-child(-n + 2) {
+    grid-column: 1 / -1;
+    margin-inline-end: 72px;
+  }
+}

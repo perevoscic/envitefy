@@ -106,13 +106,13 @@ const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
     title: "Use Cases",
     links: [
       { label: "Birthdays", href: "/birthdays" },
+      { label: "Gymnastics meets", href: "/gymnastics" },
       { label: "Weddings", href: "/weddings" },
       { label: "Baby showers", href: "/baby-showers" },
       { label: "Bridal showers", href: "/bridal-showers" },
       { label: "Gender reveals", href: "/gender-reveal" },
       { label: "Signup forms", href: "/signup-forms" },
       { label: "Sports", href: "/sport-events" },
-      { label: "Gymnastics meets", href: "/gymnastics" },
     ],
   },
   {

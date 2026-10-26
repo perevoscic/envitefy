@@ -115,18 +115,20 @@ test("all 48 rows render, weekly practices show their group/day, and unknown dat
   assert.doesNotMatch(html, /Add to calendar/);
 });
 
-test("quick scans enter review before any save, and public skins receive the saved schedule", () => {
+test("school memos finish directly while sports scans retain review, and saved skins receive every date", () => {
   const dashboard = fs.readFileSync("src/components/Dashboard.tsx", "utf8");
   assert.match(
     dashboard,
-    /if \(scannedParams\.ocrMeta\?\.scanSchedule\) \{[\s\S]*?setPendingSchedule\(scannedParams\);[\s\S]*?return;[\s\S]*?submitScannedEventRef\.current\(scannedParams\)/,
+    /if \(scannedParams\.ocrMeta\?\.scanSchedule\?\.kind === "school-memo"\) \{[\s\S]*?calendarSelected: true[\s\S]*?scanScheduleHistoryFields\(schedule\)[\s\S]*?\} else if \(scannedParams\.ocrMeta\?\.scanSchedule\) \{[\s\S]*?setPendingSchedule\(scannedParams\);[\s\S]*?return;[\s\S]*?submitScannedEventRef\.current\(scannedParams\)/,
   );
   assert.match(dashboard, /onDrop=/);
   const page = fs.readFileSync("src/app/event/[id]/page.tsx", "utf8");
   assert.match(
     page,
-    /ScannedScheduleProvider schedule=\{normalizeScanSchedule\(data.scanSchedule\)\}/,
+    /ScannedScheduleProvider schedule=\{savedScanSchedule\}/,
   );
+  assert.match(page, /const savedScanSchedule = normalizeScanSchedule\(data.scanSchedule\)/);
+  assert.match(page, /const showOwnerEventView =[\s\S]*?savedScanSchedule\?\.kind !== "school-memo"/);
   assert.match(
     fs.readFileSync("src/components/ScannedInviteSkin.tsx", "utf8"),
     /<ScannedSchedule interactive=\{!previewMode\}/,
