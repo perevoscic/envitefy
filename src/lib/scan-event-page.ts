@@ -778,7 +778,7 @@ export function buildScanEventPageHistoryPayload(params: {
     (startISO && fieldsGuess.timeFound !== false ? addMinutesIso(startISO, 90) : null);
   const timeFound = scanSchedule ? Boolean(firstScheduledEvent?.startAt) :
     typeof fieldsGuess.timeFound === "boolean" ? fieldsGuess.timeFound : rescuedDate.timeFound;
-  const scheduleLine = scanSchedule ? scanSchedule.timeframe || `${scanSchedule.items.length} sessions and games` : firstString(
+  const scheduleLine = scanSchedule ? scanSchedule.timeframe || `${scanSchedule.items.length} ${scanSchedule.kind === "school-memo" ? "dates" : "sessions and games"}` : firstString(
     firstSpecificString(fieldsGuess.whenLabel),
     firstSpecificString(fieldsGuess.scheduleLine),
     fieldsGuess.dateText && fieldsGuess.timeText

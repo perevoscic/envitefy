@@ -61,7 +61,7 @@ function ScheduleEditor() {
       initialSchedule={schedule}
       saved
       savedStatus={savedStatus}
-      urlControl={isOwner ? <EventUrlDialog eventId={id} historyClient={eventHistoryClient} onUpdated={update => setEventHref(`${update.publicPath}?tab=event`)} /> : undefined}
+      urlControl={isOwner && schedule.kind !== "school-memo" ? <EventUrlDialog eventId={id} historyClient={eventHistoryClient} onUpdated={update => setEventHref(`${update.publicPath}?tab=event`)} /> : undefined}
       onDiscard={() => router.push(eventHref)}
       onSave={async (next, status) => {
         const response = await eventHistoryClient.fetch(`/api/history/${encodeURIComponent(id)}`, {

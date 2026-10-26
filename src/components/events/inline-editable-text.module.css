@@ -34,6 +34,8 @@
 }
 
 .input {
+  --inline-input-ink: var(--inline-edit-ink, var(--gym-ink, #172033));
+  --inline-input-paper: var(--inline-edit-paper, var(--gym-paper, #fff));
   width: 100%;
   min-width: 0;
   min-height: 44px;
@@ -44,8 +46,16 @@
   font-size: max(1em, 16px);
   letter-spacing: normal;
   text-transform: none;
-  color: var(--inline-edit-ink, var(--gym-ink, #172033));
-  background: var(--inline-edit-paper, var(--gym-paper, #fff));
+  color: var(--inline-input-ink);
+  -webkit-text-fill-color: var(--inline-input-ink);
+  caret-color: var(--inline-input-ink);
+  background: var(--inline-input-paper);
+}
+
+/* Browser autofill must keep the same authored ink/paper pair as typing. */
+.input:autofill {
+  -webkit-text-fill-color: var(--inline-input-ink);
+  box-shadow: 0 0 0 100vmax var(--inline-input-paper) inset;
 }
 
 .actions {

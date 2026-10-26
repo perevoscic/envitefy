@@ -21,6 +21,8 @@ export type TemplateDraft = {
   signupRevision?: number;
   signupRequiresInvitation?: boolean;
   pendingSave?: boolean;
+  /** An explicit account-and-publish action resumes the native publisher after auth. */
+  pendingPublish?: boolean;
 };
 
 /** A new gallery entry must never inherit a previously saved event's identity. */
@@ -28,10 +30,12 @@ export function readTemplateEditorDraft(
   category: string,
   draftId?: string | null,
   eventId?: string | null,
+  ownerId = "",
 ): Promise<TemplateDraft | null> {
   if (category === "signup-forms" && (eventId || !draftId)) return Promise.resolve(null);
   return readTemplateDraft(category, draftId || undefined).then(draft =>
-    !draftId && !eventId && draft?.eventId ? null : draft,
+    !draftId && !eventId && draft &&
+      (draft.eventId || (draft.ownerId && draft.ownerId !== ownerId)) ? null : draft,
   );
 }
 

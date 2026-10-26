@@ -15,6 +15,7 @@ import {
   useState,
 } from "react";
 import AuthModal from "@/components/auth/AuthModal";
+import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import SignupEditorToolbar from "@/components/smart-signup-form/SignupEditorToolbar";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import { useEventHistoryClient } from "@/lib/event-history-client";
@@ -79,6 +80,9 @@ export type TemplateEditorRuntime = {
   duplicateSignup?: (form: SignupForm) => void;
   record: (key: string, value: DraftValue) => void;
   requestSave: () => Promise<void>;
+  requestPublish: (mode?: "login" | "signup") => Promise<void>;
+  /** Resume the same native validation and publication path after authentication. */
+  registerPublisher: (publish: () => Promise<void>) => () => void;
   persist: (payload: TemplateHistoryPayload, status: "draft" | "published", options?: { navigate?: boolean; snapshot?: EditorSnapshot }) => Promise<string>;
   previewPhoto: (file: File) => string;
 };
@@ -175,6 +179,8 @@ export default function TemplateEditorProvider({
   const [authOpen, setAuthOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
+  const [authAction, setAuthAction] = useState<"save" | "publish">("save");
+  const [publisherReady, setPublisherReady] = useState(false);
   const [storageReady, setStorageReady] = useState(true);
   const [generation, setGeneration] = useState(0);
   const [editorReady, setEditorReady] = useState(false);
@@ -185,6 +191,13 @@ export default function TemplateEditorProvider({
   const interacted = useRef(false);
   const busyRef = useRef(false);
   const pendingHandled = useRef(false);
+  const publisher = useRef<(() => Promise<void>) | null>(null);
+  const pendingLeaveSave = useRef<{
+    draftId: string;
+    resolve: () => void;
+    reject: (failure: Error) => void;
+  } | null>(null);
+  const initializedSource = useRef("");
   const mediaUrls = useRef<Record<string, string>>({});
   const remoteMedia = useRef<Record<string, string>>({});
   const firstEdit = useRef(false);
@@ -194,11 +207,14 @@ export default function TemplateEditorProvider({
   const requestedDraft = search?.get("draft");
   const requestedIntake = search?.get("intake");
   const draftOwnerId = creationIntakeOwner(session?.user);
+  const activeAccount = useRef<string | null>(null);
+  activeAccount.current = authenticated ? draftOwnerId : null;
   const themePreview =
     category === "signup-forms" && !editId && !requestedDraft ? search?.get("themePreview") : null;
   const themeHandoff = useRef<{ token: string; form: SignupForm } | null>(null);
   const savedEventId = useRef<string | null>(null);
   const info = getTemplateCategory(category)!;
+  const sourceKey = JSON.stringify([category, templateId, editId, requestedDraft, requestedIntake, themePreview]);
 
   const flush = useCallback(async () => {
     if (!draft.current) return;
@@ -222,9 +238,34 @@ export default function TemplateEditorProvider({
 
   useEffect(() => {
     // Replacing the temporary URL after saving must not reload over newer in-memory edits.
-    if (editId && savedEventId.current === editId && draft.current?.eventId === editId) return;
+    if (editId && savedEventId.current === editId && draft.current?.eventId === editId && (!draft.current.ownerId || draft.current.ownerId === draftOwnerId)) return;
     let cancelled = false;
     async function initialize() {
+      if (draft.current && initializedSource.current === sourceKey && !editId) {
+        // Credentials authentication updates the session in this tab. Keep the
+        // mounted fields and photos instead of restoring an older browser copy.
+        if (status === "loading") return;
+        if (draft.current.ownerId && draft.current.ownerId !== draftOwnerId) {
+          draft.current = null;
+          setInitial(null);
+          pendingLeaveSave.current?.reject(new Error("The account changed before your progress could be saved."));
+          pendingLeaveSave.current = null;
+          if (requestedDraft || requestedIntake) {
+            throw new Error("Sign in to the account that started this browser draft.");
+          }
+          // An ordinary gallery entry remains usable after another account
+          // signs out; its private recovery copy must not become this draft.
+          setEditorReady(false);
+          setDirty(false);
+          setError("");
+          savedFields.current = {};
+          interacted.current = false;
+          remoteMedia.current = {};
+        } else {
+          if (draftOwnerId) draft.current.ownerId = draftOwnerId;
+          return;
+        }
+      }
       let saved: TemplateDraft | null = null;
       let loadedEventData: Record<string, unknown> | undefined;
       const intakeId = requestedIntake;
@@ -257,7 +298,7 @@ export default function TemplateEditorProvider({
         };
       } else
         try {
-          saved = await readTemplateEditorDraft(category, requestedDraft, editId);
+          saved = await readTemplateEditorDraft(category, requestedDraft, editId, draftOwnerId);
         } catch {
           setStorageReady(false);
           setError(
@@ -326,6 +367,7 @@ export default function TemplateEditorProvider({
         assets: {},
       };
       if (current.ownerId && current.ownerId !== creationIntakeOwner(session?.user)) throw new Error("Sign in to the account that started this browser draft.");
+      if (draftOwnerId) current.ownerId = draftOwnerId;
       if (current.templateId !== templateId && (!requestedDraft || Boolean(intakeId))) {
         const previousTemplate = getPublicTemplate(category, current.templateId);
         const selected = getPublicTemplate(category, templateId)!;
@@ -415,6 +457,8 @@ export default function TemplateEditorProvider({
         Object.entries(current.assets).map(([key, blob]) => [replacements[key] || key, blob]),
       );
       draft.current = current;
+      setAuthAction(current.pendingPublish ? "publish" : "save");
+      initializedSource.current = sourceKey;
       savedFields.current = themePreview
         ? { form: JSON.stringify(createEmptySignupTemplateForm()) }
         : {};
@@ -431,11 +475,13 @@ export default function TemplateEditorProvider({
     return () => {
       cancelled = true;
     };
-  }, [category, templateId, requestedDraft, editId, themePreview, router, loadAttempt, status, draftOwnerId, requestedIntake]);
+  }, [category, templateId, requestedDraft, editId, themePreview, router, loadAttempt, status, draftOwnerId, requestedIntake, sourceKey]);
 
   useEffect(
     () => () => {
       for (const url of Object.values(mediaUrls.current)) URL.revokeObjectURL(url);
+      pendingLeaveSave.current?.reject(new Error("Keep editing, then save your progress before leaving."));
+      pendingLeaveSave.current = null;
     },
     [],
   );
@@ -517,7 +563,7 @@ export default function TemplateEditorProvider({
           remoteMedia: remoteMedia.current,
           existing: current.eventId ? eventHistoryClient.read(`/api/history/${encodeURIComponent(current.eventId)}`) : null,
         });
-        Object.assign(draft.current, { eventId: current.eventId, eventRevision: current.eventRevision, signupRevision: current.signupRevision, pendingSave: current.pendingSave });
+        Object.assign(draft.current, { eventId: current.eventId, eventRevision: current.eventRevision, signupRevision: current.signupRevision, pendingSave: current.pendingSave, pendingPublish: current.pendingPublish });
         // An explicit save attaches this mounted editor to its event; changing the URL
         // must not reload the saved snapshot over edits made while the request ran.
         savedEventId.current = eventId;
@@ -591,8 +637,22 @@ export default function TemplateEditorProvider({
     dirty: category === "signup-forms" && dirty,
     busy,
     save: async () => {
-      if (authenticated) await saveDraft();
-      else await flush();
+      if (!authenticated) {
+        if (!draft.current) throw new Error("Your editor is still loading.");
+        const beforeLeaving = new Promise<void>((resolve, reject) => {
+          pendingLeaveSave.current?.reject(new Error("A newer save replaced this request."));
+          pendingLeaveSave.current = { draftId: draft.current!.id, resolve, reject };
+        });
+        const pending = pendingLeaveSave.current;
+        void requestSave().catch((failure: Error) => {
+          if (pendingLeaveSave.current === pending) {
+            pending?.reject(failure);
+            pendingLeaveSave.current = null;
+          }
+        });
+        return { beforeLeaving };
+      }
+      await saveDraft();
       setDirty(false);
     },
     discard: async () => {
@@ -609,6 +669,7 @@ export default function TemplateEditorProvider({
     }
     if (!draft.current) return;
     draft.current.pendingSave = true;
+    draft.current.pendingPublish = false;
     pendingHandled.current = false;
     try {
       await flush();
@@ -618,23 +679,105 @@ export default function TemplateEditorProvider({
         "Use email to save in this tab. Google signup needs working browser storage so your edits survive the redirect.",
       );
     }
+    setAuthMode("signup");
+    setAuthAction("save");
     setAuthOpen(true);
   }, [authenticated, category, templateId, saveDraft, flush]);
 
+  const registerPublisher = useCallback((publish: () => Promise<void>) => {
+    publisher.current = publish;
+    setPublisherReady(true);
+    return () => {
+      if (publisher.current !== publish) return;
+      publisher.current = null;
+      setPublisherReady(false);
+    };
+  }, []);
+
+  const requestPublish = useCallback(async (mode: "login" | "signup" = "signup") => {
+    if (!draft.current || !editorReady || !publisher.current) {
+      setError("Your editor is still loading. Please try publishing again in a moment.");
+      return;
+    }
+    if (authenticated) {
+      await publisher.current().catch((failure: Error) => setError(failure.message));
+      return;
+    }
+    trackTemplateEvent("template_publish_attempt", category, templateId);
+    draft.current.pendingSave = false;
+    draft.current.pendingPublish = true;
+    pendingHandled.current = false;
+    try {
+      await flush();
+    } catch {
+      setStorageReady(false);
+      setError("Use email to publish in this tab. Google sign-in needs working browser storage so your edits survive the redirect.");
+    }
+    setAuthAction("publish");
+    setAuthMode(mode);
+    setAuthOpen(true);
+  }, [authenticated, category, templateId, editorReady, flush]);
+
   useEffect(() => {
+    const publishing = draft.current?.pendingPublish === true;
     if (
       !initial ||
       !editorReady ||
       !authenticated ||
-      !draft.current?.pendingSave ||
+      (!draft.current?.pendingSave && !publishing) ||
+      (publishing && (!publisherReady || !publisher.current)) ||
       pendingHandled.current
     )
       return;
     pendingHandled.current = true;
     setAuthOpen(false);
     trackTemplateEvent("template_auth_completed", category, templateId);
-    saveDraft().catch((failure: Error) => setError(failure.message));
-  }, [initial, editorReady, authenticated, category, templateId, saveDraft]);
+    const pending = pendingLeaveSave.current;
+    const complete = async () => {
+      if (!publishing) return saveDraft();
+      const current = draft.current!;
+      const nativePublish = publisher.current!;
+      const owner = activeAccount.current;
+      // Consume the explicit intent before running native validation/publication.
+      // A failed publish or later login must not replay it after a reload.
+      current.pendingPublish = false;
+      current.pendingSave = false;
+      await flush().catch(() => {});
+      if (draft.current?.id !== current.id || publisher.current !== nativePublish || !owner || activeAccount.current !== owner) {
+        throw new Error("Your account or editor changed. Your edits are retained; choose Publish again when ready.");
+      }
+      await nativePublish();
+    };
+    complete().then(() => {
+      if (pending && pendingLeaveSave.current === pending && draft.current?.id === pending.draftId) {
+        pendingLeaveSave.current = null;
+        pending.resolve();
+      }
+    }).catch((failure: Error) => {
+      setError(failure.message);
+      if (pending && pendingLeaveSave.current === pending) {
+        pendingLeaveSave.current = null;
+        pending.reject(failure);
+      }
+    });
+  }, [initial, editorReady, authenticated, category, templateId, saveDraft, publisherReady, flush]);
+
+  const requestAuth = useCallback(async (mode: "login" | "signup") => {
+    // Header authentication resumes editing; only an explicit save sets pendingSave.
+    if (draft.current) {
+      draft.current.pendingSave = false;
+      draft.current.pendingPublish = false;
+    }
+    try {
+      await flush();
+    } catch {
+      setStorageReady(false);
+      setError("Browser storage is unavailable. Use email to keep editing in this tab.");
+    }
+    setAuthMode(mode);
+    setAuthAction("save");
+    setAuthOpen(true);
+  }, [flush]);
 
   const leave = useCallback(() => {
     if (window.history.length > 1) router.back();
@@ -675,6 +818,8 @@ export default function TemplateEditorProvider({
       },
       record,
       requestSave,
+      requestPublish,
+      registerPublisher,
       persist,
       previewPhoto(file) {
         const issue = validateClientUploadFile(file, "header");
@@ -688,21 +833,22 @@ export default function TemplateEditorProvider({
         return url;
       },
     }),
-    [category, templateId, initial, eventData, eventHistoryClient, authenticated, published, dirty, canManageCollaborators, currentEventId, record, requestSave, persist, leave, progress, router],
+    [category, templateId, initial, eventData, eventHistoryClient, authenticated, published, dirty, canManageCollaborators, currentEventId, record, requestSave, requestPublish, registerPublisher, persist, leave, progress, router],
   );
 
   const returnUrl = `${templateEditorHref(category, templateId)}?${editId && !draft.current ? `edit=${encodeURIComponent(editId)}` : `draft=${draft.current?.id || ""}`}`;
   return (
     <Context.Provider value={runtime}>
-      <div className={styles.shell}>
-        <div className="relative z-40 shrink-0 border-b border-[#ded5ca] bg-[#fffcf7]/95 px-4 py-3 backdrop-blur sm:px-8" hidden={category !== "signup-forms" && !error}>
+      {!authenticated && <SignedOutPageChrome onAuthRequest={requestAuth} authReturnHref={returnUrl} />}
+      <div className={`${styles.shell}${!authenticated ? ` ${styles.publicEditor}` : ""}`}>
+        <div data-app-surface="true" className={styles.toolbar} hidden={category !== "signup-forms" && !error}>
           {category === "signup-forms" ? (
             <SignupEditorToolbar onBack={leave} onReset={() => setResetOpen(true)} onSave={() => void requestSave()} busy={busy} ready={editorReady} loaded={Boolean(initial)} saveLabel={published && !canManageCollaborators ? "Save changes" : "Save as draft"} />
           ) : null}
           {!authenticated && (
-            <p className="mx-auto mt-2 max-w-[1500px] text-xs text-[#746775]">
+            <p className={styles.notice}>
               {storageReady
-                ? "Progress is saved only when you choose Save. Browser drafts are kept for 7 days."
+                ? "Customize this template freely. Create an account or log in to save or publish. Temporary browser drafts are kept for 7 days."
                 : "Browser storage is unavailable. Keep this tab open until your draft is saved to your account."}
             </p>
           )}
@@ -824,16 +970,25 @@ export default function TemplateEditorProvider({
       <AuthModal
         open={authOpen}
         mode={authMode}
+        action={authAction}
         onClose={() => {
           setAuthOpen(false);
-          if (draft.current) draft.current.pendingSave = false;
+          if (draft.current) {
+            draft.current.pendingSave = false;
+            draft.current.pendingPublish = false;
+          }
+          pendingLeaveSave.current?.reject(new Error("Your progress has not been saved. Keep editing or sign in to save."));
+          pendingLeaveSave.current = null;
+          void flush().catch(() => {});
         }}
         onModeChange={setAuthMode}
         successRedirectUrl={returnUrl}
         signupIntent={info.intent}
         signupSource={category === "gymnastics" ? "gymnastics" : "snap"}
         description={
-          category === "signup-forms"
+          authAction === "publish"
+            ? `${authMode === "login" ? "Sign in" : "Create an account"} to publish your ${category === "signup-forms" ? "sign-up form" : "event page"}. Your current details and design will be published after authentication.`
+            : category === "signup-forms"
             ? "Create an account to save your signup form and keep editing."
             : "Create an account to save your invitation and keep editing."
         }

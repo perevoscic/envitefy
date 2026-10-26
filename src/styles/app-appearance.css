@@ -17,6 +17,7 @@ html.dark {
   --app-error: var(--error);
   --app-warning: var(--warning);
   --app-focus-ring: var(--focus-ring);
+  --app-placeholder: var(--placeholder);
 }
 [data-appearance-scope="authored"] {
   color-scheme: light;
@@ -67,54 +68,55 @@ html.dark {
 
 /* Compatibility for existing application utilities. These deliberately name
    semantic light surfaces and exclude authored boundaries, rather than
-   reversing images or matching arbitrary white/color declarations. */
-html.dark :is(.bg-white, .bg-slate-50, .bg-gray-50, .bg-zinc-50, .bg-neutral-50):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+   reversing images or matching arbitrary white/color declarations. Application
+   dialogs re-enter the palette with semantic tokens and bounded scopes below. */
+html.dark :is(.bg-white, .bg-slate-50, .bg-gray-50, .bg-zinc-50, .bg-neutral-50):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   background-color: var(--surface);
 }
-html.dark :is(.bg-slate-100, .bg-gray-100, .bg-zinc-100, .bg-neutral-100, .bg-purple-50, .bg-violet-50, .bg-indigo-50):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+html.dark :is(.bg-slate-100, .bg-gray-100, .bg-zinc-100, .bg-neutral-100, .bg-purple-50, .bg-violet-50, .bg-indigo-50):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   background-color: var(--surface-alt);
 }
-html.dark :is(.bg-white\/50, .bg-white\/60, .bg-white\/70, .bg-white\/80, .bg-white\/90, .bg-white\/95):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+html.dark :is(.bg-white\/50, .bg-white\/60, .bg-white\/70, .bg-white\/80, .bg-white\/90, .bg-white\/95):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   background-color: color-mix(in srgb, var(--surface) 92%, transparent);
 }
-html.dark :is(.text-black, .text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700, .text-gray-950, .text-gray-900, .text-gray-800, .text-gray-700, .text-zinc-900, .text-zinc-800, .text-neutral-900, .text-neutral-800):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+html.dark :is(.text-black, .text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700, .text-gray-950, .text-gray-900, .text-gray-800, .text-gray-700, .text-zinc-900, .text-zinc-800, .text-neutral-900, .text-neutral-800):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   color: var(--foreground);
 }
-html.dark :is(.text-slate-600, .text-slate-500, .text-slate-400, .text-gray-600, .text-gray-500, .text-gray-400, .text-zinc-600, .text-zinc-500, .text-neutral-600, .text-neutral-500):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+html.dark :is(.text-slate-600, .text-slate-500, .text-slate-400, .text-gray-600, .text-gray-500, .text-gray-400, .text-zinc-600, .text-zinc-500, .text-neutral-600, .text-neutral-500):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   color: var(--muted-foreground);
 }
-html.dark :is(.border-white, .border-slate-100, .border-slate-200, .border-slate-300, .border-gray-100, .border-gray-200, .border-gray-300, .border-zinc-200, .border-neutral-200, .border-indigo-100, .border-indigo-200, .border-violet-100, .border-purple-200):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+html.dark :is(.border-white, .border-slate-100, .border-slate-200, .border-slate-300, .border-gray-100, .border-gray-200, .border-gray-300, .border-zinc-200, .border-neutral-200, .border-indigo-100, .border-indigo-200, .border-violet-100, .border-purple-200):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   border-color: var(--border);
 }
-html.dark :is(.divide-slate-100, .divide-slate-200, .divide-gray-100, .divide-gray-200):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) > :not(:last-child) {
+html.dark :is(.divide-slate-100, .divide-slate-200, .divide-gray-100, .divide-gray-200):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) > :not(:last-child) {
   border-color: var(--border);
 }
-html.dark :is(.text-secondary, .text-accent, [class~="text-[#5c438e]"], .text-indigo-600, .text-indigo-700, .text-violet-600, .text-violet-700, .text-purple-600, .text-purple-700, .text-blue-600, .text-blue-700):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+html.dark :is(.text-secondary, .text-accent, [class~="text-[#5c438e]"], .text-indigo-600, .text-indigo-700, .text-violet-600, .text-violet-700, .text-purple-600, .text-purple-700, .text-blue-600, .text-blue-700):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   color: var(--primary);
 }
-html.dark :is(.bg-indigo-600, .bg-violet-600, .bg-purple-600, .bg-blue-600):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+html.dark :is(.bg-indigo-600, .bg-violet-600, .bg-purple-600, .bg-blue-600):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   background-color: var(--primary);
   color: var(--primary-foreground);
 }
-html.dark :is(.bg-slate-900, .bg-slate-950, .bg-gray-900):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+html.dark :is(.bg-slate-900, .bg-slate-950, .bg-gray-900):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   background-color: var(--surface-raised);
 }
-html.dark :is(.hover\:bg-white, .hover\:bg-slate-50, .hover\:bg-slate-100, .hover\:bg-gray-50, .hover\:bg-gray-100, .hover\:bg-indigo-50, .hover\:bg-purple-50, .hover\:bg-violet-50):hover:is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+html.dark :is(.hover\:bg-white, .hover\:bg-slate-50, .hover\:bg-slate-100, .hover\:bg-gray-50, .hover\:bg-gray-100, .hover\:bg-indigo-50, .hover\:bg-purple-50, .hover\:bg-violet-50):hover:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   background-color: var(--surface-raised);
 }
-html.dark :is(.hover\:text-indigo-700, .hover\:text-purple-700, .hover\:text-violet-700):hover:is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+html.dark :is(.hover\:text-indigo-700, .hover\:text-purple-700, .hover\:text-violet-700):hover:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   color: var(--primary);
 }
 
 /* Validation and operational status keep their meaning in every app surface. */
-html.dark :is(.bg-red-50, .bg-rose-50, .bg-red-100, .bg-rose-100):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: color-mix(in srgb, var(--error) 13%, var(--surface)); }
-html.dark :is(.text-red-600, .text-red-700, .text-red-800, .text-red-900, .text-rose-600, .text-rose-700, .text-rose-800):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--error); }
-html.dark :is(.bg-emerald-50, .bg-green-50, .bg-emerald-100, .bg-green-100):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: color-mix(in srgb, var(--success) 13%, var(--surface)); }
-html.dark :is(.text-emerald-600, .text-emerald-700, .text-emerald-800, .text-emerald-900, .text-green-700, .text-green-800):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--success); }
-html.dark :is(.bg-amber-50, .bg-yellow-50, .bg-amber-100, .bg-yellow-100):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: color-mix(in srgb, var(--warning) 13%, var(--surface)); }
-html.dark :is(.text-amber-700, .text-amber-800, .text-amber-900, .text-yellow-700, .text-yellow-800):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--warning); }
-html.dark :is(.bg-sky-50, .bg-blue-50):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: color-mix(in srgb, var(--info) 12%, var(--surface)); }
-html.dark :is(.text-sky-700, .text-sky-800, .text-blue-800, .text-blue-900):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--info); }
+html.dark :is(.bg-red-50, .bg-rose-50, .bg-red-100, .bg-rose-100):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { background-color: color-mix(in srgb, var(--error) 13%, var(--surface)); }
+html.dark :is(.text-red-600, .text-red-700, .text-red-800, .text-red-900, .text-rose-600, .text-rose-700, .text-rose-800):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { color: var(--error); }
+html.dark :is(.bg-emerald-50, .bg-green-50, .bg-emerald-100, .bg-green-100):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { background-color: color-mix(in srgb, var(--success) 13%, var(--surface)); }
+html.dark :is(.text-emerald-600, .text-emerald-700, .text-emerald-800, .text-emerald-900, .text-green-700, .text-green-800):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { color: var(--success); }
+html.dark :is(.bg-amber-50, .bg-yellow-50, .bg-amber-100, .bg-yellow-100):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { background-color: color-mix(in srgb, var(--warning) 13%, var(--surface)); }
+html.dark :is(.text-amber-700, .text-amber-800, .text-amber-900, .text-yellow-700, .text-yellow-800):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { color: var(--warning); }
+html.dark :is(.bg-sky-50, .bg-blue-50):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { background-color: color-mix(in srgb, var(--info) 12%, var(--surface)); }
+html.dark :is(.text-sky-700, .text-sky-800, .text-blue-800, .text-blue-900):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { color: var(--info); }
 
 html.dark :is(input, textarea, select):not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [data-appearance-scope="authored"] *):not([data-preserve-control-colors]) {
   background-color: var(--field-background);
@@ -122,23 +124,23 @@ html.dark :is(input, textarea, select):not([type="checkbox"], [type="radio"], [t
   color: var(--foreground);
   caret-color: var(--foreground);
 }
-html.dark :is(input, textarea):not([data-appearance-scope="authored"] *)::placeholder {
+html.dark :is(input, textarea):not([data-appearance-scope="authored"] *):not([data-preserve-control-colors])::placeholder {
   color: var(--placeholder);
   -webkit-text-fill-color: var(--placeholder);
   opacity: 1;
 }
-html.dark :is(input, textarea, select):not([data-appearance-scope="authored"] *):focus-visible {
+html.dark :is(input, textarea, select):not([data-appearance-scope="authored"] *):not([data-preserve-control-colors]):focus-visible {
   outline-color: var(--focus-ring);
 }
-html.dark :is(input, textarea, select):not([data-appearance-scope="authored"] *)[aria-invalid="true"] {
+html.dark :is(input, textarea, select):not([data-appearance-scope="authored"] *):not([data-preserve-control-colors])[aria-invalid="true"] {
   border-color: var(--error);
 }
-html.dark input:not([data-appearance-scope="authored"] *):is(:-webkit-autofill, :autofill) {
+html.dark input:not([data-appearance-scope="authored"] *):not([data-preserve-control-colors]):is(:-webkit-autofill, :autofill) {
   -webkit-text-fill-color: var(--foreground);
   box-shadow: 0 0 0 1000px var(--field-background) inset;
   caret-color: var(--foreground);
 }
-html.dark :is([role="dialog"], dialog):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) {
+html.dark :is([role="dialog"], dialog):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
   color-scheme: dark;
 }
 html.dark .auth-transition-overlay {
@@ -225,6 +227,14 @@ html.dark [data-project-gradient-background="true"]::after {
 }
 
 /* Shared owner/application controls may be rendered beside an authored page. */
+:is([data-app-dialog], [data-app-surface="true"]) { color-scheme: light; }
+/* Explicit app fields also preserve autofill inside authored pages on browsers
+   that predate scoped CSS. The class belongs only to the field being painted. */
+.app-appearance-field:autofill {
+  -webkit-text-fill-color: var(--app-foreground, var(--foreground));
+  caret-color: var(--app-foreground, var(--foreground));
+  box-shadow: 0 0 0 100vmax var(--app-field-background, var(--field-background)) inset;
+}
 html.dark [data-app-surface="true"] {
   color-scheme: dark;
   color: var(--foreground);
@@ -240,6 +250,9 @@ html.dark :is([data-app-dialog], [data-app-surface="true"]) {
   --surface: var(--app-surface);
   --surface-alt: var(--app-surface-alt);
   --field-background: var(--app-field-background);
+  --surface-raised: var(--app-surface-raised);
+  --placeholder: var(--app-placeholder);
+  --focus-ring: var(--app-focus-ring);
   --foreground: var(--app-foreground);
   --muted-foreground: var(--app-muted-foreground);
   --border: var(--app-border);
@@ -269,24 +282,35 @@ html.dark :is(.owner-workspace-glass, .owner-workspace-glass-panel, .owner-works
   box-shadow: inset 0 1px 0 #ffffff08, 0 20px 60px #0000002e;
 }
 html.dark :is(.owner-workspace-glass, .owner-workspace-glass-panel)::before { background: radial-gradient(circle at top left, #49304e44, transparent 56%); }
-html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(.text-neutral-900, .text-neutral-800, .text-neutral-700, .text-gray-900, .text-gray-800, .text-gray-700, .text-slate-900, .text-slate-800, .text-slate-700, label) { color: var(--app-foreground); }
-html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(.text-neutral-600, .text-neutral-500, .text-gray-600, .text-gray-500, .text-slate-600, .text-slate-500) { color: var(--app-muted-foreground); }
-html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(.bg-white, .bg-neutral-50, .bg-gray-50, .bg-slate-50) { background-color: var(--app-surface-alt); }
-html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(.border-neutral-200, .border-gray-200, .border-gray-300, .border-slate-200, .border-slate-300) { border-color: var(--app-border); }
-html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(input, textarea, select):not([type="checkbox"], [type="radio"]) {
-  background-color: var(--app-field-background);
-  border-color: var(--app-input);
-  color: var(--app-foreground);
-}
-html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(input, textarea)::placeholder { color: var(--placeholder, var(--app-muted-foreground)); -webkit-text-fill-color: var(--placeholder, var(--app-muted-foreground)); }
-html.dark :is([data-app-dialog], [data-app-surface="true"]) :is(input, textarea, select, button, a):focus-visible {
-  outline: 2px solid var(--app-focus-ring);
-  outline-offset: 2px;
+/* Semantic dialog controls also work on iOS 17.0–17.3. Where supported,
+   scoped utility compatibility stops at every later authored boundary. */
+@scope (html.dark [data-app-dialog], html.dark [data-app-surface="true"]) to ([data-appearance-scope="authored"]) {
+  :scope :is(.text-neutral-900, .text-neutral-800, .text-neutral-700, .text-gray-900, .text-gray-800, .text-gray-700, .text-slate-900, .text-slate-800, .text-slate-700, label) { color: var(--app-foreground); }
+  :scope :is(.text-neutral-600, .text-neutral-500, .text-gray-600, .text-gray-500, .text-slate-600, .text-slate-500) { color: var(--app-muted-foreground); }
+  :scope :is(.bg-white, .bg-neutral-50, .bg-gray-50, .bg-slate-50) { background-color: var(--app-surface-alt); }
+  :scope :is(.border-neutral-200, .border-gray-200, .border-gray-300, .border-slate-200, .border-slate-300) { border-color: var(--app-border); }
+  :scope :is(input, textarea, select):not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]):not([data-preserve-control-colors]) {
+    background-color: var(--app-field-background);
+    border-color: var(--app-input);
+    color: var(--app-foreground);
+    -webkit-text-fill-color: var(--app-foreground);
+    caret-color: var(--app-foreground);
+  }
+  :scope :is(input, textarea)::placeholder { color: var(--placeholder, var(--app-muted-foreground)); -webkit-text-fill-color: var(--placeholder, var(--app-muted-foreground)); }
+  :scope input:not([data-preserve-control-colors]):autofill {
+    -webkit-text-fill-color: var(--app-foreground);
+    caret-color: var(--app-foreground);
+    box-shadow: 0 0 0 100vmax var(--app-field-background) inset;
+  }
+  :scope :is(input, textarea, select, button, a):focus-visible {
+    outline: 2px solid var(--app-focus-ring);
+    outline-offset: 2px;
+  }
 }
 
 /* Keep input edges stronger than decorative surface borders. */
 html.dark :is(input, textarea, select):not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [data-appearance-scope="authored"] *):not([data-preserve-control-colors]):not(:focus-visible):not([aria-invalid="true"]) { border-color: var(--input); }
-html.dark :is(input, textarea, select):not([data-appearance-scope="authored"] *):focus-visible {
+html.dark :is(input, textarea, select):not([data-appearance-scope="authored"] *):not([data-preserve-control-colors]):focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
@@ -474,7 +498,7 @@ html.dark :is(
   [class~="hover:border-[#dbe2ec]"]:hover,
   [class~="hover:border-[#ded8ff]"]:hover,
   [class~="hover:border-[#e1e8f1]"]:hover
-):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { border-color: var(--border); }
+):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { border-color: var(--border); }
 html.dark :is(
   [class~="bg-[#F3F0FA]"],
   [class~="bg-[#F8F5FF]"],
@@ -637,7 +661,7 @@ html.dark :is(
   [class~="hover:bg-[#ffe8b0]"]:hover,
   [class~="hover:bg-[#fff1f5]"]:hover,
   [class~="hover:bg-[#fffdf9]"]:hover
-):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: var(--surface); }
+):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { background-color: var(--surface); }
 html.dark :is(
   [class~="hover:text-[#7f8290]"]:hover,
   [class~="hover:text-[#a74920]"]:hover,
@@ -772,7 +796,7 @@ html.dark :is(
   [class~="text-[#d87338]"],
   [class~="text-[#ef4444]"],
   [class~="text-[#fca5a5]"]
-):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--muted-foreground); }
+):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { color: var(--muted-foreground); }
 html.dark :is(
   [class~="hover:text-[#171019]"]:hover,
   [class~="hover:text-[#1A1A1A]"]:hover,
@@ -895,7 +919,7 @@ html.dark :is(
   [class~="text-[#5D4736]"],
   [class~="text-[#5a3a11]"],
   [class~="text-[#5b359d]"]
-):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--foreground); }
+):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { color: var(--foreground); }
 html.dark :is(
   [class~="bg-[#b2a5d6]"],
   [class~="bg-[#c4b5fd]"],
@@ -915,7 +939,7 @@ html.dark :is(
   [class~="bg-[#f6d477]"],
   [class~="hover:bg-[#e7ddff]"]:hover,
   [class~="hover:bg-[#eae2ff]"]:hover
-):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { background-color: var(--surface-alt); }
+):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { background-color: var(--surface-alt); }
 html.dark :is(
   [class~="hover:text-[#4d3bca]"]:hover,
   [class~="hover:text-[#5a42b7]"]:hover,
@@ -1045,4 +1069,4 @@ html.dark :is(
   [class~="text-[#c4b5fd]"],
   [class~="text-[#d94764]"],
   [class~="text-[#e86b9a]"]
-):is(:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *), [data-app-dialog], [data-app-dialog] *, [data-app-surface="true"], [data-app-surface="true"] *) { color: var(--primary); }
+):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) { color: var(--primary); }

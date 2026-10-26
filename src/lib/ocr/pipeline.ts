@@ -1,6 +1,8 @@
 import { checkCreationAccess } from "@/lib/creation-access-server";
 import { parseEventDates } from "@/lib/event-date-parser";
 import { extractSportsSchedule, hasSportsScheduleText } from "./sports-schedule.ts";
+import { extractSchoolMemo } from "./school-memo.ts";
+import { isSchoolMemoText } from "../school-memo.ts";
 import { scanScheduleFromOcr } from "../scan-schedule.ts";
 import { randomUUID } from "node:crypto";
 import { getServerSession } from "next-auth";
@@ -95,7 +97,7 @@ import {
   splitVenueFromAddress,
   stripJoinUsLanguage,
 } from "@/lib/ocr/text";
-import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
+import { createPdfPageRasterizer, extractPdfTextWithPdfJs, rasterizePdfPageToPng } from "@/lib/pdf-raster";
 import { normalizeThumbnailFocus } from "@/lib/thumbnail-focus";
 import { validateUploadFileMeta } from "@/lib/upload-config";
 import {
@@ -437,6 +439,23 @@ export async function handleOcrRequest(request: Request) {
     const inputBuffer: Buffer = file ? Buffer.from(await file.arrayBuffer()) : Buffer.alloc(0);
     let ocrBuffer: Buffer = inputBuffer;
     let visionMime = mime || "application/octet-stream";
+    // The first page remains the artwork source. A school memo's dates may be
+    // anywhere in the PDF, so retain its complete text/page inventory separately.
+    const pdfDocuments = await Promise.all(files.flatMap((item, index) => {
+      const source = item as File;
+      if (!/pdf/i.test(source.type)) return [];
+      return [(async () => {
+        const bytes = index === 0 ? inputBuffer : Buffer.from(await source.arrayBuffer());
+        const extracted = await extractPdfTextWithPdfJs(bytes);
+        return { bytes, extracted };
+      })()];
+    }));
+    if (pdfDocuments.reduce((count, document) => count + (document.extracted.pageCount || 0), 0) > 20)
+      return corsJson(request, { error: "Choose up to 20 document pages per upload, or split the PDF into smaller files." }, { status: 413 });
+    const completePdfText = pdfDocuments.length === files.length && pdfDocuments.every(({ extracted }) =>
+      Boolean(extracted.pageCount) && extracted.pages.length === extracted.pageCount && extracted.pages.every((page) => page.text.trim().length >= 30))
+      ? pdfDocuments.map(({ extracted }) => extracted.text).join("\n\n") : "";
+    const nativeSchoolMemoText = isSchoolMemoText(completePdfText) ? completePdfText : "";
 
     if (/pdf/i.test(mime)) {
       const pagePng = await rasterizePdfPageToPng(inputBuffer, 0);
@@ -496,8 +515,8 @@ export async function handleOcrRequest(request: Request) {
     stage.preprocessMs = Date.now() - preprocessStartedAt;
 
     let llmImage: any = null;
-    let raw = file ? "" : sourceText;
-    let ocrSource = file ? "none" : "provided-text";
+    let raw = nativeSchoolMemoText || (file ? "" : sourceText);
+    let ocrSource = nativeSchoolMemoText ? "pdf-text" : file ? "none" : "provided-text";
     let lastOcrFailureCode: string | null = null;
     let providerFailureCode: string | null = null;
     const fallbackOcrModel = resolveOcrModel(true);
@@ -702,7 +721,34 @@ export async function handleOcrRequest(request: Request) {
       );
     }
 
+    if (file && isSchoolMemoText(raw) && !nativeSchoolMemoText) {
+      for (const document of pdfDocuments) {
+        const pageCount = document.extracted.pageCount;
+        if (!pageCount) throw new Error("The memo's complete page count could not be read. Please upload photos of every page.");
+        const rasterizer = createPdfPageRasterizer(document.bytes);
+        try {
+          for (let index = 1; index < pageCount; index++) {
+            let text = document.extracted.pages.find((page) => page.num === index + 1)?.text || "";
+            if (text.trim().length < 30) {
+              const timeout = Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 3000));
+              if (timeout < 3000) throw new Error("The memo could not be read completely. Please upload it in smaller sections.");
+              const page = await rasterizer.rasterize(index);
+              if (!page) throw new Error(`Memo page ${index + 1} could not be read. Please upload a photo of that page.`);
+              text = await runOpenAiTextCandidate(page, "image/png", timeout, ocrModel);
+            }
+            raw += `\n\n${text}`;
+          }
+        } finally { await rasterizer.dispose(); }
+      }
+    }
+    if (raw.length > 120_000) throw new Error("The memo has too much text for one upload. Please split it into smaller sections.");
     if (file && sourceText) raw += `\n\nHOST-AUTHORED CORRECTIONS AND INSTRUCTIONS (factual corrections override source; visual styling stays out of guest wording):\n${sourceText}`;
+    const schoolMemoDetected = isSchoolMemoText(raw);
+    const memoScheduleStartedAt = Date.now();
+    const memoTimezone = String(formData.get("timezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+    const schoolMemoSchedule = schoolMemoDetected
+      ? await extractSchoolMemo(raw, memoTimezone, Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 1000))) : null;
+    if (schoolMemoDetected) stage.scheduleMs += Date.now() - memoScheduleStartedAt;
     const lines = raw
       .split("\n")
       .map((line) => line.trim())
@@ -1599,15 +1645,20 @@ export async function handleOcrRequest(request: Request) {
       rsvpDeadline: deferredRsvpDeadline,
       sourceText: raw,
     });
+    if (schoolMemoSchedule) {
+      finalTitle = schoolMemoSchedule.title;
+      finalStart = null;
+      finalEnd = null;
+    }
     const scanPersonalization = buildScanPersonalization({
       title: finalTitle,
-      category: llmImage?.category,
+      category: schoolMemoDetected ? "General Events" : llmImage?.category,
       sourceText: raw,
       start: toLocalNoZ(finalStart),
       personName: llmImage?.personName || llmImage?.birthdayName,
       personBirthDate: llmImage?.personBirthDate,
       personAge: llmImage?.personAge ?? llmImage?.birthdayAge,
-      artTheme: llmImage?.artTheme,
+      artTheme: schoolMemoDetected ? "school event" : llmImage?.artTheme,
     });
     // The reliable brief is ready before deep schedules, location enrichment and skin work.
     scanAttemptId = scanAttemptId || `scan-${randomUUID()}`;
@@ -1617,7 +1668,7 @@ export async function handleOcrRequest(request: Request) {
     stage.sessionMs = Date.now() - sessionStartedAt;
     earlyArtwork = file ? startEarlyScanArtwork({
       userId: artworkUserId, scanAttemptId, title: finalTitle,
-      sourceKind: llmImage?.scanSourceKind || "unknown", profile: scanPersonalization,
+      sourceKind: schoolMemoDetected ? "paperwork" : llmImage?.scanSourceKind || "unknown", profile: scanPersonalization,
     }) : null;
     if (earlyArtwork) {
       const work = earlyArtwork.done;
@@ -1628,14 +1679,14 @@ export async function handleOcrRequest(request: Request) {
     const fieldsGuess = {
       title: finalTitle,
       scanPersonalization,
-      scanSourceKind: llmImage?.scanSourceKind || "unknown",
+      scanSourceKind: schoolMemoDetected ? "paperwork" : llmImage?.scanSourceKind || "unknown",
       start: toLocalNoZ(finalStart),
       end: toLocalNoZ(finalEnd),
-      timeFound: rawHasExplicitTime || parsedHadExplicitTime,
+      timeFound: !schoolMemoDetected && (rawHasExplicitTime || parsedHadExplicitTime),
       location: normalizedFieldLocation.location,
       venue: normalizedFieldLocation.venue,
       description,
-      timezone: "",
+      timezone: schoolMemoSchedule?.timezone || "",
       rsvp: normalizedFieldRsvp.rsvp,
       rsvpUrl: normalizedFieldRsvp.rsvpUrl,
       rsvpDeadline: normalizedFieldRsvp.rsvpDeadline,
@@ -1670,7 +1721,7 @@ export async function handleOcrRequest(request: Request) {
     const hasTimeRange =
       /\d{1,2}:\d{2}\s*[-–—]\s*\d{1,2}:\d{2}/.test(raw) || /\b\d{1,2}:\d{2}\b/.test(raw);
     const hasPracticeKeyword = /\b(practice|training)\b/i.test(raw);
-    const looksLikePracticeSchedule = hasPracticeKeyword && hasTimeRange && dayMentions.length >= 1;
+    const looksLikePracticeSchedule = !schoolMemoDetected && hasPracticeKeyword && hasTimeRange && dayMentions.length >= 1;
 
     if (looksLikePracticeSchedule) {
       let practiceTz = tz;
@@ -1891,7 +1942,7 @@ export async function handleOcrRequest(request: Request) {
       }
     }
 
-    if (hasGymnasticsScheduleText(raw) && (gymOnly || forceLLM)) {
+    if (!schoolMemoDetected && hasGymnasticsScheduleText(raw) && (gymOnly || forceLLM)) {
       const scheduleStartedAt = Date.now();
       const scheduleTimeoutMs = clampTimeoutMs(
         Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 1_500)),
@@ -1922,7 +1973,7 @@ export async function handleOcrRequest(request: Request) {
           return { ...event, category: "Sport Events" };
         });
       }
-    } else if (hasGymnasticsScheduleText(raw)) {
+    } else if (!schoolMemoDetected && hasGymnasticsScheduleText(raw)) {
       const heuristic = extractGymnasticsScheduleHeuristics({
         raw,
         lines,
@@ -1956,7 +2007,7 @@ export async function handleOcrRequest(request: Request) {
     ]
       .filter(Boolean)
       .join("\n");
-    let category: string | null = detectCategory(categoryDetectionText);
+    let category: string | null = schoolMemoDetected ? "General Events" : detectCategory(categoryDetectionText);
     if (practiceSchedule.detected) category = "Sport Events";
     const normalizedOpenHouse = file ? await uploadOpenHouseVisualAssets({
       imageBytes: colorBuffer,
@@ -1970,21 +2021,21 @@ export async function handleOcrRequest(request: Request) {
           : null,
     }) : null;
 
-    const isPickleballOcrEvent = isPickleballOcrSkinCandidate({
+    const isPickleballOcrEvent = !schoolMemoDetected && isPickleballOcrSkinCandidate({
       category,
       title: fieldsGuess.title || finalTitle,
       description: fieldsGuess.description,
       ocrText: raw,
       activities: llmImage?.activities,
     });
-    const isFootballOcrEvent = isFootballOcrSkinCandidate({
+    const isFootballOcrEvent = !schoolMemoDetected && isFootballOcrSkinCandidate({
       category,
       title: fieldsGuess.title || finalTitle,
       description: fieldsGuess.description,
       ocrText: raw,
       activities: llmImage?.activities,
     });
-    const isBasketballOcrEvent = isBasketballOcrSkinCandidate({
+    const isBasketballOcrEvent = !schoolMemoDetected && isBasketballOcrSkinCandidate({
       category,
       title: fieldsGuess.title || finalTitle,
       description: fieldsGuess.description,
@@ -2129,8 +2180,8 @@ export async function handleOcrRequest(request: Request) {
       });
     }
 
-    let scanSchedule = scanScheduleFromOcr({ practiceSchedule, schedule, events, fieldsGuess });
-    if (hasSportsScheduleText(raw)) {
+    let scanSchedule = schoolMemoSchedule || scanScheduleFromOcr({ practiceSchedule, schedule, events, fieldsGuess });
+    if (!schoolMemoDetected && hasSportsScheduleText(raw)) {
       const scheduleTimeout = Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 1000));
       const extractedSchedule = await extractSportsSchedule(raw, tz, scheduleTimeout);
       if (extractedSchedule) scanSchedule = extractedSchedule;

@@ -1,7 +1,6 @@
 .composer {
   max-width: none;
 }
-:global(html.dark) .composer .toolTabs button[aria-pressed="true"] { color: var(--primary-foreground); }
 .closeTools {
   display: none;
 }
@@ -67,7 +66,7 @@
 }
 .toolTabs button[aria-pressed="true"] {
   background: var(--editor-accent);
-  color: var(--signup-on-accent, white);
+  color: var(--editor-on-accent);
 }
 .library {
   display: grid;
@@ -132,6 +131,11 @@
 }
 .content {
   padding: clamp(0.75rem, 2vw, 1.5rem);
+  color: var(--editor-ink);
+}
+:global(html.dark) .content:not([data-custom-theme="true"]),
+:global(html.dark) .inlineDetails {
+  color-scheme: dark;
 }
 .content[data-custom-theme="true"] {
   --editor-paper: var(--signup-surface);
@@ -139,7 +143,9 @@
   --editor-muted: var(--signup-muted);
   --editor-line: var(--signup-border);
   --editor-accent: var(--signup-accent);
+  --editor-on-accent: var(--signup-on-accent);
   --editor-soft: var(--signup-soft);
+  color-scheme: var(--signup-color-scheme, light);
 }
 .content[data-signup-board="outline"] .section { border-radius: 1.5rem; }
 .content[data-signup-board="outline"] .slot { border-radius: .75rem; background: transparent; }
@@ -255,7 +261,7 @@
 }
 .editableHeader {
   --inline-edit-ink: var(--signup-text);
-  --inline-edit-paper: var(--editor-paper);
+  --inline-edit-paper: var(--signup-surface);
 }
 .editableHeader h1 > span:has(> button) {
   display: inline;
@@ -310,7 +316,7 @@
   border-radius: 0.5rem;
 }
 .inlineActions button:first-child {
-  color: var(--signup-on-accent, white);
+  color: var(--editor-on-accent);
   background: var(--editor-accent);
 }
 .field {
@@ -463,6 +469,13 @@
   gap: 0.5rem;
   align-items: center;
 }
+.footer[data-auth-publish="true"] {
+  flex-wrap: wrap;
+}
+.footer[data-auth-publish="true"] .footerActions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 @media (max-width: 1100px) {
   .sidebar[data-mobile-open="false"] .toolBody {
     display: none;
@@ -529,6 +542,16 @@
   }
   .footerActions {
     margin-left: auto;
+  }
+  .footer[data-auth-publish="true"] .footerActions {
+    flex-basis: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    margin-left: 0;
+  }
+  .footer[data-auth-publish="true"] .footerActions > button {
+    width: 100%;
+    white-space: normal;
   }
   .eventDetails > summary span:last-child {
     display: block;

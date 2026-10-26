@@ -378,6 +378,7 @@ export async function POST(req: Request) {
     const rawTitle = (body.title as string) || "Event";
     const title = String(rawTitle).slice(0, 300);
     const data = body.data ?? {};
+    if (data && typeof data === "object") delete data.memoCalendarSync;
     const creationDenied = await checkEventCreationAccess(userId, data);
     if (creationDenied) return creationDenied;
     const dataJson = JSON.stringify(data);

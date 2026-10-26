@@ -937,6 +937,7 @@ export default function Dashboard({
         }
         if (sourceText.trim()) form.append("text", sourceText);
         form.append("scanAttemptId", scanAttemptId);
+        form.append("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
 
         // Add timeout handling for mobile/network issues
         const controller = new AbortController();
@@ -1691,7 +1692,7 @@ export default function Dashboard({
         const payload: any = {
           title: eventInput.title || "Event",
           data: {
-            ...(ocrMeta?.scanSchedule ? { scanSchedule: ocrMeta.scanSchedule, scheduleItems: ocrMeta.scanSchedule.items, status: ocrMeta.status || "draft", draftStatus: ocrMeta.status || "draft", scheduleLine: ocrMeta.scanSchedule.timeframe || `${ocrMeta.scanSchedule.items.length} sessions and games` } : {}),
+            ...(ocrMeta?.scanSchedule ? { scanSchedule: ocrMeta.scanSchedule, scheduleItems: ocrMeta.scanSchedule.items, status: ocrMeta.status || "draft", draftStatus: ocrMeta.status || "draft", scheduleLine: scanScheduleHistoryFields(ocrMeta.scanSchedule).scheduleLine } : {}),
             ownership: historyOwnership,
             invitedFromScan: detectedSourceIntent === "received_invite",
             sourceContext: {

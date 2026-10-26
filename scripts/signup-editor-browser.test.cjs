@@ -31,6 +31,7 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
       module: { rules: [
         { test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") },
         { test: /\.css$/, use: [require.resolve("next/dist/build/webpack/loaders/next-style-loader"), { loader: require.resolve("next/dist/build/webpack/loaders/css-loader/src"), options: {
+          url: false,
           modules: { getLocalIdent: (context, _template, name) => `${path.basename(context.resourcePath, ".module.css")}_${name}` },
           postcss: async () => ({ postcss: require("postcss") }),
         } }] },

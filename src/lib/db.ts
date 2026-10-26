@@ -3302,6 +3302,10 @@ async function persistEventPublicSlug(params: {
     }
 
     const safeData = params.data ? sanitizeJsonValueForPostgres(params.data) : null;
+    if (safeData) {
+      delete safeData.memoCalendarSync;
+      if (current.data?.memoCalendarSync) safeData.memoCalendarSync = current.data.memoCalendarSync;
+    }
     if (safeData) assertPersistableEventMedia(safeData);
     if (safeData) normalizeCanonicalStartFields(safeData);
     const res = await client.query<EventHistoryRow>(
@@ -3667,7 +3671,7 @@ export async function updateEventHistoryDataMerge(
   assertPersistableEventMedia(safePatch);
   const res = await query<EventHistoryRow>(
     `update event_history
-     set data = coalesce(data, '{}'::jsonb) || $2::jsonb
+     set data = coalesce(data, '{}'::jsonb) || ($2::jsonb - 'memoCalendarSync')
      where id = $1
      returning id, user_id, title, data, public_slug, created_at`,
     [id, JSON.stringify(safePatch)],
@@ -3696,7 +3700,8 @@ export async function updateEventHistoryData(
   normalizeCanonicalStartFields(safeData);
   const res = await query<EventHistoryRow>(
     `update event_history
-     set data = $2::jsonb
+     set data = ($2::jsonb - 'memoCalendarSync') ||
+       CASE WHEN data ? 'memoCalendarSync' THEN jsonb_build_object('memoCalendarSync', data->'memoCalendarSync') ELSE '{}'::jsonb END
      where id = $1
      returning id, user_id, title, data, public_slug, created_at`,
     [id, JSON.stringify(safeData)],

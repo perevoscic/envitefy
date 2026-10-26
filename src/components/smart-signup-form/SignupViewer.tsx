@@ -299,7 +299,7 @@ const SignupViewer: React.FC<Props> = ({
   });
   const inlineError = (field: string) =>
     fieldError(field) ? (
-      <p id={`signup-error-${field}`} className="mt-1 text-sm text-red-700">
+      <p id={`signup-error-${field}`} className="mt-1 text-sm text-[var(--signup-error-text)]">
         {fieldError(field)}
       </p>
     ) : null;
@@ -563,7 +563,7 @@ const SignupViewer: React.FC<Props> = ({
       {feedback && !isTestPreview && (
         <div
           role="status"
-          className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600"
+          className="rounded-md border border-emerald-500/40 bg-[var(--signup-soft)] px-3 py-2 text-sm text-[var(--signup-success-text)]"
         >
           {feedback}
         </div>
@@ -572,14 +572,14 @@ const SignupViewer: React.FC<Props> = ({
       {error && (
         <div
           role="alert"
-          className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600"
+          className="rounded-md border border-red-500/40 bg-[var(--signup-soft)] px-3 py-2 text-sm text-[var(--signup-error-text)]"
         >
           {error}
         </div>
       )}
 
       {editingResponse && (
-        <div className="rounded-md border border-[var(--signup-accent)]/40 bg-blue-500/10 px-3 py-2 text-sm text-blue-600 mb-4">
+        <div className="rounded-md border border-[var(--signup-border)] bg-[var(--signup-soft)] px-3 py-2 text-sm text-[var(--signup-info-text)] mb-4">
           <div className="flex items-center justify-between">
             <span>
               Editing sign-up for <strong>{editingResponse.name}</strong>
@@ -600,7 +600,7 @@ const SignupViewer: React.FC<Props> = ({
           type="button"
           onClick={refresh}
           disabled={refreshing || loading}
-          className="text-sm underline text-[var(--signup-accent)]"
+          className="text-sm underline text-[var(--signup-accent-text)]"
         >
           {refreshing ? "Refreshing…" : "Refresh availability"}
         </button>
@@ -718,7 +718,7 @@ const SignupViewer: React.FC<Props> = ({
                             {myResponse?.slots?.some(
                               (entry) => entry.sectionId === section.id && entry.slotId === slot.id,
                             ) && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--signup-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--signup-accent)]">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--signup-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--signup-accent-text)]">
                                 {myResponse?.status === "waitlisted"
                                   ? "Waitlisted — not confirmed"
                                   : "Confirmed"}
@@ -885,7 +885,7 @@ const SignupViewer: React.FC<Props> = ({
                       <div key={question.id}>
                         <label className="block text-sm font-medium text-[var(--signup-text)] mb-2">
                           {question.prompt}
-                          {question.required && <span className="ml-1 text-red-500">*</span>}
+                          {question.required && <span className="ml-1 text-[var(--signup-error-text)]">*</span>}
                         </label>
                         {question.multiline ? (
                           <textarea
@@ -984,7 +984,7 @@ const SignupViewer: React.FC<Props> = ({
             </div>
           )}
           {error && (
-            <p role="alert" className="text-sm text-red-700">
+            <p role="alert" className="text-sm text-[var(--signup-error-text)]">
               {error}
             </p>
           )}
@@ -1020,7 +1020,7 @@ const SignupViewer: React.FC<Props> = ({
               )}
               <button
                 type="submit"
-                className="rounded-lg bg-[var(--signup-accent)] px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:shadow-xl disabled:opacity-60"
+                className="rounded-lg bg-[var(--signup-accent)] px-5 py-2 text-sm font-bold text-[var(--signup-on-accent)] shadow-lg transition hover:shadow-xl disabled:opacity-60"
                 disabled={loading}
               >
                 {loading
@@ -1048,9 +1048,9 @@ const SignupViewer: React.FC<Props> = ({
             <span
               className={
                 myResponse.status === "confirmed"
-                  ? "text-emerald-600"
+                  ? "text-[var(--signup-success-text)]"
                   : myResponse.status === "waitlisted"
-                    ? "text-amber-600"
+                    ? "text-[var(--signup-warning-text)]"
                     : "text-[var(--signup-text)]"
               }
             >
@@ -1079,7 +1079,7 @@ const SignupViewer: React.FC<Props> = ({
               </button>
               <button
                 type="button"
-                className="min-h-11 rounded-lg border px-4 text-red-700"
+                className="min-h-11 rounded-lg border px-4 text-[var(--signup-error-text)]"
                 disabled={loading}
                 onClick={handleCancel}
               >
@@ -1113,7 +1113,7 @@ const SignupViewer: React.FC<Props> = ({
           aria-modal="true"
         >
           <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmOpen(false)} />
-          <div data-appearance-scope="app" data-app-dialog className="relative z-10 w-full max-w-md rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] shadow-2xl">
+          <div data-appearance-scope="app" data-app-dialog className="relative z-10 w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] shadow-2xl">
             <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
@@ -1125,19 +1125,19 @@ const SignupViewer: React.FC<Props> = ({
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="h-6 w-6 text-emerald-600"
+                    className="h-6 w-6 text-[var(--success)]"
                   >
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                     <polyline points="22 4 12 14.01 9 11.01" />
                   </svg>
                 </div>
                 <div className="flex-1 space-y-2">
-                  <h3 className="text-lg font-bold text-[var(--signup-text)]">
+                  <h3 className="text-lg font-bold text-[var(--foreground)]">
                     {resultStatus === "waitlisted"
                       ? "You're on the waitlist"
                       : "Sign-up confirmed!"}
                   </h3>
-                  <p className="text-sm text-[var(--signup-muted)]">
+                  <p className="text-sm text-[var(--muted-foreground)]">
                     {resultStatus === "waitlisted" ? (
                       <>
                         All your selections are waitlisted. Nothing is reserved yet. You can edit
@@ -1156,7 +1156,7 @@ const SignupViewer: React.FC<Props> = ({
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  className="rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-5 py-2.5 text-sm font-semibold text-[var(--signup-text)] hover:bg-[var(--signup-page)] transition-colors"
+                  className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-2.5 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--surface-alt)] transition-colors"
                   onClick={() => setConfirmOpen(false)}
                 >
                   Got it
@@ -1173,7 +1173,7 @@ const SignupViewer: React.FC<Props> = ({
           aria-modal="true"
         >
           <div className="absolute inset-0 bg-black/40" onClick={() => setErrorOpen(false)} />
-          <div data-appearance-scope="app" data-app-dialog className="relative z-10 w-full max-w-md rounded-2xl border border-red-300 bg-[var(--signup-surface)] shadow-2xl">
+          <div data-appearance-scope="app" data-app-dialog className="relative z-10 w-full max-w-md rounded-2xl border border-red-300 bg-[var(--surface)] text-[var(--foreground)] shadow-2xl">
             <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
@@ -1185,7 +1185,7 @@ const SignupViewer: React.FC<Props> = ({
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="h-6 w-6 text-red-600"
+                    className="h-6 w-6 text-[var(--error)]"
                   >
                     <circle cx="12" cy="12" r="10" />
                     <line x1="12" y1="8" x2="12" y2="12" />
@@ -1193,14 +1193,14 @@ const SignupViewer: React.FC<Props> = ({
                   </svg>
                 </div>
                 <div className="flex-1 space-y-2">
-                  <h3 className="text-lg font-bold text-[var(--signup-text)]">Sign-up failed</h3>
-                  <p className="text-sm text-[var(--signup-muted)]">{error}</p>
+                  <h3 className="text-lg font-bold text-[var(--foreground)]">Sign-up failed</h3>
+                  <p className="text-sm text-[var(--muted-foreground)]">{error}</p>
                 </div>
               </div>
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  className="rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-5 py-2.5 text-sm font-semibold text-[var(--signup-text)] hover:bg-[var(--signup-page)] transition-colors"
+                  className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-2.5 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--surface-alt)] transition-colors"
                   onClick={() => {
                     setErrorOpen(false);
                     setError(null);

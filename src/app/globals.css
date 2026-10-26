@@ -1074,45 +1074,21 @@ input[type="submit"][disabled] {
 }
 
 /* Override browser autofill styles to ensure text is always visible */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
+input:not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *):not([data-preserve-control-colors]):-webkit-autofill {
   -webkit-text-fill-color: var(--foreground) !important;
   -webkit-box-shadow: 0 0 0 30px var(--surface) inset !important;
   box-shadow: 0 0 0 30px var(--surface) inset !important;
   transition: background-color 5000s ease-in-out 0s;
 }
 
-/* Ensure password text is visible when revealed */
-input[type="text"],
-input[type="email"],
-input[type="password"] {
+/* Application fields follow appearance; template fields own their ink/paper. */
+input:is([type="text"], [type="email"], [type="password"]):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *):not([data-preserve-control-colors]) {
   color: var(--foreground) !important;
   -webkit-text-fill-color: var(--foreground) !important;
 }
 
-/* Ensure placeholders are styled correctly with gray color - must override input color rules */
-input[type="text"]::placeholder,
-input[type="text"]::-webkit-input-placeholder,
-input[type="text"]::-moz-placeholder,
-input[type="text"]:-ms-input-placeholder,
-input[type="email"]::placeholder,
-input[type="email"]::-webkit-input-placeholder,
-input[type="email"]::-moz-placeholder,
-input[type="email"]:-ms-input-placeholder,
-input[type="password"]::placeholder,
-input[type="password"]::-webkit-input-placeholder,
-input[type="password"]::-moz-placeholder,
-input[type="password"]:-ms-input-placeholder,
-input::placeholder,
-input::-webkit-input-placeholder,
-input::-moz-placeholder,
-input:-ms-input-placeholder,
-textarea::placeholder,
-textarea::-webkit-input-placeholder,
-textarea::-moz-placeholder,
-textarea:-ms-input-placeholder {
+/* Keep application placeholders readable without overriding authored fields. */
+:is(input, textarea):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *):not([data-preserve-control-colors])::placeholder {
   color: var(--placeholder, #9ca3af) !important;
   opacity: 1 !important;
   -webkit-text-fill-color: var(--placeholder, #9ca3af) !important;

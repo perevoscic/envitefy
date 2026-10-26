@@ -200,3 +200,28 @@ test("classification rejects malformed model fields instead of trusting a partia
     else process.env.OPENAI_API_KEY = savedKey;
   }
 });
+
+test("school memos bypass holiday model guesses and named holiday evidence reaches the result", async () => {
+  const savedKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = "offline-classification-key";
+  let calls = 0;
+  let evidence = "School New Year's Eve Celebration";
+  createClassifyDeps.client = (() => ({ chat: { completions: { create: async () => {
+    calls++;
+    return { choices: [{ finish_reason: "stop", message: { content: JSON.stringify({ category: "holidays-seasonal", sport: "none", occasion: "new-years-eve", occasionEvidence: evidence, confident: true, alternatives: [] }) } }] };
+  } } } })) as any;
+  try {
+    const memo = await classifyCreateSource({ text: "Weekly Memo\nSchool classes\nBible test Friday\nTurkey Trot November 16" }, signal());
+    expect(memo).toMatchObject({ category: "general", confidence: "high" });
+    expect(calls).toBe(0);
+    const invitation = await classifyCreateSource({ text: "School New Year's Eve Celebration\nDecember 31 at 6 PM" }, signal());
+    expect(invitation).toMatchObject({ category: "holidays-seasonal", occasion: "new-years-eve", confidence: "high", occasionEvidence: evidence });
+    expect(calls).toBe(1);
+    evidence = "New Year's Eve";
+    const unsupported = await classifyCreateSource({ text: "Team night out" }, signal());
+    expect(unsupported).toMatchObject({ category: "holidays-seasonal", occasion: null, confidence: "low" });
+  } finally {
+    if (savedKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = savedKey;
+  }
+});

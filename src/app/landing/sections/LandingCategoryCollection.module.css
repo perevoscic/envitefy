@@ -10,6 +10,11 @@
   position: absolute;
   top: 0;
 }
+/* Start the collection at the viewport edge instead of leaving the previous section visible. */
+.collection.collection,
+.collection > .anchor {
+  scroll-margin-top: 0;
+}
 .stage {
   box-sizing: border-box;
   padding: clamp(3rem, 6vw, 6rem) clamp(1.4rem, 3vw, 4rem);
@@ -224,6 +229,12 @@
 }
 
 /* Fragment navigation opens the complete collection; ordinary scrolling keeps its sequence. */
+.collection:target .stage,
+.collection:has(> .anchor:target) .stage {
+  justify-content: flex-start;
+  /* Keep the introduction directly below the navigation, including keyboard activation. */
+  padding-top: calc(6rem + env(safe-area-inset-top, 0px));
+}
 .collection:target .card,
 .collection:has(> .anchor:target) .card {
   --category-step: 1;

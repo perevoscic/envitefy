@@ -89,6 +89,9 @@ export default function AppShell({
     (status === "loading" && hasServerSession) ||
     (status === "loading" && wasAuthenticated.current);
   const onMarketing = isMarketingPath(pathname);
+  const isPublicSignupEditor = isPublicTemplatePath(pathname) &&
+    templateCategoryForPath(pathname)?.slug === "signup-forms" &&
+    pathname.replace(/\/+$/, "").endsWith("/customize");
   const isStudioCardShare = isStudioCardSharePath(pathname);
   const isCreateLanding = ["/envitefy-create", "/envitefy-concierge"].includes(
     pathname.replace(/\/+$/, ""),
@@ -151,7 +154,21 @@ export default function AppShell({
       <CoHostInvitationProvider active={showAppChrome}>
         {process.env.NODE_ENV === "development" ? <MobileOverflowReporter /> : null}
         {authTransitionMessage ? <AuthTransitionOverlay /> : null}
-        {showAppChrome ? (
+        {isPublicSignupEditor ? (
+          // Keep the editor mounted while account creation adds the signed-in
+          // navigation. Its pending save and chosen leave destination live here.
+          <MenuProvider>
+            {showAppChrome ? <LeftSidebar /> : null}
+            <MainContentWrapper
+              isAuthenticated={showAppChrome}
+              reserveSidebarSpace={showAppChrome}
+              enableProjectBackground={true}
+            >
+              <div className="min-h-0 flex-1 min-w-0">{children}</div>
+              {isEventPreview ? null : <ConditionalFooter />}
+            </MainContentWrapper>
+          </MenuProvider>
+        ) : showAppChrome ? (
           <MenuProvider>
             <LeftSidebar />
             <MainContentWrapper

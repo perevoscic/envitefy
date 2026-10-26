@@ -240,10 +240,10 @@ test("public template previews stay available but saved editor data never surviv
   const ts = require("typescript");
   const code = ts.transpileModule(require("node:fs").readFileSync("src/components/event-create/CreationAccessBoundary.tsx", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
   const render = (status, email, eventId) => {
-    let stateIndex = 0;
+    let stateIndex = 0, refIndex = 0;
     const existing = { id: "saved", identity: "owner@example.com", allowed: true };
     const stubs = {
-      react: { ...React, useState: (value) => [stateIndex++ === 0 ? existing : value, () => {}], useRef: () => ({ current: "owner@example.com:event_page:weddings:saved" }), useEffect: () => {}, useCallback: (callback) => callback },
+      react: { ...React, useState: (value) => [stateIndex++ === 0 ? existing : value, () => {}], useRef: (value) => ({ current: refIndex++ === 0 ? "owner@example.com:event_page:weddings:saved" : value }), useEffect: () => {}, useCallback: (callback) => callback },
       "next-auth/react": { useSession: () => ({ status, data: email ? { user: { email } } : null }) },
       "next/link": { __esModule: true, default: ({ children, ...props }) => React.createElement("a", props, children) },
       "@/hooks/useCreationAccess": { useCreationAccess: () => ({ access: access.resolveCreationAccess({ policy: "restricted", categories: [], products: [] }), loading: false, error: "", reload: async () => {} }) },

@@ -1,6 +1,5 @@
-.editor { --editor-ink: var(--signup-text, #352f2a); --editor-muted: var(--signup-muted, #736b62); --editor-line: var(--signup-border, #dfd8ce); --editor-paper: var(--signup-surface, #fffdf9); --editor-accent: var(--signup-accent, #352f2a); --editor-soft: var(--signup-soft, #f1ede6); color: var(--editor-ink); background: var(--signup-page, transparent); font-family: var(--signup-body-font, system-ui, sans-serif); max-width: 1120px; margin-inline: auto; }
-:global(html.dark) .editor { --editor-ink: var(--foreground); --editor-muted: var(--muted-foreground); --editor-line: var(--border); --editor-paper: var(--surface); --editor-accent: var(--primary); --editor-soft: var(--surface-alt); background: var(--background); }
-:global(html.dark) .editor :is(.primary, .segmented button[aria-pressed=true]) { color: var(--primary-foreground); }
+.editor { --editor-ink: var(--signup-text, #352f2a); --editor-muted: var(--signup-muted, #736b62); --editor-line: var(--signup-border, #dfd8ce); --editor-paper: var(--signup-surface, #fffdf9); --editor-accent: var(--signup-accent, #352f2a); --editor-on-accent: var(--signup-on-accent, white); --editor-soft: var(--signup-soft, #f1ede6); color: var(--editor-ink); background: var(--signup-page, transparent); font-family: var(--signup-body-font, system-ui, sans-serif); max-width: 1120px; margin-inline: auto; }
+:global(html.dark) .editor { --editor-ink: var(--foreground); --editor-muted: var(--muted-foreground); --editor-line: var(--border); --editor-paper: var(--surface); --editor-accent: var(--primary); --editor-on-accent: var(--primary-foreground); --editor-soft: var(--surface-alt); background: var(--background); }
 :global(html.dark) .editor .primary:disabled { background: var(--surface-raised); border-color: var(--border); color: var(--muted-foreground); }
 :global(html.dark) .editor .error { background: color-mix(in srgb, var(--error) 12%, var(--surface)); border-color: var(--error); color: var(--error); }
 .editor button, .editor input, .editor select, .editor textarea { font: inherit; }
@@ -31,10 +30,10 @@
 .details[open] > :not(summary) { margin-top: 1rem; }
 .segmented { display: flex; flex-wrap: wrap; gap: .5rem; }
 .segmented button { min-height: 44px; border: 1px solid var(--editor-line); border-radius: .6rem; padding: .6rem .9rem; background: var(--editor-paper); font-size: .8rem; }
-.segmented button[aria-pressed=true] { background: var(--editor-accent); color: var(--signup-on-accent, white); border-color: var(--editor-accent); }
+.segmented button[aria-pressed=true] { background: var(--editor-accent); color: var(--editor-on-accent); border-color: var(--editor-accent); }
 .footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--editor-line); padding: 1.3rem 0; margin-top: 2rem; }
 .primary, .secondary { min-height: 46px; padding: .7rem 1.3rem; border-radius: .65rem; font-size: .875rem; font-weight: 600; display: inline-flex; gap: .5rem; align-items: center; justify-content: center; }
-.primary { background: var(--editor-accent); color: var(--signup-on-accent, white); border: 1px solid var(--editor-accent); }
+.primary { background: var(--editor-accent); color: var(--editor-on-accent); border: 1px solid var(--editor-accent); }
 .editor .primary:disabled { background: #e5e7eb; color: #6b7280; border-color: #d1d5db; opacity: 1; }
 .secondary { background: var(--editor-paper); border: 1px solid var(--editor-line); }
 .starterGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }

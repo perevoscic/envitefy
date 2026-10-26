@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import UnsavedProgressProvider from "../../src/components/UnsavedProgressProvider";
+import AppearanceProvider from "../../src/components/AppearanceProvider";
 import EventEditorWorkspace from "../../src/components/events/EventEditorWorkspace";
 import {
   EventEditorInput,
@@ -216,6 +217,6 @@ function LeaveButton() {
 }
 createRoot(document.getElementById("root")!).render(
   <AppRouterContext.Provider value={router}>
-    <App />
+    <AppearanceProvider><App /></AppearanceProvider>
   </AppRouterContext.Provider>,
 );

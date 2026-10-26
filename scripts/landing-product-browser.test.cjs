@@ -1790,7 +1790,7 @@ test("shared RSVP glow follows one canvas across cards and gaps while preserving
   }
 });
 
-test("category fragment navigation opens every artwork and label", {
+test("category fragment navigation aligns the section at the top and opens every artwork and label", {
   timeout: 60000,
 }, async () => {
   const css = await buildFixture();
@@ -1823,13 +1823,19 @@ test("category fragment navigation opens every artwork and label", {
     };
     const waitForAnchorArrival = (fragment) => page.waitForFunction((fragment) => {
       const anchor = document.querySelector(fragment);
-      return Math.abs(anchor.getBoundingClientRect().top -
-        parseFloat(getComputedStyle(anchor).scrollMarginTop)) < 2;
+      const collection = document.querySelector("[data-category-collection]");
+      const eyebrow = collection.querySelector("p");
+      const header = document.querySelector("header");
+      const eyebrowTop = eyebrow.getBoundingClientRect().top;
+      return Math.abs(anchor.getBoundingClientRect().top) < 2 &&
+        Math.abs(collection.getBoundingClientRect().top) < 2 &&
+        eyebrowTop >= header.offsetHeight && eyebrowTop < header.offsetHeight + 32;
     }, fragment);
     await page.goto(base);
     await page.locator('[data-marketing-page][data-motion-enhanced="true"]').waitFor();
     const navigation = page.getByRole("navigation", { name: "Main navigation", exact: true });
-    for (const [label, fragment] of [["Categories", "#categories"], ["Templates", "#examples"]]) {
+    assert.equal(await navigation.getByRole("link", { name: "Templates", exact: true }).count(), 0);
+    for (const [label, fragment] of [["Categories", "#categories"]]) {
       await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
       const link = navigation.getByRole("link", { name: label, exact: true });
       assert.equal(await link.getAttribute("href"), fragment);
@@ -1852,6 +1858,7 @@ test("category fragment navigation opens every artwork and label", {
     await page.goto(`${base}/#categories`);
     await page.locator('[data-marketing-page][data-motion-enhanced="true"]').waitFor();
     await waitForOpenCategories("#categories");
+    await waitForAnchorArrival("#categories");
     await page.setViewportSize({ width: 1280, height: 700 });
     await waitForOpenCategories("#categories");
     await page.emulateMedia({ reducedMotion: "reduce" });
@@ -1866,7 +1873,14 @@ test("category fragment navigation opens every artwork and label", {
     await page.goto(`${base}/#categories`);
     await page.locator('[data-marketing-page][data-motion-enhanced="true"]').waitFor();
     await waitForOpenCategories("#categories");
+    await waitForAnchorArrival("#categories");
     await assertNoOverflow(page, "Phone category fragment navigation");
+
+    // Existing shared links to #examples still open the same complete collection.
+    await page.goto(`${base}/#examples`);
+    await page.locator('[data-marketing-page][data-motion-enhanced="true"]').waitFor();
+    await waitForOpenCategories("#examples");
+    await waitForAnchorArrival("#examples");
 
     // A fresh, untargeted page retains the original reversible desktop and phone sequence.
     await page.goto(base);
@@ -2188,9 +2202,9 @@ test("product landing delivers light and dark layouts, sample actions and explic
           if (width === 1280) {
             await page
               .getByRole("navigation", { name: "Main navigation", exact: true })
-              .getByRole("link", { name: "Templates", exact: true })
+              .getByRole("link", { name: "Categories", exact: true })
               .click();
-            assert.equal(await page.evaluate(() => location.hash), "#examples");
+            assert.equal(await page.evaluate(() => location.hash), "#categories");
           } else {
             await page
               .locator("#landing-hero")

@@ -13,3 +13,13 @@
 .dashboard {
   container-type: inline-size;
 }
+
+/* Host tools use app surfaces while the surrounding guest form keeps its design. */
+:global(html.dark) .dashboard {
+  --signup-text: var(--app-foreground);
+  --signup-muted: var(--app-muted-foreground);
+  --signup-border: var(--app-border);
+  --signup-surface: var(--app-surface);
+  --signup-page: var(--app-surface-alt);
+  --signup-focus: var(--app-focus-ring);
+}

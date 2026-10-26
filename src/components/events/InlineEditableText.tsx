@@ -65,6 +65,7 @@ export default function InlineEditableText({
         }}
         aria-label={label}
         aria-describedby={description ? descriptionId : undefined}
+        data-preserve-control-colors
         className={styles.input}
         value={draft}
         maxLength={maxLength}

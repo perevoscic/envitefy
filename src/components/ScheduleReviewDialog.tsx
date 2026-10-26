@@ -9,6 +9,8 @@ import {
   type ScanSchedule,
   type ScanScheduleItem,
   WEEKDAY_LABELS,
+  scanScheduleCalendarEvent,
+  type ScanScheduleItemType,
 } from "@/lib/scan-schedule";
 
 const inputClass =
@@ -31,12 +33,20 @@ export default function ScheduleReviewDialog({
 }) {
   const router = useRouter();
   const [schedule, setSchedule] = useState(initialSchedule);
+  const isMemo = schedule.kind === "school-memo";
+  const selectable = schedule.items.filter((item) => scanScheduleCalendarEvent(item, schedule));
+  const selectedCount = selectable.filter((item) => item.calendarSelected !== false).length;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const clean = useRef(saved ? JSON.stringify(initialSchedule) : "");
   const locked = useRef(false);
   async function save(status: "draft" | "published") {
     if (locked.current) throw new Error("The schedule is still saving.");
+    if (
+      isMemo &&
+      schedule.items.some((item) => item.endDate && (!item.date || item.endDate < item.date))
+    )
+      throw new Error("Check each date range: its last day must be on or after its first day.");
     const normalized = normalizeScanSchedule(schedule);
     if (!normalized || normalized.items.length !== schedule.items.length || !schedule.title.trim())
       throw new Error("Add a title and at least one schedule row.");
@@ -95,23 +105,65 @@ export default function ScheduleReviewDialog({
           onInteractOutside={(event) => event.preventDefault()}
         >
           <header className="shrink-0 border-b border-violet-100 px-5 py-4 sm:px-7">
-            <Dialog.Title className="text-2xl font-semibold">Review your schedule</Dialog.Title>
+            <Dialog.Title className="text-2xl font-semibold">
+              {isMemo ? "Review your school memo" : "Review your schedule"}
+            </Dialog.Title>
             <Dialog.Description className="mt-1 text-sm leading-6 text-slate-600">
-              Check every group, date, time and location. Save progress privately or publish your
-              page when it is ready.
+              {isMemo
+                ? "Check the dates and choose which ones you want in your calendar. Save your memo, then use Add selected dates to calendar. Unchecked dates stay in the memo."
+                : "Check every group, date, time and location. Save progress privately or publish your page when it is ready."}
             </Dialog.Description>
             <p className="mt-2 text-sm font-semibold" aria-live="polite">
-              {schedule.items.length} rows ·{" "}
-              {schedule.items.filter((item) => item.type === "practice").length} practices ·{" "}
-              {schedule.items.filter((item) => item.type === "game").length} games
+              {isMemo ? (
+                `${selectedCount} of ${schedule.items.length} dates selected`
+              ) : (
+                <>
+                  {schedule.items.length} rows ·{" "}
+                  {schedule.items.filter((item) => item.type === "practice").length} practices ·{" "}
+                  {schedule.items.filter((item) => item.type === "game").length} games
+                </>
+              )}
             </p>
+            {isMemo && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={busy || selectedCount === selectable.length}
+                  className="min-h-11 rounded-xl border border-violet-200 px-4 text-sm font-medium disabled:opacity-50"
+                  onClick={() =>
+                    setSchedule((current) => ({
+                      ...current,
+                      items: current.items.map((item) => ({
+                        ...item,
+                        calendarSelected: Boolean(scanScheduleCalendarEvent(item, current)),
+                      })),
+                    }))
+                  }
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || selectedCount === 0}
+                  className="min-h-11 rounded-xl border border-violet-200 px-4 text-sm font-medium disabled:opacity-50"
+                  onClick={() =>
+                    setSchedule((current) => ({
+                      ...current,
+                      items: current.items.map((item) => ({ ...item, calendarSelected: false })),
+                    }))
+                  }
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
           </header>
           <div className="min-h-0 overflow-y-auto px-5 py-5 sm:px-7">
             {urlControl && <div className="mb-4">{urlControl}</div>}
             <fieldset disabled={busy} className="min-w-0">
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="text-sm font-medium sm:col-span-2">
-                  Page title
+                  {isMemo ? "Memo title" : "Page title"}
                   <input
                     className={inputClass}
                     value={schedule.title}
@@ -119,7 +171,7 @@ export default function ScheduleReviewDialog({
                   />
                 </label>
                 <label className="text-sm font-medium">
-                  Season or date range
+                  {isMemo ? "Memo date range" : "Season or date range"}
                   <input
                     className={inputClass}
                     value={schedule.timeframe || ""}
@@ -155,6 +207,29 @@ export default function ScheduleReviewDialog({
                     <legend className="px-2 text-sm font-semibold">
                       {index + 1}. {item.title}
                     </legend>
+                    {isMemo && (
+                      <label className="mb-2 flex min-h-11 items-center gap-3 text-sm font-medium">
+                        <input
+                          type="checkbox"
+                          className="size-5 accent-violet-700"
+                          aria-label={`Add ${item.title} to calendar`}
+                          checked={
+                            item.calendarSelected !== false &&
+                            Boolean(scanScheduleCalendarEvent(item, schedule))
+                          }
+                          disabled={!scanScheduleCalendarEvent(item, schedule)}
+                          onChange={(event) =>
+                            update(index, { calendarSelected: event.target.checked })
+                          }
+                        />
+                        Include in calendar selection
+                      </label>
+                    )}
+                    {isMemo && item.yearInferred && (
+                      <p className="mb-3 text-sm text-slate-600">
+                        The year was inferred. Confirm the date below before adding it.
+                      </p>
+                    )}
                     <div className="grid gap-3 sm:grid-cols-2">
                       <label className="text-sm">
                         Title
@@ -171,12 +246,23 @@ export default function ScheduleReviewDialog({
                           value={item.type}
                           onChange={(event) =>
                             update(index, {
-                              type: event.target.value === "practice" ? "practice" : "game",
+                              type: event.target.value as ScanScheduleItemType,
                             })
                           }
                         >
-                          <option value="practice">Practice</option>
-                          <option value="game">Game</option>
+                          {isMemo ? (
+                            <>
+                              <option value="test">Test</option>
+                              <option value="deadline">Deadline</option>
+                              <option value="event">School event</option>
+                              <option value="closure">No school</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="practice">Practice</option>
+                              <option value="game">Game</option>
+                            </>
+                          )}
                         </select>
                       </label>
                       {item.type === "practice" ? (
@@ -207,7 +293,7 @@ export default function ScheduleReviewDialog({
                             </select>
                           </label>
                         </>
-                      ) : (
+                      ) : !isMemo ? (
                         <>
                           <label className="text-sm">
                             Opponent
@@ -239,16 +325,35 @@ export default function ScheduleReviewDialog({
                             </select>
                           </label>
                         </>
-                      )}
+                      ) : null}
                       <label className="text-sm">
                         Date{item.day ? " (leave blank for weekly practice)" : ""}
                         <input
                           type="date"
                           className={inputClass}
                           value={item.date || ""}
-                          onChange={(event) => update(index, { date: event.target.value || null })}
+                          onChange={(event) =>
+                            update(index, {
+                              date: event.target.value || null,
+                              ...(isMemo ? { yearInferred: false } : {}),
+                            })
+                          }
                         />
                       </label>
+                      {isMemo && (
+                        <label className="text-sm">
+                          Last day (for a date range)
+                          <input
+                            type="date"
+                            className={inputClass}
+                            min={item.date || undefined}
+                            value={item.endDate || ""}
+                            onChange={(event) =>
+                              update(index, { endDate: event.target.value || null })
+                            }
+                          />
+                        </label>
+                      )}
                       <label className="text-sm">
                         Location
                         <input
@@ -283,6 +388,12 @@ export default function ScheduleReviewDialog({
                           onChange={(event) => update(index, { notes: event.target.value })}
                         />
                       </label>
+                      {isMemo && item.sourceText && (
+                        <details className="text-sm text-slate-600 sm:col-span-2">
+                          <summary className="min-h-11 cursor-pointer py-3">Source text</summary>
+                          <p className="whitespace-pre-line pb-2">{item.sourceText}</p>
+                        </details>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -308,8 +419,8 @@ export default function ScheduleReviewDialog({
                         ...schedule.items,
                         {
                           id: crypto.randomUUID(),
-                          type: "game",
-                          title: "New game",
+                          type: isMemo ? "event" : "game",
+                          title: isMemo ? "New date" : "New game",
                           timezone: schedule.timezone,
                           group: null,
                           day: null,
@@ -328,7 +439,7 @@ export default function ScheduleReviewDialog({
                     })
                   }
                 >
-                  Add a row
+                  {isMemo ? "Add a date" : "Add a row"}
                 </button>
               </div>
             </fieldset>
@@ -354,9 +465,15 @@ export default function ScheduleReviewDialog({
                 onClick={() => void submit(savedStatus)}
                 className="min-h-11 rounded-xl border border-violet-300 px-4 font-medium disabled:opacity-50"
               >
-                {savedStatus === "published" ? "Save changes" : "Save progress"}
+                {busy
+                  ? "Saving…"
+                  : isMemo
+                    ? "Save memo"
+                    : savedStatus === "published"
+                      ? "Save changes"
+                      : "Save progress"}
               </button>
-              {savedStatus !== "published" && (
+              {!isMemo && savedStatus !== "published" && (
                 <button
                   type="button"
                   disabled={busy}

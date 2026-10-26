@@ -58,6 +58,8 @@ async function insertGoogleEvent(params: {
   eventUrl: string;
   event: NormalizedEvent;
   flyer: CalendarFlyer | null;
+  suppressDefaultReminders?: boolean;
+  updateExisting?: boolean;
 }): Promise<ProviderSyncResult> {
   const oAuth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID!,
@@ -69,6 +71,7 @@ async function insertGoogleEvent(params: {
   const deterministicId = googleEventId(params.eventId);
   const baseRequestBody = {
     ...toGoogleEvent(params.event),
+    ...(params.suppressDefaultReminders ? { reminders: { useDefault: false, overrides: [] } } : {}),
     id: deterministicId,
     source: { title: "Envitefy", url: params.eventUrl },
     extendedProperties: {
@@ -109,13 +112,22 @@ async function insertGoogleEvent(params: {
   } catch (error: unknown) {
     const status = readProviderErrorStatus(error);
     if (status === 409) {
-      const existing = await calendar.events.get(
-        {
-          calendarId: "primary",
-          eventId: deterministicId,
-        },
-        { timeout: 30_000, retry: false },
-      );
+      const existing = params.updateExisting
+        ? await calendar.events.update(
+            {
+              calendarId: "primary",
+              eventId: deterministicId,
+              requestBody: baseRequestBody,
+            },
+            { timeout: 30_000, retry: false },
+          )
+        : await calendar.events.get(
+            {
+              calendarId: "primary",
+              eventId: deterministicId,
+            },
+            { timeout: 30_000, retry: false },
+          );
       return {
         provider: "google",
         externalEventId: existing.data.id || deterministicId,
@@ -225,10 +237,13 @@ async function insertMicrosoftEvent(params: {
   eventId: string;
   event: NormalizedEvent;
   flyer: CalendarFlyer | null;
+  suppressDefaultReminders?: boolean;
+  updateExisting?: boolean;
 }): Promise<ProviderSyncResult> {
   const accessToken = await getMicrosoftAccessToken(params.refreshToken);
   const graphBody = {
     ...toMicrosoftEvent(params.event),
+    ...(params.suppressDefaultReminders ? { isReminderOn: false } : {}),
     transactionId: `envitefy:${params.eventId}`,
   };
   const response = await fetch("https://graph.microsoft.com/v1.0/me/events", {
@@ -250,6 +265,27 @@ async function insertMicrosoftEvent(params: {
       "Microsoft Calendar could not create this event";
     throw new CalendarProviderError(message, response.status || 500);
   }
+  if (params.updateExisting) {
+    // A repeated transaction can return a remote create whose local save failed.
+    // Apply the reviewed content even when that earlier create had older wording/dates.
+    const updated = await fetch(
+      `https://graph.microsoft.com/v1.0/me/events/${encodeURIComponent(externalEventId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          ...toMicrosoftEvent(params.event),
+          ...(params.suppressDefaultReminders ? { isReminderOn: false } : {}),
+        }),
+        signal: AbortSignal.timeout(30_000),
+      },
+    );
+    if (!updated.ok)
+      throw new CalendarProviderError(
+        "Microsoft Calendar could not update this item. Please retry.",
+        updated.status,
+      );
+  }
   const attachmentAttached = params.flyer
     ? await attachFlyerToMicrosoftEvent({
         accessToken,
@@ -262,6 +298,97 @@ async function insertMicrosoftEvent(params: {
     externalEventId,
     webLink: typeof payload.webLink === "string" ? payload.webLink : null,
     attachmentAttached,
+  };
+}
+
+/** Explicit, owner-initiated memo additions reuse provider adapters without source attachments. */
+export async function writeSelectedCalendarItem(params: {
+  provider: CalendarProvider;
+  email: string;
+  sourceId: string;
+  eventUrl: string;
+  event: Omit<NormalizedEvent, "end"> & { end: string | null };
+  externalEventId?: string | null;
+}): Promise<ProviderSyncResult> {
+  if (!params.event.end)
+    throw new Error("Add an end time for this item, or download its calendar file.");
+  const event: NormalizedEvent = { ...params.event, end: params.event.end };
+  const refreshToken =
+    params.provider === "google"
+      ? await getGoogleCalendarRefreshToken(params.email)
+      : await getMicrosoftRefreshToken(params.email);
+  if (!refreshToken)
+    throw new Error("Reconnect your selected calendar in Settings, then try again.");
+  const noReminders = !event.reminders?.length;
+  if (!params.externalEventId) {
+    return params.provider === "google"
+      ? insertGoogleEvent({
+          refreshToken,
+          eventId: params.sourceId,
+          eventUrl: params.eventUrl,
+          event,
+          flyer: null,
+          suppressDefaultReminders: noReminders,
+          updateExisting: true,
+        })
+      : insertMicrosoftEvent({
+          refreshToken,
+          eventId: params.sourceId,
+          event,
+          flyer: null,
+          suppressDefaultReminders: noReminders,
+          updateExisting: true,
+        });
+  }
+  if (params.provider === "google") {
+    const oauth = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID!,
+      process.env.GOOGLE_CLIENT_SECRET!,
+      process.env.GOOGLE_REDIRECT_URI!,
+    );
+    oauth.setCredentials({ refresh_token: refreshToken });
+    const calendar = google.calendar({ version: "v3", auth: oauth });
+    const result = await calendar.events.update(
+      {
+        calendarId: "primary",
+        eventId: params.externalEventId,
+        requestBody: {
+          ...toGoogleEvent(event),
+          ...(noReminders ? { reminders: { useDefault: false, overrides: [] } } : {}),
+        },
+      },
+      { timeout: 30_000, retry: false },
+    );
+    return {
+      provider: "google",
+      externalEventId: result.data.id || params.externalEventId,
+      webLink: result.data.htmlLink || null,
+      attachmentAttached: false,
+    };
+  }
+  const accessToken = await getMicrosoftAccessToken(refreshToken);
+  const response = await fetch(
+    `https://graph.microsoft.com/v1.0/me/events/${encodeURIComponent(params.externalEventId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        ...toMicrosoftEvent(event),
+        ...(noReminders ? { isReminderOn: false } : {}),
+      }),
+      signal: AbortSignal.timeout(30_000),
+    },
+  );
+  const payload: JsonRecord = await response.json().catch(() => ({}));
+  if (!response.ok)
+    throw new Error(
+      "Your selected calendar could not update this item. Reconnect in Settings or try again.",
+    );
+  return {
+    provider: "microsoft",
+    externalEventId: params.externalEventId,
+    webLink: typeof payload.webLink === "string" ? payload.webLink : null,
+    attachmentAttached: false,
   };
 }
 
@@ -336,6 +463,13 @@ export async function syncSavedEventToCalendar({
   if (row.user_id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const data: JsonRecord = isRecord(row.data) ? row.data : {};
+  if (isRecord(data.scanSchedule) && data.scanSchedule.kind === "school-memo") {
+    return NextResponse.json({
+      ok: true,
+      status: "skipped",
+      reason: "explicit_calendar_selection",
+    });
+  }
   const user = await getUserByEmail(email);
   const [googleRefreshToken, microsoftRefreshToken] = await Promise.all([
     getGoogleCalendarRefreshToken(email),
@@ -406,7 +540,12 @@ export async function syncSavedEventToCalendar({
     });
   }
 
-  const eventPath = buildEventProductPath({ eventId: row.id, title: row.title, data: row.data, publicSlug: row.public_slug });
+  const eventPath = buildEventProductPath({
+    eventId: row.id,
+    title: row.title,
+    data: row.data,
+    publicSlug: row.public_slug,
+  });
   const eventUrl = new URL(eventPath, origin).toString();
   const hasFlyer = isRecord(data.attachment) || typeof data.thumbnail === "string";
   const mediaIdentifier = encodeURIComponent(row.public_slug || row.id);

@@ -72,7 +72,7 @@ function harness({
       },
     },
     "@/lib/mappers": { toGoogleEvent: (event) => event, toMicrosoftEvent: (event) => event },
-    "@/utils/event-url": { buildEventPath: () => "/event/appointment" },
+    "@/utils/event-product-route": { buildEventProductPath: () => "/event/appointment" },
   };
   const module = { exports: {} };
   vm.runInNewContext(compiled, {

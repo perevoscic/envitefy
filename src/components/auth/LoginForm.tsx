@@ -22,6 +22,9 @@ export type LoginFormProps = {
   variant?: "default" | "inline";
   showGoogleAuth?: boolean;
   inlineTone?: "dark" | "light";
+  submitLabel?: string;
+  googleLabel?: string;
+  switchModeLabel?: string;
 };
 
 export default function LoginForm({
@@ -34,6 +37,9 @@ export default function LoginForm({
   variant = "default",
   showGoogleAuth = true,
   inlineTone = "dark",
+  submitLabel = "Sign in",
+  googleLabel = "Sign in with Google",
+  switchModeLabel = "Sign up",
 }: LoginFormProps) {
   const isInline = variant === "inline";
   const isInlineLight = isInline && inlineTone === "light";
@@ -109,7 +115,7 @@ export default function LoginForm({
             onClick={onGoogleSignIn}
             disabled={submitting}
             className={cx(
-              "btn btn-outline w-full justify-center gap-3",
+              "btn btn-outline w-full justify-center gap-3 whitespace-normal",
               isInlineDark &&
                 "!border-white/12 !bg-white/[0.06] !text-white !shadow-[0_12px_28px_rgba(0,0,0,0.2)] hover:!bg-white/[0.1]",
             )}
@@ -138,7 +144,7 @@ export default function LoginForm({
                 fill="#EA4335"
               />
             </svg>
-            Sign in with Google
+            {googleLabel}
           </button>
 
           <div className="relative my-4 flex items-center gap-3">
@@ -271,7 +277,7 @@ export default function LoginForm({
                 isInline && (isInlineLight ? "text-[#6a57eb]" : "text-[#f0d58f]"),
               )}
             >
-              Sign up
+              {switchModeLabel}
             </button>
           </p>
         ) : null}
@@ -294,15 +300,15 @@ export default function LoginForm({
                 : "border border-white/20 bg-transparent text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-white/[0.06]",
             )}
           >
-            {onInlineCancel ? "Cancel" : "Sign up"}
+            {onInlineCancel ? "Cancel" : switchModeLabel}
           </button>
           <Button
             type="submit"
             size="lg"
             disabled={submitting}
-            className="group w-full !rounded-full bg-gradient-to-r from-brand to-brand-glow text-primary-foreground shadow-xl shadow-brand/30 hover:opacity-95"
+            className="group w-full !rounded-full whitespace-normal bg-gradient-to-r from-brand to-brand-glow text-primary-foreground shadow-xl shadow-brand/30 hover:opacity-95"
           >
-            {submitting ? "Signing in..." : "Sign in"}
+            {submitting ? "Signing in..." : submitLabel}
             <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Button>
         </div>
@@ -311,9 +317,9 @@ export default function LoginForm({
           type="submit"
           size="lg"
           disabled={submitting}
-          className="group w-full !rounded-full bg-gradient-to-r from-brand to-brand-glow text-primary-foreground shadow-xl shadow-brand/30 hover:opacity-95"
+          className="group w-full !rounded-full whitespace-normal bg-gradient-to-r from-brand to-brand-glow text-primary-foreground shadow-xl shadow-brand/30 hover:opacity-95"
         >
-          {submitting ? "Signing in..." : "Sign in"}
+          {submitting ? "Signing in..." : submitLabel}
           <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </Button>
       )}

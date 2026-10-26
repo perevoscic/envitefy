@@ -418,6 +418,28 @@ test("photo remapping changes nested media only, preserves other event content",
   assert.deepEqual(replaced.data.registry, source.data.registry);
 });
 
+test("implicit template recovery ignores other-account drafts without blocking fresh guest editing", async () => {
+  const original = globalThis.indexedDB;
+  try {
+    globalThis.indexedDB = memoryIndexedDb();
+    const owned = { version: 1, id: crypto.randomUUID(), category: "weddings", templateId: "fixture",
+      ownerId: "original-account", updatedAt: Date.now(), assets: {}, snapshot: { data: { title: "Private edits" } } };
+    await storage.writeTemplateDraft(owned);
+    assert.equal(await storage.readTemplateEditorDraft("weddings"), null, "guest starts a fresh template");
+    assert.equal(await storage.readTemplateEditorDraft("weddings", null, null, "another-account"), null);
+    assert.deepEqual(await storage.readTemplateEditorDraft("weddings", null, null, "original-account"), owned);
+    assert.deepEqual(await storage.readTemplateEditorDraft("weddings", owned.id, null, "another-account"), owned,
+      "explicit resume remains available for the editor's account ownership error");
+    assert.deepEqual(await storage.readTemplateEditorDraft("weddings", null, "saved-event", "another-account"), owned,
+      "explicit saved editing retains its server ownership validation");
+    const guest = { ...owned, ownerId: undefined, id: crypto.randomUUID(), updatedAt: Date.now() + 1 };
+    await storage.writeTemplateDraft(guest);
+    assert.deepEqual(await storage.readTemplateEditorDraft("weddings"), guest, "guest-owned recovery remains usable");
+  } finally {
+    globalThis.indexedDB = original;
+  }
+});
+
 test("history POST requires authentication and returns same-owner retries without replacing data", async () => {
   let userId = null;
   let inserts = 0;

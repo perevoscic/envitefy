@@ -13,6 +13,13 @@ export type CalendarSyncJob = {
   retry?: boolean;
 };
 
+function isSchoolMemoParent(data: unknown): boolean {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+  const schedule = (data as Record<string, unknown>).scanSchedule;
+  return Boolean(schedule && typeof schedule === "object" && !Array.isArray(schedule) &&
+    (schedule as Record<string, unknown>).kind === "school-memo");
+}
+
 /** This marker commits in the event insert, before the browser can navigate away. */
 export function prepareScanCalendarSync(
   data: Record<string, unknown>,
@@ -22,7 +29,8 @@ export function prepareScanCalendarSync(
     !CONNECTED_CALENDAR_SYNC_ENABLED ||
     !scanAttemptId ||
     !/^ocr(?:-|$)/.test(String(data.createdVia || "")) ||
-    data.status === "draft"
+    data.status === "draft" ||
+    isSchoolMemoParent(data)
   )
     return false;
   data.calendarSync = { status: "pending", updatedAt: new Date().toISOString() };
@@ -37,7 +45,8 @@ export async function runSavedCalendarSync(job: CalendarSyncJob): Promise<Respon
   const claimed = await query<{ id: string }>(
     `UPDATE event_history SET data = jsonb_set(coalesce(data, '{}'::jsonb), '{calendarSync}',
        coalesce(data->'calendarSync', '{}'::jsonb) || $3::jsonb)
-     WHERE id = $1 AND user_id = $2 AND (
+     WHERE id = $1 AND user_id = $2
+       AND coalesce(data->'scanSchedule'->>'kind', '') <> 'school-memo' AND (
        data->'calendarSync'->>'status' = 'pending'
        OR (data->'calendarSync'->>'status' = 'syncing'
          AND coalesce(data->'calendarSync'->>'updatedAt', '') < $4)
@@ -55,6 +64,22 @@ export async function runSavedCalendarSync(job: CalendarSyncJob): Promise<Respon
     const row = await getEventHistoryById(job.eventId);
     if (!row || row.user_id !== job.userId)
       return Response.json({ error: "Not found" }, { status: 404 });
+    if (isSchoolMemoParent(row.data)) {
+      // Also stop pending work left by an older extraction or a corrected scan.
+      await query(
+        `UPDATE event_history SET data = jsonb_set(data, '{calendarSync}',
+          coalesce(data->'calendarSync', '{}'::jsonb) || $3::jsonb)
+         WHERE id = $1 AND user_id = $2 AND data->'scanSchedule'->>'kind' = 'school-memo'`,
+        [job.eventId, job.userId, JSON.stringify({
+          status: "skipped",
+          reason: "explicit_calendar_selection",
+          updatedAt: new Date().toISOString(),
+        })],
+      );
+      invalidateUserHistory(job.userId);
+      invalidateUserDashboard(job.userId);
+      return Response.json({ ok: true, status: "skipped", reason: "explicit_calendar_selection" });
+    }
     const state = readCalendarSyncState(row.data?.calendarSync);
     return Response.json({
       ok: state.status === "synced",

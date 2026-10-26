@@ -1,4 +1,5 @@
 import { normalizeMedicalAppointmentCategory } from "../medical-appointments.ts";
+import { isSchoolMemoText } from "../school-memo.ts";
 
 /** A small, non-identifying art brief. Never send the source document to the image model. */
 export type ScanPersonalization = {
@@ -112,7 +113,8 @@ const TOPICS: [RegExp, string, string[]][] = [
 /**
  * Art themes the extraction model chooses from by reading the whole source. The
  * catalog fixes how each theme looks and keeps saved briefs free of arbitrary
- * prompt text; the patterns are only an offline fallback.
+ * prompt text. Source support also keeps an unrelated model choice from
+ * overriding a school memo or other observed event context.
  */
 export const SCAN_ART_THEMES = TOPICS.map(([, subject]) => subject);
 
@@ -220,10 +222,13 @@ export function buildScanPersonalization(input: PersonalizationInput): ScanPerso
       : null);
   // The title names the occasion; body text can mention others ("head count after Halloween").
   const titleText = [input.category, input.title].filter(Boolean).join("\n");
-  const topic =
-    TOPICS.find(([, subject]) => subject === input.artTheme) ||
-    TOPICS.find(([pattern]) => pattern.test(titleText)) ||
-    TOPICS.find(([pattern]) => pattern.test(text));
+  const sourceContext = [input.title, source].filter(Boolean).join("\n");
+  const schoolMemo = isSchoolMemoText(source || sourceContext);
+  const topic = schoolMemo
+    ? TOPICS.find(([, subject]) => subject === "school event")
+    : TOPICS.find(([pattern, subject]) => subject === input.artTheme && pattern.test(sourceContext)) ||
+      TOPICS.find(([pattern]) => pattern.test(titleText)) ||
+      TOPICS.find(([pattern]) => pattern.test(text));
   const subject = medical ? specialty?.[1] || "medical" : topic?.[1] || "event";
   const motifs = medical
     ? specialty?.[2] || ["rounded stethoscope", "botanical leaves"]

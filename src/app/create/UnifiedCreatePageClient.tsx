@@ -50,9 +50,12 @@ import {
 } from "@/lib/create/run-sport-discovery";
 import type { CreationTemplate } from "@/lib/create/creation-template";
 import { loadCreationCatalog } from "@/lib/create/creation-template-loader";
+import { defaultCreationTemplate } from "@/lib/create/default-creation-template";
 import { CREATE_EXTRACTION_STAGE_LABELS, readCreateExtractionResponse } from "@/lib/create/extraction-progress";
 import { normalizeCustomEventInformation, type CustomEventInformation, type CustomEventPage } from "@/lib/event-custom-design";
 import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
+import { snapUploadForCreateSource } from "@/lib/create/snap-source-handoff";
+import { isSchoolMemoText } from "@/lib/school-memo";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
 import { validateClientUploadFile } from "@/utils/media-upload-client";
 import CategoryScrollPicker from "./CategoryScrollPicker";
@@ -180,8 +183,9 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
   // this account's verified access, and saved-source restoration stays exclusive.
   const sourceAvailable = accountReady && (!access.access || canCreatePage) && !restoring;
   const guess = intake?.guess || intake?.classification;
+  const schoolMemoCapture = !intake?.information && guess?.category === "general" && isSchoolMemoText(intake?.sourceText || "");
   const personalCapture =
-    guess?.category === "medical-appointments" || guess?.category === "appointments";
+    schoolMemoCapture || guess?.category === "medical-appointments" || guess?.category === "appointments";
   const signupIntent = guess?.category === "signup-forms";
   const supportedGuess =
     !!guess &&
@@ -230,7 +234,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
       ).flatMap((section) => section.items),
     ).filter((item) => allowedCreationGuess(item.guess, allowedCategories));
   }, [menu, ready, canCreatePage, allowedCategories.join(",")]);
-  const catalog = useCreationTemplates(guess && supportedGuess && accountReady ? guess : undefined, accountReady ? ownerId : "");
+  const catalog = useCreationTemplates(guess && supportedGuess && accountReady && !personalCapture ? guess : undefined, accountReady ? ownerId : "");
   const templates = catalog.templates;
   const designThemes = useMemo(() => {
     const themes = new Map<string, string>();
@@ -256,7 +260,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
     )
       return;
     const { templates: available } = await loadCreationCatalog(selected);
-    return available.find((template) => template.id === record.selectedTemplateId) || available[0];
+    return defaultCreationTemplate(available, selected, record.selectedTemplateId);
   };
   const preferredChoices = preferred
     .map((item) => item.guess!)
@@ -560,6 +564,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
           information: withCalendarDate({ ...next, guess: confirmedGuess }),
           phase: "templates",
         });
+
       } else {
         let body: FormData | string, headers: HeadersInit | undefined;
         if (source.kind === "files") {
@@ -604,6 +609,23 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
           discoveryEventId: result.discoveryEventId,
           phase: "templates",
         });
+        if (result.destination === "snap" && !result.accessRequired) {
+          if (version !== epoch.current || controller.signal.aborted) return;
+          // Retain recognition and originals before handoff. Back/reload offers
+          // Continue with Snap instead of rereading or selecting a public design.
+          setLocation(next.id, "templates", true);
+          if (!access.access?.allowedProducts.includes("snap")) {
+            setPhase("templates");
+            setError("Snap is not available for this account. Your document is retained below.");
+            return;
+          }
+          setWorkingLabel("Opening your document in Snap…");
+          setPhase("opening");
+          await savePendingSnapUpload(snapUploadForCreateSource(source, result.sourceText));
+          if (version !== epoch.current || controller.signal.aborted) return;
+          router.push("/snap?action=upload");
+          return;
+        }
       }
       if (version !== epoch.current) return;
       if (source.kind !== "scratch") {
@@ -1439,9 +1461,9 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
             ) : null}
             {personalCapture && supportedGuess ? (
               <div className="mt-5 rounded-2xl border border-[#e2d9eb] bg-white p-5">
-                <h3 className="font-semibold">Save this appointment with Snap a Flyer</h3>
+                <h3 className="font-semibold">{schoolMemoCapture ? "Review this school memo with Snap a Flyer" : "Save this appointment with Snap a Flyer"}</h3>
                 <p className="mt-2 text-sm text-[#75677e]">
-                  Keep the original document and use the appointment and calendar tools.
+                  {schoolMemoCapture ? "Keep the original document, review every date and choose which dates to add to your calendar." : "Keep the original document and use the appointment and calendar tools."}
                 </p>
                 <button
                   type="button"
@@ -1449,13 +1471,11 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                   onClick={() => {
                     const source = current.current?.source;
                     if (!source) return;
-                    void savePendingSnapUpload({
-                      file: source.files[0],
-                      files: source.files,
-                      text: source.files.length
-                        ? source.text
-                        : current.current?.sourceText || source.text,
-                    })
+                    if (!source.files.length && !source.text.trim() && !current.current?.sourceText?.trim()) {
+                      router.push("/snap");
+                      return;
+                    }
+                    void Promise.resolve().then(() => savePendingSnapUpload(snapUploadForCreateSource(source, current.current?.sourceText)))
                       .then(() => router.push("/snap?action=upload"))
                       .catch((failure) =>
                         setError(

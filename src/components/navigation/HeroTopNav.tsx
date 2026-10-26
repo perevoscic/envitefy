@@ -34,10 +34,13 @@ type HeroTopNavProps = {
   guestPrimaryHref?: string;
   loginSuccessRedirectUrl?: string;
   mobileLogoOnly?: boolean;
+  externalMobileLogin?: boolean;
   onGuestLoginAction: () => void;
   onGuestPrimaryAction: () => void;
   onGuestSignupAction?: () => void;
   showMobileMenuAuthActions?: boolean;
+  hideEditorialPrimary?: boolean;
+  editorialAccountAction?: "login" | "signup";
   editorialTone?: MarketingTone;
   variant?: "default" | "glass-dark" | "transparent-dark" | "transparent-light";
 };
@@ -154,10 +157,13 @@ export default function HeroTopNav({
   guestPrimaryHref,
   loginSuccessRedirectUrl = dashboardHref,
   mobileLogoOnly = false,
+  externalMobileLogin = false,
   onGuestLoginAction,
   onGuestPrimaryAction,
   onGuestSignupAction = onGuestPrimaryAction,
   showMobileMenuAuthActions = true,
+  hideEditorialPrimary = false,
+  editorialAccountAction = "signup",
   editorialTone,
   variant = "default",
 }: HeroTopNavProps) {
@@ -494,14 +500,14 @@ export default function HeroTopNav({
               ) : (
                 <button
                   type="button"
-                  onClick={onGuestSignupAction}
+                  onClick={editorialAccountAction === "login" ? onGuestLoginAction : onGuestSignupAction}
                   className={landingHeaderStyles.join}
                   data-header-join
                 >
-                  Let&apos;s create
+                  {editorialAccountAction === "login" ? "Sign in" : "Let's create"}
                 </button>
               )}
-              {status === "authenticated" || guestPrimaryHref ? (
+              {hideEditorialPrimary ? null : status === "authenticated" || guestPrimaryHref ? (
                 <Link
                   href={status === "authenticated" ? authenticatedPrimaryHref : guestPrimaryHref!}
                   className={landingHeaderStyles.primary}
@@ -900,7 +906,12 @@ export default function HeroTopNav({
                                 type="button"
                                 aria-expanded={mobileLoginExpanded}
                                 aria-controls="hero-top-nav-mobile-login"
-                                onClick={() => setMobileLoginExpanded((value) => !value)}
+                                onClick={() => {
+                                  if (externalMobileLogin) {
+                                    setMobileMenuOpen(false);
+                                    onGuestLoginAction();
+                                  } else setMobileLoginExpanded((value) => !value);
+                                }}
                                 className={cx(
                                   "cta-shell mt-1.5 self-end nav-chrome-motion rounded-2xl px-6 py-3 text-center text-base font-semibold transition",
                                   editorialTone && editorialStyles.navLink,

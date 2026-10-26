@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 
 test("lab, imaging and therapy appointments are medical while school labs and haircuts are not", () => {
   for (const title of [
@@ -184,13 +185,23 @@ test("holiday titles choose holiday artwork even when the body mentions another 
   assert.doesNotMatch(prompt, /pale sage/);
 });
 
-test("the extraction model's art theme decides the artwork without keyword matches", () => {
+test("art themes require source support rather than trusting any allowed model choice", () => {
   assert.equal(
     buildScanPersonalization({ title: "Team night out", artTheme: "Christmas celebration" }).subject,
-    "Christmas celebration",
+    "event",
   );
   assert.equal(
     buildScanPersonalization({ title: "Team night out", artTheme: "print the guest list" }).subject,
     "event",
   );
+});
+
+test("school weekly memos cannot become holiday artwork from incidental events or a model choice", () => {
+  const memo = readFileSync(new URL("../../../scripts/fixtures/school-memo.txt", import.meta.url), "utf8");
+  for (const artTheme of ["New Year celebration", "Halloween celebration", "Thanksgiving gathering", "football"]) {
+    const profile = buildScanPersonalization({ title: "Weekly Memo", category: "New Year celebration", sourceText: `${memo}\nChristmas concert December 15`, artTheme });
+    assert.equal(profile.subject, "school event");
+    assert.deepEqual(profile.motifs, ["books", "colored pencils"]);
+  }
+  assert.equal(buildScanPersonalization({ title: "School New Year's Eve Celebration", sourceText: "December 31, at school", artTheme: "New Year celebration" }).subject, "New Year celebration");
 });

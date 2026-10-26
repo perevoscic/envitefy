@@ -91,6 +91,14 @@ test("unified creation retains sources, recommends native templates and protects
       const json = req.headers()["content-type"]?.includes("application/json") ? req.postDataJSON() : null;
       const raw = req.postData() || "";
       extracts.push({ json, raw });
+      if (raw.includes("school-memo.png") || raw.includes("personal-appointment.png")) {
+        const school = raw.includes("school-memo.png");
+        return route.fulfill({ contentType: "application/json", body: JSON.stringify({
+          classification: { category: school ? "general" : "medical-appointments", sport: null, confidence: "high", alternatives: [] },
+          sourceText: school ? fs.readFileSync("scripts/fixtures/school-memo.txt", "utf8") : "Medical ENT appointment October 30 at 9 AM",
+          destination: "snap",
+        }) });
+      }
       if (json?.url === "https://blocked.test/event/831") return route.fulfill({ status: 422, contentType: "application/json", body: JSON.stringify({ error: "That page could not be opened. Paste its event text instead." }) });
       if (raw.includes("retry-flyer.png") && !retryUploadFailed) {
         retryUploadFailed = true;
@@ -306,6 +314,52 @@ test("unified creation retains sources, recommends native templates and protects
     return accessResponseGate;
   };
   try {
+    await t.test("school memos and personal appointments transfer exact sources to Snap and restore without reprocessing", async () => {
+      for (const name of ["school-memo.png", "personal-appointment.png"]) {
+        await openUploadCreate();
+        const before = extracts.length;
+        await uploadFiles(file(name));
+        await page.waitForFunction(() => location.pathname === "/snap" && new URLSearchParams(location.search).get("action") === "upload");
+        const transferred = await page.evaluate(async () => {
+          const pending = window.__pendingSnapUpload;
+          const rows = await window.__creationBrowser.listCreationIntakes("unified-host");
+          const retained = rows.find(row => row.source.files[0]?.name === pending?.file?.name);
+          return { name: pending?.file?.name, bytes: pending?.file?.size, files: pending?.files?.length, notes: pending?.text, id: retained?.id, phase: retained?.phase, sourceText: retained?.sourceText };
+        });
+        assert.equal(transferred.name, name);
+        assert.equal(transferred.bytes, file(name).buffer.length);
+        assert.equal(transferred.files, 1);
+        assert.ok(transferred.id);
+        assert.equal(transferred.phase, "templates");
+        assert.equal(extracts.length, before + 1, "the handoff reads only once in Create");
+        await openCreate(`?intake=${encodeURIComponent(transferred.id)}&step=templates`);
+        await page.getByRole("button", { name: "Continue with Snap a Flyer", exact: true }).waitFor();
+        assert.equal(extracts.length, before + 1, "reloading recognition offers resume instead of another read");
+        assert.equal(await page.locator("[data-native-general], [data-native-birthday]").count(), 0);
+        if (name === "school-memo.png") assert.ok(transferred.sourceText.includes("Weekly Memo"));
+      }
+      assert.equal(historyRequests.length, 0, "handoff does not save or publish an event");
+      assert.deepEqual(errors, []);
+    });
+    await t.test("school memo handoff retains the upload when Snap is not granted", async () => {
+      const previousProducts = allowedProducts;
+      allowedProducts = ["event_page"];
+      try {
+        await openUploadCreate();
+        await uploadFiles(file("school-memo.png"));
+        await page.getByText("Snap is not available for this account. Your document is retained below.", { exact: true }).waitFor();
+        assert.equal(new URL(page.url()).pathname, "/create");
+        const retained = await inspect();
+        assert.equal(retained.file, "school-memo.png");
+        assert.equal(retained.phase, "templates");
+        assert.equal(await page.getByRole("button", { name: "Continue with Snap a Flyer", exact: true }).count(), 0);
+        assert.equal(historyRequests.length, 0);
+      } finally { allowedProducts = previousProducts; }
+    });
+    if (process.env.UNIFIED_CREATE_SNAP_QA === "1") return;
+    // The source-free gallery journeys below assert an initially empty provider
+    // counter. Keep the independent Snap handoff scenarios out of that baseline.
+    extracts.length = 0;
     await t.test("mobile creation heading clears the actual topbar after navigation, method changes and restored scroll", async () => {
       const geometry = [];
       const chooseMethod = async (name, id) => {

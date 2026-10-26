@@ -10,6 +10,7 @@ import SignupForm from "./SignupForm";
 export type AuthModalProps = {
   open: boolean;
   description?: string;
+  action?: "save" | "publish";
   allowGoogleAuth?: boolean;
   onAuthenticated?: () => Promise<void>;
   mode: "login" | "signup";
@@ -24,6 +25,7 @@ export type AuthModalProps = {
 export default function AuthModal({
   open,
   description,
+  action,
   allowGoogleAuth = true,
   onAuthenticated,
   mode,
@@ -35,7 +37,9 @@ export default function AuthModal({
   allowSignupSwitch = true,
 }: AuthModalProps) {
   const isLogin = mode === "login";
-  const heroKicker = isLogin ? "Welcome back" : "You're invited";
+  const publishing = action === "publish";
+  const publishLabel = isLogin ? "Sign in & publish" : "Create an account & publish";
+  const heroKicker = publishing ? publishLabel : isLogin ? "Welcome back" : "You're invited";
   const { setIsCollapsed } = useSidebar();
   // Broadcast global open/close so other components (e.g., background slider)
   // can react when any auth modal is shown anywhere on the page.
@@ -117,7 +121,7 @@ export default function AuthModal({
   if (!open) return null;
 
   return (
-    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={isLogin ? "Log in" : "Create an account"} className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-6 auth-modal">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={publishing ? publishLabel : isLogin ? "Log in" : "Create an account"} className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-6 auth-modal">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-[rgba(24,14,10,0.45)] backdrop-blur-[6px] backdrop-saturate-150"
@@ -143,6 +147,9 @@ export default function AuthModal({
               onAuthenticated={onAuthenticated}
               allowGoogleAuth={allowGoogleAuth}
               successRedirectUrl={successRedirectUrl}
+              submitLabel={publishing ? "Sign in & publish" : undefined}
+              googleLabel={publishing ? "Continue with Google & publish" : undefined}
+              switchModeLabel={publishing ? "Create an account & publish" : undefined}
               onSwitchMode={allowSignupSwitch && onModeChange ? () => onModeChange("signup") : undefined}
             />
           ) : (
@@ -154,6 +161,9 @@ export default function AuthModal({
               successRedirectUrl={successRedirectUrl}
               signupSource={signupSource}
               signupIntent={signupIntent}
+              submitLabel={publishing ? "Create an account & publish" : undefined}
+              googleLabel={publishing ? "Continue with Google & publish" : undefined}
+              switchModeLabel={publishing ? "Sign in & publish" : undefined}
             />
           )}
         </div>

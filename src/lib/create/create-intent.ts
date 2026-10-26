@@ -2,6 +2,7 @@ import type { CustomEventCategory } from "../event-custom-design";
 import { detectSportActivity } from "../sports-discovery/detect";
 import { getSportActivityProfile, SPORT_ACTIVITY_PROFILES } from "../sports-discovery/profiles";
 import type { HolidayCollectionId } from "../holiday-collections";
+import { isSchoolMemoText } from "../school-memo";
 
 /** Categories the Create page can route to. Sports carry a separate sport key. */
 export const CREATE_CATEGORIES = [
@@ -53,6 +54,8 @@ export type CreateConfidence = "high" | "low";
 export type CreateGuess = { category: CreateCategory; sport: string | null; occasion?: HolidayCollectionId | null };
 export type CreateClassification = CreateGuess & {
   confidence: CreateConfidence;
+  /** Exact observed source wording supporting a named holiday, when supplied. */
+  occasionEvidence?: string;
   /** Other likely answers, most likely first, never repeating the main guess. */
   alternatives: CreateGuess[];
 };
@@ -127,6 +130,10 @@ const CATEGORY_SIGNALS: Array<{ category: Exclude<CreateCategory, "sports" | "ge
  * conservative: anything short of a clear signal is "low" so the Create page asks one question.
  */
 export function classifyCreateText(input: string): CreateClassification {
+  // A school newsletter can mention holidays, races and Bible tests without
+  // becoming a holiday invitation, sports competition or religious ceremony.
+  if (isSchoolMemoText(input))
+    return { category: "general", sport: null, confidence: "high", alternatives: [] };
   // Treat URL punctuation as word breaks so paths like /football-schedule are read.
   const text = String(input || "").replace(/[/_.?=&#-]+/g, " ").replace(/\s+/g, " ").trim();
   const scores = new Map<CreateCategory, number>();

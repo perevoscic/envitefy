@@ -407,7 +407,7 @@ export default function EventRsvpPrompt({
                         firstName: event.target.value,
                       }))
                     }
-                    className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="app-appearance-field mt-1 w-full rounded-md border border-input bg-[var(--field-background)] px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </label>
                 <label className="text-sm">
@@ -422,7 +422,7 @@ export default function EventRsvpPrompt({
                         lastName: event.target.value,
                       }))
                     }
-                    className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="app-appearance-field mt-1 w-full rounded-md border border-input bg-[var(--field-background)] px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </label>
               </div>
@@ -439,11 +439,11 @@ export default function EventRsvpPrompt({
                     }))
                   }
                   placeholder="you@example.com"
-                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="app-appearance-field mt-1 w-full rounded-md border border-input bg-[var(--field-background)] px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </label>
               {error ? (
-                <p role="alert" className="text-sm text-rose-600 dark:text-rose-300">
+                <p role="alert" className="text-sm text-error">
                   {error}
                 </p>
               ) : null}
@@ -518,7 +518,7 @@ export default function EventRsvpPrompt({
             <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
               {guessRules.collect ? <label className="block text-sm">
                 <span>Team guess{guessRules.required ? " (required)" : " (optional)"}</span>
-                <select value={genderGuess} onChange={(event) => setGenderGuess(event.target.value)} required={guessRules.required} className="mt-1 min-h-11 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground">
+                <select value={genderGuess} onChange={(event) => setGenderGuess(event.target.value)} required={guessRules.required} className="app-appearance-field mt-1 min-h-11 w-full rounded-md border border-input bg-[var(--field-background)] px-3 py-2 text-foreground">
                   <option value="">Choose a team</option><option value="pink">Team Pink</option><option value="blue">Team Blue</option>
                 </select>
               </label> : null}
@@ -535,7 +535,7 @@ export default function EventRsvpPrompt({
                         firstName: event.target.value,
                       }))
                     }
-                    className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="app-appearance-field mt-1 w-full rounded-md border border-input bg-[var(--field-background)] px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </label>
                 <label className="text-sm">
@@ -550,7 +550,7 @@ export default function EventRsvpPrompt({
                         lastName: event.target.value,
                       }))
                     }
-                    className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="app-appearance-field mt-1 w-full rounded-md border border-input bg-[var(--field-background)] px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </label>
               </div>
@@ -567,11 +567,11 @@ export default function EventRsvpPrompt({
                     }))
                   }
                   placeholder="you@example.com"
-                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="app-appearance-field mt-1 w-full rounded-md border border-input bg-[var(--field-background)] px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </label>
               {error ? (
-                <p role="alert" className="text-sm text-rose-600 dark:text-rose-300">
+                <p role="alert" className="text-sm text-error">
                   {error}
                 </p>
               ) : null}

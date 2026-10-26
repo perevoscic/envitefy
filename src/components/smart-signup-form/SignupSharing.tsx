@@ -9,7 +9,7 @@ import { signupAccessInstructions } from "@/lib/signup-access";
 
 type Recipient = { id: string; name: string; email: string; status: "pending" | "accepted" };
 const actionClass =
-  "min-h-11 rounded-lg border border-[var(--signup-border)] bg-[var(--signup-surface)] px-4 py-2 text-sm font-semibold disabled:opacity-50";
+  "min-h-11 rounded-lg border border-[var(--editor-line,var(--signup-border))] bg-[var(--editor-paper,var(--signup-surface))] px-4 py-2 text-sm font-semibold disabled:opacity-50";
 
 export default function SignupSharing({
   eventId,
@@ -69,7 +69,7 @@ export default function SignupSharing({
   return (
     <section
       aria-label="Share signup"
-      className="rounded-xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-4 space-y-3"
+      className="rounded-xl border border-[var(--editor-line,var(--signup-border))] bg-[var(--editor-paper,var(--signup-surface))] p-4 space-y-3 text-[var(--editor-ink,var(--signup-text))]"
     >
       <h3 className="font-semibold">Share your signup</h3>
       {canManageCollaborators && <EventUrlDialog eventId={eventId} historyClient={editor?.historyClient} onBusyChange={editor?.publicUrlBusyChanged} onUpdated={update => {
@@ -94,11 +94,11 @@ export default function SignupSharing({
             readOnly
             value={link}
             onFocus={(e) => e.target.select()}
-            className="min-h-11 w-full min-w-0 rounded-lg border border-[var(--signup-border)] bg-[var(--signup-page)] pl-3 pr-14"
+            className="app-appearance-field min-h-11 w-full min-w-0 rounded-lg border border-[var(--editor-line,var(--signup-border))] bg-[var(--editor-paper,var(--signup-page))] pl-3 pr-14"
           />
           <button
             type="button"
-            className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-r-lg text-[var(--signup-text)] transition hover:bg-[var(--signup-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+            className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-r-lg text-[var(--editor-ink,var(--signup-text))] transition hover:bg-[var(--editor-soft,var(--signup-surface))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
             aria-label={copied ? "Signup link copied" : "Copy signup link"}
             title={copied ? "Copied" : "Copy signup link"}
             disabled={!link}
@@ -137,7 +137,7 @@ export default function SignupSharing({
         )}
       </div>
       {requiresInvitation && canManageCollaborators && open && (
-        <div className="space-y-3 border-t border-[var(--signup-border)] pt-4">
+        <div className="space-y-3 border-t border-[var(--editor-line,var(--signup-border))] pt-4">
           <form
             className="flex flex-wrap gap-3"
             onSubmit={async (e) => {
@@ -175,7 +175,7 @@ export default function SignupSharing({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 min-h-11 w-full rounded-lg border border-[var(--signup-border)] bg-[var(--signup-page)] px-3"
+                className="app-appearance-field mt-1 min-h-11 w-full rounded-lg border border-[var(--editor-line,var(--signup-border))] bg-[var(--editor-paper,var(--signup-page))] px-3"
               />
             </label>
             <button type="submit" className={actionClass} disabled={sending}>
@@ -200,7 +200,7 @@ export default function SignupSharing({
             {recipients.map((recipient) => (
               <li
                 key={recipient.id}
-                className="break-words rounded-lg border border-[var(--signup-border)] p-3"
+                className="break-words rounded-lg border border-[var(--editor-line,var(--signup-border))] p-3"
               >
                 <strong>{recipient.name || recipient.email}</strong>
                 <div>{recipient.email}</div>

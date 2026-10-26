@@ -1,11 +1,16 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import {
   classifyCreateText,
   customCategoryForGuess,
   discoveryTargetForSport,
   isLikelyUrl,
 } from "./create-intent";
-import { normalizeCreateClassification } from "./classify-source";
+import { hasSupportedHolidayOccasion, normalizeCreateClassification } from "./classify-source";
+import { defaultCreationTemplate } from "./default-creation-template";
+import { isSchoolMemoText } from "../school-memo";
+
+const schoolMemo = readFileSync(new URL("../../../scripts/fixtures/school-memo.txt", import.meta.url), "utf8");
 
 describe("Create page routing", () => {
   test("recognizes clear occasions in a description", () => {
@@ -71,5 +76,32 @@ describe("Create page routing", () => {
       confidence: "low",
       alternatives: [{ category: "general", sport: null }],
     });
+  });
+
+  test("a school memo keeps its document purpose despite incidental occasions", () => {
+    expect(isSchoolMemoText(schoolMemo)).toBe(true);
+    expect(classifyCreateText(schoolMemo)).toEqual({ category: "general", sport: null, confidence: "high", alternatives: [] });
+    expect(classifyCreateText(`${schoolMemo}\nChristmas rehearsal December 15\nWelcome to the new school year!`).category).toBe("general");
+    expect(isSchoolMemoText("School New Year's Eve Celebration\nDecember 31 at 6 PM")).toBe(false);
+    expect(isSchoolMemoText("Company weekly memo\nNew Year's Eve office party")).toBe(false);
+    expect(isSchoolMemoText("High School Football Team Weekly Memo\nPractice Monday\nGame Friday")).toBe(false);
+    expect(normalizeCreateClassification({ category: "holidays-seasonal", sport: "none", occasion: "new-years-day", occasionEvidence: "Bible Test", confident: true, alternatives: [] }, schoolMemo)?.category).toBe("general");
+  });
+
+  test("a named holiday survives recognition only with matching observed evidence", () => {
+    const source = "School New Year's Eve Celebration\nDecember 31 at 6 PM";
+    expect(normalizeCreateClassification({ category: "holidays-seasonal", sport: "none", occasion: "new-years-eve", occasionEvidence: "School New Year's Eve Celebration", confident: true, alternatives: [] }, source)).toMatchObject({ category: "holidays-seasonal", occasion: "new-years-eve", confidence: "high", occasionEvidence: "School New Year's Eve Celebration" });
+    for (const [evidence, text] of [["New Year's Day", "Team night out"], ["Team night out", "Team night out"], ["Welcome to a new year of school", "Welcome to a new year of school"]]) {
+      expect(hasSupportedHolidayOccasion("new-years-day", evidence, text)).toBe(false);
+    }
+    expect(normalizeCreateClassification({ category: "holidays-seasonal", sport: "none", occasion: "new-years-day", occasionEvidence: "Team night out", confident: true, alternatives: [] }, "Team night out")).toMatchObject({ occasion: null, confidence: "low" });
+  });
+
+  test("broad holiday recognition cannot pick the first New Year design", () => {
+    const designs = [{ id: "new-year" }, { id: "christmas" }];
+    expect(defaultCreationTemplate(designs, { category: "holidays-seasonal", sport: null })).toBeUndefined();
+    expect(defaultCreationTemplate(designs, { category: "holidays-seasonal", sport: null }, "christmas")).toEqual(designs[1]);
+    expect(defaultCreationTemplate([designs[1]], { category: "holidays-seasonal", sport: null, occasion: "christmas" })).toEqual(designs[1]);
+    expect(defaultCreationTemplate([{ id: "school" }], { category: "general", sport: null })).toEqual({ id: "school" });
   });
 });

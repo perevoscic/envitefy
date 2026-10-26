@@ -1,16 +1,25 @@
 import {
   parseCalendarDateTimeToIso,
   formatCalendarDateTimeInTimeZone,
+  addCalendarDays,
 } from "./calendar-date-time.ts";
 import { parseDayCode } from "./ocr/practice-schedule.ts";
+import type { NormalizedEvent } from "./mappers.ts";
+
+export type ScanScheduleItemType = "practice" | "game" | "test" | "deadline" | "event" | "closure";
 
 export type ScanScheduleItem = {
   id: string;
-  type: "practice" | "game";
+  type: ScanScheduleItemType;
   title: string;
   group: string | null;
   day: string | null;
   date: string | null;
+  /** Last printed calendar day, inclusive. Calendar adapters make it exclusive. */
+  endDate?: string | null;
+  yearInferred?: boolean;
+  sourceText?: string | null;
+  calendarSelected?: boolean;
   startTime: string | null;
   endTime: string | null;
   startAt: string | null;
@@ -23,6 +32,8 @@ export type ScanScheduleItem = {
   status: string;
 };
 export type ScanSchedule = {
+  kind?: "school-memo";
+  issueDate?: string | null;
   title: string;
   timeframe: string | null;
   timezone: string;
@@ -78,6 +89,8 @@ function iso(value: unknown, tz: string): string | null {
 export function normalizeScanSchedule(value: unknown): ScanSchedule | null {
   const source = record(value);
   const tz = timezone(source.timezone);
+  const schoolMemo = source.kind === "school-memo";
+  const usedIds = new Set<string>();
   const items = list(source.items).flatMap((value, index): ScanScheduleItem[] => {
     const row = record(value);
     const title = text(row.title);
@@ -97,27 +110,52 @@ export function normalizeScanSchedule(value: unknown): ScanSchedule | null {
     const date =
       localDate(row.date) ||
       (row.type !== "practice" ? localDate(timedStart || storedStart) : null);
+    const printedEndDate = localDate(row.endDate);
+    const endDate = date && printedEndDate && printedEndDate >= date ? printedEndDate : null;
     const startTime = localTime(row.startTime || timedStart?.slice(11, 16));
     const endTime = localTime(row.endTime || timedEnd?.slice(11, 16));
     const datedStart =
       date && startTime && /^\d{2}:\d{2}$/.test(startTime) ? `${date}T${startTime}:00` : null;
     const datedEnd =
-      date && endTime && /^\d{2}:\d{2}$/.test(endTime) ? `${date}T${endTime}:00` : null;
+      date && endTime && /^\d{2}:\d{2}$/.test(endTime) ? `${endDate || date}T${endTime}:00` : null;
     // Weekly sessions have no invented next occurrence or infinite recurrence.
     const weekly = row.type === "practice" && day && !date;
+    const dateOnly = schoolMemo && !datedStart && !timedStart;
+    let id =
+      text(row.id) ||
+      (schoolMemo ? `memo-${globalThis.crypto.randomUUID()}` : `schedule-${index + 1}`);
+    // Assign once at the boundary; IDs are retained through edits, reordering and saving.
+    if (usedIds.has(id)) id = `memo-${globalThis.crypto.randomUUID()}`;
+    usedIds.add(id);
+    const itemType = ["practice", "game", "test", "deadline", "event", "closure"].includes(
+      String(row.type),
+    )
+      ? (row.type as ScanScheduleItemType)
+      : "game";
     return [
       {
-        id: text(row.id) || `schedule-${index + 1}`,
-        type: row.type === "practice" ? "practice" : "game",
+        id,
+        type: itemType,
         title,
         group: text(row.group),
         day,
         date,
+        ...(schoolMemo || "endDate" in row ? { endDate } : {}),
+        ...(typeof row.yearInferred === "boolean" ? { yearInferred: row.yearInferred } : {}),
+        ...("sourceText" in row ? { sourceText: text(row.sourceText) } : {}),
+        ...(typeof row.calendarSelected === "boolean"
+          ? { calendarSelected: row.calendarSelected }
+          : {}),
         startTime,
         endTime,
         startAt:
-          weekly || row.allDay === true ? null : iso(datedStart || row.startAt || row.start, rowTz),
-        endAt: weekly || row.allDay === true ? null : iso(datedEnd || row.endAt || row.end, rowTz),
+          weekly || row.allDay === true || dateOnly
+            ? null
+            : iso(datedStart || row.startAt || row.start, rowTz),
+        endAt:
+          weekly || row.allDay === true || dateOnly
+            ? null
+            : iso(datedEnd || row.endAt || row.end, rowTz),
         timezone: rowTz,
         locationText: text(row.locationText || row.location || row.venue),
         opponent: text(row.opponent),
@@ -127,9 +165,12 @@ export function normalizeScanSchedule(value: unknown): ScanSchedule | null {
       },
     ];
   });
-  return items.length
+  return items.length || schoolMemo
     ? {
-        title: text(source.title) || "Team schedule",
+        ...(schoolMemo
+          ? { kind: "school-memo" as const, issueDate: localDate(source.issueDate) }
+          : {}),
+        title: text(source.title) || (schoolMemo ? "School memo" : "Team schedule"),
         timeframe: text(source.timeframe),
         timezone: tz,
         items,
@@ -205,6 +246,22 @@ export function scanScheduleFromOcr(value: unknown): ScanSchedule | null {
 
 /** Keep list/dashboard timing in sync with the reviewed schedule. */
 export function scanScheduleHistoryFields(schedule: ScanSchedule) {
+  if (schedule.kind === "school-memo") {
+    // A memo aggregates dates. Its issue date is not another calendar event.
+    return {
+      startAt: null,
+      startISO: null,
+      start: null,
+      endAt: null,
+      endISO: null,
+      end: null,
+      timezone: schedule.timezone,
+      tz: schedule.timezone,
+      timeFound: false,
+      allDay: false,
+      scheduleLine: `${schedule.items.length} dates`,
+    };
+  }
   const firstDated = schedule.items.find((item) => item.startAt);
   const start = firstDated?.startAt || null;
   const end = firstDated?.endAt || null;
@@ -223,6 +280,65 @@ export function scanScheduleHistoryFields(schedule: ScanSchedule) {
   };
 }
 
+/** The source model keeps unknown times unknown, even when exported as all-day. */
+export type ScanScheduleCalendarEvent = Omit<NormalizedEvent, "end"> & {
+  end: string | null;
+  uid: string;
+};
+
+/** Saved IDs, rather than a title/date hash, keep exports stable after corrections. */
+export function scanScheduleCalendarUid(itemId: string, parentEventId?: string | null): string {
+  const identity = [parentEventId || "scan", itemId].join(":");
+  const escaped = encodeURIComponent(identity).replace(
+    /[!'()*]/g,
+    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+  return `${escaped}@envitefy.com`;
+}
+
+export function scanScheduleCalendarEvent(
+  item: ScanScheduleItem,
+  schedule: ScanSchedule,
+  parentEventId?: string | null,
+): ScanScheduleCalendarEvent | null {
+  if (/^cancel(?:led|ed)$/i.test(item.status) || !item.id || !item.title.trim()) return null;
+  const date = localDate(item.date);
+  const timedStart = item.startAt && iso(item.startAt, item.timezone || schedule.timezone);
+  const allDay = !timedStart;
+  if (!timedStart && !date) return null;
+  const rangeEnd = localDate(item.endDate);
+  const start = timedStart || date!;
+  const timedEnd = item.endAt && iso(item.endAt, item.timezone || schedule.timezone);
+  const end = allDay
+    ? addCalendarDays(rangeEnd && rangeEnd >= date! ? rangeEnd : date!, 1)
+    : timedEnd && Date.parse(timedEnd) > Date.parse(start)
+      ? timedEnd
+      : null;
+  if (allDay && !end) return null;
+  const notes = [item.notes];
+  if (
+    allDay &&
+    item.startTime &&
+    !/^\d{2}:\d{2}$/.test(item.startTime) &&
+    !item.notes?.includes(item.startTime)
+  )
+    notes.push(`Time: ${item.startTime}`);
+  if (allDay && schedule.kind === "school-memo" && !item.startTime)
+    notes.push("Time not specified in the memo.");
+  return {
+    title: item.title,
+    start,
+    end,
+    allDay,
+    timezone: item.timezone || schedule.timezone,
+    location: item.locationText || "",
+    description: notes.filter(Boolean).join("\n\n"),
+    recurrence: null,
+    reminders: [],
+    uid: scanScheduleCalendarUid(item.id, parentEventId),
+  };
+}
+
 export const WEEKDAY_LABELS: Record<string, string> = {
   MO: "Monday",
   TU: "Tuesday",
@@ -232,15 +348,25 @@ export const WEEKDAY_LABELS: Record<string, string> = {
   SA: "Saturday",
   SU: "Sunday",
 };
-export function scanScheduleWhen(item: ScanScheduleItem): string {
+export function scanScheduleWhen(
+  item: ScanScheduleItem,
+  schedule?: Pick<ScanSchedule, "kind">,
+): string {
   const day = item.day ? `Every ${WEEKDAY_LABELS[item.day] || item.day}` : null;
+  const formatDate = (value: string) =>
+    new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(`${value}T12:00:00Z`));
   const date = item.date
-    ? new Intl.DateTimeFormat("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        timeZone: "UTC",
-      }).format(new Date(`${item.date}T12:00:00Z`))
+    ? [
+        formatDate(item.date),
+        item.endDate && item.endDate > item.date ? formatDate(item.endDate) : null,
+      ]
+        .filter(Boolean)
+        .join("–")
     : null;
   const clock = (value: string | null) => {
     if (!value || !/^\d{2}:\d{2}$/.test(value)) return value;
@@ -254,5 +380,13 @@ export function scanScheduleWhen(item: ScanScheduleItem): string {
       minute: "2-digit",
       timeZone: item.timezone,
     }).format(new Date(item.startAt));
+  if (!time && schedule?.kind === "school-memo") {
+    return [
+      date || "Date not provided",
+      item.type === "closure" || item.endDate ? null : "Time not provided",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
   return [date || day || "Date TBD", time || "Time TBD"].join(" · ");
 }

@@ -246,9 +246,9 @@ function getOpenHouseRealtorLogoUrl(details: LiveCardEventDetails | null | undef
 }
 
 function accentClassForRsvpChoice(choice: "yes" | "no" | "maybe") {
-  if (choice === "yes") return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  if (choice === "no") return "border-rose-200 bg-rose-50 text-rose-700";
-  return "border-amber-200 bg-amber-50 text-amber-700";
+  if (choice === "yes") return "border-[var(--app-border,#a7f3d0)] bg-[var(--app-surface-alt,#ecfdf5)] text-[var(--app-success,#047857)]";
+  if (choice === "no") return "border-[var(--app-border,#fecdd3)] bg-[var(--app-surface-alt,#fff1f2)] text-[var(--app-error,#be123c)]";
+  return "border-[var(--app-border,#fde68a)] bg-[var(--app-surface-alt,#fffbeb)] text-[var(--app-warning,#b45309)]";
 }
 
 export function isPosterFirstHeroCard(invitationData?: LiveCardInvitationData | null) {
@@ -330,16 +330,16 @@ function renderExtraDetailFields(details: LiveCardEventDetails | null | undefine
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {entries.map(([key, value]) => (
-        <div key={key} className="rounded-xl border border-neutral-100 bg-neutral-50 p-3">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+        <div key={key} className="rounded-xl border border-[var(--app-border,#f5f5f5)] bg-[var(--app-surface-alt,#fafafa)] p-3">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--app-muted-foreground,#a3a3a3)]">
             {key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase())}
           </p>
-          <p className="text-sm text-neutral-900">{String(value)}</p>
+          <p className="text-sm text-[var(--app-foreground,#171717)]">{String(value)}</p>
         </div>
       ))}
       {readString(details.message) ? (
-        <div className="rounded-xl border border-[#e2d5c7] bg-[#f7efe7] p-4 italic">
-          <p className="text-xs text-[#8C7B65]">"{readString(details.message)}"</p>
+        <div className="rounded-xl border border-[var(--app-border,#e2d5c7)] bg-[var(--app-surface-alt,#f7efe7)] p-4 italic">
+          <p className="text-xs text-[var(--app-muted-foreground,#8c7b65)]">"{readString(details.message)}"</p>
         </div>
       ) : null}
     </div>
@@ -349,10 +349,10 @@ function renderExtraDetailFields(details: LiveCardEventDetails | null | undefine
 function AgentDetailRow(props: { label: string; value: string }) {
   return (
     <div>
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--app-muted-foreground,#a3a3a3)]">
         {props.label}
       </p>
-      <p className="text-sm text-neutral-800">{props.value}</p>
+      <p className="text-sm text-[var(--app-foreground,#262626)]">{props.value}</p>
     </div>
   );
 }
@@ -804,11 +804,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               data-live-card-panel-align={panelAlignment}
               role="region"
               aria-label={`${props.activeTab} details`}
-              className={`${styles.panel} ${dockedPanelAlignClass} pointer-events-auto z-50 border border-neutral-200 shadow-2xl backdrop-blur-md ${props.activeTab === "calendar" ? "bg-white/80" : "bg-white/90"}`}
+              className={`${styles.panel} ${dockedPanelAlignClass} pointer-events-auto z-50 border border-[var(--app-border,#e5e5e5)] shadow-2xl backdrop-blur-md ${props.activeTab === "calendar" ? "bg-[var(--app-surface,#ffffffcc)]" : "bg-[var(--app-surface,#ffffffe6)]"}`}
             >
               <div className={`${styles.panelHeader} flex items-center justify-between`}>
                 <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
+                  <div className="rounded-lg bg-[var(--app-surface-alt,#f5f5f5)] p-2 text-[var(--app-foreground,#171717)]">
                     {props.activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
                     {props.activeTab === "calendar" ? <CalendarPlus className="h-5 w-5" /> : null}
                     {props.activeTab === "registry" ? <Gift className="h-5 w-5" /> : null}
@@ -828,7 +828,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       )
                     ) : null}
                   </div>
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-[var(--app-foreground,#171717)]">
                     {props.activeTab === "location" ? "Where" : null}
                     {props.activeTab === "calendar" ? "To Calendar" : null}
                     {props.activeTab === "registry" ? "Gift Registry" : null}
@@ -848,7 +848,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     props.onActiveTabChange("none");
                   }}
                   aria-label="Close card details"
-                  className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
+                  className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--app-muted-foreground,#525252)] hover:bg-[var(--app-surface-raised,#f5f5f5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-focus-ring,#171717)]"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -857,10 +857,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               <div className={`${styles.panelBody} space-y-3`}>
                 {props.activeTab === "rsvp" ? (
                   openHouseAgentCard ? (
-                    <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                    <div className="space-y-3 rounded-2xl border border-[var(--app-border,#f5f5f5)] bg-[var(--app-surface-alt,#fafafa)] p-4">
                       <div className="flex items-center gap-3">
                         {agentImageUrl ? (
-                          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white bg-white shadow-sm">
+                          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[var(--app-border,#fff)] bg-[var(--app-field-background,#fff)] shadow-sm">
                             <img
                               src={agentImageUrl}
                               alt={agentName ? `${agentName} realtor photo` : "Realtor photo"}
@@ -869,7 +869,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                             />
                           </div>
                         ) : null}
-                        <p className="text-base font-semibold text-neutral-900">
+                        <p className="text-base font-semibold text-[var(--app-foreground,#171717)]">
                           {agentName || "Listing Agent"}
                         </p>
                       </div>
@@ -882,16 +882,16 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       ) : null}
                       {rsvpContact ? (
                         <div>
-                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--app-muted-foreground,#a3a3a3)]">
                             Contact
                           </p>
-                          <p className="inline-flex items-center gap-2 break-all text-sm text-neutral-800">
+                          <p className="inline-flex items-center gap-2 break-all text-sm text-[var(--app-foreground,#262626)]">
                             {rsvpParsed.kind === "email" ? (
-                              <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
+                              <Mail className="h-4 w-4 shrink-0 text-[var(--app-muted-foreground,#737373)]" />
                             ) : rsvpParsed.kind === "sms" ? (
-                              <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
+                              <Phone className="h-4 w-4 shrink-0 text-[var(--app-muted-foreground,#737373)]" />
                             ) : (
-                              <MessageSquare className="h-4 w-4 shrink-0 text-neutral-500" />
+                              <MessageSquare className="h-4 w-4 shrink-0 text-[var(--app-muted-foreground,#737373)]" />
                             )}
                             {rsvpContact}
                           </p>
@@ -902,7 +902,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                           href={listingHref}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white"
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--app-primary,#171717)] px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-[var(--app-primary-foreground,#fff)]"
                         >
                           <ExternalLink className="h-4 w-4" />
                           View Listing
@@ -911,20 +911,20 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     </div>
                   ) : (
                     <div className="flex flex-col space-y-4">
-                      <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                        <p className="text-sm font-medium text-neutral-900">
+                      <div className="space-y-3 rounded-2xl border border-[var(--app-border,#f5f5f5)] bg-[var(--app-surface-alt,#fafafa)] p-4">
+                        <p className="text-sm font-medium text-[var(--app-foreground,#171717)]">
                           {readString(details?.rsvpName) || "Host"}
                         </p>
                         {readString(details?.rsvpContact) ? (
                           <div>
-                            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--app-muted-foreground,#a3a3a3)]">
                               RSVP contact
                             </p>
-                            <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
+                            <p className="inline-flex items-center gap-2 text-sm text-[var(--app-foreground,#262626)]">
                               {rsvpParsed.kind === "email" ? (
-                                <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
+                                <Mail className="h-4 w-4 shrink-0 text-[var(--app-muted-foreground,#737373)]" />
                               ) : rsvpParsed.kind === "sms" ? (
-                                <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
+                                <Phone className="h-4 w-4 shrink-0 text-[var(--app-muted-foreground,#737373)]" />
                               ) : null}
                               {readString(details?.rsvpContact)}
                             </p>
@@ -932,10 +932,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         ) : null}
                         {readString(details?.rsvpDeadline) ? (
                           <div>
-                            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--app-muted-foreground,#a3a3a3)]">
                               RSVP deadline
                             </p>
-                            <p className="text-sm text-red-600">
+                            <p className="text-sm text-[var(--app-error,#dc2626)]">
                               {formatDate(readString(details?.rsvpDeadline))}
                             </p>
                           </div>
@@ -943,7 +943,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         {directRsvpHref && !rsvpContact && !hasDirectEnvitefyRsvp ? (
                           <a
                             href={directRsvpHref}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-neutral-800"
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--app-primary,#171717)] px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-[var(--app-primary-foreground,#fff)] transition hover:opacity-90"
                           >
                             <ExternalLink className="h-4 w-4" />
                             Open RSVP form
@@ -951,14 +951,14 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         ) : null}
                       </div>
                       {hasDirectEnvitefyRsvp ? (
-                        <div className="mt-auto space-y-3 border-t border-neutral-100 pt-4">
+                        <div className="mt-auto space-y-3 border-t border-[var(--app-border,#f5f5f5)] pt-4">
                           {directRsvpStatus === "success" ? (
-                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-5 text-center">
-                              <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-700" />
-                              <p className="mt-3 text-sm font-bold text-neutral-950">
+                            <div className="rounded-2xl border border-[var(--app-border,#a7f3d0)] bg-[var(--app-surface-alt,#ecfdf5)] px-4 py-5 text-center">
+                              <CheckCircle2 className="mx-auto h-9 w-9 text-[var(--app-success,#047857)]" />
+                              <p className="mt-3 text-sm font-bold text-[var(--app-foreground,#0a0a0a)]">
                                 Thank you for RSVP-ing.
                               </p>
-                              <p className="mt-1 text-sm font-medium text-neutral-700">
+                              <p className="mt-1 text-sm font-medium text-[var(--app-foreground,#404040)]">
                                 {directRsvpVenueLabel
                                   ? `See you at ${directRsvpVenueLabel}.`
                                   : "We'll see you there."}
@@ -990,43 +990,43 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                               </div>
                               {directRsvpChoice ? (
                                 <form className="space-y-2" onSubmit={submitDirectRsvp}>
-                                  <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[var(--app-muted-foreground,#a3a3a3)]">
                                     Your name
                                     <input
                                       value={directRsvpName}
                                       onChange={(event) => setDirectRsvpName(event.target.value)}
-                                      className="mt-1 h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-900 outline-none focus:border-neutral-900"
+                                      className="app-appearance-field mt-1 h-10 w-full rounded-xl border border-[var(--app-input,#e5e5e5)] bg-[var(--app-field-background,#fff)] px-3 text-sm font-semibold text-[var(--app-foreground,#171717)] outline-none focus:border-[var(--app-focus-ring,#171717)]"
                                       placeholder="Name"
                                       required
                                     />
                                   </label>
-                                  <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[var(--app-muted-foreground,#a3a3a3)]">
                                     Email
                                     <input
                                       value={directRsvpEmail}
                                       onChange={(event) => setDirectRsvpEmail(event.target.value)}
-                                      className="mt-1 h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-900 outline-none focus:border-neutral-900"
+                                      className="app-appearance-field mt-1 h-10 w-full rounded-xl border border-[var(--app-input,#e5e5e5)] bg-[var(--app-field-background,#fff)] px-3 text-sm font-semibold text-[var(--app-foreground,#171717)] outline-none focus:border-[var(--app-focus-ring,#171717)]"
                                       placeholder="Email"
                                       type="email"
                                       required
                                     />
                                   </label>
-                                  {guessRules.collect ? <label className="block text-xs font-bold text-neutral-600">Team guess{guessRules.required ? " (required)" : " (optional)"}<select value={directRsvpGenderGuess} onChange={(event) => setDirectRsvpGenderGuess(event.target.value)} required={guessRules.required} className="mt-1 min-h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-base text-neutral-900"><option value="">Choose a team</option><option value="pink">Team Pink</option><option value="blue">Team Blue</option></select></label> : null}
+                                  {guessRules.collect ? <label className="block text-xs font-bold text-[var(--app-muted-foreground,#525252)]">Team guess{guessRules.required ? " (required)" : " (optional)"}<select value={directRsvpGenderGuess} onChange={(event) => setDirectRsvpGenderGuess(event.target.value)} required={guessRules.required} className="app-appearance-field mt-1 min-h-11 w-full rounded-xl border border-[var(--app-input,#e5e5e5)] bg-[var(--app-field-background,#fff)] px-3 py-2 text-base text-[var(--app-foreground,#171717)]"><option value="">Choose a team</option><option value="pink">Team Pink</option><option value="blue">Team Blue</option></select></label> : null}
                                   {directRsvpStatus === "error" && directRsvpError ? (
-                                    <p className="text-xs font-semibold text-rose-600">
+                                    <p className="text-xs font-semibold text-[var(--app-error,#e11d48)]">
                                       {directRsvpError}
                                     </p>
                                   ) : null}
                                   <button
                                     type="submit"
                                     disabled={!directRsvpIsComplete || directRsvpStatus === "submitting"}
-                                    className="inline-flex w-full items-center justify-center rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition enabled:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-400"
+                                    className="inline-flex w-full items-center justify-center rounded-xl bg-[var(--app-primary,#171717)] px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-[var(--app-primary-foreground,#fff)] transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[var(--app-surface-raised,#a3a3a3)]"
                                   >
                                     {directRsvpStatus === "submitting" ? "Sending..." : "Send response"}
                                   </button>
                                 </form>
                               ) : (
-                                <p className="text-xs font-semibold text-neutral-500">
+                                <p className="text-xs font-semibold text-[var(--app-muted-foreground,#737373)]">
                                   Choose yes, no, or maybe to RSVP from the card.
                                 </p>
                               )}
@@ -1034,7 +1034,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                           )}
                         </div>
                       ) : rsvpContact ? (
-                        <div data-live-card-rsvp-choices className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
+                        <div data-live-card-rsvp-choices className="mt-auto grid grid-cols-3 gap-2 border-t border-[var(--app-border,#f5f5f5)] pt-4">
                           {LIVE_CARD_RSVP_CHOICES.map((choice) => {
                             const href = buildLiveCardRsvpOutboundHref({
                               rsvpContact,
@@ -1089,9 +1089,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 ) : null}
 
                 {props.activeTab === "logo" && openHouseAgentCard ? (
-                  <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                  <div className="space-y-3 rounded-2xl border border-[var(--app-border,#f5f5f5)] bg-[var(--app-surface-alt,#fafafa)] p-4">
                     {agentLogoUrl ? (
-                      <div className="flex min-h-28 items-center justify-center rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+                      <div className="flex min-h-28 items-center justify-center rounded-2xl border border-[var(--app-border,#e5e5e5)] bg-[var(--app-field-background,#fff)] p-5 shadow-sm">
                         <img
                           src={agentLogoUrl}
                           alt={agentBrokerage ? `${agentBrokerage} logo` : "Realtor company logo"}
@@ -1107,23 +1107,23 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 ) : null}
 
                 {props.activeTab === "details" ? (
-                  <div data-live-card-overview className="space-y-4 text-neutral-900">
+                  <div data-live-card-overview className="space-y-4 text-[var(--app-foreground,#171717)]">
                     <div>
                       <h5 className="text-lg font-semibold leading-snug">{overviewTitle}</h5>
-                      {overviewWhen ? <p className="mt-2 text-sm leading-relaxed text-neutral-700">{overviewWhen}</p> : null}
+                      {overviewWhen ? <p className="mt-2 text-sm leading-relaxed text-[var(--app-foreground,#404040)]">{overviewWhen}</p> : null}
                     </div>
                     {locationActions.length ? (
-                      <ol className="space-y-3 border-t border-neutral-200 pt-4" aria-label="Event plan">
+                      <ol className="space-y-3 border-t border-[var(--app-border,#e5e5e5)] pt-4" aria-label="Event plan">
                         {locationActions.map((location, index) => (
                           <li key={location.id} className="flex items-start gap-3">
-                            <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xs font-semibold text-white">{index + 1}</span>
+                            <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--app-primary,#171717)] text-xs font-semibold text-[var(--app-primary-foreground,#fff)]">{index + 1}</span>
                             <p className="pt-0.5 text-sm leading-relaxed">{overviewPlan[index]}</p>
                           </li>
                         ))}
                       </ol>
                     ) : null}
                     {onlineLocations.map((location) => (
-                      <a key={location.url} href={location.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white">Join {location.label}</a>
+                      <a key={location.url} href={location.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-xl bg-[var(--app-primary,#171717)] px-4 py-2 text-sm font-semibold text-[var(--app-primary-foreground,#fff)]">Join {location.label}</a>
                     ))}
                     {overviewNotes.map((note) => <p key={note} className="whitespace-pre-line text-sm leading-relaxed">{note}</p>)}
                     {props.showExtendedDetails ? renderExtraDetailFields(details) : null}
@@ -1134,21 +1134,21 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                   locationActions.length > 0 || onlineLocations.length > 0 ? (
                     <div className="space-y-3">
                       {onlineLocations.map((location) => (
-                        <div key={location.url} className="rounded-xl border border-neutral-200 bg-white/85 p-3 text-left shadow-sm">
-                          <p className="text-sm font-semibold text-neutral-900">{location.label}</p>
-                          <a href={location.url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white">Join {location.label}</a>
+                        <div key={location.url} className="rounded-xl border border-[var(--app-border,#e5e5e5)] bg-[var(--app-surface-alt,#ffffffd9)] p-3 text-left shadow-sm">
+                          <p className="text-sm font-semibold text-[var(--app-foreground,#171717)]">{location.label}</p>
+                          <a href={location.url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-[var(--app-primary,#171717)] px-4 py-2 text-sm font-semibold text-[var(--app-primary-foreground,#fff)]">Join {location.label}</a>
                         </div>
                       ))}
                       {locationActions.map((locationAction) => (
                         <div
                           key={locationAction.id}
-                          className="rounded-xl border border-neutral-200 bg-white/85 p-3 text-left shadow-sm"
+                          className="rounded-xl border border-[var(--app-border,#e5e5e5)] bg-[var(--app-surface-alt,#ffffffd9)] p-3 text-left shadow-sm"
                         >
-                          <p className="text-sm font-semibold text-neutral-900">
+                          <p className="text-sm font-semibold text-[var(--app-foreground,#171717)]">
                             {locationAction.label}
                           </p>
                           {getLiveCardLocationAddress(locationAction) ? (
-                            <p className="mt-1 text-sm leading-relaxed text-neutral-600">{getLiveCardLocationAddress(locationAction)}</p>
+                            <p className="mt-1 text-sm leading-relaxed text-[var(--app-muted-foreground,#525252)]">{getLiveCardLocationAddress(locationAction)}</p>
                           ) : null}
                           <div className="mt-3 flex justify-start">
                             <button
@@ -1160,7 +1160,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                   "noopener,noreferrer",
                                 )
                               }
-                              className="inline-flex min-h-11 w-auto cursor-pointer items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-xs font-bold text-white"
+                              className="inline-flex min-h-11 w-auto cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--app-primary,#171717)] px-4 py-2 text-xs font-bold text-[var(--app-primary-foreground,#fff)]"
                               aria-label={`Get directions to ${locationAction.label}`}
                             >
                               <Navigation className="h-4 w-4" aria-hidden="true" />
@@ -1174,9 +1174,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 ) : null}
 
                 {props.activeTab === "calendar" ? (
-                  <div className="text-neutral-900">
+                  <div className="text-[var(--app-foreground,#171717)]">
                     <p className="text-sm font-medium">Save the Date</p>
-                    <p className="mt-1 text-xs text-neutral-700">
+                    <p className="mt-1 text-xs text-[var(--app-foreground,#404040)]">
                       {overviewWhen || "Date TBD"}
                     </p>
                     {calendarLinks ? (
@@ -1197,7 +1197,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                   props.onActiveTabChange("none");
                                 }
                               }}
-                              className="inline-flex size-11 items-center justify-center rounded-full border border-neutral-400/60 bg-white/60 text-neutral-800 shadow-sm transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
+                              className="inline-flex size-11 items-center justify-center rounded-full border border-[var(--app-input,#a3a3a399)] bg-[var(--app-surface-alt,#ffffff99)] text-[var(--app-foreground,#262626)] shadow-sm transition hover:bg-[var(--app-surface-raised,#ffffffe6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-focus-ring,#171717)]"
                               aria-label={`Open in ${label}`}
                               title={label}
                             >
@@ -1214,11 +1214,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
                 {props.activeTab === "registry" ? (
                   <>
-                    <p className="text-sm font-medium text-neutral-900">{registryPanelTitle}</p>
-                    <p className="text-xs text-neutral-500">{getRegistryText(details)}</p>
-                    {registryNote ? <p className="whitespace-pre-line text-sm text-neutral-700">{registryNote}</p> : null}
+                    <p className="text-sm font-medium text-[var(--app-foreground,#171717)]">{registryPanelTitle}</p>
+                    <p className="text-xs text-[var(--app-muted-foreground,#737373)]">{getRegistryText(details)}</p>
+                    {registryNote ? <p className="whitespace-pre-line text-sm text-[var(--app-foreground,#404040)]">{registryNote}</p> : null}
                     {readString(props.registryHelperText) ? (
-                      <p className="text-xs text-neutral-500">
+                      <p className="text-xs text-[var(--app-muted-foreground,#737373)]">
                         {readString(props.registryHelperText)}
                       </p>
                     ) : null}
@@ -1226,7 +1226,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       <button
                         type="button"
                         onClick={() => window.open(registryHref, "_blank", "noopener,noreferrer")}
-                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-pink-600 py-2 text-xs font-bold text-white"
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--app-primary,#db2777)] py-2 text-xs font-bold text-[var(--app-primary-foreground,#fff)]"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Visit {registryActionLabel}

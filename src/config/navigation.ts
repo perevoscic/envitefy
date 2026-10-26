@@ -137,6 +137,16 @@ export function marketingPageNavLinks(pathname: string): SignedOutMobileMenuLink
   if (path === "/" || path === "/landing") return [...signedOutMobileMenuLinks];
 
   const categoryPath = `/${path.split("/")[1]}`;
+  // Galleries have their own task: choose a design. Keep the way back clear
+  // rather than linking to the landing page's template teaser as “Templates”.
+  if (/^\/[^/]+\/templates$/.test(path)) {
+    const category = publicUseCaseNavLinks.find((link) => link.href === categoryPath);
+    if (category) return [
+      { label: "Home", href: "/" },
+      { label: category.label, href: categoryPath },
+      { label: "All categories", href: "/#categories" },
+    ];
+  }
   const sectionLinks = marketingSectionLinks[categoryPath] ?? [];
   return [
     { label: "Home", href: "/" },

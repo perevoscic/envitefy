@@ -1,6 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { createExtractionDeps, extractCreateInformation } from "./extract-information";
 import { emptyCustomEventDetails } from "@/lib/event-custom-design";
+import { readFileSync } from "node:fs";
 
 const original = { ...createExtractionDeps };
 afterEach(() => Object.assign(createExtractionDeps, original));
@@ -42,6 +43,45 @@ test("medical sources remain in Snap without entering the public Event Page plan
   const result = await extractCreateInformation({ text: "Medical appointment" }, new AbortController().signal);
   expect(result.destination).toBe("snap");
   expect(result.information).toBeUndefined();
+});
+
+test("school memos hand off after authorization without generic event planning or sports shells", async () => {
+  const sourceText = readFileSync(new URL("../../../scripts/fixtures/school-memo.txt", import.meta.url), "utf8");
+  const file = new File([sourceText], "school-memo.pdf", { type: "application/pdf" });
+  const stages: string[] = [];
+  let authorized = 0;
+  createExtractionDeps.read = async (input) => {
+    expect(input.files?.[0]).toBe(file);
+    return { text: sourceText, images: [], pageCount: 2 };
+  };
+  createExtractionDeps.classify = async () => ({ category: "general", sport: null, confidence: "high", alternatives: [] });
+  createExtractionDeps.information = async () => { throw new Error("A school memo must not become a public Event Page"); };
+  const result = await extractCreateInformation({ files: [file], text: "Keep all school dates." }, new AbortController().signal, async (classification) => {
+    authorized++;
+    expect(classification.category).toBe("general");
+    return true;
+  }, {
+    onStage: stage => stages.push(stage),
+    prepareSports: async () => { throw new Error("A school memo must not create a sports shell"); },
+  });
+  expect(authorized).toBe(1);
+  expect(result).toMatchObject({ destination: "snap", sourceText });
+  expect(result.information).toBeUndefined();
+  expect(stages).toEqual(["reading", "classifying"]);
+  const denied = await extractCreateInformation({ files: [file] }, new AbortController().signal, async () => false);
+  expect(denied.accessRequired).toBe(true);
+  expect(denied.destination).toBeUndefined();
+});
+
+test("an intentional General Event or different Event Page category can reuse school source facts", async () => {
+  createExtractionDeps.read = async () => ({ text: "School weekly memo. Math classes and reading homework.", images: [], pageCount: 1 });
+  createExtractionDeps.classify = async () => ({ category: "general", sport: null, confidence: "high", alternatives: [] });
+  createExtractionDeps.information = async (input) => ({ version: 1, kind: "information", category: input.category, design: { version: 1, name: "Event information", description: "", layout: "editorial", font: "editorial", colors: { page: "#ffffff", surface: "#ffffff", ink: "#111111", accent: "#123456" } }, details: { ...emptyCustomEventDetails(), title: "School fundraiser" } });
+  for (const category of ["general", "special-events"] as const) {
+    const result = await extractCreateInformation({ category }, new AbortController().signal);
+    expect(result.destination).toBeUndefined();
+    expect(result.information?.category).toBe(category);
+  }
 });
 
 test("the authorized sports handoff reuses the single server read and skips generic page planning", async () => {

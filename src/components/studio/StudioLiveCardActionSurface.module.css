@@ -97,7 +97,7 @@
 }
 
 .panel label {
-  color: #525252;
+  color: var(--app-muted-foreground, #525252);
   font-size: var(--text-xs);
 }
 

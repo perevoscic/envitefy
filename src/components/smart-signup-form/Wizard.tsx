@@ -86,7 +86,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
     if (issue.field === "signup-rules") setMobileToolsOpen(true);
     focus(issue.field);
   };
-  const publish = async (event: React.FormEvent) => {
+  const publish = async (event: React.FormEvent, authMode: "signup" | "login" = "signup") => {
     event.preventDefault();
     if (publishDisabled) return;
     if (issues.length) {
@@ -95,6 +95,10 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
     }
     try {
       setSubmitError("");
+      if (editor && !editor.authenticated) {
+        await editor.requestPublish(authMode);
+        return;
+      }
       await onSubmit(event);
     } catch (error) {
       setSubmitError(
@@ -297,7 +301,7 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
             {submitError}
           </p>
         )}
-        <div className={`${styles.footer} ${composer.footer}`} data-review={review}>
+        <div className={`${styles.footer} ${composer.footer}`} data-review={review} data-auth-publish={review && editor && !editor.authenticated ? "true" : undefined}>
           {review ? (
             <button
               type="button"
@@ -319,19 +323,31 @@ export default function SmartSignupWizard({ form, onChange, onSubmit, submitting
               <span className={styles.help}>Use Save draft above to keep your progress.</span>
             )}
             {review ? (
-              <button
-                type="button"
-                className={styles.primary}
-                disabled={publishDisabled}
-                title={editor?.hasUnpublishedChanges === false ? "Your latest changes are published" : undefined}
-                onClick={publish}
-              >
-                {submitting
-                  ? "Publishing…"
-                  : editor && !editor.authenticated
-                    ? "Save and continue"
-                    : "Publish signup"}
-              </button>
+              <>
+                {editor && !editor.authenticated && (
+                  <button
+                    type="button"
+                    className={styles.secondary}
+                    disabled={publishDisabled}
+                    onClick={(event) => void publish(event, "login")}
+                  >
+                    Sign in &amp; publish
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={styles.primary}
+                  disabled={publishDisabled}
+                  title={editor?.hasUnpublishedChanges === false ? "Your latest changes are published" : undefined}
+                  onClick={publish}
+                >
+                  {submitting
+                    ? "Publishing…"
+                    : editor && !editor.authenticated
+                      ? "Create an account & publish"
+                      : "Publish signup"}
+                </button>
+              </>
             ) : (
               <button
                 type="button"

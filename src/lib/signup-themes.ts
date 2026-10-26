@@ -262,6 +262,16 @@ export function signupContrast(a: string, b: string): number {
   return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 }
 
+function mixSignupColors(ink: string, paper: string, inkPercent: number): string {
+  return `#${[1, 3, 5].map((offset) => {
+    const channel = Math.round(
+      parseInt(ink.slice(offset, offset + 2), 16) * inkPercent / 100 +
+      parseInt(paper.slice(offset, offset + 2), 16) * (1 - inkPercent / 100),
+    );
+    return channel.toString(16).padStart(2, "0");
+  }).join("")}`;
+}
+
 export function applySignupTheme(form: SignupForm, id: SignupThemeId): SignupForm {
   const theme = getSignupTheme(id)!;
   return {
@@ -307,6 +317,8 @@ export function resolveSignupThemeStyle(form: SignupForm): CSSProperties {
     secondary: background.secondary,
   } : undefined;
   const colors = customColors || backgroundColors || (design ? SIGNUP_DESIGN_PALETTES[design.palette] : theme);
+  const surface = customColors?.surface || backgroundColors?.surface ||
+    (design ? SIGNUP_DESIGN_PALETTES[design.palette].surface : "#FFFFFF");
   const font =
     SIGNUP_FONT_PAIRS.find((pair) => pair.id === appearance?.fontPair) || SIGNUP_FONT_PAIRS[0];
   const custom = appearance?.accent;
@@ -316,15 +328,21 @@ export function resolveSignupThemeStyle(form: SignupForm): CSSProperties {
       : appearance?.palette === "ink"
         ? colors.ink
         : colors.accent;
-  const readableSurfaces = customColors
-    ? [customColors.page, customColors.surface, customColors.soft]
-    : backgroundColors ? [backgroundColors.surface] : [];
-  const accentText =
-    readableSurfaces.some(
-      (color) => signupContrast(accent, color) < 4.5,
-    )
-      ? colors.ink
-      : accent;
+  const readableSurfaces = design || customColors || backgroundColors
+    ? [
+      backgroundColors?.surface || colors.page,
+      surface,
+      backgroundColors ? mixSignupColors(backgroundColors.secondary, surface, 15) : colors.soft,
+    ]
+    : [];
+  const readableText = (candidate: string) => readableSurfaces.some(
+    (paper) => signupContrast(candidate, paper) < 4.5,
+  ) ? colors.ink : candidate;
+  const accentText = readableText(accent);
+  const mutedPaper = backgroundColors?.surface || colors.page;
+  const mutedPercent = [80, 85, 90, 95, 100].find((percent) => readableSurfaces.every(
+    (paper) => signupContrast(mixSignupColors(colors.ink, mutedPaper, percent), paper) >= 4.5,
+  )) || 100;
   return {
     // Form controls use this paper color too. Keep their surface light while
     // the page wrapper renders the independently selected holiday background.
@@ -333,17 +351,19 @@ export function resolveSignupThemeStyle(form: SignupForm): CSSProperties {
         ? colors.soft
         : colors.page
       : form.header?.backgroundColor || "#F5F5F4",
-    "--signup-surface":
-      customColors?.surface ||
-      backgroundColors?.surface ||
-      (design ? SIGNUP_DESIGN_PALETTES[design.palette].surface : "#FFFFFF"),
+    "--signup-surface": surface,
+    "--signup-color-scheme": signupContrast(surface, "#FFFFFF") > signupContrast(surface, "#000000") ? "dark" : "light",
     "--signup-text": appearance ? colors.ink : "#222D40",
     "--signup-muted":
-      design || customColors ? `color-mix(in srgb, ${colors.ink} 80%, ${backgroundColors?.surface || colors.page})` : "#5D625F",
+      design || customColors ? `color-mix(in srgb, ${colors.ink} ${mutedPercent}%, ${mutedPaper})` : "#5D625F",
     "--signup-border":
       design || customColors ? `color-mix(in srgb, ${colors.ink} 24%, ${backgroundColors?.surface || colors.page})` : "#DEDCD5",
     "--signup-accent": accent,
     "--signup-accent-text": accentText,
+    "--signup-success-text": readableText("#047857"),
+    "--signup-error-text": readableText("#B91C1C"),
+    "--signup-warning-text": readableText("#92400E"),
+    "--signup-info-text": readableText("#1D4ED8"),
     "--signup-on-accent": signupContrast(accent, "#FFFFFF") >= 4.5 ? "#FFFFFF" : "#000000",
     "--signup-soft": colors.soft,
     "--signup-secondary":

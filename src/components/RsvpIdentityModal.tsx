@@ -55,56 +55,56 @@ export default function RsvpIdentityModal({
         aria-labelledby="rsvp-identity-title"
         data-appearance-scope="app"
         data-app-dialog
-        className="relative w-full max-w-md rounded-[1.75rem] border border-black/10 bg-white p-6 text-[#1f1633] shadow-2xl"
+        className="relative w-full max-w-md rounded-[1.75rem] border border-[var(--app-border,#0000001a)] bg-[var(--app-surface,#fff)] p-6 text-[var(--app-foreground,#1f1633)] shadow-2xl"
       >
         <button
           type="button"
           aria-label="Close RSVP details"
           onClick={onClose}
-          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-[#6f6286] transition hover:bg-[#f3eefc] hover:text-[#2f1f45]"
+          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-[var(--app-muted-foreground,#6f6286)] transition hover:bg-[var(--app-surface-raised,#f3eefc)] hover:text-[var(--app-foreground,#2f1f45)]"
         >
           <span aria-hidden="true">x</span>
         </button>
-        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#7c5cff]">RSVP</p>
+        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--app-primary,#7c5cff)]">RSVP</p>
         <h2 id="rsvp-identity-title" className="mt-2 pr-8 text-2xl font-black tracking-tight">
           Send your RSVP
         </h2>
-        <p className="mt-2 text-sm font-medium leading-6 text-[#6f6286]">
+        <p className="mt-2 text-sm font-medium leading-6 text-[var(--app-muted-foreground,#6f6286)]">
           We will add your name and email to the message for {hostName?.trim() || "the host"}.
         </p>
         <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-sm font-bold text-[#3f3269]">
+          <label className="block text-sm font-bold text-[var(--app-foreground,#3f3269)]">
             Name
             <input
               type="text"
               required
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="mt-1.5 w-full rounded-2xl border border-[#ded7f4] bg-[#fbf9ff] px-4 py-3 text-base font-semibold text-[#1f1633] outline-none transition focus:border-[#7c5cff] focus:ring-2 focus:ring-[#7c5cff]/20"
+              className="app-appearance-field mt-1.5 w-full rounded-2xl border border-[var(--app-input,#ded7f4)] bg-[var(--app-field-background,#fbf9ff)] px-4 py-3 text-base font-semibold text-[var(--app-foreground,#1f1633)] outline-none transition focus:border-[var(--app-focus-ring,#7c5cff)] focus:ring-2 focus:ring-[var(--app-focus-ring,#7c5cff)]/20"
             />
           </label>
-          <label className="block text-sm font-bold text-[#3f3269]">
+          <label className="block text-sm font-bold text-[var(--app-foreground,#3f3269)]">
             Email
             <input
               type="email"
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="mt-1.5 w-full rounded-2xl border border-[#ded7f4] bg-[#fbf9ff] px-4 py-3 text-base font-semibold text-[#1f1633] outline-none transition focus:border-[#7c5cff] focus:ring-2 focus:ring-[#7c5cff]/20"
+              className="app-appearance-field mt-1.5 w-full rounded-2xl border border-[var(--app-input,#ded7f4)] bg-[var(--app-field-background,#fbf9ff)] px-4 py-3 text-base font-semibold text-[var(--app-foreground,#1f1633)] outline-none transition focus:border-[var(--app-focus-ring,#7c5cff)] focus:ring-2 focus:ring-[var(--app-focus-ring,#7c5cff)]/20"
             />
           </label>
-          {error ? <p className="text-sm font-semibold text-rose-600">{error}</p> : null}
+          {error ? <p className="text-sm font-semibold text-[var(--app-error,#e11d48)]">{error}</p> : null}
           <div className="flex justify-end gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-[#ded7f4] px-4 py-2 text-sm font-bold text-[#5f5289] transition hover:bg-[#f7f2ff]"
+              className="rounded-full border border-[var(--app-input,#ded7f4)] px-4 py-2 text-sm font-bold text-[var(--app-muted-foreground,#5f5289)] transition hover:bg-[var(--app-surface-raised,#f7f2ff)]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-full bg-[#5b3cc4] px-5 py-2 text-sm font-black text-white shadow-lg shadow-[#5b3cc4]/20 transition hover:bg-[#4b2eb2]"
+              className="rounded-full bg-[var(--app-primary,#5b3cc4)] px-5 py-2 text-sm font-black text-[var(--app-primary-foreground,#fff)] shadow-lg shadow-[#5b3cc4]/20 transition hover:opacity-90"
             >
               Continue
             </button>

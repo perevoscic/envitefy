@@ -62,6 +62,18 @@ artwork pixels, fonts, exports and explicit save behavior remain independent.
 Shared application dialogs use an application scope even when opened from an
 authored design. Theme changes must not remount editors or request artwork.
 
+Inline template fields keep a matched authored ink, text fill, caret and paper.
+Global application input, placeholder and autofill rules respect authored scopes
+and `data-preserve-control-colors`. An application wrapper outside a template
+does not override the template; a dialog opened inside it can re-enter the app
+palette. Sign-up editor sections and sharing panels pair their editor surface
+with editor text, while the header and saved guest page retain the design colors.
+Dialog internals use semantic colors for iOS 17.0–17.3; progressive scoped utility
+compatibility stops at subsequent authored boundaries on newer browsers.
+Authored native date/select controls follow their paper's light or dark tone.
+Secondary copy, links, status messages and button text are contrast-checked against
+the resolved signup surfaces without changing the chosen artwork or paper.
+
 ## White branding
 
 The canonical wordmark joins the v–i and f–y serif edges with a tiny overlap that
@@ -107,6 +119,14 @@ mobile drawers over both app backgrounds and dark event pages. Run
 and rendering coverage. Generated previews and screenshots belong in ignored
 `output/` directories. Feature regressions also cover creation, editors, signup,
 co-hosts, calendars, mobile navigation and Concierge.
+
+The template appearance browser suite mounts the real sign-up editor at phone
+and desktop widths, types into authored header and editor fields, changes
+appearance while typing, explicitly saves to a fixture history service, reloads
+the saved editor and renders the guest page. It also sweeps every distinct color
+palette across the sign-up catalog's original, soft and ink modes, checks actual
+browser autofill and nested authored/application boundaries. The signup appearance
+unit suite covers every holiday background and custom board save roundtrip too.
 
 Browser email emulation verifies generated HTML and CSS, not Gmail/Outlook/Apple
 Mail's proprietary rendering. Record real-client checks separately. Native iOS

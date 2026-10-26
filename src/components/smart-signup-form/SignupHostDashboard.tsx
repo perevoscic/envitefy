@@ -86,7 +86,7 @@ export default function SignupHostDashboard(props: Props) {
           aria-label={`Remove signup for ${response.name}`}
           disabled={props.loading || !!props.removingResponseId}
           onClick={() => props.onRemove(response.id)}
-          className={`${actionClass} border-red-300 text-red-700`}
+          className={`${actionClass} border-[var(--error)] text-[var(--error)]`}
         >
           {props.removingResponseId === response.id ? (
             <LoaderCircle
@@ -281,7 +281,7 @@ export default function SignupHostDashboard(props: Props) {
               setSearch(event.target.value);
               setPersonId(null);
             }}
-            className="min-h-11 w-full rounded-lg border border-[var(--signup-border)] px-3"
+            className="app-appearance-field min-h-11 w-full rounded-lg border border-[var(--signup-border)] px-3"
           />
         </label>
         <label>
@@ -292,7 +292,7 @@ export default function SignupHostDashboard(props: Props) {
               setStatus(event.target.value as typeof status);
               setPersonId(null);
             }}
-            className="min-h-11 max-w-full rounded-lg border border-[var(--signup-border)] px-3"
+            className="app-appearance-field min-h-11 max-w-full rounded-lg border border-[var(--signup-border)] px-3"
           >
             <option value="active">Active signups</option>
             <option value="all">All statuses</option>

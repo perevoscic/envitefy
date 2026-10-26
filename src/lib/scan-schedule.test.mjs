@@ -6,6 +6,7 @@ import {
   scanScheduleFromOcr,
   scanScheduleWhen,
   scanScheduleHistoryFields,
+  scanScheduleCalendarEvent,
 } from "./scan-schedule.ts";
 import { buildScanEventPageHistoryPayload } from "./scan-event-page.ts";
 import { extractEventWebsiteSchedule } from "./event-website-schedule.ts";
@@ -242,4 +243,98 @@ test("reviewed timing replaces stale primary event timing, including weekly-only
   });
   assert.equal(scanScheduleHistoryFields(weekly).startISO, null);
   assert.equal(scanScheduleHistoryFields(weekly).endISO, null);
+});
+
+test("school memo dates retain source precision, selection and identities after review", () => {
+  const memo = normalizeScanSchedule({
+    kind: "school-memo",
+    title: "Weekly memo",
+    issueDate: "2026-10-26",
+    timezone: "America/Chicago",
+    items: [
+      { type: "event", title: "Spirit Week", date: "2026-10-26", endDate: "2026-10-30", yearInferred: true, sourceText: "Spirit Week October 26 - 30" },
+      { type: "test", title: "Bible test", date: "2026-10-30", calendarSelected: false },
+      { type: "test", title: "Spelling test", date: "2026-10-30" },
+      { type: "event", title: "Pumpkin Day", date: "2026-10-30", startTime: "during lunch" },
+      { type: "closure", title: "No School", date: "2026-11-11" },
+    ],
+  });
+  assert.equal(memo.kind, "school-memo");
+  assert.equal(memo.issueDate, "2026-10-26");
+  assert.ok(memo.items.every((item) => item.startAt === null && item.endAt === null));
+  assert.equal(memo.items[1].type, "test");
+  assert.equal(memo.items[4].type, "closure");
+  assert.match(scanScheduleWhen(memo.items[0]), /Oct 26, 2026–Oct 30, 2026/);
+  const ids = memo.items.map((item) => item.id);
+  assert.equal(new Set(ids).size, memo.items.length);
+  memo.items[1].title = "Updated Bible test";
+  memo.items[1].date = "2026-11-02";
+  const reloaded = normalizeScanSchedule(JSON.parse(JSON.stringify({ ...memo, items: [...memo.items].reverse() })));
+  assert.deepEqual(reloaded.items.map((item) => item.id), ids.reverse());
+  const bible = reloaded.items.find((item) => item.type === "test" && item.title === "Updated Bible test");
+  assert.equal(bible.calendarSelected, false);
+  assert.equal(reloaded.items.at(-1).yearInferred, true);
+  assert.equal(reloaded.items.at(-1).sourceText, "Spirit Week October 26 - 30");
+  const fields = scanScheduleHistoryFields(reloaded);
+  assert.equal(fields.startISO, null);
+  assert.equal(fields.endISO, null);
+  assert.equal(fields.scheduleLine, "5 dates");
+});
+
+test("a school memo without actionable dates remains a memo without calendar events", () => {
+  const memo = normalizeScanSchedule({
+    kind: "school-memo", title: "Class newsletter", issueDate: "2026-10-26",
+    timezone: "America/Chicago", items: [],
+  });
+  assert.equal(memo.kind, "school-memo");
+  assert.equal(memo.title, "Class newsletter");
+  assert.equal(memo.issueDate, "2026-10-26");
+  assert.deepEqual(memo.items, []);
+  assert.equal(scanScheduleHistoryFields(memo).startISO, null);
+  assert.equal(scanScheduleHistoryFields(memo).scheduleLine, "0 dates");
+  assert.equal(normalizeScanSchedule({ title: "Team schedule", items: [] }), null);
+});
+
+test("school calendar adapter exports inclusive ranges and date-only items without inventing times", () => {
+  for (const timezone of ["America/Chicago", "Pacific/Kiritimati", "Pacific/Honolulu"]) {
+    const memo = normalizeScanSchedule({
+      kind: "school-memo", timezone,
+      items: [
+        { id: "spirit", type: "event", title: "Spirit Week", date: "2026-10-26", endDate: "2026-10-30" },
+        { id: "pumpkin", type: "event", title: "Pumpkin Day", date: "2026-10-30", notes: "During lunch" },
+        { id: "bible", type: "test", title: "Bible test", date: "2026-10-30" },
+        { id: "spelling", type: "test", title: "Spelling test", date: "2026-10-30" },
+      ],
+    });
+    const events = memo.items.map((item) => scanScheduleCalendarEvent(item, memo, "saved-memo"));
+    assert.deepEqual(events.map((event) => [event.start, event.end]), [
+      ["2026-10-26", "2026-10-31"],
+      ["2026-10-30", "2026-10-31"],
+      ["2026-10-30", "2026-10-31"],
+      ["2026-10-30", "2026-10-31"],
+    ]);
+    assert.ok(events.every((event) => event.allDay && event.recurrence === null && event.reminders.length === 0));
+    assert.match(events[1].description, /During lunch/);
+    assert.equal(new Set(events.map((event) => event.uid)).size, 4);
+    assert.notEqual(events[2].uid, scanScheduleCalendarEvent(memo.items[2], memo, "other-memo").uid);
+  }
+});
+
+test("calendar adapter leaves a missing timed end absent and excludes undated or cancelled rows", () => {
+  const memo = normalizeScanSchedule({
+    kind: "school-memo", timezone: "America/Chicago",
+    items: [
+      { title: "Meeting", type: "event", date: "2026-11-02", startTime: "15:30" },
+      { title: "Undated homework", type: "deadline" },
+      { title: "Cancelled test", type: "test", date: "2026-11-02", status: "cancelled" },
+      { title: "Uncertain time", type: "test", date: "2026-11-02", startTime: "3 (AM/PM unspecified)" },
+    ],
+  });
+  assert.equal(scanScheduleCalendarEvent(memo.items[0], memo).end, null);
+  assert.equal(scanScheduleCalendarEvent(memo.items[0], memo).allDay, false);
+  assert.equal(scanScheduleCalendarEvent(memo.items[1], memo), null);
+  assert.equal(scanScheduleCalendarEvent(memo.items[2], memo), null);
+  const uncertain = scanScheduleCalendarEvent(memo.items[3], memo);
+  assert.equal(uncertain.allDay, true);
+  assert.match(uncertain.description, /AM\/PM unspecified/);
 });

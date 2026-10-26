@@ -1,7 +1,7 @@
 "use client";
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import SmartSignupWizard from "@/components/smart-signup-form/Wizard";
 import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState } from "@/components/templates/TemplateEditorContext";
@@ -11,6 +11,7 @@ import { resolveSignupThemeStyle } from "@/lib/signup-themes";
 import { buildTemplateDraftPayload } from "@/lib/template-draft-payload";
 import type { SignupForm } from "@/types/signup";
 import { sanitizeSignupForm } from "@/utils/signup";
+import { validateSignupPublish } from "@/lib/signup-validation";
 
 export default function SignupTemplatesPage() {
   const router = useRouter();
@@ -28,10 +29,9 @@ export default function SignupTemplatesPage() {
     if (!templateEditor) setForm(createEmptySignupTemplateForm());
   }, []);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const publishForm = async () => {
     if (templateEditor && !templateEditor.authenticated) {
-      await templateEditor.requestSave();
+      await templateEditor.requestPublish();
       return;
     }
     try {
@@ -41,6 +41,8 @@ export default function SignupTemplatesPage() {
         timezone: form.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
         enabled: form.enabled,
       });
+      const issues = validateSignupPublish(sanitized);
+      if (issues.length) throw new Error(issues.map((issue) => issue.message).join(" "));
       const payload = buildTemplateDraftPayload(
         { form: JSON.parse(JSON.stringify(sanitized)) },
         "signup-forms",
@@ -66,6 +68,14 @@ export default function SignupTemplatesPage() {
       setSubmitting(false);
     }
   };
+  const currentPublisher = useRef(publishForm);
+  currentPublisher.current = publishForm;
+  const registerPublisher = templateEditor?.registerPublisher;
+  useEffect(() => registerPublisher?.(() => currentPublisher.current()), [registerPublisher]);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await publishForm();
+  };
 
   return (
     <main
@@ -75,7 +85,7 @@ export default function SignupTemplatesPage() {
       <header className="flex items-center justify-between">
         <h1
           className="text-sm font-semibold uppercase tracking-widest"
-          style={{ color: "var(--signup-text, #222D40)" }}
+          style={{ color: "var(--app-foreground, var(--foreground))" }}
         >
           Your signup page
         </h1>

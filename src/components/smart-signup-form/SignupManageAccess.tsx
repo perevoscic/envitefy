@@ -42,11 +42,11 @@ export default function SignupManageAccess({ eventId }: { eventId: string }) {
       className="mx-auto max-w-xl space-y-6 px-5 py-16 text-slate-900"
       style={
         {
-          "--signup-border": "#d5d1db",
-          "--signup-page": "#faf8fc",
-          "--signup-surface": "#ffffff",
-          "--signup-text": "#182336",
-          "--signup-muted": "#52596a",
+          "--signup-border": "var(--border)",
+          "--signup-page": "var(--surface-alt)",
+          "--signup-surface": "var(--surface)",
+          "--signup-text": "var(--foreground)",
+          "--signup-muted": "var(--muted-foreground)",
         } as React.CSSProperties
       }
     >

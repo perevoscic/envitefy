@@ -156,11 +156,11 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
           await footer.scrollIntoViewIfNeeded();
           const social=footer.getByRole("navigation",{name:"Follow Envitefy",exact:true});
           await social.waitFor();
-          assert.equal(await footer.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(37, 31, 45)","dark marketing footer must support the white wordmark and social glyphs");
+          assert.equal(await footer.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(59, 35, 51)","the homepage's plum footer strip supports the white wordmark and social glyphs");
           const visible=await social.locator("img").evaluateAll(images=>images.filter(img=>img.checkVisibility()).map(img=>({src:img.getAttribute("src"),loaded:img.complete&&img.naturalWidth>0})));
           assert.equal(visible.length,5);
           assert.ok(visible.every(img=>img.src.startsWith("/email/white-v1/")&&img.loaded),"dark website footer uses all five loaded white icon assets");
-          assert.equal(await footer.getByRole("heading",{name:"Create",exact:true}).evaluate(el=>getComputedStyle(el).color),"rgb(242, 234, 250)");
+          assert.equal(await footer.getByRole("heading",{name:"Create",exact:true}).evaluate(el=>getComputedStyle(el).color),"rgb(252, 248, 243)");
           await footer.screenshot({path:path.join(out,`landing-footer-dark-${width}.png`)});
           if(width===390) {
             await page.locator("[data-landing-wordmark]").evaluate(wordmark=>window.scrollTo({top:Math.ceil(scrollY+wordmark.getBoundingClientRect().bottom)+1,behavior:"instant"}));
@@ -185,19 +185,14 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             const style=getComputedStyle(button);
             const symbol=button.querySelector('[aria-hidden="true"]');
             const symbolStyle=getComputedStyle(symbol);
-            return {width:rect.width,height:rect.height,radius:style.borderRadius,color:style.color,mask:symbolStyle.maskImage,symbolColor:symbolStyle.backgroundColor};
+            return {width:rect.width,height:rect.height,color:style.color,backing:getComputedStyle(button,"::before").backgroundColor,mask:symbolStyle.maskImage,symbolColor:symbolStyle.backgroundColor};
           });
           assert.ok(launcherAppearance.width>=44&&launcherAppearance.height>=44,"Concierge must retain a 44px touch target at both widths");
           assert.ok(launcherAppearance.mask.includes("/brand/concierge-chat.webp"),"Concierge uses the approved e-chat brand mark");
           assert.equal(launcherAppearance.symbolColor,launcherAppearance.color,"Concierge brand mark follows the launcher ink");
-          if(width===390) {
-            assert.equal(launcherAppearance.width,56);
-            assert.equal(launcherAppearance.height,56);
-            assert.ok(parseFloat(launcherAppearance.radius)>=28||launcherAppearance.radius.includes("50%"),"phone Concierge launcher is circular");
-            assert.equal(await launcher.getByText("Concierge",{exact:true}).isVisible(),false,"phone Concierge uses the icon alone");
-          } else {
-            assert.equal(await launcher.getByText("Concierge",{exact:true}).isVisible(),true,"desktop Concierge retains its visible label");
-          }
+          assert.equal(launcherAppearance.width,56);
+          assert.equal(launcherAppearance.height,56);
+          assert.equal(launcherAppearance.backing,"rgb(36, 25, 39)","the icon launcher keeps its dark speech-shaped backing behind the brand mark");
           await launcherFixture.screenshot({path:path.join(out,`concierge-launcher-dark-${width}.png`)});
           await launcherFixture.close();
           await page.getByRole("button",{name:"Open Envitefy Concierge",exact:true}).click();

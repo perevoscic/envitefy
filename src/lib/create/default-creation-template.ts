@@ -1,0 +1,13 @@
+import type { CreateGuess } from "./create-intent";
+
+/** Retain a deliberate design; a broad holiday alone cannot select a named one. */
+export function defaultCreationTemplate<T extends { id: string }>(
+  templates: readonly T[],
+  guess: CreateGuess,
+  selectedTemplateId?: string,
+): T | undefined {
+  const retained = templates.find(({ id }) => id === selectedTemplateId);
+  if (retained) return retained;
+  if (guess.category === "holidays-seasonal" && !guess.occasion) return;
+  return templates[0];
+}

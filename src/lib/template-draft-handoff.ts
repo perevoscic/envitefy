@@ -212,5 +212,6 @@ export async function saveTemplateDraftToAccount({
     draft.signupRevision = Number(row.data?.signupForm?.revision || 0);
   if (typeof row.revision === "string") draft.eventRevision = row.revision;
   draft.pendingSave = false;
+  draft.pendingPublish = false;
   return row.id;
 }

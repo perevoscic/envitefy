@@ -53,21 +53,37 @@ test("signup and login remain scrollable with a reachable Close on short screens
     await page.goto("http://auth-modal.test/");
     for (const viewport of [{ width: 390, height: 568 }, { width: 667, height: 375 }, { width: 320, height: 480 }, { width: 1280, height: 900 }]) {
       await page.setViewportSize(viewport);
-      for (const mode of ["signup", "login"]) {
-        await page.getByRole("button", { name: `Open ${mode}`, exact: true }).click();
-        const dialog = page.getByRole("dialog", { name: mode === "signup" ? "Create an account" : "Log in", exact: true });
+      for (const publishing of [false, true]) for (const mode of ["signup", "login"]) {
+        const openLabel = `Open ${publishing ? "publish " : ""}${mode}`;
+        const submitLabel = publishing
+          ? mode === "signup" ? "Create an account & publish" : "Sign in & publish"
+          : mode === "signup" ? "Create account" : "Sign in";
+        const dialogLabel = publishing ? submitLabel : mode === "signup" ? "Create an account" : "Log in";
+        await page.getByRole("button", { name: openLabel, exact: true }).click();
+        const dialog = page.getByRole("dialog", { name: dialogLabel, exact: true });
         const close = dialog.getByRole("button", { name: "Close", exact: true });
         const bounds = await close.boundingBox();
         assert.ok(bounds.y >= 0 && bounds.y + bounds.height <= viewport.height,
           `${mode} Close must fit ${viewport.width}x${viewport.height}: ${JSON.stringify(bounds)}`);
         assert.ok(bounds.height >= 44, "Close retains its touch target");
-        await dialog.getByRole("button", { name: mode === "signup" ? "Create account" : "Sign in", exact: true }).scrollIntoViewIfNeeded();
-        const actions = await dialog.getByRole("button", { name: mode === "signup" ? "Create account" : "Sign in", exact: true }).boundingBox();
+        const submit = dialog.getByRole("button", { name: submitLabel, exact: true });
+        await submit.scrollIntoViewIfNeeded();
+        const actions = await submit.boundingBox();
         assert.ok(actions.y >= -1 && actions.y + actions.height <= viewport.height + 1,
           `${mode} form action must fit ${viewport.width}x${viewport.height} after scrolling: ${JSON.stringify(actions)}`);
+        assert.equal(await submit.evaluate(element => element.scrollWidth <= element.clientWidth + 1), true,
+          `${submitLabel} fits the existing button at ${viewport.width}px`);
+        if (publishing) {
+          const switchLabel = mode === "signup" ? "Sign in & publish" : "Create an account & publish";
+          await dialog.getByRole("button", { name: switchLabel, exact: true }).click();
+          const switched = page.getByRole("dialog", { name: switchLabel, exact: true });
+          await switched.getByRole("button", { name: switchLabel, exact: true }).waitFor();
+          assert.equal(await switched.getByRole("button", { name: "Continue with Google & publish", exact: true }).count(), 1,
+            "switching account mode preserves the explicit publish action");
+        }
         await page.keyboard.press("Escape");
-        assert.equal(await dialog.count(), 0, "Escape closes the dialog after scrolling");
-        await page.getByRole("button", { name: `Open ${mode}`, exact: true }).click();
+        assert.equal(await page.getByRole("dialog").count(), 0, "Escape closes the dialog after scrolling");
+        await page.getByRole("button", { name: openLabel, exact: true }).click();
         const reopenedClose = page.getByRole("dialog").getByRole("button", { name: "Close", exact: true });
         await reopenedClose.click();
         assert.equal(await page.getByRole("dialog").count(), 0, "The visible Close action works");
@@ -76,6 +92,9 @@ test("signup and login remain scrollable with a reachable Close on short screens
     await page.setViewportSize({ width: 390, height: 568 });
     await page.getByRole("button", { name: "Open signup", exact: true }).click();
     await page.screenshot({ path: path.join(output, "signup-390x568.png") });
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Open publish signup", exact: true }).click();
+    await page.screenshot({ path: path.join(output, "publish-signup-390x568.png") });
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 });

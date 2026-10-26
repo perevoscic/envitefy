@@ -18,11 +18,16 @@ type SignedOutPageChromeProps = {
   activeBottomNavLabel?: string;
   brandHref?: string;
   topNavVariant?: "default" | "glass-dark" | "transparent-dark" | "transparent-light";
+  /** Editors retain their pending work before opening their own account dialog. */
+  onAuthRequest?: (mode: "login" | "signup") => void;
+  authReturnHref?: string;
 };
 
 export default function SignedOutPageChrome({
   brandHref = "/",
   topNavVariant = "default",
+  onAuthRequest,
+  authReturnHref,
 }: SignedOutPageChromeProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -40,18 +45,24 @@ export default function SignedOutPageChrome({
   const pageNavLinks = useMemo(() => marketingPageNavLinks(pathname || ""), [pathname]);
 
   const openAuth = useCallback((mode: "login" | "signup") => {
+    if (onAuthRequest) {
+      onAuthRequest(mode);
+      return;
+    }
     setAuthMode(mode);
     setAuthModalOpen(true);
-  }, []);
+  }, [onAuthRequest]);
   const signupIntent = useMemo(() => signupIntentForMarketingPath(pathname || ""), [pathname]);
   const signupSource = signupIntent ? signupSourceForIntent(signupIntent) : undefined;
   const createAction = getCreateActionForSignupIntent(signupIntent);
   const templateCategory = templateCategoryForPath(pathname || "");
-  const primaryCreateHref = signupIntent === "football" ? "/football/templates" : templateCategory
+  const isTemplateGallery = /^\/[^/]+\/templates\/?$/.test(pathname || "");
+  const browseCategory = templateCategory && !isTemplateGallery;
+  const primaryCreateHref = isTemplateGallery ? createAction?.href || "/create" : signupIntent === "football" ? "/football/templates" : templateCategory
     ? `/${templateCategory.slug}/templates`
     : createAction?.href || "/";
-  const loginSuccessRedirectUrl = createAction?.href || "/";
-  const signupSuccessRedirectUrl = createAction?.href || "/";
+  const loginSuccessRedirectUrl = authReturnHref || (isTemplateGallery ? pathname : null) || createAction?.href || "/";
+  const signupSuccessRedirectUrl = authReturnHref || (isTemplateGallery ? pathname : null) || createAction?.href || "/";
   const successRedirectUrl =
     authMode === "signup" ? signupSuccessRedirectUrl : loginSuccessRedirectUrl;
 
@@ -67,15 +78,18 @@ export default function SignedOutPageChrome({
         editorialTone={editorialTone}
         navLinks={pageNavLinks}
         mobileNavLinks={pageNavLinks}
-        primaryCtaLabel={templateCategory ? "Browse templates" : "Let's create"}
+        primaryCtaLabel={browseCategory ? "Browse templates" : "Let's create"}
+        editorialAccountAction={isTemplateGallery ? "login" : "signup"}
+        hideEditorialPrimary={isTemplateGallery}
         authenticatedPrimaryHref={primaryCreateHref}
         brandHref={brandHref}
         variant={topNavVariant}
         loginSuccessRedirectUrl={loginSuccessRedirectUrl}
+        externalMobileLogin={Boolean(onAuthRequest)}
         onGuestLoginAction={() => openAuth("login")}
         onGuestSignupAction={() => openAuth("signup")}
         onGuestPrimaryAction={() =>
-          templateCategory ? router.push(primaryCreateHref) : openAuth("signup")
+          browseCategory ? router.push(primaryCreateHref) : openAuth("signup")
         }
       />
 

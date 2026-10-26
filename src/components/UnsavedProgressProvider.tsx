@@ -14,10 +14,12 @@ import {
   type ReactNode,
 } from "react";
 
+export type DeferredProgressSave = { beforeLeaving: Promise<void> };
 type Progress = {
   dirty: boolean;
   busy?: boolean;
-  save: () => Promise<void>;
+  // biome-ignore lint/suspicious/noConfusingVoidType: Existing save callbacks return Promise<void>; authentication can defer completion.
+  save: () => Promise<void | DeferredProgressSave>;
   discard?: () => Promise<void> | void;
 };
 type Navigation = () => void;
@@ -100,7 +102,10 @@ export function useEventProgress({
     dirty,
     save: async () => {
       const savedSnapshot = JSON.parse(latest.current) as object;
-      await actions.save();
+      const result = await actions.save();
+      if (result?.beforeLeaving) {
+        return { beforeLeaving: result.beforeLeaving.then(() => markSaved(savedSnapshot)) };
+      }
       markSaved(savedSnapshot);
     },
     discard: async () => {
@@ -171,9 +176,19 @@ export default function UnsavedProgressProvider({ children }: { children: ReactN
     resolving.current = true;
     setSaving(true);
     setError("");
+    let deferred = false;
     try {
       for (const entry of progress) {
-        if (choice === "save") await entry.save();
+        if (choice === "save") {
+          const result = await entry.save();
+          if (result?.beforeLeaving) {
+            // Authentication needs the page's own dialog and focus controls.
+            // Keep the destination pending until its account save completes.
+            deferred = true;
+            setOpen(false);
+            await result.beforeLeaving;
+          }
+        }
         else await entry.discard?.();
       }
       const navigate = pending.current;
@@ -181,6 +196,7 @@ export default function UnsavedProgressProvider({ children }: { children: ReactN
       setOpen(false);
       if (navigate) allowNavigation(navigate);
     } catch (failure) {
+      if (deferred) pending.current = null;
       setError(
         failure instanceof Error
           ? failure.message

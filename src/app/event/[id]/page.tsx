@@ -1244,7 +1244,7 @@ export default async function EventPage({
           category={typeof (data as any)?.category === "string" ? (data as any).category : null}
         />
       ) : null}
-      <ScannedScheduleProvider schedule={normalizeScanSchedule(data.scanSchedule)}>
+      <ScannedScheduleProvider schedule={normalizeScanSchedule(data.scanSchedule)} eventId={row.id} canManage={isOwner}>
       <ScanArtworkProvider
         eventId={row.id}
         initialArtwork={normalizeScanArtwork(data.scanArtwork)}
@@ -2247,6 +2247,7 @@ export default async function EventPage({
 
   if (
     isOwner &&
+    normalizeScanSchedule(data.scanSchedule)?.kind !== "school-memo" &&
     (createdParam || /^ocr(?:-|$)/.test(String(data.createdVia || ""))) &&
     (calendarSetupProvider || /^ocr(?:-|$)/.test(String(data.createdVia || "")) ||
       calendarSyncNoticeStatus === "needs_reconnect" ||

@@ -7,6 +7,10 @@
   min-width: 0;
 }
 
+.page[data-appearance-scope="authored"] {
+  color-scheme: var(--signup-color-scheme, light);
+}
+
 .sheet {
   position: relative;
   max-width: 960px;
@@ -206,8 +210,13 @@
   --surface: var(--signup-surface);
   color: var(--signup-text) !important;
   -webkit-text-fill-color: var(--signup-text) !important;
+  caret-color: var(--signup-text);
   font-family: var(--signup-body-font);
   font-size: 1rem;
+}
+.board input:is(:-webkit-autofill, :autofill) {
+  -webkit-text-fill-color: var(--signup-text) !important;
+  box-shadow: 0 0 0 100vmax var(--signup-surface) inset;
 }
 .board input::placeholder,
 .board textarea::placeholder {

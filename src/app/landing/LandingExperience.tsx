@@ -37,7 +37,6 @@ const LandingLiveCardShowcase = dynamic(
 );
 
 const navigationLinks = [
-  { label: "Templates", href: "#examples" },
   { label: "Categories", href: "#categories" },
   { label: "How it works", href: "#how-it-works" },
   { label: "Examples", href: "#showcase" },

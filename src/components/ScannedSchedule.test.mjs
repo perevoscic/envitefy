@@ -11,6 +11,7 @@ import { buildScanEventPageHistoryPayload } from "../lib/scan-event-page.ts";
 import { buildCalendarLinks } from "../utils/calendar-links.ts";
 
 const require = createRequire(import.meta.url);
+const loadTs = require("../../scripts/lib/event-messages-test-loader.cjs");
 const module = { exports: {} };
 const compiled = ts.transpileModule(fs.readFileSync("src/components/ScannedSchedule.tsx", "utf8"), {
   compilerOptions: {
@@ -29,11 +30,34 @@ vm.runInNewContext(compiled, {
       return {
         default: ({ links }) => createElement("a", { href: links.google }, "Add to calendar"),
       };
+    if (name === "@/components/SchoolMemoDates") return loadTs("src/components/SchoolMemoDates.tsx", {
+      "@/hooks/useCalendarPreference": { useCalendarPreference: () => ({ provider: null, signedIn: false, canRemember: () => false }) },
+    });
     return require(name);
   },
 });
 const ScannedSchedule = module.exports.default;
 const Provider = module.exports.ScannedScheduleProvider;
+
+test("school memo dates have individual choices, bulk controls and one explicit calendar action", () => {
+  const schedule = scheduleHelpers.normalizeScanSchedule({ kind: "school-memo", title: "Weekly school memo", timezone: "America/Chicago", items: [
+    { id: "bible", type: "test", title: "Bible test", date: "2026-10-30" },
+    { id: "spelling", type: "test", title: "Spelling test", date: "2026-10-30", calendarSelected: false },
+  ] });
+  const html = renderToStaticMarkup(createElement(Provider, { schedule }, createElement(ScannedSchedule)));
+  assert.equal((html.match(/type="checkbox"/g) || []).length, 2);
+  assert.equal((html.match(/ checked=""/g) || []).length, 1);
+  assert.match(html, /Select all/); assert.match(html, /Clear all/);
+  assert.match(html, /Add selected dates to calendar \(1\)/);
+  assert.doesNotMatch(html, /sessions and games|Location TBD/);
+});
+
+test("an issue-only school memo stays readable without offering an empty calendar addition", () => {
+  const schedule = scheduleHelpers.normalizeScanSchedule({ kind: "school-memo", title: "Class newsletter", issueDate: "2026-10-26", timezone: "America/Chicago", items: [] });
+  const html = renderToStaticMarkup(createElement(Provider, { schedule }, createElement(ScannedSchedule)));
+  assert.match(html, /No dated items were found/);
+  assert.doesNotMatch(html, /type="checkbox"|Add selected dates to calendar|Select all/);
+});
 
 test("uploaded game rows render through the saved-page provider with their own calendar links", () => {
   const payload = buildScanEventPageHistoryPayload({

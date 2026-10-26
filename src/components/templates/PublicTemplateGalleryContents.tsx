@@ -100,7 +100,7 @@ export default function PublicTemplateGalleryContents({
   return (
     <section
       id="templates"
-      aria-label={`${info.name} templates`}
+      aria-label={`${info.name === "Signup forms" ? "Sign-up form" : info.name} templates`}
       className={`${featured ? styles.featured : `${categoryGalleryPageClassName(category)} ${styles.publicSection}`} scroll-mt-24 px-5 py-14 text-[#342d38] sm:px-8 lg:px-12`}
     >
       <div className="mx-auto max-w-[1500px]">
@@ -114,10 +114,17 @@ export default function PublicTemplateGalleryContents({
         >
           {!featured && <CategoryGalleryBackdrop category={category} />}
           <div className="relative z-10">
-            <p className={styles.eyebrow}>{info.name}</p>
+            <p className={styles.eyebrow}>{featured ? info.name : "Templates"}</p>
             <Heading className={`${styles.heading} mt-3 text-4xl sm:text-5xl`}>
-              {featured ? "Make it yours" : `${info.name} templates`}
+              {featured ? "Make it yours" : `${info.name === "Signup forms" ? "Sign-up form" : info.name} templates`}
             </Heading>
+            {!featured && (
+              <p className={`${styles.note} mt-4 max-w-2xl`}>
+                Choose a design to customize. {status === "authenticated"
+                  ? "Save a draft when you’re ready, then publish and share."
+                  : "Customize it, then sign in to save and share."}
+              </p>
+            )}
             {featured && (
               <p className={`${styles.note} mt-4`}>
                 {status === "authenticated"

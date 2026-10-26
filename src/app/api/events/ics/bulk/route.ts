@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { NormalizedEvent } from "@/lib/mappers";
+import type { NormalizedEvent } from "@/lib/mappers";
 import { randomUUID } from "node:crypto";
 import { buildCalendarDescription } from "@/lib/calendar-description";
 
 export const runtime = "nodejs";
 
+type BulkCalendarEvent = Omit<NormalizedEvent, "end"> & { end?: string | null; uid?: string | null };
 type BulkBody = {
-  events: NormalizedEvent[];
+  events: BulkCalendarEvent[];
   filename?: string | null;
 };
 
@@ -30,6 +31,8 @@ function formatIcsDate(iso: string): string {
 }
 
 function formatIcsDateOnly(iso: string): string {
+  // Civil dates have no UTC offset. Preserve them exactly across time zones.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso.replaceAll("-", "");
   try {
     const d = new Date(iso);
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -63,7 +66,7 @@ function foldLine(input: string): string {
   return parts.join("\r\n");
 }
 
-function buildIcs(events: NormalizedEvent[]): string {
+function buildIcs(events: BulkCalendarEvent[]): string {
   const lines: string[] = [];
   lines.push("BEGIN:VCALENDAR");
   lines.push("PRODID:-//Envitefy//Bulk Export//EN");
@@ -74,19 +77,22 @@ function buildIcs(events: NormalizedEvent[]): string {
   const now = formatIcsDate(new Date().toISOString());
 
   for (const ev of events) {
-    const uid = `${randomUUID()}@envitefy.com`;
+    // Only accept our bounded, single-line identity format. Legacy callers keep
+    // their random UID; reviewed schedule items carry a persistent one.
+    const uid = typeof ev.uid === "string" && /^[A-Za-z0-9._%+-]{1,400}@envitefy\.com$/.test(ev.uid)
+      ? ev.uid
+      : `${randomUUID()}@envitefy.com`;
     lines.push("BEGIN:VEVENT");
-    lines.push(`UID:${uid}`);
+    lines.push(foldLine(`UID:${uid}`));
     lines.push(`DTSTAMP:${now}`);
 
     if (ev.allDay) {
       const ds = formatIcsDateOnly(ev.start);
-      const de = formatIcsDateOnly(ev.end);
       lines.push(`DTSTART;VALUE=DATE:${ds}`);
-      lines.push(`DTEND;VALUE=DATE:${de}`);
+      if (ev.end) lines.push(`DTEND;VALUE=DATE:${formatIcsDateOnly(ev.end)}`);
     } else {
       lines.push(`DTSTART:${formatIcsDate(ev.start)}`);
-      lines.push(`DTEND:${formatIcsDate(ev.end)}`);
+      if (ev.end) lines.push(`DTEND:${formatIcsDate(ev.end)}`);
     }
 
     if (ev.recurrence) {

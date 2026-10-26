@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useCreationAccess } from "@/hooks/useCreationAccess";
 import { creationAllowed, type CreationProduct } from "@/lib/creation-access";
 /** Explains unavailable new creation without changing source, route, or saved-event access. */
@@ -12,9 +12,22 @@ export default function CreationAccessBoundary({ product, category, eventId, chi
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const admitted = useRef("");
-  const identity = session?.user?.email || "";
+  const guestWorkspace = useRef("");
+  const owner = useRef({ identity: "", generation: 0 });
+  const identity = session?.user?.email || (session?.user as { id?: string } | undefined)?.id || "";
+  // Adopting a guest draft keeps its mounted fields. A later account change or
+  // sign-out starts a fresh workspace before another account can see them.
+  if ((status === "authenticated" && owner.current.identity && owner.current.identity !== identity) ||
+      (status === "unauthenticated" && owner.current.identity)) {
+    owner.current.generation += 1;
+    guestWorkspace.current = "";
+    admitted.current = "";
+  }
+  if (status === "authenticated") owner.current.identity = identity;
+  else if (status === "unauthenticated") owner.current.identity = "";
+  const guestWorkspaceKey = `${product}:${category || ""}`;
   const workspaceKey = `${identity}:${product}:${category || ""}:${eventId || ""}`;
-  const workspace = (warning = "") => <><p hidden={!warning} role={warning ? "alert" : undefined} className="mx-auto max-w-5xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">{warning}</p>{children}</>;
+  const workspace = (warning = "") => <Fragment key={owner.current.generation}><p hidden={!warning} role={warning ? "alert" : undefined} className="mx-auto max-w-5xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">{warning}</p>{children}</Fragment>;
   useEffect(() => {
     if (!eventId || status !== "authenticated") return;
     const controller = new AbortController();
@@ -29,9 +42,15 @@ export default function CreationAccessBoundary({ product, category, eventId, chi
   }, [eventId, status, identity, attempt]);
   const retry = useCallback(() => { setAttempt((value) => value + 1); void creation.reload(); }, [creation.reload]);
   // Public galleries and template previews retain their signed-out experience.
-  if (status === "unauthenticated" && !eventId) return workspace();
+  if (status === "unauthenticated" && !eventId) { guestWorkspace.current = guestWorkspaceKey; return workspace(); }
   if (eventId && existing?.id === eventId && existing.identity === identity && existing.allowed && status === "authenticated") { admitted.current = workspaceKey; return workspace(); }
-  if (!eventId && creation.access && creationAllowed(creation.access, product, category || undefined)) { admitted.current = workspaceKey; return workspace(); }
+  if (!eventId && creation.access && creationAllowed(creation.access, product, category || undefined)) { guestWorkspace.current = ""; admitted.current = workspaceKey; return workspace(); }
+  // A guest already editing must survive session hydration and the initial
+  // account access read. This retains local work, without granting save access.
+  if (!eventId && guestWorkspace.current === guestWorkspaceKey) {
+    if (status === "loading" || (!creation.access && !creation.error)) return workspace();
+    guestWorkspace.current = "";
+  }
   // Background access refreshes must not unmount an editor and discard in-memory work.
   if (status === "authenticated" && admitted.current === workspaceKey) return workspace("Access has changed. Your edits are retained here; review access in Settings before saving a new event.");
   const waiting = status === "loading" || (eventId ? status === "authenticated" && (!existing || existing.identity !== identity) && !error : creation.loading && !creation.access);

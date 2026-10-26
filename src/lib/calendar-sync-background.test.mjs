@@ -81,11 +81,16 @@ function harness({
           const current = state.readCalendarSyncState(h.row.data.calendarSync);
           if (
             values[1] !== h.row.user_id ||
+            h.row.data.scanSchedule?.kind === "school-memo" ||
             !(state.canResumeCalendarSync(current) || (values[4] && current.status !== "syncing"))
           )
             return { rows: [] };
           h.row.data.calendarSync = { ...h.row.data.calendarSync, ...JSON.parse(values[2]) };
           return { rows: [{ id: "event" }] };
+        }
+        if (sql.includes("data->'scanSchedule'->>'kind' = 'school-memo'") && values[1] === h.row.user_id) {
+          Object.assign(h.row.data.calendarSync, JSON.parse(values[2]));
+          return { rows: [] };
         }
         if (h.row.data.calendarSync.claimToken === values[3]) {
           Object.assign(h.row.data.calendarSync, JSON.parse(values[2]));
@@ -249,6 +254,7 @@ test("only actual saved scans queue automatic work", () => {
     [{ createdVia: "manual" }, "scan"],
     [{ createdVia: "ocr", status: "draft" }, "scan"],
     [{ createdVia: "ocr" }, null],
+    [{ createdVia: "ocr", scanSchedule: { kind: "school-memo", items: [{ date: "2026-10-30" }] } }, "scan"],
   ]) {
     assert.equal(h.worker.prepareScanCalendarSync(data, attempt), false);
     assert.equal(data.calendarSync, undefined);
@@ -258,4 +264,34 @@ test("only actual saved scans queue automatic work", () => {
     harness({ enabled: false }).worker.prepareScanCalendarSync({ createdVia: "ocr" }, "scan"),
     false,
   );
+});
+
+test("a corrected school memo cannot resume stale automatic parent calendar work", async () => {
+  const h = harness();
+  h.row.data.scanSchedule = { kind: "school-memo", items: [{ date: "2026-10-30" }] };
+  const result = await (await h.worker.runSavedCalendarSync(h.job)).json();
+  assert.equal(result.status, "skipped");
+  assert.equal(result.reason, "explicit_calendar_selection");
+  assert.equal(h.providerCalls, 0);
+  assert.equal(h.row.data.calendarSync.status, "skipped");
+  assert.equal(h.row.data.calendarSync.providers.google.externalEventId, "private");
+});
+
+test("saving a school memo neither accepts client provider mappings nor queues automatic work", async () => {
+  const h = harness();
+  const response = await h.history.POST(new Request("https://envitefy.example/api/history", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: "Weekly school memo", scanAttemptId: "scan-memo",
+      data: {
+        createdVia: "ocr", scanSchedule: { kind: "school-memo", items: [{ id: "test", title: "Test", date: "2026-10-30" }] },
+        memoCalendarSync: { forged: { status: "synced", externalEventId: "unrelated-calendar-event" } },
+      },
+    }),
+  }));
+  assert.equal(response.status, 201);
+  assert.equal((await response.json()).data.memoCalendarSync, undefined);
+  assert.equal(h.row.data.calendarSync, undefined);
+  assert.equal(h.jobs.length, 0);
+  assert.equal(h.providerCalls, 0);
 });

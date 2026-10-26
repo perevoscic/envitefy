@@ -41,6 +41,7 @@ export type EventPageEditorSession = {
   message: string;
   saveDraft: () => Promise<void>;
   saveChanges: () => Promise<void>;
+  publishWithAccount?: (mode: "signup" | "login") => Promise<void>;
   cancel: () => void;
   allowNavigation: (navigate: () => void) => void;
   requestLeave: (navigate: () => void) => void;
@@ -183,11 +184,12 @@ export function useEventPageEditor({
       );
   }, [template, composition, savePage]);
 
-  const perform = async (publish: boolean, navigate: boolean) => {
+  const perform = async (publish: boolean, navigate: boolean, authMode: "signup" | "login" = "signup") => {
     if (!editorReady || externalBusy || urlBusy || saving.current)
       throw new Error("Wait for the current work to finish, then save your event.");
     if (template && !template.authenticated) {
-      await template.requestSave();
+      if (publish) await template.requestPublish(authMode);
+      else await template.requestSave();
       return;
     }
     saving.current = true;
@@ -340,6 +342,10 @@ export function useEventPageEditor({
       onBusyChange?.(false);
     }
   };
+  const currentPublisher = useRef<() => Promise<void>>(async () => {});
+  currentPublisher.current = () => perform(true, true);
+  const registerPublisher = template?.registerPublisher;
+  useEffect(() => registerPublisher?.(() => currentPublisher.current()), [registerPublisher]);
   const progress = useEventProgress({
     snapshot: content,
     ready: editorReady,
@@ -389,6 +395,7 @@ export function useEventPageEditor({
     message,
     saveDraft: () => perform(false, false),
     saveChanges: () => perform(true, true),
+    ...(template ? { publishWithAccount: (mode: "signup" | "login") => perform(true, true, mode) } : {}),
     cancel,
     allowNavigation: progress.allowNavigation,
     requestLeave: progress.requestLeave,

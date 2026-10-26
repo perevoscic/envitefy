@@ -73,6 +73,7 @@ function sanitizeHistoryPublicData(data: unknown): Record<string, any> {
   delete redacted.missingFields;
   delete redacted.ocrText;
   delete redacted.calendarSync;
+  delete redacted.memoCalendarSync;
   if (redacted.signupForm) delete redacted.responses;
 
   if (isRecord(redacted.accessControl)) {
@@ -183,6 +184,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
 
   const { id } = await context.params;
   const body = await req.json().catch(() => ({}));
+  if (isRecord(body.data)) delete body.data.memoCalendarSync;
   const existing = await getEventHistoryById(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const permissions = await getEventPermissions(existing, userId);

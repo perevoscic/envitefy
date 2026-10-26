@@ -27,6 +27,9 @@ export type SignupFormProps = {
   signupIntent?: SignupIntent;
   variant?: "default" | "inline";
   inlineTone?: "dark" | "light";
+  submitLabel?: string;
+  googleLabel?: string;
+  switchModeLabel?: string;
 };
 
 export default function SignupForm({
@@ -39,6 +42,9 @@ export default function SignupForm({
   signupIntent,
   variant = "default",
   inlineTone = "dark",
+  submitLabel = "Create account",
+  googleLabel = "Sign up with Google",
+  switchModeLabel = "Log in",
 }: SignupFormProps) {
   const isInline = variant === "inline";
   const isInlineDark = isInline && inlineTone === "dark";
@@ -248,7 +254,7 @@ export default function SignupForm({
           hidden={!allowGoogleAuth}
           disabled={submitting}
           className={cx(
-            "btn btn-outline w-full justify-center gap-3",
+            "btn btn-outline w-full justify-center gap-3 whitespace-normal",
             isInlineDark &&
               "!border-white/12 !bg-white/[0.06] !text-white !shadow-[0_12px_28px_rgba(0,0,0,0.2)] hover:!bg-white/[0.1]",
           )}
@@ -277,7 +283,7 @@ export default function SignupForm({
               fill="#EA4335"
             />
           </svg>
-          Sign up with Google
+          {googleLabel}
         </button>
 
         <div className="relative my-4 flex items-center gap-3">
@@ -492,9 +498,9 @@ export default function SignupForm({
           type="submit"
           size="lg"
           disabled={submitting || recaptchaBlocked || !agreeTerms}
-          className="group w-full !rounded-full bg-gradient-to-r from-brand to-brand-glow text-primary-foreground shadow-xl shadow-brand/30 hover:opacity-95"
+          className="group w-full !rounded-full whitespace-normal bg-gradient-to-r from-brand to-brand-glow text-primary-foreground shadow-xl shadow-brand/30 hover:opacity-95"
         >
-          {submitting ? "Creating..." : "Create account"}
+          {submitting ? "Creating..." : submitLabel}
           <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </Button>
         <p className={cx("text-center text-sm text-muted-foreground", isInlineDark && "!text-white/68")}>
@@ -504,7 +510,7 @@ export default function SignupForm({
             onClick={() => onSwitchMode?.("login")}
             className={cx("text-secondary hover:underline", isInlineDark && "!text-[#f0d58f]")}
           >
-            Log in
+            {switchModeLabel}
           </button>
         </p>
         {message && (

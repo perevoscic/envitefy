@@ -4,16 +4,29 @@ import { createContext, useContext, type ReactNode } from "react";
 import CalendarAction from "@/components/CalendarAction";
 import { scanScheduleWhen, type ScanSchedule } from "@/lib/scan-schedule";
 import { buildCalendarLinks } from "@/utils/calendar-links";
+import SchoolMemoDates from "@/components/SchoolMemoDates";
 
-const ScheduleContext = createContext<ScanSchedule | null>(null);
+const ScheduleContext = createContext<{
+  schedule: ScanSchedule | null;
+  eventId?: string;
+  canManage?: boolean;
+} | null>(null);
 export function ScannedScheduleProvider({
   schedule,
   children,
+  eventId,
+  canManage,
 }: {
   schedule: ScanSchedule | null;
   children: ReactNode;
+  eventId?: string;
+  canManage?: boolean;
 }) {
-  return <ScheduleContext.Provider value={schedule}>{children}</ScheduleContext.Provider>;
+  return (
+    <ScheduleContext.Provider value={{ schedule, eventId, canManage }}>
+      {children}
+    </ScheduleContext.Provider>
+  );
 }
 
 export default function ScannedSchedule({
@@ -24,8 +37,18 @@ export default function ScannedSchedule({
   interactive?: boolean;
 }) {
   const context = useContext(ScheduleContext);
-  const schedule = suppliedSchedule === undefined ? context : suppliedSchedule;
-  if (!schedule?.items.length) return null;
+  const schedule = suppliedSchedule === undefined ? context?.schedule : suppliedSchedule;
+  if (!schedule) return null;
+  if (schedule.kind === "school-memo")
+    return (
+      <SchoolMemoDates
+        schedule={schedule}
+        interactive={interactive}
+        eventId={context?.eventId}
+        canManage={context?.canManage}
+      />
+    );
+  if (!schedule.items.length) return null;
   const groups = Array.from(
     new Set(
       schedule.items.map(
