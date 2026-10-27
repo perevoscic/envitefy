@@ -10,6 +10,7 @@ import {
 import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { creationAllowed, filterCreationTemplateKeys, normalizeCreationCategory, type CreationAccess } from "@/lib/creation-access";
 import { getCreationAccess } from "@/lib/creation-access-server";
+import { filterPinnedCategoryIds, normalizePinnedCategoryIds } from "@/lib/category-favorites";
 import {
   getFeatureVisibilityByEmail,
   getSportPreferenceSuggestionByEmail,
@@ -31,6 +32,7 @@ type FeatureVisibilityPayload = {
   defaultCreateIntent?: unknown;
   sportPreferences?: unknown;
   quickAccess?: unknown;
+  pinnedCategoryIds?: unknown;
 };
 
 function readMetadata(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmail>>) {
@@ -66,6 +68,7 @@ function buildResponse(
       sportPreferences: { ...EMPTY_SPORT_PREFERENCES },
       sportPreferenceSuggestion,
       quickAccess: ["snap", "upload", "smart_signup"],
+      pinnedCategoryIds: undefined,
     };
   }
 
@@ -90,6 +93,9 @@ function buildResponse(
     sportPreferences: normalizeSportPreferences(metadata.sportPreferences),
     sportPreferenceSuggestion,
     quickAccess: Array.isArray(metadata.quickAccess) ? metadata.quickAccess.filter((key) => key === "snap" || key === "upload" || key === "smart_signup") : ["snap", "upload", "smart_signup"],
+    pinnedCategoryIds: Array.isArray(metadata.pinnedCategoryIds)
+      ? normalizePinnedCategoryIds(metadata.pinnedCategoryIds)
+      : undefined,
   };
 }
 
@@ -133,6 +139,9 @@ export async function GET(req: Request) {
     payload.visibleTemplateKeys = filterCreationTemplateKeys(payload.visibleTemplateKeys, access);
     payload.sportPreferences = allowedSportPreferences(payload.sportPreferences, access);
     payload.defaultCreateIntent = allowedDefaultIntent(payload.defaultCreateIntent, access);
+    if (payload.pinnedCategoryIds !== undefined) {
+      payload.pinnedCategoryIds = filterPinnedCategoryIds(payload.pinnedCategoryIds, access);
+    }
     return NextResponse.json(payload, { headers });
   } catch {
     return NextResponse.json(
@@ -152,6 +161,16 @@ export async function PUT(req: Request) {
   const rawBody = await req.json().catch(() => ({}));
   const body: Record<string, unknown> =
     rawBody && typeof rawBody === "object" ? (rawBody as Record<string, unknown>) : {};
+  const hasPinnedCategoryIds = Object.hasOwn(body, "pinnedCategoryIds");
+  if (hasPinnedCategoryIds && (
+    !Array.isArray(body.pinnedCategoryIds) ||
+    body.pinnedCategoryIds.some((id) => typeof id !== "string")
+  )) {
+    return NextResponse.json(
+      { error: "Pinned event types must be a list of category IDs." },
+      { status: 400 },
+    );
+  }
   const existingRow = await getFeatureVisibilityByEmail(email);
   const existingMetadata = readMetadata(existingRow);
 
@@ -205,6 +224,9 @@ export async function PUT(req: Request) {
     quickAccess: Object.hasOwn(body, "quickAccess") && Array.isArray(body.quickAccess)
       ? body.quickAccess.filter((key): key is string => key === "snap" || key === "upload" || key === "smart_signup")
       : undefined,
+    pinnedCategoryIds: hasPinnedCategoryIds
+      ? filterPinnedCategoryIds(normalizePinnedCategoryIds(body.pinnedCategoryIds), access)
+      : undefined,
   });
 
   if (
@@ -226,5 +248,9 @@ export async function PUT(req: Request) {
   }
 
   const row = await getFeatureVisibilityByEmail(email);
-  return NextResponse.json({ ok: true, featureVisibility: buildResponse(row) });
+  const payload = buildResponse(row);
+  if (payload.pinnedCategoryIds !== undefined) {
+    payload.pinnedCategoryIds = filterPinnedCategoryIds(payload.pinnedCategoryIds, access);
+  }
+  return NextResponse.json({ ok: true, featureVisibility: payload });
 }

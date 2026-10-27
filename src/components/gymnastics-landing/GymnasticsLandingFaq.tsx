@@ -1,55 +1,70 @@
-import styles from "@/components/marketing/ProductSportsLanding.module.css";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+import styles from "./GymnasticsLandingFaq.module.css";
 
 const items = [
   {
-    q: "Can Envitefy turn our gymnastics meet packet or schedule into a live page?",
-    a: "Yes. Upload meet packets, rundowns, venue sheets, and supporting PDFs. Envitefy structures the details into a single mobile-friendly meet page so families are not hunting through attachments and group chats.",
+    q: "Can I start with the meet packet we already have?",
+    a: "Yes. Upload your meet packet or supporting PDFs, then review the imported sessions, times and notes. Choose a design, make your changes and publish when the page is ready to share.",
   },
   {
-    q: "How do rotations, warm-ups, and awards show up for parents?",
-    a: "Meet blocks can include check-in, warm-up windows, rotation context, and awards timing in scannable sections. The goal is a clear timeline parents can read on a phone at the venue, not a zoomed-in spreadsheet.",
+    q: "What can families find on the page?",
+    a: "Keep your session schedule, check-in and warm-up times, venue directions, parking notes, hotel links and supporting documents together. You choose the sections and information your meet needs.",
   },
   {
-    q: "Can hotel blocks, maps, and parking live on the same page as the schedule?",
-    a: "Yes. Travel details like hotel booking links and deadlines, maps, parking notes, and shuttle info can sit alongside the competition timeline so the whole weekend is one link.",
+    q: "Do families need to download an app?",
+    a: "No. The shared page opens in a browser on phones, tablets and computers. Send the link by text, email or your usual team channel.",
   },
   {
-    q: "Do spectators and families need to install an app?",
-    a: "No. Shared meet pages open in the browser on phones, tablets, and desktops. You distribute one link by text, email, or team channels.",
+    q: "What if the schedule changes after sharing?",
+    a: "Edit the page and save your changes. Families who open the same link will see the updated details. You can keep the page current throughout the meet weekend.",
   },
   {
-    q: "What happens when the schedule changes at the last minute?",
-    a: "You can update the published page and share the same link. Posting a change once helps every family see the latest version instead of resending PDFs.",
+    q: "Can families confirm an athlete’s attendance?",
+    a: "When you enable attendance for a meet with a team roster, families can confirm a listed athlete’s attendance. Attendance is optional and off by default.",
   },
   {
-    q: "How is Gymnastics on Envitefy different from Snap?",
-    a: "Gymnastics is built around meet pages: schedules, venues, hotels, team coordination, and updates in one hosted page. Snap is the broader capture flow for invites, flyers, and many other event types. Gymnastics accounts include both workflows.",
+    q: "Can families add the meet to their calendar?",
+    a: "When calendar actions are available on your published page, families can choose Google Calendar, Outlook or an ICS calendar file. Each person chooses whether to add the event; calendar changes do not sync automatically.",
   },
   {
-    q: "Who typically publishes the page: a club, meet director, or team parent?",
-    a: "Anyone organizing or communicating the meet can build the page: meet directors, club admins, booster reps, or coaches. The important part is one authoritative link for athletes, parents, and staff.",
+    q: "Can I organize volunteers or what people bring?",
+    a: (
+      <>
+        Create a separate <Link href="/signup-forms">Sign-up Form</Link> for volunteer roles,
+        supplies or time slots. Share its own link with your team so families can choose how to
+        help.
+      </>
+    ),
   },
 ] as const;
 
 export default function GymnasticsLandingFaq() {
   return (
     <section id="faq" className={styles.section} aria-labelledby="gymnastics-faq-heading">
-      <p className={styles.eyebrow}>Good to know</p>
-      <h2 id="gymnastics-faq-heading">Gymnastics meet pages, answered.</h2>
-      <div className={styles.faq}>
-        {items.map((item) => (
-          <details key={item.q}>
-            <summary>{item.q}</summary>
-            <p>{item.a}</p>
+      <div className={styles.introduction}>
+        <p className={styles.eyebrow}>Before your first meet page</p>
+        <h2 id="gymnastics-faq-heading" className={styles.heading}>
+          Good questions. <strong>Clear answers.</strong>
+        </h2>
+        <p className={styles.helpCopy}>
+          From your first upload to the link you send families, here’s what to expect.
+        </p>
+        <Link href="/faq" className={styles.helpLink}>
+          Visit the Envitefy FAQ <ArrowRight size={17} aria-hidden="true" />
+        </Link>
+      </div>
+      <div className={styles.questions}>
+        {items.map(({ q, a }) => (
+          <details key={q} className={styles.question}>
+            <summary>
+              <span>{q}</span>
+              <span className={styles.toggle} aria-hidden="true" />
+            </summary>
+            <p>{a}</p>
           </details>
         ))}
       </div>
-      <p className={styles.note}>
-        More questions?{" "}
-        <a href="/faq" className="underline underline-offset-4">
-          Read the Envitefy FAQ.
-        </a>
-      </p>
     </section>
   );
 }

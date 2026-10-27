@@ -40,7 +40,7 @@ import {
   writeCreationIntake,
 } from "@/lib/create/creation-intake";
 import { creationChoicesFromLinks } from "@/lib/create/creation-navigation";
-import { availableEventTypeGroups, eventTypeChoiceSearchText, eventTypeGroup, expandEventTypeChoices } from "@/lib/create/event-type-groups";
+import { availableEventTypeGroups, eventTypeChoiceSearchText, eventTypeGroup, expandEventTypeChoices, manualEventTypeChoices } from "@/lib/create/event-type-groups";
 import { HOLIDAY_OCCASIONS as HOLIDAY_COLLECTIONS } from "@/lib/holiday-occasions";
 import { localGalleryDay } from "@/lib/seasonal-template-order";
 import { informationForCreation } from "@/lib/create/creation-information";
@@ -79,7 +79,6 @@ const control =
   "min-h-11 rounded-full border border-[#e2ddef] bg-white px-5 py-2.5 text-sm font-semibold text-[#5b3fd1] shadow-[0_1px_2px_rgb(34_28_53/4%)] transition hover:border-[#cbc0f5] hover:bg-[#f2efff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5b3fd1] disabled:cursor-wait disabled:opacity-50";
 const primary =
   "min-h-12 rounded-full border border-[#5b3fd1] bg-[#5b3fd1] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_-12px_rgb(74_47_191/70%)] transition hover:border-[#4a2fbf] hover:bg-[#4a2fbf] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5b3fd1] disabled:cursor-not-allowed disabled:opacity-50";
-const typeChoiceKey = (choice: CreateGuess) => `${choice.category}:${choice.sport || ""}`;
 
 export function allowedCreationGuess(guess: CreateGuess, allowed: string[]) {
   return allowed.includes(customCategoryForGuess(guess));
@@ -178,9 +177,12 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
 
   const allowedCategories = access.access?.allowedCategories || [];
   const canCreatePage = access.access?.allowedProducts.includes("event_page") === true;
+  const canCreateSignup = access.access?.allowedProducts.includes("signup_form") === true;
   // Local source entry can start while grants load. Processing still waits for
   // this account's verified access, and saved-source restoration stays exclusive.
-  const sourceAvailable = accountReady && (!access.access || canCreatePage) && !restoring;
+  const sourceModeAvailable = (candidate: Mode) => accountReady &&
+    (!access.access || (candidate === "scratch" ? canCreatePage || canCreateSignup : canCreatePage)) && !restoring;
+  const sourceAvailable = sourceModeAvailable(mode);
   const guess = intake?.guess || intake?.classification;
   const personalCapture =
     guess?.category === "medical-appointments" || guess?.category === "appointments";
@@ -263,9 +265,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
   const preferredChoices = preferred
     .map((item) => item.guess!)
     .filter((item) => item.category !== "sports" || !!item.sport);
-  const manualChoices = [...preferredChoices, ...choices].filter(
-    (choice, index, all) => all.findIndex((item) => typeChoiceKey(item) === typeChoiceKey(choice)) === index,
-  );
+  const manualChoices = manualEventTypeChoices([...preferredChoices, ...choices], access.access);
   const activeTypeFilter = availableEventTypeGroups(manualChoices).some((group) => group.id === typeFilter)
     ? typeFilter
     : "all";
@@ -733,6 +733,10 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
     }
   };
   const chooseCategory = async (selected: CreateGuess) => {
+    if (selected.category === "signup-forms") {
+      if (ready && canCreateSignup) router.push("/signup-forms/templates");
+      return;
+    }
     if (!allowedCreationGuess(selected, allowedCategories)) return;
     setDesignThemeFilter("all");
     if (phase === "templates" && current.current) {
@@ -982,7 +986,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                 ? manualCreation
                   ? "Choose your design"
                   : "Your event details"
-                : "Create an event page"}
+                : canCreateSignup && !canCreatePage ? "Create a sign-up form" : "Create an event page"}
             </h1>
             <p className={styles.subtitle}>
               {phase === "templates"
@@ -1031,7 +1035,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
             Restoring your unfinished event…
           </p>
         ) : null}
-        {ready && !canCreatePage ? (
+        {ready && !canCreatePage && !canCreateSignup ? (
           <div className={styles.alert}>
             <h2 className={styles.taskHeading}>Event Pages aren’t enabled for this account.</h2>
             <p className={styles.taskIntro}>
@@ -1064,7 +1068,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                       aria-label={option.title}
                       aria-pressed={mode === option.id}
                       data-mode={option.id}
-                      disabled={busy || switchingMode || !sourceAvailable}
+                      disabled={busy || switchingMode || !sourceModeAvailable(option.id)}
                       onClick={() => void switchMode(option.id)}
                       className={`${styles.modeButton} ${mode === option.id ? styles.modeActive : ""}`}
                     >

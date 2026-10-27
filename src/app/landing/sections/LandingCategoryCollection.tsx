@@ -2,7 +2,7 @@ import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
+import { landingCategoryMedia } from "@/lib/landing-category-media";
 import { landingCategoryCards } from "../landing-data";
 import styles from "./LandingCategoryCollection.module.css";
 
@@ -42,7 +42,7 @@ export default function LandingCategoryCollection() {
         </div>
         <div className={styles.grid}>
           {landingCategoryCards.map((card, index) => {
-            const artwork = landingHeroGalleries[card.id][0];
+            const artwork = landingCategoryMedia[card.id];
             return (
               <Link
                 key={card.id}
@@ -65,11 +65,10 @@ export default function LandingCategoryCollection() {
                       src={artwork.src}
                       alt={artwork.alt}
                       fill
-                      sizes="(min-width: 1280px) 24vw, (min-width: 600px) 50vw, 320px"
+                      sizes="(min-width: 1280px) 13vw, (min-width: 600px) 25vw, 112px"
                       className={styles.image}
                       style={{
-                        objectPosition:
-                          "objectPosition" in artwork ? artwork.objectPosition : "center",
+                        objectPosition: artwork.objectPosition ?? "center",
                       }}
                     />
                     <span className={styles.cover} data-category-cover aria-hidden="true" />

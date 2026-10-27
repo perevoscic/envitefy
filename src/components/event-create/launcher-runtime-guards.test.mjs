@@ -15,8 +15,9 @@ test("launcher URL sync flows add explicit timeout handling and start logs", () 
   assert.match(gymnasticsSource, /const INGEST_REQUEST_TIMEOUT_MS = 15_000;/);
   assert.match(gymnasticsSource, /resolveDiscoveryClientParseTimeoutMs\(inputType\)/);
   assert.match(gymnasticsSource, /resolveParseTimeoutMs\(file \? "file" : "url"\)/);
-  assert.match(gymnasticsSource, /resolveGymnasticsUrlParseProgress\(Date\.now\(\) - parseStartedAt\)/);
-  assert.match(gymnasticsSource, /indeterminate=\{urlIndeterminate\}/);
+  assert.match(gymnasticsSource, /resolveGymnasticsPipelineProgress\(sourceType, "ingested"\)/);
+  assert.match(gymnasticsSource, /reportProgress\(pipelineProgress\.progress, pipelineProgress\.label\)/);
+  assert.match(gymnasticsSource, /Date\.now\(\) - parseStartedAt < parseTimeoutMs/);
   assert.match(gymnasticsSource, /URL sync requested/);
   assert.match(gymnasticsSource, /ingest url request timed out/);
   assert.match(gymnasticsSource, /Live URL Sync timed out before the server responded/);

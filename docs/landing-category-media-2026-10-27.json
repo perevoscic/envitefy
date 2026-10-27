@@ -1,0 +1,183 @@
+{
+  "generatedOn": "2026-10-27",
+  "mode": "built-in image_gen",
+  "useCase": "photorealistic-natural",
+  "intent": "Distinct category subjects: wedding couple, children celebrating, baby gifts, bridal friends, pink-and-blue reveal, volunteer sign-up, multiple sports, and the retained gymnast.",
+  "referenceImages": [],
+  "encoding": {
+    "encoder": "FFmpeg libwebp",
+    "quality": 85,
+    "compressionLevel": 6,
+    "resized": false
+  },
+  "images": [
+    {
+      "category": "weddings",
+      "path": "public/images/landing/categories/stories-2026/weddings.webp",
+      "publicPath": "/images/landing/categories/stories-2026/weddings.webp",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 121114,
+      "sha256": "a50499a76a05ba5d65d189c4a989597bb6c507155b0d1f9a6e943094bc480569",
+      "prompt": "Use case: photorealistic-natural. Asset type: premium event website landing-page category photograph. Create an entirely NEW original professional wedding-magazine photograph, PORTRAIT 2:3 aspect ratio, 1024 by 1536 pixels, full bleed. A bride and groom together in an elegant pale-stone city courtyard, a romantic candid three-quarter portrait with the couple large and centered. The bride wears a beautiful ivory wedding dress and light sheer veil; the groom wears a dark tailored suit. They stand close together, looking at one another and laughing softly, naturally affectionate and happy. Believable human faces, lifelike skin texture, realistic anatomy, natural hands and sensible fingers. Simple softly blurred architectural background with warm late-afternoon light, restrained editorial fashion photography, real fabric texture and subtly warm film-like color. Wedding celebration must be instantly recognizable at a small thumbnail. Frame complete heads, shoulders and hands within the central crop-safe area, allow air at the top corners for an arched website mask. The people are the central story. No flower-table still life, no dinner table, no floral focal arrangement, no staged product shot. No text, lettering, signage, logos, watermarks, borders or collage.",
+      "original": {
+        "path": "C:/Users/rjosan/.codex/generated_images/01a17d97-8221-7f01-b2ed-d06ff98825ac/exec-8954a32d-985e-4a7b-8f7e-89ea0b83d4c4.png",
+        "deleted": true
+      },
+      "verification": {
+        "webpMagic": true,
+        "sharpDecode": true,
+        "ffmpegDecode": true,
+        "dimensionsPreserved": true,
+        "visualReview": true
+      }
+    },
+    {
+      "category": "birthdays",
+      "path": "public/images/landing/categories/stories-2026/birthdays.webp",
+      "publicPath": "/images/landing/categories/stories-2026/birthdays.webp",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 139834,
+      "sha256": "198d2c8efa7f8f4e26a77243301c3d8656529dfe47a819b8320886f24bb41242",
+      "prompt": "Use case: photorealistic-natural. Asset type: premium event website landing-page category photograph. Create an entirely NEW original professional candid birthday-party photograph, PORTRAIT 2:3 aspect ratio, 1024 by 1536 pixels, full bleed. FOUR cheerful children about ages 6 to 9 gathered close together in a bright modern home living room around a colorful birthday cake. One child in front makes a wish and gently blows out the short candles while the three friends laugh and celebrate naturally. Show all four children's clear faces, joyful expressions and believable natural hands; realistic anatomy, lifelike skin texture, subtle motion in the candid energy. Colorful balloons and a simple paper garland decorate the softly blurred living-room background. The kids and their joyful interaction are the main focal subjects; cake is a supporting party detail. Tasteful natural warm indoor daylight, professionally photographed family-lifestyle editorial feeling, cheerful coral, yellow and sky-blue party color. Frame faces and hands in central safe area with room at upper corners for an arched website crop; instantly recognizable as a child's birthday at tiny thumbnail size. Not a garden scene and not a styled cake still life. No text, written numbers, letters, slogans, logos, watermark, border, frame or collage.",
+      "original": {
+        "path": "C:/Users/rjosan/.codex/generated_images/01a17d97-8221-7f01-b2ed-d06ff98825ac/exec-6d05fdcd-640c-4c00-9039-ee1d3a11cca4.png",
+        "deleted": true
+      },
+      "verification": {
+        "webpMagic": true,
+        "sharpDecode": true,
+        "ffmpegDecode": true,
+        "dimensionsPreserved": true,
+        "visualReview": true
+      }
+    },
+    {
+      "category": "gymnastics",
+      "path": "public/images/landing/categories/editorial-2026/gymnastics.webp",
+      "publicPath": "/images/landing/categories/editorial-2026/gymnastics.webp",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 69964,
+      "sha256": "39e190cb98de743a5d850c1b43a3f823903665a910a44d714634a9d3a1224e4d",
+      "prompt": "Use case: photorealistic-natural\nAsset type: premium event website category card, portrait 2:3 full-bleed photograph.\nPrimary request: Create a completely new professional editorial sports photograph of an ADULT female artistic gymnast in a simple deep navy leotard, hair in a neat bun, confidently holding a graceful balanced pose on a balance beam in an airy contemporary training gym. Her supporting foot is planted correctly on the beam; the other leg extends gently behind; both arms open naturally. Believable athletic anatomy and correct apparatus. Show her entire body and feet, with generous breathing room above and below; beam runs horizontally near the lower quarter, pale blue floor underneath. Soft window daylight from tall windows, warm cream walls, a subtle sage accent, quiet out-of-focus apparatus. Refined print magazine photography, natural skin, tactile chalk and wood, restrained color, crisp athlete, soft background, mid-distance 85mm lens look.\nComposition: portrait 2:3, subject centered inside middle 60 percent, clear silhouette visible as a small thumbnail, safe upper corners for an arched website mask. Create a beautiful real photograph, no montage, no card mockup, no lettering, no logos, no watermark, no border. No stadium crowd, no dramatic nighttime lighting. Do not reuse or reference any preexisting website image.",
+      "original": {
+        "path": "C:\\Users\\rjosan\\.codex\\generated_images\\01a17d95-90c9-7090-a2e8-d067765f77ae\\exec-d8e3df8c-2ce8-4f0e-a474-c38fbb1b2d4d.png",
+        "deleted": true
+      },
+      "verification": {
+        "webpMagic": true,
+        "sharpDecode": true,
+        "ffmpegDecode": true,
+        "dimensionsPreserved": true,
+        "visualReview": true
+      }
+    },
+    {
+      "category": "baby-showers",
+      "path": "public/images/landing/categories/stories-2026/baby-showers.webp",
+      "publicPath": "/images/landing/categories/stories-2026/baby-showers.webp",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 157494,
+      "sha256": "672408c4f648ebe3abfc791b14ba8826164be43eb9a31884e718f37b5945e81b",
+      "prompt": "Use case: photorealistic-natural\nAsset type: professional event-planning website category campaign photograph.\nPrimary request: Create an entirely new baby shower GIFT photograph with a generous stack of beautifully wrapped baby shower presents as the unmistakable large central focus.\nScene/backdrop: cozy bright contemporary nursery/lounge interior, soft natural window light, warm white walls, tactile wood furniture and linen upholstery, simple modern styling.\nSubject: a generous sculptural stack of premium presents wrapped in pale mint, cream and butter yellow papers with large beautiful satin bows. One open gift box in front clearly reveals tiny knitted cream baby clothes, tiny ivory baby booties and a small soft plush bunny. The wrapped presents occupy most of the image and read instantly as baby shower gifts.\nStyle/medium: premium professional photorealistic lifestyle campaign photography, tactile authentic paper/fabric/wood, beautifully composed but real, natural optical depth.\nComposition/framing: portrait 2:3 full bleed, stacked gifts centered in middle 75% and strongly legible when small. Essential subjects kept away from upper corners for an arched card crop.\nLighting/mood: soft warm indoor daylight, generous, sweet and celebratory.\nColor palette: pale mint, butter yellow, cream, warm neutral wood. Saturation gentle but gift colors clearly separated.\nConstraints: genuinely new image, no references or reused media. No people, no bassinet, no flower arrangements, no floral garden, no food, no cake, no table still life.\nAvoid: writing or lettering on packages, text, logos, watermarks, borders, frames, CGI plastic appearance.",
+      "original": {
+        "path": "C:\\Users\\rjosan\\.codex\\generated_images\\01a17d97-bc34-77b2-bf0a-7e8a4946790a\\exec-a8323988-dede-499c-935c-79afa80ca2e8.png",
+        "deleted": true
+      },
+      "verification": {
+        "webpMagic": true,
+        "sharpDecode": true,
+        "ffmpegDecode": true,
+        "dimensionsPreserved": true,
+        "visualReview": true
+      }
+    },
+    {
+      "category": "bridal-showers",
+      "path": "public/images/landing/categories/stories-2026/bridal-showers.webp",
+      "publicPath": "/images/landing/categories/stories-2026/bridal-showers.webp",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 119244,
+      "sha256": "f49f72a4d2713f2e244235bdb3eb8b101f7bd21f144a24280ff622b906b3c6ba",
+      "prompt": "Use case: photorealistic-natural\nAsset type: professional event-planning website category campaign photograph.\nPrimary request: Create an entirely new premium lifestyle photograph of THREE ADULT women friends together at an intimate bridal shower, with unmistakable friendship and the bride as the clear subjects.\nScene/backdrop: chic bright contemporary indoor lounge with a warm ivory sofa, modern understated art, soft upholstered decor, open natural window daylight. No floral styling.\nSubject: three adult women friends of varied backgrounds, smiling and laughing together in a natural candid toast. The adult bride in a simple elegant white dress is in the center. Her two adult friends wear one coral-pink outfit and one lavender outfit. Each raises one delicate champagne or tea glass; the faces, expressions and friendship are the main focus. Relaxed real pose with credible fingers and arms.\nStyle/medium: high-end professional lifestyle campaign photography, authentic human moment, real skin and textiles, convincing camera optics, premium editorial polish.\nComposition/framing: portrait 2:3 full bleed, medium group portrait from waist up, three faces grouped centrally within the middle 75% of frame, no face near upper corners, safe upper corners for arched category crop. No table occupying the main view.\nLighting/mood: soft flattering indoor window daylight, joyful intimate friendship.\nColor palette: white dress, cheerful coral pink and lavender, soft warm neutral modern interior.\nConstraints: all subjects clearly adult, entire new image, no input images, no flowers or floral still life, no table/cake centerpiece, no text, logos, watermarks, borders or frames.\nAvoid: distorted hands, extra fingers, extra limbs, crowd, identical faces, stiff wedding portrait, wedding ceremony, overdecorated backdrop, heavy beauty retouching.",
+      "original": {
+        "path": "C:\\Users\\rjosan\\.codex\\generated_images\\01a17d97-bc34-77b2-bf0a-7e8a4946790a\\exec-7b9b6fda-4de2-4d45-aa24-31dbc3cffc87.png",
+        "deleted": true
+      },
+      "verification": {
+        "webpMagic": true,
+        "sharpDecode": true,
+        "ffmpegDecode": true,
+        "dimensionsPreserved": true,
+        "visualReview": true
+      }
+    },
+    {
+      "category": "gender-reveal",
+      "path": "public/images/landing/categories/stories-2026/gender-reveal.webp",
+      "publicPath": "/images/landing/categories/stories-2026/gender-reveal.webp",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 172706,
+      "sha256": "7627ce75577d66aa7ee5a2426e069bbb772a935b8817346c032580ab27a76433",
+      "prompt": "Use case: photorealistic-natural\nAsset type: professional event-planning website category campaign photograph.\nPrimary request: Create an entirely new bold PINK AND BLUE gender reveal celebration photograph, joyful adult couple at the center of a balanced shower of pink and blue confetti.\nScene/backdrop: open sunlit lawn beside a modern contemporary terrace, vibrant two-color fabric backdrop and hanging ribbons, a cluster of PINK balloons to one side and a cluster of BLUE balloons to the other, no floral decorations.\nSubject: joyful adult couple smiling in a candid celebratory reaction, waist-up or three-quarter view, central readable faces, both wearing modern simple pale neutral clothes. They are showered with a balanced mix of pink and blue confetti in the air and stand against a clearly divided pink-and-blue backdrop. Bold pink and blue are the dominant visual colors across the photograph and instantly readable at small thumbnail size.\nStyle/medium: premium professional photorealistic lifestyle campaign photography, natural skin, believable bodies and hands, real tactile fabric, latex balloons and paper confetti, sharp candid moment with authentic optical depth.\nComposition/framing: portrait 2:3 full bleed, essential faces and actions central in the middle 75%; upper corners may contain ribbons and balloons but no essential faces because of arched card crop. Couple visibly celebrating with naturally raised hands.\nLighting/mood: bright soft outdoor daylight, lively joyful celebration.\nColor palette: dominant pink and clear sky blue, vibrant but professionally graded, small warm ivory and greenery accents.\nConstraints: entirely new image with no input references or reused media. No flowers, no garden table setup, no floral arch, no picnic, no cake still life.\nAvoid: text, writing, logos, watermarks, borders, frames, blue/pink smoke, confetti obscuring faces, extra fingers, impossible hands, distorted anatomy, generic romance photo.",
+      "original": {
+        "path": "C:\\Users\\rjosan\\.codex\\generated_images\\01a17d97-bc34-77b2-bf0a-7e8a4946790a\\exec-fc9c81f7-e4de-4280-a3d1-3d72b8ac5fa1.png",
+        "deleted": true
+      },
+      "verification": {
+        "webpMagic": true,
+        "sharpDecode": true,
+        "ffmpegDecode": true,
+        "dimensionsPreserved": true,
+        "visualReview": true
+      }
+    },
+    {
+      "category": "signup-forms",
+      "path": "public/images/landing/categories/stories-2026/signup-forms.webp",
+      "publicPath": "/images/landing/categories/stories-2026/signup-forms.webp",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 145272,
+      "sha256": "afbcde97431b6249973c5451865bd842e6f8a9c40d3b887c906afb38f66cad41",
+      "prompt": "Use case: photorealistic-natural\nAsset type: professional event website Sign-up Forms category photograph, full-bleed PORTRAIT 2:3.\nPrimary request: An original warm candid editorial photograph of three diverse ADULT community volunteers at a welcoming volunteer sign-up/check-in table in a bright contemporary community center. A friendly woman in a muted terracotta shirt at center leans slightly to write with a pen on a clipboard laid on the counter, while two adult organizers in casual blue and cream clothes smile and help. The clipboard clearly has tidy blank horizontal lines and small unmarked square checkboxes, with NO readable words or letters. A small neat stack of blank forms and pencils shows practical coordination. Natural believable hands, fingers and pen grip. Show faces and the sign-up action together in a medium-distance composition, heads in upper half and hands/clipboard in center-lower half. Simple community-center interior, big daylight windows and a softly blurred pinboard background; clean warm wood counter, real skin, natural diverse adults, human connection, premium welcoming lifestyle photography. Distinct interior scene, NOT a garden/potluck/meal scene. No food, no party cake, no flowers, no staged ribbon gifts.\nComposition: portrait2:3, essential faces and clipboard inside middle70%, safe top corners for an arched website crop, each person and the sign-up action readable in a small thumbnail. No logos, readable signage, typography, watermark, border, collage, UI screenshot or app mockup. Entirely new image with no old media references.",
+      "original": {
+        "path": "C:\\Users\\rjosan\\.codex\\generated_images\\01a17d95-90c9-7090-a2e8-d067765f77ae\\exec-409dab8f-9e55-4255-bbaa-0d9abe9b69b8.png",
+        "deleted": true
+      },
+      "verification": {
+        "webpMagic": true,
+        "sharpDecode": true,
+        "ffmpegDecode": true,
+        "dimensionsPreserved": true,
+        "visualReview": true
+      }
+    },
+    {
+      "category": "sports",
+      "path": "public/images/landing/categories/stories-2026/sports.webp",
+      "publicPath": "/images/landing/categories/stories-2026/sports.webp",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 220882,
+      "sha256": "2160b8f873f1eeabf082ca9aaba2302b42d869c022adeb66e984f45b4cba9e58",
+      "prompt": "Use case: photorealistic-natural\nAsset type: professional event website Sports category photograph, full-bleed PORTRAIT 2:3.\nPrimary request: A single beautiful premium sports campaign photograph showing SEVERAL DIFFERENT SPORTS together as a carefully art-directed, physically real still life on a blue outdoor multi-sport court: one orange basketball, one black-and-white soccer ball, one brown American football with visible white laces, one white volleyball, plus one tennis racket and two yellow tennis balls. The equipment forms a strong centered sculptural grouping in the middle of the portrait, with the racket leaning diagonally behind the balls. Every piece of equipment is separate and realistically shaped, correctly scaled and instantly identifiable. Restrained strong sun from the side with crisp interesting shadows and tactile rubber/leather textures, clean blue court with one simple white court line, softly blurred blue sports fence behind. Premium professional product photography, excellent clarity, real textures, blue/orange/white palette, energetic but uncluttered.\nComposition: portrait2:3, all essential equipment grouped within central70%, focal grouping extends middle third through lower third, breathing room at top corners for an arch crop. This is ONE coherent real-world photograph, not a collage, split screen, montage or sport-icon illustration. No people necessary, no jerseys, no brand names, no text, no lettering, no logo, no watermark, no borders. Entirely new imagery, do not reuse any earlier photograph.",
+      "original": {
+        "path": "C:\\Users\\rjosan\\.codex\\generated_images\\01a17d95-90c9-7090-a2e8-d067765f77ae\\exec-df12d764-4e14-4b7c-aa82-cc03b2c17d2a.png",
+        "deleted": true
+      },
+      "verification": {
+        "webpMagic": true,
+        "sharpDecode": true,
+        "ffmpegDecode": true,
+        "dimensionsPreserved": true,
+        "visualReview": true
+      }
+    }
+  ]
+}

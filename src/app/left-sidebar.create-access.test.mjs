@@ -20,13 +20,13 @@ test("left sidebar renders personalized create navigation for signed-in accounts
   );
   assert.match(
     source,
-    /const hasCreateEventAccess = useMemo\([\s\S]*?creationAccess\.access\?\.allowedProducts\.includes\("event_page"\)/,
+    /const hasCreateEventAccess = useMemo\([\s\S]*?creationAccess\.access\?\.allowedProducts\.some\(\(product\) => product === "event_page" \|\| product === "signup_form"\)/,
   );
   assert.match(source, /featureVisibility\.hasLoadedPreferences\s*\? featureVisibility\.visibleTemplateKeys : EMPTY_TEMPLATE_KEYS/);
   const openCreate = source.slice(source.indexOf("const openCreateEventPage ="), source.indexOf("const openMyEventsPage ="));
   // Create event opens the page that owns the category choices.
   assert.match(openCreate, /router\.push\("\/create"\)/);
-  assert.match(source, /const createMenuItems = useMemo\(\s*\(\) => createMenuEntries\.filter\(\(item\) => !isSignupFormCreateHref\(item\.href\)\)/);
+  assert.match(source, /const createMenuItems = useMemo\(\s*\(\) => createMenuEntries,/);
 });
 
 test("left sidebar controller resets create panel state when create access disappears", () => {
@@ -48,7 +48,7 @@ test("event creation routes keep unified navigation at the root and do not activ
 
   assert.match(
     controllerSource,
-    /const isCreateEntryActive =\s*\(isCreateRouteActive && !isSignupFormCreateActive\) \|\|\s*sidebarPage === "createEvent" \|\|\s*sidebarPage === "createEventOther";/,
+    /const isCreateEntryActive =\s*isDefaultCreationCategoryActive \|\|\s*Boolean\(activeCategoryFavoriteId\) \|\|\s*isCreateRouteActive \|\|\s*sidebarPage === "createEvent" \|\|\s*sidebarPage === "createEventOther";/,
   );
   assert.match(
     viewSource,

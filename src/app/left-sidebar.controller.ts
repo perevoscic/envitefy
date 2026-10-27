@@ -1,5 +1,7 @@
 import type { PrimarySignupSource } from "@/lib/product-scopes";
 import { useCreationAccess } from "@/hooks/useCreationAccess";
+import { useCategoryFavorites } from "@/hooks/useCategoryFavorites";
+import { isCategoryFavoriteActive } from "@/lib/category-favorites";
 import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 import { writeLocalCalendarDefault } from "@/lib/calendar-preference";
 import {
@@ -18,9 +20,6 @@ import {
   getCreateEventSections,
   getTemplateLinks,
   isCreateEventRoute,
-  isSignupFormCreateHref,
-  matchesCreateEventHrefPath,
-  SIGNUP_FORM_CREATE_HREF,
 } from "@/config/navigation-config";
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
@@ -86,6 +85,8 @@ type LeftSidebarControllerArgs = {
       sportPreferences: SportPreferences;
       hasLoadedPreferences: boolean;
       quickAccess?: string[];
+      pinnedCategoryIds?: string[];
+      refresh?: () => Promise<unknown>;
     };
     primarySignupSource: PrimarySignupSource | null;
     productScopes: string[] | undefined;
@@ -137,9 +138,9 @@ export type LeftSidebarControllerViewModel = {
   menuOpen: boolean;
   setMenuOpen: Dispatch<SetStateAction<boolean>>;
   hasCreateEventAccess: boolean;
-  hasSignupFormAccess: boolean;
-  showGymnasticsCreate: boolean;
-  isGymnasticsCreateActive: boolean;
+  categoryFavorites: ReturnType<typeof useCategoryFavorites>;
+  activeCategoryFavoriteId: string | null;
+  isDefaultCreationCategoryActive: boolean;
   createEntryLabel: string;
   isSignupFormsDefault: boolean;
   createMenuOptionCount: number;
@@ -182,9 +183,8 @@ export type LeftSidebarControllerViewModel = {
   goStudioFromSidebar: () => void;
   handleRootSnapNavigate: () => void;
   handleRootLiveCardNavigate: () => void;
-  handleRootSignupFormNavigate: () => void;
-  handleRootGymnasticsNavigate: () => void;
-  isSignupFormCreateActive: boolean;
+  handleRootCategoryFavoriteNavigate: (id: string) => void;
+  handleRootDefaultCategoryNavigate: () => void;
   openCreateEventPage: () => void;
   openMyEventsPage: () => void;
   openSchedulesPage: () => void;
@@ -371,9 +371,15 @@ export function useLeftSidebarController({
     return window.matchMedia("(min-width: 1024px)").matches;
   });
   const [isAdmin, setIsAdmin] = useState<boolean>(Boolean((session?.user as any)?.isAdmin));
-  const [profilePrimarySignupSource, setProfilePrimarySignupSource] = useState<
-    PrimarySignupSource | null
-  >(null);
+  const [profileSignupSourceSnapshot, setProfileSignupSourceSnapshot] = useState<{
+    identity: string | null;
+    source: PrimarySignupSource | null;
+  } | null>(null);
+  const profilePrimarySignupSource = profileSignupSourceSnapshot && profileSignupSourceSnapshot.identity === profileEmail
+    ? profileSignupSourceSnapshot.source : null;
+  const setProfilePrimarySignupSource = useCallback((source: PrimarySignupSource | null) => {
+    setProfileSignupSourceSnapshot({ identity: profileEmail, source });
+  }, [profileEmail]);
   const [_profileLoaded, setProfileLoaded] = useState(false);
 
   const savedCalendarProviderRef = useRef<CalendarProviderKey | null | "__unset">("__unset");
@@ -856,7 +862,7 @@ export function useLeftSidebarController({
       ignore = true;
       cancelScheduledLoad();
     };
-  }, [primarySignupSource, profileEmail, session?.user, status]);
+  }, [primarySignupSource, profileEmail, session?.user, setProfilePrimarySignupSource, status]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -990,9 +996,9 @@ export function useLeftSidebarController({
       visibleTemplateKeys,
     ],
   );
-  // Sign-up Form has its own root entry, so the category panel lists events only.
+  // Every available event type, including sign-up forms, belongs in this chooser.
   const createMenuItems = useMemo(
-    () => createMenuEntries.filter((item) => !isSignupFormCreateHref(item.href)),
+    () => createMenuEntries,
     [createMenuEntries],
   );
   const otherCreateMenuItems = useMemo(() => [], []);
@@ -1006,19 +1012,21 @@ export function useLeftSidebarController({
     () =>
       canRenderCreateEventNavigation &&
       (UNIFIED_CREATION_ENABLED
-        ? creationAccess.access?.allowedProducts.includes("event_page") === true
+        ? creationAccess.access?.allowedProducts.some((product) => product === "event_page" || product === "signup_form") === true
         : createMenuOptionCount > 0),
     [canRenderCreateEventNavigation, createMenuOptionCount, creationAccess.access],
   );
-  const hasSignupFormAccess = canRenderCreateEventNavigation && (UNIFIED_CREATION_ENABLED
-    ? creationAccess.access?.allowedProducts.includes("signup_form") === true && featureVisibility.hasLoadedPreferences && (featureVisibility.quickAccess || []).includes("smart_signup")
-    : hasCreateEventAccess);
-  const showGymnasticsCreate = hasCreateEventAccess &&
-    creationAccess.access?.allowedCategories.includes("gymnastics") === true &&
-    (effectivePrimarySignupSource === "gymnastics" || normalizeSignupIntent(defaultCreateIntent) === "gymnastics");
-  const isGymnasticsCreateActive = showGymnasticsCreate && Boolean(
-    pathname && matchesCreateEventHrefPath(pathname, "/event/gymnastics"),
-  );
+  const categoryFavorites = useCategoryFavorites({
+    access: creationAccess.access,
+    preferences: featureVisibility,
+    signupSource: effectivePrimarySignupSource,
+    defaultCreateIntent,
+  });
+  const activeCategoryFavoriteId = categoryFavorites.favorites.find((favorite) =>
+    isCategoryFavoriteActive(favorite, pathname, searchParams),
+  )?.id || null;
+  const isDefaultCreationCategoryActive = Boolean(categoryFavorites.defaultCategory &&
+    isCategoryFavoriteActive(categoryFavorites.defaultCategory, pathname, searchParams));
 
   useEffect(() => {
     if (activeCreateItem) {
@@ -1102,21 +1110,25 @@ export function useLeftSidebarController({
     setSidebarPage,
   ]);
 
-  const handleRootSignupFormNavigate = useCallback(() => {
-    clearEventContext();
-    setSidebarPage("root");
-    collapseSidebarOnTouch();
-    router.push("/signup-forms/templates");
-  }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage]);
-
-  const handleRootGymnasticsNavigate = useCallback(() => {
-    if (!showGymnasticsCreate) return;
+  const handleRootCategoryFavoriteNavigate = useCallback((id: string) => {
+    const favorite = categoryFavorites.favorites.find((item) => item.id === id);
+    if (!hasCreateEventAccess || !favorite) return;
     clearEventContext();
     setForcedCreateActiveLabel(null);
     setSidebarPage("root");
     collapseSidebarOnTouch();
-    router.push("/event/gymnastics");
-  }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage, showGymnasticsCreate]);
+    router.push(favorite.href);
+  }, [categoryFavorites.favorites, clearEventContext, collapseSidebarOnTouch, hasCreateEventAccess, router, setSidebarPage]);
+
+  const handleRootDefaultCategoryNavigate = useCallback(() => {
+    const category = categoryFavorites.defaultCategory;
+    if (!hasCreateEventAccess || !category) return;
+    clearEventContext();
+    setForcedCreateActiveLabel(null);
+    setSidebarPage("root");
+    collapseSidebarOnTouch();
+    router.push(category.href);
+  }, [categoryFavorites.defaultCategory, clearEventContext, collapseSidebarOnTouch, hasCreateEventAccess, router, setSidebarPage]);
 
   const openMyEventsPage = useCallback(
     () => openCompactEventsPage("myEvents"),
@@ -1359,11 +1371,10 @@ export function useLeftSidebarController({
       findEventListItemFromPath(currentPath)?.source || null,
     [findEventListItemFromPath],
   );
-  const isSignupFormCreateActive = Boolean(
-    pathname && matchesCreateEventHrefPath(pathname, SIGNUP_FORM_CREATE_HREF),
-  );
   const isCreateEntryActive =
-    (isCreateRouteActive && !isSignupFormCreateActive) ||
+    isDefaultCreationCategoryActive ||
+    Boolean(activeCategoryFavoriteId) ||
+    isCreateRouteActive ||
     sidebarPage === "createEvent" ||
     sidebarPage === "createEventOther";
 
@@ -1824,9 +1835,9 @@ export function useLeftSidebarController({
     menuOpen,
     setMenuOpen,
     hasCreateEventAccess,
-    hasSignupFormAccess,
-    showGymnasticsCreate,
-    isGymnasticsCreateActive,
+    categoryFavorites,
+    activeCategoryFavoriteId,
+    isDefaultCreationCategoryActive,
     createEntryLabel,
     isSignupFormsDefault,
     createMenuOptionCount,
@@ -1865,9 +1876,8 @@ export function useLeftSidebarController({
     handleRootSnapNavigate,
     handleRootLiveCardNavigate,
     openCreateEventPage,
-    handleRootSignupFormNavigate,
-    handleRootGymnasticsNavigate,
-    isSignupFormCreateActive,
+    handleRootCategoryFavoriteNavigate,
+    handleRootDefaultCategoryNavigate,
     openMyEventsPage,
     openSchedulesPage,
     openSignupFormsPage,

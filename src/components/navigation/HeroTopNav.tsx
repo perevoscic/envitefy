@@ -59,6 +59,22 @@ function getHashLinkId(href: string) {
   }
 }
 
+function scrollToHashTarget(target: HTMLElement) {
+  const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? "auto"
+    : "smooth";
+
+  if (target.closest("[data-marketing-page]")) {
+    target.scrollIntoView({ block: "start", behavior });
+    return;
+  }
+
+  window.scrollTo({
+    top: target.getBoundingClientRect().top + window.scrollY - 100,
+    behavior,
+  });
+}
+
 function normalizeNavPath(path: string) {
   const withoutQuery = path.split("?")[0]?.split("#")[0] ?? path;
   if (withoutQuery.length > 1 && withoutQuery.endsWith("/")) {
@@ -368,12 +384,7 @@ export default function HeroTopNav({
         if (!pendingTarget) return;
 
         setActiveNavHref(pendingMobileHashHref);
-        window.scrollTo({
-          top: pendingTarget.getBoundingClientRect().top + window.scrollY - 100,
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-            ? "auto"
-            : "smooth",
-        });
+        scrollToHashTarget(pendingTarget);
       });
     };
   }, [mobileMenuOpen]);
@@ -438,10 +449,7 @@ export default function HeroTopNav({
       }
 
       setActiveNavHref(href);
-      window.scrollTo({
-        top: target.getBoundingClientRect().top + window.scrollY - 100,
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-      });
+      scrollToHashTarget(target);
     };
 
   return (

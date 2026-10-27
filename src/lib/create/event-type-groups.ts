@@ -1,6 +1,7 @@
 import { HOLIDAY_OCCASIONS as HOLIDAY_COLLECTIONS } from "../holiday-occasions";
 import { seasonalCollectionScores } from "../seasonal-template-order";
-import { type CreateGuess, createGuessLabel } from "./create-intent";
+import { creationAllowed, type CreationAccess } from "../creation-access";
+import { type CreateGuess, createGuessLabel, customCategoryForGuess } from "./create-intent";
 
 const holidays = new Map(HOLIDAY_COLLECTIONS.map((collection) => [collection.id, collection]));
 
@@ -16,7 +17,16 @@ export function eventTypeChoiceLabel(choice: CreateGuess) {
 export function eventTypeChoiceSearchText(choice: CreateGuess) {
   const holiday = choice.category === "holidays-seasonal" && choice.occasion
     ? holidays.get(choice.occasion) : undefined;
-  return `${eventTypeChoiceLabel(choice)} ${holiday?.aliases || ""} ${choice.category === "school" ? "weekly memo newsletter field trip school celebration parent meeting classroom conference" : choice.category === "general" ? "thematic" : ""}`;
+  return `${eventTypeChoiceLabel(choice)} ${holiday?.aliases || ""} ${choice.category === "signup-forms" ? "signup sign up volunteer slots shifts potluck form" : choice.category === "school" ? "weekly memo newsletter field trip school celebration parent meeting classroom conference" : choice.category === "general" ? "thematic" : ""}`;
+}
+
+/** Sign-up forms share the starting list while retaining their own product grant. */
+export function manualEventTypeChoices(choices: CreateGuess[], access?: CreationAccess | null): CreateGuess[] {
+  if (!access) return [];
+  const allowed = choices.filter((choice) => choice.category !== "signup-forms" &&
+    creationAllowed(access, "event_page", customCategoryForGuess(choice)));
+  if (access.allowedProducts.includes("signup_form")) allowed.push({ category: "signup-forms", sport: null });
+  return allowed.filter((choice, index, all) => all.findIndex((item) => eventTypeChoiceKey(item) === eventTypeChoiceKey(choice)) === index);
 }
 
 /** Put timely occasions first while keeping every category and occasion identity. */
@@ -76,7 +86,7 @@ const featuredTypes: Record<EventTypeGroup, readonly string[]> = {
   holidays: ["christmas", "halloween", "thanksgiving", "easter", "new-years-eve", "valentines-day", "july-fourth", "mothers-day"],
   home: ["housewarming", "open-house"],
   religious: [],
-  gatherings: ["general"],
+  gatherings: ["general", "signup-forms"],
   school: ["school"],
   sports: ["football", "basketball", "soccer", "baseball", "gymnastics", "volleyball", "softball", "tennis", "swimming"],
 };

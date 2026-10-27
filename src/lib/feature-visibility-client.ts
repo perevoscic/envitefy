@@ -7,6 +7,7 @@ export type FeatureVisibilityApiPayload = {
   sportPreferences?: unknown;
   sportPreferenceSuggestion?: unknown;
   quickAccess?: unknown;
+  pinnedCategoryIds?: unknown;
 };
 
 export const FEATURE_VISIBILITY_TIMEOUT_MS = 10_000;

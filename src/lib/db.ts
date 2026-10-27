@@ -1212,6 +1212,7 @@ export async function updateFeatureVisibilityByEmail(params: {
   defaultCreateIntent?: string | null;
   sportPreferences?: SportPreferences;
   quickAccess?: string[];
+  pinnedCategoryIds?: string[];
 }): Promise<void> {
   await ensureUsersHasFeatureVisibilityColumn();
   const lower = params.email.toLowerCase();
@@ -1230,6 +1231,7 @@ export async function updateFeatureVisibilityByEmail(params: {
     payload.sportPreferences = normalizeSportPreferences(params.sportPreferences);
   }
   if (params.quickAccess) payload.quickAccess = params.quickAccess;
+  if (params.pinnedCategoryIds !== undefined) payload.pinnedCategoryIds = params.pinnedCategoryIds;
   await query(
     `update users
         set feature_visibility = coalesce(feature_visibility, '{}'::jsonb) || $2::jsonb

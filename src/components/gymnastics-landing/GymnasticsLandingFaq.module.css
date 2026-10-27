@@ -1,0 +1,204 @@
+@font-face {
+  font-family: "Envitefy Gymnastics Questions";
+  src: url("/fonts/gallery/cormorantinfant-918ac7694663.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+.section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 2.5rem;
+  padding: clamp(4rem, 7vw, 7rem) var(--marketing-gutter);
+  border-top: 1px solid var(--marketing-line);
+  color: var(--marketing-ink);
+  background: var(--marketing-paper);
+}
+
+.introduction {
+  min-width: 0;
+}
+
+.eyebrow {
+  margin: 0 0 1.25rem;
+  color: var(--marketing-accent);
+  font: 650 0.6875rem / 1.6 var(--marketing-sans);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.heading {
+  max-width: 12ch;
+  margin: 0;
+  color: var(--marketing-ink);
+  font-family: "Envitefy Gymnastics Questions", var(--marketing-serif);
+  font-size: clamp(3.5rem, 5.4vw, 6.5rem);
+  font-weight: 300;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.heading strong {
+  display: block;
+  color: var(--marketing-accent);
+  font-weight: 700;
+}
+
+.helpCopy {
+  max-width: 28rem;
+  margin: 1.5rem 0 1rem;
+  color: var(--marketing-muted);
+  font-size: 1rem;
+  line-height: 1.8;
+  text-wrap: pretty;
+}
+
+.helpLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 44px;
+  color: var(--marketing-accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+.helpLink svg {
+  flex-shrink: 0;
+}
+
+.questions {
+  min-width: 0;
+  border-top: 1px solid var(--marketing-line);
+}
+
+.question {
+  border-bottom: 1px solid var(--marketing-line);
+}
+
+.question summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  min-height: 90px;
+  padding-block: 1.25rem;
+  color: var(--marketing-ink);
+  font-family: "Envitefy Gymnastics Questions", var(--marketing-serif);
+  font-size: clamp(1.65rem, 2vw, 2.2rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  list-style: none;
+  cursor: pointer;
+  scroll-margin-block: 7rem 2rem;
+}
+
+.question summary::-webkit-details-marker {
+  display: none;
+}
+
+.toggle {
+  position: relative;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--marketing-accent);
+  border-radius: 0.85rem;
+  color: var(--marketing-accent);
+  transition: background 180ms ease;
+}
+
+.toggle::before,
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 1.5px;
+  background: currentColor;
+  translate: -50% -50%;
+}
+
+.toggle::after {
+  rotate: 90deg;
+  transition: scale 180ms ease;
+}
+
+.question[open] .toggle::after {
+  scale: 0 1;
+}
+
+.question summary:hover .toggle,
+.question summary:active .toggle {
+  background: var(--marketing-soft);
+}
+
+.question > p {
+  max-width: 44rem;
+  margin: 0;
+  padding: 0 4.5rem 1.75rem 0;
+  color: var(--marketing-muted);
+  font-size: 1rem;
+  line-height: 1.8;
+  text-wrap: pretty;
+}
+
+.question a {
+  color: var(--marketing-accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.section :is(a, summary):focus-visible {
+  outline: 3px solid var(--marketing-accent);
+  outline-offset: 5px;
+}
+
+@media (min-width: 1024px) {
+  .section {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: clamp(3rem, 6vw, 7rem);
+  }
+}
+
+@media (min-width: 1024px) and (min-height: 650px) {
+  .introduction {
+    position: sticky;
+    top: 6rem;
+  }
+}
+
+@media (max-width: 599px) {
+  .section {
+    padding-block: 3.5rem 4.5rem;
+    gap: 2rem;
+  }
+
+  .heading {
+    font-size: clamp(3rem, 12vw, 4rem);
+  }
+
+  .question summary {
+    min-height: 84px;
+    gap: 1rem;
+    padding-block: 1.15rem;
+  }
+
+  .question > p {
+    padding-right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle,
+  .toggle::after {
+    transition: none;
+  }
+}

@@ -84,7 +84,8 @@ export default function PublicTemplateGalleryContents({
     ),
   );
   const alignBottoms = featured && category === "signup-forms";
-  const shown = featured ? templates.slice(0, alignBottoms ? 10 : 6) : filtered.slice(0, visible);
+  const featuredCount = category === "gymnastics" ? 8 : alignBottoms ? 10 : 6;
+  const shown = featured ? templates.slice(0, featuredCount) : filtered.slice(0, visible);
   useEffect(() => {
     trackTemplateEvent("template_gallery_view", category);
     let active = true;

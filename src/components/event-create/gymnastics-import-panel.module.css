@@ -1,0 +1,143 @@
+.panel {
+  --meet-panel-ink: #ffffff;
+  --meet-panel-muted: #e5ddf4;
+  --meet-panel-action: #fff9ff;
+  --meet-panel-action-hover: #efe5ff;
+  --meet-panel-action-active: #dfccff;
+  --meet-panel-action-ink: #2b2150;
+  --meet-panel-field: #ffffff;
+  --meet-panel-field-ink: #2b2150;
+  --meet-panel-field-placeholder: #6e607e;
+  --meet-panel-field-border: #e8ddf5;
+  color: var(--meet-panel-ink);
+  color-scheme: light;
+  background: linear-gradient(140deg, #2b2150, #4a3a8a);
+  box-shadow: 0 12px 30px #2b215038;
+}
+
+:global(html.dark) .panel {
+  --meet-panel-action: #f2deef;
+  --meet-panel-action-hover: #ffeafa;
+  --meet-panel-action-active: #e7c6df;
+  --meet-panel-action-ink: #34243b;
+  --meet-panel-field: #302738;
+  --meet-panel-field-ink: #f2eafa;
+  --meet-panel-field-placeholder: #cbbad7;
+  --meet-panel-field-border: #b69ac8;
+  color-scheme: dark;
+  background: linear-gradient(140deg, #292038, #423051);
+}
+
+.panel .title,
+.panel .badge {
+  color: var(--meet-panel-ink);
+}
+
+.panel .description,
+.panel .fileName {
+  color: var(--meet-panel-muted);
+}
+
+.panel .button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.panel .primaryButton {
+  color: var(--meet-panel-action-ink);
+  background: var(--meet-panel-action);
+  border-color: var(--meet-panel-action);
+}
+
+.panel .primaryButton:hover:not(:disabled) {
+  background: var(--meet-panel-action-hover);
+  border-color: var(--meet-panel-action-hover);
+}
+
+.panel .primaryButton:active:not(:disabled) {
+  background: var(--meet-panel-action-active);
+  border-color: var(--meet-panel-action-active);
+}
+
+.panel .secondaryButton {
+  color: var(--meet-panel-ink);
+  background: #ffffff14;
+  border-color: #ffffff73;
+}
+
+.panel .secondaryButton:hover:not(:disabled),
+.panel .secondaryButton[aria-expanded="true"] {
+  background: #ffffff29;
+  border-color: #ffffffb3;
+}
+
+.panel .secondaryButton:active:not(:disabled) {
+  background: #ffffff38;
+}
+
+.panel .button:focus-visible,
+.panel .urlInput:focus-visible,
+.panel :global(.discovery-progress-cancel):focus-visible {
+  outline: 2px solid var(--meet-panel-ink);
+  outline-offset: 3px;
+}
+
+.panel :global(.discovery-progress-cancel) {
+  min-height: 44px;
+}
+
+.panel :global(.discovery-progress-cancel):hover {
+  background-color: var(--meet-panel-action-hover) !important;
+}
+
+.panel .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.panel .urlInput {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid var(--meet-panel-field-border);
+  border-radius: 12px;
+  background: var(--meet-panel-field);
+  color: var(--meet-panel-field-ink);
+  -webkit-text-fill-color: var(--meet-panel-field-ink);
+  caret-color: var(--meet-panel-field-ink);
+  padding: 8px 12px;
+  font-size: 16px;
+  outline: none;
+}
+
+.panel .urlInput::placeholder {
+  color: var(--meet-panel-field-placeholder);
+  -webkit-text-fill-color: var(--meet-panel-field-placeholder);
+  opacity: 1;
+}
+
+.panel .urlInput:autofill {
+  -webkit-text-fill-color: var(--meet-panel-field-ink);
+  caret-color: var(--meet-panel-field-ink);
+  box-shadow: 0 0 0 1000px var(--meet-panel-field) inset;
+}
+
+.panel .urlInput:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel .button {
+    transition: none;
+  }
+}

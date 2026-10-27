@@ -31,6 +31,7 @@ import {
   resolveGymnasticsPipelineProgress,
 } from "@/components/event-create/discovery-progress";
 import { resolveDiscoveryClientParseTimeoutMs } from "@/lib/discovery-budget";
+import styles from "./gymnastics-import-panel.module.css";
 
 type GymnasticsLauncherProps = {
   forwardQueryString?: string;
@@ -59,6 +60,16 @@ const GYM_DISCOVERY_PROGRESS_THEME: DiscoveryProgressTheme = {
   fillMiddle: "#8e63ff",
   fillStart: "#6d35f5",
   textColor: "#ffffff",
+};
+const GYM_DISCOVERY_PANEL_PROGRESS_THEME: DiscoveryProgressTheme = {
+  ...GYM_DISCOVERY_PROGRESS_THEME,
+  cancelBackground: "var(--meet-panel-action)",
+  cancelBorderColor: "var(--meet-panel-action)",
+  cancelHoverBackground: "var(--meet-panel-action-hover)",
+  cancelTextColor: "var(--meet-panel-action-ink)",
+  fillStart: "#643b9f",
+  fillMiddle: "#7548af",
+  fillEnd: "#865bb5",
 };
 
 function GradientCardBorder({
@@ -579,21 +590,21 @@ export default function GymnasticsLauncher({
 
   if (variant === "panel") {
     return (
-      <section aria-label="Import meet details" className="w-full rounded-2xl bg-[linear-gradient(140deg,#2b2150_0%,#4a3a8a_100%)] p-4 text-left text-white shadow-[0_12px_30px_rgba(43,33,80,0.22)]">
+      <section aria-label="Import meet details" className={`${styles.panel} w-full rounded-2xl p-4 text-left`}>
         <div className="flex items-start gap-3">
-          <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/12 text-white">
+          <span aria-hidden="true" className={`${styles.badge} flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/12`}>
             <WandSparkles className="h-[18px] w-[18px]" />
           </span>
           <div className="min-w-0">
-            <p className="text-[15px] font-semibold leading-5">{panelTitle}</p>
-            <p className="mt-1 text-[13px] leading-5 text-white/75">{panelDescription}</p>
+            <p className={`${styles.title} text-[15px] font-semibold leading-5`}>{panelTitle}</p>
+            <p className={`${styles.description} mt-1 text-[13px] leading-5`}>{panelDescription}</p>
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={discoveryBusy} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-[#2b2150] transition hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50">
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={discoveryBusy} className={`${styles.button} ${styles.primaryButton}`}>
             <Upload className="h-4 w-4" aria-hidden="true" /> Upload packet
           </button>
-          <button type="button" onClick={() => setSelectedPath(selectedPath === "url" ? "upload" : "url")} disabled={discoveryBusy} aria-expanded={selectedPath === "url"} aria-controls="gym-meet-import-url" className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50 ${selectedPath === "url" ? "border-white/60 bg-white/20" : "border-white/30 bg-white/10 hover:bg-white/15"}`}>
+          <button type="button" onClick={() => setSelectedPath(selectedPath === "url" ? "upload" : "url")} disabled={discoveryBusy} aria-expanded={selectedPath === "url"} aria-controls="gym-meet-import-url" className={`${styles.button} ${styles.secondaryButton}`}>
             <Globe className="h-4 w-4" aria-hidden="true" /> Paste link
           </button>
         </div>
@@ -602,17 +613,17 @@ export default function GymnasticsLauncher({
           <form id="gym-meet-import-url" className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); void handleUrlSync(); }}>
             <label className="min-w-0 flex-1">
               <span className="sr-only">Public meet URL</span>
-              <input type="url" value={meetUrl} onChange={(event) => setMeetUrl(event.target.value)} placeholder="https://meet-site.com/event" disabled={discoveryBusy} className="min-h-11 w-full rounded-xl border-0 bg-white px-3 py-2 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-violet-300" />
+              <input type="url" value={meetUrl} onChange={(event) => setMeetUrl(event.target.value)} placeholder="https://meet-site.com/event" disabled={discoveryBusy} data-preserve-control-colors className={styles.urlInput} />
             </label>
-            {!urlBusy ? <button type="submit" disabled={discoveryBusy} className="min-h-11 shrink-0 rounded-xl bg-[#a98bff] px-4 text-sm font-semibold text-[#1d1638] transition hover:bg-[#bba3ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50">Import</button> : null}
+            {!urlBusy ? <button type="submit" disabled={discoveryBusy} className={`${styles.button} ${styles.primaryButton} shrink-0`}>Import</button> : null}
           </form>
         ) : null}
         {discoveryBusy ? (
           <div className="mt-3">
-            <DiscoveryProgressPanel cancelLabel={uploadBusy ? "Cancel upload" : "Cancel import"} label={uploadBusy ? uploadStageLabel : urlStageLabel} progress={uploadBusy ? uploadProgress : urlProgress} onCancel={cancelDiscovery} showDetails={false} theme={GYM_DISCOVERY_PROGRESS_THEME} />
+            <DiscoveryProgressPanel cancelLabel={uploadBusy ? "Cancel upload" : "Cancel import"} label={uploadBusy ? uploadStageLabel : urlStageLabel} progress={uploadBusy ? uploadProgress : urlProgress} onCancel={cancelDiscovery} showDetails={false} theme={GYM_DISCOVERY_PANEL_PROGRESS_THEME} />
           </div>
         ) : null}
-        {uploadFileName ? <p className="mt-2 truncate text-xs text-white/70">{uploadFileName}</p> : null}
+        {uploadFileName ? <p className={`${styles.fileName} mt-2 truncate text-xs`}>{uploadFileName}</p> : null}
         {renderDiscoveryError(uploadError)}
         {renderDiscoveryError(urlError)}
       </section>

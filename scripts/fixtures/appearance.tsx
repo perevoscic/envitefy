@@ -5,6 +5,7 @@ import ThemeProvider, { useTheme } from "../../src/components/AppearanceProvider
 import AppearanceSelector from "../../src/components/AppearanceSelector";
 import ThemeColorSync from "../../src/components/ThemeColorSync";
 import EventPreviewViewport from "../../src/components/EventPreviewViewport";
+import GymnasticsGalleryHeader from "../../src/components/gym-meet-templates/GymnasticsGalleryHeader";
 import { Eye, Pencil, Share2, Users, Link2, Trash2 } from "lucide-react";
 
 function Workspace() {
@@ -18,6 +19,7 @@ function Workspace() {
       <h1>Create your Live Card</h1>
       <AppearanceSelector />
       <output data-testid="appearance-state">{preference}:{theme}</output>
+      <div data-testid="meet-import-gallery" style={{ marginTop: 24 }}><GymnasticsGalleryHeader count={12} /></div>
       <section className="bg-card text-card-foreground" style={{ marginTop: 24, padding: 24 }}>
         <label htmlFor="unsaved">Event title</label>
         <input id="unsaved" placeholder="Movie Under the Stars" className="border border-input bg-field-background text-foreground" />

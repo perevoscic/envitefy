@@ -228,6 +228,7 @@ export function getCreateEventSections(
 export function isCreateEventRoute(path: string | null | undefined): boolean {
   if (!path) return false;
   const pathname = normalizeNavigationPath(path);
+  if (pathname === "/bridal-showers/templates" || /^\/bridal-showers\/templates\/[^/]+\/customize$/.test(pathname)) return true;
   if (pathname === "/create" || pathname === "/event/school") return true;
   if (pathname === "/event/new" || pathname.startsWith("/event/new/")) return true;
   if (pathname === "/event/design/customize") return true;

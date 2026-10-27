@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const loadTs = require("../../../../../scripts/lib/event-messages-test-loader.cjs");
 
-function harness({ authenticated = true, failure, suggestion, configured = false } = {}) {
+function harness({ authenticated = true, failure, suggestion, configured = false, metadata = {}, access } = {}) {
   const calls = [];
   const row = {
     id: "current-user",
@@ -13,6 +13,7 @@ function harness({ authenticated = true, failure, suggestion, configured = false
       sportPreferences: configured
         ? { primarySport: "football", enabledSports: ["football"], setupCompleted: true }
         : undefined,
+      ...metadata,
     },
   };
   const route = loadTs("src/app/api/user/feature-visibility/route.ts", {
@@ -35,16 +36,26 @@ function harness({ authenticated = true, failure, suggestion, configured = false
         if (failure === "suggestion") throw new Error("optional history unavailable");
         return suggestion ? suggestion() : { sport: "football", source: "history" };
       },
+      updateFeatureVisibilityByEmail: async ({ email, ...patch }) => {
+        calls.push({ method: "update", email, patch });
+        row.feature_visibility = { ...row.feature_visibility, ...JSON.parse(JSON.stringify(patch)) };
+      },
     },
     "@/lib/creation-access-server": {
       getCreationAccess: async (userId) => {
         calls.push({ method: "access", userId });
         if (failure === "access") throw new Error("grants unavailable");
-        return { policy: "restricted", allowedProducts: ["event_page"], allowedCategories: ["birthdays"] };
+        return access || { policy: "restricted", allowedProducts: ["event_page"], allowedCategories: ["birthdays"] };
       },
     },
   });
-  return { calls, get: () => route.GET(new Request("http://localhost/api/user/feature-visibility")) };
+  return {
+    calls, row,
+    get: () => route.GET(new Request("http://localhost/api/user/feature-visibility")),
+    put: (body) => route.PUT(new Request("http://localhost/api/user/feature-visibility", {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    })),
+  };
 }
 
 test("feature visibility returns saved preferences filtered by the current account grants", async () => {
@@ -110,5 +121,56 @@ test("core session, preference and grant failures return retryable JSON without 
     assert.equal(response.status, 503);
     assert.equal(response.headers.get("cache-control"), "private, no-store");
     assert.deepEqual(await response.json(), { error: "Could not load your workspace preferences. Please retry." });
+  }
+});
+
+test("pinned category reads preserve legacy absence and explicit clearing while applying account grants", async () => {
+  for (const pinnedCategoryIds of [undefined, null]) {
+    const payload = await (await harness({ metadata: { pinnedCategoryIds } }).get()).json();
+    assert.equal(Object.hasOwn(payload, "pinnedCategoryIds"), false);
+  }
+  const cleared = await (await harness({ metadata: { pinnedCategoryIds: [] } }).get()).json();
+  assert.deepEqual(cleared.pinnedCategoryIds, []);
+  const filtered = await (await harness({ metadata: { pinnedCategoryIds: ["weddings", "birthdays", "birthdays", "unknown"] } }).get()).json();
+  assert.deepEqual(filtered.pinnedCategoryIds, ["birthdays"]);
+});
+
+test("pin writes deduplicate allowed categories without granting blocked categories or products", async () => {
+  const state = harness({ metadata: { signupAttribution: { intent: "gymnastics", path: "/gymnastics" } } });
+  const response = await state.put({ pinnedCategoryIds: ["weddings", "birthdays", "birthdays", "gymnastics", "unknown"] });
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+  assert.deepEqual(payload.featureVisibility.pinnedCategoryIds, ["birthdays"]);
+  assert.deepEqual(state.row.feature_visibility.signupAttribution, { intent: "gymnastics", path: "/gymnastics" });
+  const update = state.calls.find((call) => call.method === "update");
+  assert.equal(update.email, "current@example.test");
+  assert.deepEqual(update.patch.pinnedCategoryIds, ["birthdays"]);
+  assert.deepEqual(update.patch.visibleTemplateKeys, ["birthdays"]);
+  assert.equal(Object.hasOwn(update.patch, "allowedCategories"), false);
+  assert.equal(Object.hasOwn(update.patch, "allowedProducts"), false);
+
+  const noProduct = harness({ access: { policy: "restricted", allowedProducts: ["snap"], allowedCategories: ["birthdays"] } });
+  const denied = await noProduct.put({ pinnedCategoryIds: ["birthdays"] });
+  assert.deepEqual((await denied.json()).featureVisibility.pinnedCategoryIds, []);
+});
+
+test("explicit empty pin writes remain empty across reloads and unrelated writes preserve saved pins", async () => {
+  const state = harness({ metadata: { pinnedCategoryIds: ["birthdays"] } });
+  assert.equal((await state.put({ quickAccess: ["snap"] })).status, 200);
+  assert.deepEqual(state.row.feature_visibility.pinnedCategoryIds, ["birthdays"]);
+  assert.equal(state.calls.find((call) => call.method === "update").patch.pinnedCategoryIds, undefined);
+  const response = await state.put({ pinnedCategoryIds: [] });
+  assert.deepEqual((await response.json()).featureVisibility.pinnedCategoryIds, []);
+  assert.deepEqual((await (await state.get()).json()).pinnedCategoryIds, []);
+});
+
+test("pin writes require authentication and a string list before preferences are mutated", async () => {
+  const signedOut = harness({ authenticated: false });
+  assert.equal((await signedOut.put({ pinnedCategoryIds: ["birthdays"] })).status, 401);
+  assert.deepEqual(signedOut.calls, []);
+  for (const pinnedCategoryIds of [null, "birthdays", {}, ["birthdays", 5]]) {
+    const state = harness();
+    assert.equal((await state.put({ pinnedCategoryIds })).status, 400);
+    assert.equal(state.calls.some((call) => call.method === "update"), false);
   }
 });

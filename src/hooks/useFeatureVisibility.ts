@@ -16,6 +16,7 @@ import {
   type SportPreferenceSuggestion,
 } from "@/lib/sports-preferences";
 import { invalidateFeatureVisibility, loadFeatureVisibility } from "@/lib/feature-visibility-client";
+import { normalizePinnedCategoryIds } from "@/lib/category-favorites";
 
 type FeatureVisibilityState = {
   persona: UserPersona | null;
@@ -26,6 +27,7 @@ type FeatureVisibilityState = {
   sportPreferences: SportPreferences;
   sportPreferenceSuggestion: SportPreferenceSuggestion | null;
   quickAccess: QuickAccessKey[];
+  pinnedCategoryIds?: string[];
 };
 
 const DEFAULT_STATE: FeatureVisibilityState = {
@@ -80,6 +82,9 @@ export function useFeatureVisibility() {
         defaultCreateIntent: resolved.defaultCreateIntent,
         sportPreferences: normalizeSportPreferences(json?.sportPreferences),
         quickAccess: Array.isArray(json.quickAccess) ? json.quickAccess.filter((key): key is QuickAccessKey => key === "snap" || key === "upload" || key === "smart_signup") : ["snap", "upload", "smart_signup"],
+        pinnedCategoryIds: Array.isArray(json.pinnedCategoryIds)
+          ? normalizePinnedCategoryIds(json.pinnedCategoryIds)
+          : undefined,
         sportPreferenceSuggestion:
           json?.sportPreferenceSuggestion &&
           typeof json.sportPreferenceSuggestion === "object"

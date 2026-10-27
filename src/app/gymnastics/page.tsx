@@ -7,13 +7,13 @@ import { themeColorPalette } from "@/lib/theme-color";
 const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 export const metadata: Metadata = {
-  title: "Envitefy Gymnastics | Premium meet pages for families and coaches",
+  title: "Envitefy Gymnastics | One meet page for your whole team",
   description:
-    "Publish elegant gymnastics meet pages with schedules, venue info, hotel blocks, maps, and live updates. Built for families, coaches, athletes, and spectators.",
+    "Bring schedules, venue directions, hotel links and meet notes together in one shareable gymnastics page. Start with a packet or a design, review, then publish.",
   openGraph: {
     title: "Envitefy Gymnastics",
     description:
-      "Premium gymnastics meet pages with editorial layouts, live updates, hotel details, and mobile-first presentation.",
+      "One gymnastics meet page for schedules, arrival details, hotel links and the whole weekend. Easy for families to open, easy for you to keep current.",
     url: "https://envitefy.com/gymnastics",
     siteName: "Envitefy",
     images: [buildSiteOgImage(siteOgImageUrl, "Envitefy Gymnastics preview")],
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Envitefy Gymnastics",
     description:
-      "Premium gymnastics meet pages with editorial layouts, live updates, hotel details, and mobile-first presentation.",
+      "One gymnastics meet page for schedules, arrival details, hotel links and the whole weekend. Easy for families to open, easy for you to keep current.",
     images: [siteOgImageUrl],
   },
   alternates: { canonical: "/gymnastics" },
@@ -46,7 +46,7 @@ export default function GymnasticsPage() {
     },
     serviceType: "Gymnastics meet page publishing",
     description:
-      "Create mobile-friendly gymnastics meet pages with schedules, venue details, hotel blocks, maps, and live updates.",
+      "Create shareable gymnastics meet pages with schedules, venue details, hotel links and meet notes. Save changes to keep the same published page current.",
     audience: [
       { "@type": "Audience", audienceType: "Gymnastics families" },
       { "@type": "Audience", audienceType: "Coaches" },

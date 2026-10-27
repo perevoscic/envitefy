@@ -21,6 +21,52 @@ const { buildAppearanceBootstrap, normalizeAppearance, resolveAppearance } = loa
 
 const appearanceSwitch = (scope) => scope.getByRole("switch", { name: "Dark mode", exact: true });
 
+async function assertMeetImportPalette(page, output, theme) {
+  const panel = page.getByRole("region", { name: "Import meet details", exact: true });
+  const paste = panel.getByRole("button", { name: "Paste link", exact: true });
+  if (await paste.getAttribute("aria-expanded") !== "true") await paste.click();
+  const field = panel.getByRole("textbox", { name: "Public meet URL", exact: true });
+  await field.fill("https://meet-site.test/retained-details");
+  const upload = panel.getByRole("button", { name: "Upload packet", exact: true });
+  for (const control of [upload, paste, panel.getByRole("button", { name: "Import", exact: true }), field]) {
+    const target = await control.boundingBox();
+    assert.ok(target.height >= 44 && target.width >= 44, "meet import controls retain 44px targets");
+    await control.focus();
+    assert.equal(await control.evaluate(element => parseFloat(getComputedStyle(element).outlineWidth) >= 2), true, "meet import keyboard focus stays visible");
+  }
+  for (const hovered of [null, upload, paste]) {
+    if (hovered) await hovered.hover();
+    const measurements = await panel.evaluate(element => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 1;
+      const context = canvas.getContext("2d");
+      const rgba = color => {
+        context.clearRect(0, 0, 1, 1); context.fillStyle = color; context.fillRect(0, 0, 1, 1);
+        return [...context.getImageData(0, 0, 1, 1).data].map((value, index) => index === 3 ? value / 255 : value);
+      };
+      const blend = (top, bottom) => top.slice(0, 3).map((value, index) => value * top[3] + bottom[index] * (1 - top[3]));
+      const luminance = color => color.map(value => value / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+      const backdrop = getComputedStyle(element).backgroundImage.match(/rgba?\([^)]*\)/g).map(color => rgba(color).slice(0, 3));
+      return [...element.querySelectorAll("p,button,input[type=url],button svg")].map(node => {
+        let surfaces = backdrop;
+        const ancestors = [];
+        for (let current = node; current && current !== element; current = current.parentElement) ancestors.unshift(current);
+        for (const ancestor of ancestors) surfaces = surfaces.map(color => blend(rgba(getComputedStyle(ancestor).backgroundColor), color));
+        const style = getComputedStyle(node);
+        const ink = rgba(node.matches("input") ? style.webkitTextFillColor : style.color);
+        const contrast = Math.min(...surfaces.map(background => {
+          const light = luminance(background), foreground = luminance(blend(ink, background));
+          return (Math.max(light, foreground) + .05) / (Math.min(light, foreground) + .05);
+        }));
+        return { name: node.getAttribute("aria-label") || node.textContent.trim() || node.tagName, contrast };
+      });
+    });
+    for (const result of measurements) assert.ok(result.contrast >= 4.5, `${theme} meet import ${result.name}: ${result.contrast.toFixed(2)}:1`);
+  }
+  assert.equal(await field.inputValue(), "https://meet-site.test/retained-details");
+  await panel.screenshot({ path: path.join(output, `meet-import-${theme}-${page.viewportSize().width}.png`) });
+}
+
 async function assertPreviewControlContrast(controls) {
   const measurements = await controls.evaluateAll((elements) => elements.filter((element) => element.checkVisibility()).map((element) => {
     const canvas = document.createElement("canvas");
@@ -80,7 +126,7 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     const compiler = compiled.webpack({ mode: "development", target: "web", devtool: false,
       entry: path.resolve("scripts/fixtures/appearance.tsx"), output: { path: output, filename: "fixture.js" },
       plugins: [new compiled.webpack.DefinePlugin({ "process.env": JSON.stringify({ NODE_ENV: "development" }) })],
-      resolve: { extensions: [".tsx", ".ts", ".js", ".json"], alias: { "@": path.resolve("src"), "next/navigation": path.resolve("scripts/fixtures/signup-editor/navigation.ts"), "next/link": path.resolve("scripts/fixtures/concierge/navigation.tsx") } },
+      resolve: { extensions: [".tsx", ".ts", ".js", ".json"], alias: { "@": path.resolve("src"), "next/navigation": path.resolve("scripts/fixtures/signup-editor/navigation.ts"), "next-auth/react": path.resolve("scripts/fixtures/signup-editor/auth.tsx"), "next/link": path.resolve("scripts/fixtures/concierge/navigation.tsx") } },
       module: { rules: [
         { test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") },
         { test: /\.css$/, use: path.resolve("scripts/lib/event-editor-css-loader.cjs") },
@@ -88,7 +134,7 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     });
     compiler.run((error, stats) => compiler.close(() => error || stats?.hasErrors() ? reject(error || new Error(stats.toString({ all: false, errors: true }))) : resolve()));
   });
-  const source = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none); @source "../../scripts/fixtures/appearance.tsx"; @source "../components/AppearanceSelector.tsx"; @source "../components/EventPreviewViewport.tsx"; @source "../components/EventPreviewActions.tsx";');
+  const source = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none); @source "../../scripts/fixtures/appearance.tsx"; @source "../components/AppearanceSelector.tsx"; @source "../components/EventPreviewViewport.tsx"; @source "../components/EventPreviewActions.tsx"; @source "../components/event-create/GymnasticsLauncher.tsx"; @source "../components/event-create/DiscoveryProgressPanel.tsx"; @source "../components/gym-meet-templates/GymnasticsGalleryHeader.tsx";');
   const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process(source, { from: path.resolve("src/app/globals.css") })).css;
   const script = fs.readFileSync(path.join(output, "fixture.js"), "utf8");
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
@@ -121,12 +167,45 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     assert.equal(await page.evaluate(() => window.initialAppearance.background.trim()), "#181818");
     assert.deepEqual(await page.locator("#auth-email").evaluate((el) => ({ background: getComputedStyle(el).backgroundColor, border: getComputedStyle(el).borderColor, color: getComputedStyle(el).color })), { background: "rgb(48, 39, 56)", border: "rgb(133, 114, 148)", color: "rgb(242, 234, 250)" });
     assert.equal(await page.evaluate(() => localStorage.getItem("envitefy:appearance:v1")), null, "a fresh browser has no explicit appearance override");
+    await assertMeetImportPalette(page, output, "dark");
+    const chooserPromise = page.waitForEvent("filechooser");
+    await page.getByRole("region", { name: "Import meet details", exact: true }).getByRole("button", { name: "Upload packet", exact: true }).click();
+    const chooser = await chooserPromise;
+    assert.equal(await chooser.element().getAttribute("accept"), ".pdf,image/png,image/jpeg,image/jpg", "Upload packet keeps the native supported-file chooser");
+    await chooser.setFiles([]);
+    let pendingIntake;
+    const stallIntake = route => { pendingIntake = route; };
+    await page.route("**/api/discovery/intake", stallIntake);
+    const importPanel = page.getByRole("region", { name: "Import meet details", exact: true });
+    const intakeStarted = page.waitForRequest("**/api/discovery/intake");
+    await importPanel.getByRole("button", { name: "Import", exact: true }).click();
+    await intakeStarted;
+    assert.equal(await importPanel.getByRole("button", { name: "Upload packet", exact: true }).isDisabled(), true);
+    assert.equal(await importPanel.getByRole("button", { name: "Paste link", exact: true }).isDisabled(), true);
+    assert.equal(await importPanel.getByRole("textbox", { name: "Public meet URL", exact: true }).isDisabled(), true);
+    const cancelImport = importPanel.getByRole("button", { name: "Cancel import", exact: true });
+    await assertPreviewControlContrast(cancelImport);
+    await cancelImport.hover();
+    await assertPreviewControlContrast(cancelImport);
+    await cancelImport.focus();
+    assert.equal(await cancelImport.evaluate(element => parseFloat(getComputedStyle(element).outlineWidth) >= 2), true);
+    await importPanel.screenshot({ path: path.join(output, "meet-import-dark-busy.png") });
+    await cancelImport.click();
+    await importPanel.getByRole("button", { name: "Import", exact: true }).waitFor();
+    assert.equal(await importPanel.getByRole("button", { name: "Upload packet", exact: true }).isEnabled(), true);
+    await pendingIntake?.abort().catch(() => {});
+    await page.unroute("**/api/discovery/intake", stallIntake);
     await page.emulateMedia({ colorScheme: "light" });
     await page.getByTestId("appearance-state").filter({ hasText: "system:light" }).waitFor();
     assert.equal(await appearanceSwitch(page).isChecked(), false, "fresh browsers follow light device appearance");
+    await assertMeetImportPalette(page, output, "light");
+    await page.setViewportSize({ width: 390, height: 900 });
+    await assertMeetImportPalette(page, output, "light");
     await page.emulateMedia({ colorScheme: "dark" });
     await page.getByTestId("appearance-state").filter({ hasText: "system:dark" }).waitFor();
     assert.equal(await appearanceSwitch(page).isChecked(), true, "fresh browsers follow dark device appearance until the first toggle");
+    await assertMeetImportPalette(page, output, "dark");
+    await page.setViewportSize({ width: 1200, height: 900 });
     const authored = await page.locator("#authored-canvas p").evaluate((el) => ({ background: getComputedStyle(el).backgroundColor, color: getComputedStyle(el).color }));
     const authoredInput = await page.locator("#authored-input").evaluate((el) => ({ color: getComputedStyle(el).color, placeholder: getComputedStyle(el, "::placeholder").color }));
     await page.locator("#unsaved").fill("Unsaved host title");

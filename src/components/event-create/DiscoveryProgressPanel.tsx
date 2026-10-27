@@ -10,6 +10,7 @@ export type DiscoveryProgressTheme = {
   badgeBorder: string;
   baseBackground: string;
   borderColor: string;
+  cancelBackground?: string;
   cancelBorderColor: string;
   cancelHoverBackground: string;
   cancelTextColor: string;
@@ -152,6 +153,7 @@ export default function DiscoveryProgressPanel({
         style={
           {
             "--cancel-hover-background": theme.cancelHoverBackground,
+            backgroundColor: theme.cancelBackground,
             borderColor: theme.cancelBorderColor,
             color: theme.cancelTextColor,
           } as CSSProperties

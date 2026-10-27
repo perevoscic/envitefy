@@ -9,9 +9,16 @@ test("gymnastics keeps public browsing and all local navigation targets", () => 
   assert.match(readSource("src/app/gymnastics/page.tsx"), /<GymnasticsLanding \/>/);
   assert.match(landing, /marketingPageNavLinks\("\/gymnastics"\)/);
   assert.match(landing, /<MarketingPage tone="sports"/);
-  assert.match(landing, /<PublicTemplateGallery category="gymnastics" featured \/>/);
-  for (const id of ["hero", "features", "how-it-works", "preview", "use-cases", "why-envitefy"])
+  assert.doesNotMatch(landing, /PublicTemplateGallery|href="#templates"|getElementById\("templates"\)/);
+  assert.match(landing, /guestPrimaryHref="\/gymnastics\/templates"/);
+  assert.match(landing, /authenticatedPrimaryHref="\/gymnastics\/templates"/);
+  for (const id of ["hero", "features", "how-it-works", "use-cases", "why-envitefy"])
     assert.ok(landing.includes(`id="${id}"`), id);
+  assert.match(landing, /<GymnasticsMeetTransformation \/>/);
+  assert.match(
+    readSource("src/components/gymnastics-landing/GymnasticsMeetTransformation.tsx"),
+    /id="preview"/,
+  );
   assert.match(
     readSource("src/components/gymnastics-landing/GymnasticsLandingFaq.tsx"),
     /id="faq"/,
@@ -31,16 +38,21 @@ test("gymnastics preserves query-driven authentication and the meet launch desti
   );
   assert.match(landing, /href="\/event\/gymnastics"/);
   assert.match(landing, /onClick=\{\(\) => openAuth\("signup"\)\}/);
-  assert.match(landing, /prefers-reduced-motion/);
 });
 
 test("gymnastics demonstrates sample logistics without publishing a real event", () => {
   const landing = readSource("src/components/gymnastics-landing/GymnasticsLanding.tsx");
-  assert.match(landing, /data-authored-preview/);
-  assert.match(landing, /Sample meet page/);
-  assert.match(landing, /Coach check-in/);
+  const demo = readSource("src/components/gymnastics-landing/GymnasticsMeetDemo.tsx");
+  const comparison = readSource("src/components/gymnastics-landing/GymnasticsMeetComparison.tsx");
+  const transformation = readSource(
+    "src/components/gymnastics-landing/GymnasticsMeetTransformation.tsx",
+  );
+  assert.match(demo, /data-authored-preview/);
+  assert.match(demo, /Sample meet page/);
+  assert.match(demo, /Coach check-in/);
   assert.match(landing, /MeetPreview/);
-  assert.match(landing, /gymanstic-1-landing\.png/);
-  assert.match(landing, /gymanstic-2-landing\.png/);
-  assert.doesNotMatch(landing, /fetch\(|method:.*POST/);
+  assert.match(transformation, /<GymnasticsMeetComparison \/>/);
+  assert.match(comparison, /gymanstic-1-landing\.png/);
+  assert.doesNotMatch(comparison, /meet-page-phone|gymanstic-2-landing/);
+  assert.doesNotMatch(landing + demo + comparison + transformation, /fetch\(|method:.*POST/);
 });

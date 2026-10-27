@@ -1,0 +1,431 @@
+.demo {
+  --demo-ink: #243e34;
+  --demo-muted: #596b60;
+  --demo-green: #365e4d;
+  --demo-line: #dce2d8;
+  --demo-paper: #fffdf7;
+  --demo-header: #e7eee3;
+  --demo-header-blue: #e2edf1;
+  --demo-wash-blue: #c9dfe775;
+  --demo-wash-sage: #d7e5cf85;
+  --demo-badge: #f3f6ec;
+  --demo-badge-line: #b9cbb7;
+  --demo-pattern: #365e4d16;
+  --demo-dot: #709275;
+  --demo-focus: #326b98;
+  color-scheme: light;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--demo-line);
+  border-radius: 0.8rem;
+  color: var(--demo-ink);
+  background:
+    radial-gradient(ellipse 90% 65% at 100% 0%, var(--demo-wash-blue), transparent 68%),
+    radial-gradient(ellipse 75% 60% at 0% 100%, var(--demo-wash-sage), transparent 75%),
+    var(--demo-paper);
+  box-shadow:
+    0 1.25rem 3.5rem #243e340c,
+    0 0.2rem 0.6rem #243e3404;
+  font-family: var(--marketing-sans, sans-serif);
+}
+
+:global(html.dark) .demo {
+  --demo-ink: #edf4ec;
+  --demo-muted: #b6c6bc;
+  --demo-green: #b8d9ad;
+  --demo-line: #3e5549;
+  --demo-paper: #1c2b25;
+  --demo-header: #293f34;
+  --demo-header-blue: #223b43;
+  --demo-wash-blue: #2a58634d;
+  --demo-wash-sage: #3f624b45;
+  --demo-badge: #344e3c;
+  --demo-badge-line: #648366;
+  --demo-pattern: #b8d9ad1a;
+  --demo-dot: #a4c79a;
+  --demo-focus: #badcf5;
+  color-scheme: dark;
+  box-shadow:
+    0 1.5rem 4rem #00000030,
+    0 0.2rem 0.6rem #00000014;
+}
+
+.header {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--demo-line);
+  background: linear-gradient(115deg, var(--demo-header), var(--demo-header-blue));
+}
+
+.header::before {
+  position: absolute;
+  z-index: -1;
+  top: -14rem;
+  right: -7rem;
+  width: 30rem;
+  aspect-ratio: 1;
+  border: 1px solid var(--demo-pattern);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1.5rem var(--demo-pattern),
+    0 0 0 3rem var(--demo-pattern),
+    0 0 0 4.5rem var(--demo-pattern),
+    0 0 0 6rem var(--demo-pattern);
+  pointer-events: none;
+  content: "";
+}
+
+.header::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(90deg, var(--demo-paper), transparent 75%);
+  pointer-events: none;
+  content: "";
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.emblem {
+  display: flex;
+  flex: 0 0 auto;
+  color: var(--demo-green);
+}
+
+.emblem svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 1.5;
+}
+
+.label {
+  margin: 0;
+  color: var(--demo-green);
+  font-size: 0.625rem;
+  font-weight: 650;
+  line-height: 1.5;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.meetIdentity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-top: 1.35rem;
+}
+
+.meetName {
+  min-width: 0;
+}
+
+.demo .title {
+  margin: 0;
+  color: var(--demo-ink);
+  font-family: var(--marketing-serif, Georgia, serif);
+  font-size: clamp(2rem, 3.1vw, 3.1rem);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.75rem;
+  margin: 0.8rem 0 0;
+  color: var(--demo-muted);
+  font-size: 0.6875rem;
+  line-height: 1.7;
+}
+
+.meta span + span {
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--demo-line);
+}
+
+.dateBadge {
+  display: flex;
+  min-width: 4.75rem;
+  min-height: 4.75rem;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid var(--demo-badge-line);
+  border-radius: 0.3rem;
+  color: var(--demo-ink);
+  background: var(--demo-badge);
+}
+
+.dateBadge span {
+  color: var(--demo-green);
+  font-size: 0.5625rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.dateBadge strong {
+  font-family: var(--marketing-serif, Georgia, serif);
+  font-size: 1.7rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.body {
+  padding: 0 clamp(1.25rem, 3vw, 2rem);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--demo-line);
+}
+
+.control {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 3.65rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--demo-muted);
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+
+.control::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--demo-green);
+  content: "";
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.control svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+  stroke-width: 1.5;
+}
+
+.control:hover,
+.control[aria-pressed="true"] {
+  color: var(--demo-green);
+}
+
+.control[aria-pressed="true"] {
+  font-weight: 650;
+}
+
+.control[aria-pressed="true"]::after {
+  opacity: 1;
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--demo-focus);
+  outline-offset: -4px;
+  border-radius: 0.2rem;
+}
+
+.panel {
+  min-height: 19rem;
+  padding-block: 1.65rem 1.5rem;
+}
+
+.kicker {
+  margin: 0 0 0.4rem;
+  color: var(--demo-muted);
+  font-size: 0.5625rem;
+  font-weight: 650;
+  line-height: 1.6;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.demo .panelHeading h3 {
+  margin: 0;
+  color: var(--demo-ink);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: -0.025em;
+}
+
+.schedule,
+.details {
+  margin: 1.1rem 0 0;
+}
+
+.schedule > div {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: 1.5rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--demo-line);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.schedule dt {
+  position: relative;
+  grid-column: 2;
+  padding-left: 1rem;
+  color: var(--demo-muted);
+}
+
+.schedule dt::before {
+  position: absolute;
+  top: 0.55em;
+  left: 0;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--demo-dot);
+  content: "";
+}
+
+.schedule dd {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  color: var(--demo-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.details > div {
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--demo-line);
+  font-size: 0.75rem;
+  line-height: 1.65;
+}
+
+.details dt {
+  color: var(--demo-ink);
+  font-weight: 600;
+}
+
+.details dd {
+  max-width: 52ch;
+  margin: 0.25rem 0 0;
+  color: var(--demo-muted);
+}
+
+.documents dt {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.documents dt svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--demo-green);
+  stroke-width: 1.5;
+}
+
+.documents dd {
+  margin-left: 1.6rem;
+}
+
+.footer {
+  padding: 0.8rem 1.25rem;
+  border-top: 1px solid var(--demo-line);
+  color: var(--demo-muted);
+  background: color-mix(in srgb, var(--demo-paper) 45%, transparent);
+  font-size: 0.625rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .meetIdentity {
+    gap: 0.8rem;
+  }
+
+  .demo .title {
+    font-size: clamp(1.75rem, 7vw, 2.2rem);
+  }
+
+  .meta {
+    flex-direction: column;
+    font-size: 0.625rem;
+  }
+
+  .meta span + span {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .dateBadge {
+    min-width: 3.75rem;
+    min-height: 4rem;
+  }
+
+  .dateBadge strong {
+    font-size: 1.4rem;
+  }
+
+  .controls {
+    gap: 0.25rem;
+  }
+
+  .control {
+    min-height: 4rem;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.625rem;
+  }
+
+  .panel {
+    min-height: 22rem;
+    padding-top: 1.4rem;
+  }
+
+  .schedule > div {
+    grid-template-columns: 4.7rem minmax(0, 1fr);
+    gap: 0.65rem;
+    font-size: 0.75rem;
+  }
+
+  .footer {
+    font-size: 0.5625rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .control,
+  .control::after {
+    transition: none;
+  }
+}

@@ -1,0 +1,205 @@
+.section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(4.5rem, 8vw, 8rem) var(--marketing-gutter);
+  scroll-margin-top: 6rem;
+  border-block: 1px solid var(--marketing-line);
+  background:
+    radial-gradient(
+      ellipse at 91% 10%,
+      color-mix(in srgb, var(--marketing-accent) 12%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 5% 95%,
+      color-mix(in srgb, var(--marketing-soft) 80%, transparent),
+      transparent 60%
+    ),
+    var(--marketing-paper);
+}
+
+.section::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--marketing-accent) 18%, transparent) 0.7px,
+    transparent 0.7px
+  );
+  background-size: 20px 20px;
+  mask-image: linear-gradient(110deg, transparent 20%, #000 100%);
+  pointer-events: none;
+  content: "";
+}
+
+.section::after {
+  position: absolute;
+  z-index: -1;
+  right: -17rem;
+  bottom: -36rem;
+  width: 68rem;
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--marketing-accent) 18%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 3rem color-mix(in srgb, var(--marketing-accent) 6%, transparent),
+    0 0 0 6rem color-mix(in srgb, var(--marketing-accent) 4%, transparent),
+    0 0 0 9rem color-mix(in srgb, var(--marketing-accent) 3%, transparent);
+  pointer-events: none;
+  content: "";
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  align-items: center;
+  gap: clamp(3rem, 6vw, 7rem);
+  max-width: 90rem;
+  margin-inline: auto;
+}
+
+.intro {
+  min-width: 0;
+  padding-block: 2rem;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 0 0 1.75rem;
+  color: var(--marketing-accent);
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 1.6;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.eyebrow::before {
+  width: 2rem;
+  height: 1px;
+  background: currentColor;
+  content: "";
+}
+
+.title {
+  margin: 0;
+  color: var(--marketing-ink);
+  font-family: "Envitefy Meet Editorial", var(--marketing-serif);
+  font-size: clamp(2.8rem, 4.3vw, 4.6rem);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.title em {
+  display: block;
+  margin-top: 0.15em;
+  color: var(--marketing-accent);
+  font-weight: 500;
+}
+
+.description {
+  max-width: 32ch;
+  margin: 1.75rem 0 0;
+  color: var(--marketing-muted);
+  font-size: 0.9375rem;
+  line-height: 1.85;
+  text-wrap: pretty;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  min-height: 48px;
+  margin-top: 2rem;
+  padding-block: 0.7rem;
+  border-bottom: 1px solid var(--marketing-accent);
+  color: var(--marketing-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.action svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  transition: transform 160ms ease;
+}
+
+.action:hover {
+  color: var(--marketing-accent);
+}
+
+.action:hover svg {
+  transform: translateX(3px);
+}
+
+.action:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 5px;
+}
+
+.preview {
+  position: relative;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.75rem;
+    max-width: 45rem;
+  }
+
+  .intro {
+    padding-block: 0;
+  }
+
+  .title {
+    max-width: 18ch;
+    font-size: clamp(2.8rem, 6.5vw, 4rem);
+  }
+
+  .description {
+    max-width: 43ch;
+    margin-top: 1.25rem;
+  }
+
+  .action {
+    margin-top: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding-block: 3.5rem;
+  }
+
+  .layout {
+    gap: 2.25rem;
+  }
+
+  .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .title {
+    font-size: clamp(2.5rem, 10vw, 3rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action,
+  .action svg {
+    transition: none;
+  }
+}

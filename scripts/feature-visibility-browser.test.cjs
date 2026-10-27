@@ -6,7 +6,7 @@ const { chromium } = require("playwright");
 const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
 
-const preferences = keys => ({ visibleTemplateKeys: keys, quickAccess: ["upload"] });
+const preferences = (keys, pinnedCategoryIds) => ({ visibleTemplateKeys: keys, quickAccess: ["upload"], ...(pinnedCategoryIds === undefined ? {} : { pinnedCategoryIds }) });
 const unavailable = { status: 503, json: { error: "Temporarily unavailable" } };
 const deferred = () => {
   let resolve;
@@ -151,21 +151,23 @@ test("workspace preferences recover without blocking the current account or expo
       let firstReads = 0;
       const { page, requests } = await fixture(async request => {
         if (request.account === "first-host") {
-          if (++firstReads === 1) return { json: preferences(["birthdays"]) };
+          if (++firstReads === 1) return { json: preferences(["birthdays"], ["birthdays"]) };
           await stale.promise;
-          return { json: preferences(["weddings"]) };
+          return { json: preferences(["weddings"], ["weddings"]) };
         }
         await next.promise;
-        return { json: preferences(["general"]) };
+        return { json: preferences(["general"], []) };
       });
       try {
         await waitLoaded(page, ["birthdays"]);
+        assert.deepEqual(await page.evaluate(() => window.featureVisibilityFixture.current.A.pinnedCategoryIds), ["birthdays"]);
         await page.getByRole("button", { name: "Refresh A", exact: true }).click();
         await page.waitForFunction(() => window.featureVisibilityFixture.current.A.loading);
         await page.evaluate(() => window.featureVisibilityFixture.setAccount("second-host"));
         const immediate = await page.evaluate(() => window.featureVisibilityFixture.renders.filter(state => state.account === "second-host"));
         assert.ok(immediate.length >= 2, "both consumers rendered the new session");
         assert.ok(immediate.every(state => !state.hasLoadedPreferences && state.visibleTemplateKeys.length === 0), "the first new-account render cannot reuse the previous account's state");
+        assert.ok(immediate.every(state => state.pinnedCategoryIds === undefined), "the first new-account render cannot expose the previous account's pins");
         stale.resolve();
         await page.waitForFunction(() => Object.values(window.featureVisibilityFixture.current).every(state => state.account === "second-host" && !state.hasLoadedPreferences));
         next.resolve();
@@ -173,6 +175,8 @@ test("workspace preferences recover without blocking the current account or expo
         assert.equal(requests.filter(request => request.account === "second-host").length, 1, "the new account gets one shared independent request");
         const switched = await page.evaluate(() => window.featureVisibilityFixture.renders.filter(state => state.account === "second-host"));
         assert.ok(switched.every(state => state.visibleTemplateKeys.every(key => key === "general")), "an obsolete response cannot replace the new account's preferences");
+        assert.ok(switched.every(state => state.pinnedCategoryIds === undefined || state.pinnedCategoryIds.length === 0), "an obsolete response cannot restore the previous account's pins");
+        assert.deepEqual(await page.evaluate(() => window.featureVisibilityFixture.current.A.pinnedCategoryIds), [], "explicitly cleared pins remain distinct from legacy fallback");
       } finally { stale.resolve(); next.resolve(); await page.close(); }
     });
     assert.deepEqual(errors, [], "fixture has no browser runtime errors");

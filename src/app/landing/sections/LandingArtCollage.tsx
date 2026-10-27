@@ -2,44 +2,44 @@ import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
+import { landingCategoryMedia } from "@/lib/landing-category-media";
 import styles from "./LandingArtCollage.module.css";
 
 const artwork = {
   birthdays: {
     title: "Birthdays",
     href: "/birthdays/templates",
-    image: landingHeroGalleries.birthdays[3],
+    image: landingCategoryMedia.birthdays,
   },
   weddings: {
     title: "Weddings",
     href: "/weddings/templates",
-    image: landingHeroGalleries.weddings[0],
+    image: landingCategoryMedia.weddings,
   },
   gender: {
     title: "Gender reveals",
     href: "/gender-reveal/templates",
-    image: landingHeroGalleries["gender-reveal"][3],
+    image: landingCategoryMedia["gender-reveal"],
   },
   bridal: {
     title: "Bridal showers",
     href: "/bridal-showers/templates",
-    image: landingHeroGalleries["bridal-showers"][1],
+    image: landingCategoryMedia["bridal-showers"],
   },
   community: {
     title: "Community",
     href: "/signup-forms/templates",
-    image: landingHeroGalleries["signup-forms"][2],
+    image: landingCategoryMedia["signup-forms"],
   },
   baby: {
     title: "Baby showers",
     href: "/baby-showers/templates",
-    image: landingHeroGalleries["baby-showers"][0],
+    image: landingCategoryMedia["baby-showers"],
   },
   sports: {
     title: "Sports & teams",
     href: "/sport-events/templates",
-    image: landingHeroGalleries.sports[1],
+    image: landingCategoryMedia.sports,
   },
 } as const;
 
@@ -165,6 +165,7 @@ export default function LandingArtCollage({ className = "" }: { className?: stri
                           : "(min-width: 1100px) 32vw, (min-width: 600px) 45vw, 65vw"
                       }
                       className={styles.image}
+                      style={{ objectPosition: card.image.objectPosition ?? "center" }}
                     />
                     <span className={styles.caption}>
                       {card.title}

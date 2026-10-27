@@ -314,6 +314,57 @@ test("unified creation retains sources, recommends native templates and protects
     return accessResponseGate;
   };
   try {
+    await t.test("Sign-up forms share scratch event types and open the native gallery under their own product grant", async () => {
+      const previousProducts = allowedProducts;
+      const previousRestricted = restricted, previousCategories = restrictedCategories;
+      restricted = true; restrictedCategories = ["birthdays"];
+      const card = () => page.locator('[data-creation-event-type][aria-label="Sign-up form"]');
+      const list = () => page.getByRole("region", { name: "Choose an event type", exact: true });
+      try {
+        for (const width of [1440, 390]) {
+          await page.setViewportSize({ width, height: 1000 });
+          allowedProducts = ["event_page", "signup_form"];
+          await openCreate();
+          await list().getByRole("button", { name: "Birthday", exact: true }).waitFor();
+          assert.equal(await card().count(), 1, `${width}px mixed accounts see one sign-up choice beside their event types`);
+          const searchToggle = list().locator('[aria-controls="creation-type-search-panel"]');
+          await searchToggle.click();
+          await list().getByRole("searchbox", { name: "Search event types", exact: true }).fill("signup");
+          assert.deepEqual(await list().locator("[data-creation-event-type]").evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label"))), ["Sign-up form"]);
+          assert.equal(await page.evaluate(async () => (await window.__creationBrowser.listCreationIntakes("unified-host")).length), 0, "searching sign-up forms creates no draft intake");
+          await card().click();
+          await page.locator("[data-native-signup-gallery]").waitFor();
+          assert.equal(new URL(page.url()).pathname, "/signup-forms/templates");
+          const nativeTemplate = page.locator('[data-native-signup-gallery] a[href^="/signup-forms/templates/"][href$="/customize"]').first();
+          await nativeTemplate.waitFor();
+          const href = await nativeTemplate.getAttribute("href");
+          await nativeTemplate.click();
+          await page.waitForFunction(expected => location.pathname === expected, href);
+          assert.equal(await page.locator("[data-destination]").count(), 1, "the native gallery retains its existing editor destination");
+
+          allowedProducts = ["signup_form"];
+          await openCreate();
+          assert.equal(await page.getByRole("heading", { name: "Create a sign-up form", exact: true }).count(), 1);
+          assert.deepEqual(await list().locator("[data-creation-event-type]").evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label"))), ["Sign-up form"], "forms-only accounts receive no Event Page choices despite their category grants");
+          assert.equal(await mode("Start from scratch").isEnabled(), true);
+          assert.equal(await mode("Upload").isDisabled(), true);
+          assert.equal(await mode("Paste URL").isDisabled(), true);
+          assert.equal(await page.getByRole("heading", { name: "Event Pages aren’t enabled for this account.", exact: true }).count(), 0);
+          await card().click();
+          await page.locator("[data-native-signup-gallery]").waitFor();
+
+          allowedProducts = ["event_page"];
+          await openCreate();
+          assert.equal(await card().count(), 0, "an Event Page category grant cannot enable the sign-up product");
+          assert.deepEqual(await list().locator("[data-creation-event-type]").evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label"))), ["Birthday"]);
+        }
+        assert.equal(extracts.length, 0, "manual form selection starts no extraction");
+        assert.equal(historyRequests.length, 0, "gallery navigation saves or publishes no event");
+        assert.equal(forbidden.length, 0);
+        assert.deepEqual(errors, []);
+      } finally { allowedProducts = previousProducts; restricted = previousRestricted; restrictedCategories = previousCategories; }
+    });
+    if (process.env.UNIFIED_CREATE_SIGNUP_QA === "1") return;
     await t.test("school memos and personal appointments transfer exact sources to Snap and restore without reprocessing", async () => {
       for (const name of ["school-memo.png", "personal-appointment.png"]) {
         await openUploadCreate();
@@ -886,7 +937,7 @@ test("unified creation retains sources, recommends native templates and protects
         { name: "Holidays & seasonal", labels: holidayNames, query: "Christmas", matches: ["Christmas"] },
         { name: "Home & property", labels: ["Housewarming", "Open house"], query: "open", matches: ["Open house"] },
         { name: "Religious & cultural", labels: ["Religious celebration"], query: "religious", matches: ["Religious celebration"] },
-        { name: "Gatherings & more", labels: ["General event"], query: "general", matches: ["General event"] },
+        { name: "Gatherings & more", labels: ["General event", "Sign-up form"], query: "general", matches: ["General event"] },
         { name: "Sports & teams", labels: ["Gymnastics", "Football", "Basketball", "Baseball", "Softball", "Volleyball", "Hockey", "Lacrosse", "Tennis", "Track & Field", "Swimming", "Wrestling"], query: "ball", matches: ["Football", "Basketball", "Baseball", "Softball", "Volleyball"] },
       ];
       for (const group of groups) {
@@ -1739,18 +1790,18 @@ test("unified creation retains sources, recommends native templates and protects
         await page.setViewportSize({ width: 1440, height: 1000 });
 
         await setMenuPreferences({ visibleTemplateKeys: [], sportPreferences: { setupCompleted: true, enabledSports: [], primarySport: null } });
-        assert.equal(await manualCards.count(), 2, "empty preferences retain every server-approved scratch category");
+        assert.equal(await manualCards.count(), 3, "empty preferences retain the permitted sports and sign-up product");
         assert.equal(await inspiration.count(), 0, "empty preferences do not restore the inspiration panel");
         await assertNoSourceShortcuts("empty category preferences");
         await manualTypes.getByRole("button", { name: "Gymnastics", exact: true }).waitFor();
         assert.equal(await manualTypes.getByRole("button", { name: "Football", exact: true }).count(), 1, "scratch reveals the available server-approved types");
         assert.equal(await manualTypes.getByRole("button", { name: "Birthday", exact: true }).count(), 0);
-        assert.equal(await manualTypes.locator("[data-creation-event-type]").count(), 2, "restricted accounts see only their two permitted categories");
+        assert.equal(await manualTypes.locator("[data-creation-event-type]").count(), 3, "restricted accounts see their two permitted categories and permitted sign-up product");
         assert.equal(await manualTypes.locator("[data-holiday-occasion]").count(), 0, "accounts without a holiday grant receive no expanded holiday rows");
         const filter = manualTypes.locator('[data-category-toolbar] [aria-controls="creation-type-filters"]');
         const filterPanel = manualTypes.getByRole("region", { name: "Event type filters", exact: true, includeHidden: true });
-        assert.deepEqual(await filterPanel.getByRole("button", { includeHidden: true }).evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label") || button.textContent.trim())), ["Sports & teams"], "only the group with server-approved types is offered");
-        assert.equal(await filterPanel.locator("[data-event-type-group-examples]").textContent(), "Football · Gymnastics", "restricted group examples show only the account's permitted sports");
+        assert.deepEqual(await filterPanel.getByRole("button", { includeHidden: true }).evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label") || button.textContent.trim())), ["Gatherings & more", "Sports & teams"], "groups follow the account's category and product grants");
+        assert.equal(await filterPanel.locator('[data-event-type-group="sports"] [data-event-type-group-examples]').textContent(), "Football · Gymnastics", "restricted group examples show only the account's permitted sports");
         await filter.click(); await filterPanel.getByRole("button", { name: "Sports & teams", exact: true }).click();
         assert.equal(await manualTypes.locator("[data-creation-event-type]").count(), 2);
         restrictedCategories = ["football"];
@@ -1759,18 +1810,18 @@ test("unified creation retains sources, recommends native templates and protects
         assert.equal(await manualTypes.locator("[data-creation-event-type]").count(), 1, "revocation removes an unavailable member immediately");
         assert.equal(await filter.getAttribute("aria-label"), "Filter event types: Sports & teams", "the group remains selected while an allowed sport remains");
         assert.equal(await manualTypes.getByRole("button", { name: "Football", exact: true }).count(), 1);
-        assert.equal(await filterPanel.locator("[data-event-type-group-examples]").textContent(), "Football", "revocation immediately removes the unavailable sport from the group's examples");
+        assert.equal(await filterPanel.locator('[data-event-type-group="sports"] [data-event-type-group-examples]').textContent(), "Football", "revocation immediately removes the unavailable sport from the group's examples");
         restrictedCategories = ["birthdays"];
         await reloadAccess();
         await manualTypes.getByRole("button", { name: "Football", exact: true }).waitFor({ state: "detached" });
         await manualTypes.getByRole("button", { name: "Birthday", exact: true }).waitFor();
         assert.equal(await filter.getAttribute("aria-label"), "Filter event types: All", "revoking the final sport restores All");
-        assert.deepEqual(await filterPanel.getByRole("button", { includeHidden: true }).evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label") || button.textContent.trim())), ["Celebrations"], "the unavailable Sports group disappears from the dropdown");
-        assert.equal(await filterPanel.locator("[data-event-type-group-examples]").textContent(), "Birthday", "the replacement group lists only its permitted celebration");
+        assert.deepEqual(await filterPanel.getByRole("button", { includeHidden: true }).evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label") || button.textContent.trim())), ["Celebrations", "Gatherings & more"], "the unavailable Sports group disappears while the sign-up product remains");
+        assert.equal(await filterPanel.locator('[data-event-type-group="celebrations"] [data-event-type-group-examples]').textContent(), "Birthday", "the replacement group lists only its permitted celebration");
         restrictedCategories = ["gymnastics", "football"];
         await reloadAccess();
         await manualTypes.getByRole("button", { name: "Gymnastics", exact: true }).waitFor();
-        assert.equal(await manualTypes.locator("[data-creation-event-type]").count(), 2, "restored grants restore permitted sports");
+        assert.equal(await manualTypes.locator("[data-creation-event-type]").count(), 3, "restored grants restore permitted sports alongside sign-up forms");
         assert.equal(await filter.getAttribute("aria-label"), "Filter event types: All", "restoring a group does not silently reselect it");
         assert.equal(extracts.length, readsBefore, "category preferences and browsing start no parsing");
         assert.equal(forbidden.length, 0); assert.deepEqual(errors, []);
@@ -1794,7 +1845,7 @@ test("unified creation retains sources, recommends native templates and protects
         await assertNoSourceShortcuts("changed category preferences");
         assert.equal(await inspiration.count(), 0, "preference changes do not restore the inspiration panel");
         await setMenuPreferences({ hasLoadedPreferences: false, loading: true });
-        assert.equal(await manualCards.count(), 2, "loading preferences retains this account's verified scratch categories");
+        assert.equal(await manualCards.count(), 3, "loading preferences retains this account's verified categories and sign-up product");
         await assertNoSourceShortcuts("loading category preferences");
         assert.equal(await inspiration.count(), 0, "loading preferences does not mount an inspiration panel");
         await setMenuPreferences({ hasLoadedPreferences: true, loading: false });
@@ -1810,8 +1861,8 @@ test("unified creation retains sources, recommends native templates and protects
         await manualTypes.getByRole("button", { name: "Birthday", exact: true }).waitFor();
         allowedProducts = ["snap", "live_card", "signup_form"];
         await reloadAccess();
-        await page.getByRole("heading", { name: "Event Pages aren’t enabled for this account.", exact: true }).waitFor();
-        assert.equal(await manualTypes.count(), 0, "a category grant cannot bypass the Event Page product grant");
+        await manualTypes.getByRole("button", { name: "Sign-up form", exact: true }).waitFor();
+        assert.deepEqual(await manualCards.evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label"))), ["Sign-up form"], "a category grant cannot bypass the Event Page product grant while the separately granted form remains usable");
         assert.equal(await inspiration.count(), 0, "a removed Event Page product grant does not mount an inspiration panel");
 
         allowedProducts = ["snap", "live_card", "event_page", "signup_form"];

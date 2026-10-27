@@ -27,6 +27,7 @@ type Snapshot = {
   hasLoadedPreferences: boolean;
   error: string;
   visibleTemplateKeys: string[];
+  pinnedCategoryIds?: string[];
 };
 const current: Record<string, Snapshot> = {};
 const renders: Snapshot[] = [];
@@ -67,6 +68,7 @@ function Consumer({ name }: { name: string }) {
     hasLoadedPreferences: result.hasLoadedPreferences,
     error: result.error,
     visibleTemplateKeys: result.visibleTemplateKeys,
+    pinnedCategoryIds: result.pinnedCategoryIds,
   };
   current[name] = snapshot;
   renders.push(snapshot);

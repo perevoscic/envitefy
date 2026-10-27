@@ -69,6 +69,7 @@ import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
 import { LiveCardIcon } from "@/components/icons/LiveCardIcon";
 import EventSidebar from "@/components/navigation/EventSidebar";
 import MobileNavHeader from "@/components/navigation/MobileNavHeader";
+import { SidebarCategoryFavorites, SidebarCategoryShortcut } from "@/components/navigation/SidebarCategoryFavorites";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { useMenu } from "@/contexts/MenuContext";
 import { isInvitedEventLikeRecord } from "@/lib/dashboard-data";
@@ -419,9 +420,10 @@ function RootNavigationPanel({
   sidebarPage,
   eventContextSourcePage,
   hasCreateEventAccess,
-  hasSignupFormAccess = hasCreateEventAccess,
-  showGymnasticsCreate = false,
-  isGymnasticsCreateActive = false,
+  defaultCreationCategory,
+  isDefaultCreationCategoryActive = false,
+  categoryFavorites,
+  isCategoryFavoriteActive = false,
   unifiedCreation = false,
   createEntryLabel,
   isCreateEntryActive,
@@ -436,9 +438,6 @@ function RootNavigationPanel({
   onSnapUpload,
   onLiveCard,
   onCreate,
-  onSignupForm,
-  onGymnastics,
-  isSignupFormCreateActive,
   onMyEvents,
   onSchedules,
   onSignupForms,
@@ -449,9 +448,10 @@ function RootNavigationPanel({
   sidebarPage: string;
   eventContextSourcePage: string;
   hasCreateEventAccess: boolean;
-  hasSignupFormAccess?: boolean;
-  showGymnasticsCreate?: boolean;
-  isGymnasticsCreateActive?: boolean;
+  defaultCreationCategory?: ReactNode;
+  isDefaultCreationCategoryActive?: boolean;
+  categoryFavorites?: ReactNode;
+  isCategoryFavoriteActive?: boolean;
   unifiedCreation?: boolean;
   createEntryLabel: string;
   isCreateEntryActive: boolean;
@@ -466,9 +466,6 @@ function RootNavigationPanel({
   onSnapUpload: () => void;
   onLiveCard: () => void;
   onCreate: () => void;
-  onSignupForm: () => void;
-  onGymnastics: () => void;
-  isSignupFormCreateActive: boolean;
   onMyEvents: () => void;
   onSchedules: () => void;
   onSignupForms: () => void;
@@ -505,19 +502,17 @@ function RootNavigationPanel({
         <SidebarLink link={{ label: unifiedCreation ? "Snap a Flyer" : "Snap / Upload", icon: <Upload />, onClick: onSnapUpload, active: isSnapUploadActive }} />
         <SidebarLink link={{ label: "Live Card", icon: <LiveCardIcon />, onClick: onLiveCard, active: pathname === "/live-cards" }} />
         {hasCreateEventAccess ? (
-          <SidebarLink link={{ label: createEntryLabel, icon: <Plus />, onClick: onCreate, active: isCreateEntryActive && !isGymnasticsCreateActive }} />
+          <SidebarLink link={{ label: createEntryLabel, icon: <Plus />, onClick: onCreate, active: isCreateEntryActive && !isCategoryFavoriteActive && !isDefaultCreationCategoryActive }} />
         ) : null}
-        {hasCreateEventAccess && showGymnasticsCreate ? (
-          <SidebarLink link={{ label: "Gymnastics", icon: <SidebarGymnasticsMenuIcon />, onClick: onGymnastics, active: isGymnasticsCreateActive }} />
-        ) : null}
-        {hasSignupFormAccess ? (
-          <SidebarLink link={{ label: "Sign-up Form", icon: <ClipboardList aria-hidden="true" />, onClick: onSignupForm, active: isSignupFormCreateActive }} />
-        ) : null}
+        {hasCreateEventAccess ? defaultCreationCategory : null}
       </div>
+      {hasCreateEventAccess ? categoryFavorites : null}
       <div className="space-y-1.5 border-t border-violet-200/40 pt-4">
         {unifiedCreation ? <p className="nav-chrome-sidebar-caption px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8f7aa5]">Manage</p> : null}
         <SidebarLink link={{ label: "My Events", icon: <SidebarMyEventsMenuIcon size={20} active={isMyEventsActive} />, onClick: onMyEvents, active: isMyEventsActive, badge: createdEventsCount }} />
-        <SidebarLink link={{ label: "Schedules", icon: <Trophy />, onClick: onSchedules, active: isSchedulesActive, badge: schedulesCount }} />
+        {schedulesCount > 0 ? (
+          <SidebarLink link={{ label: "Schedules", icon: <Trophy />, onClick: onSchedules, active: isSchedulesActive, badge: schedulesCount }} />
+        ) : null}
         {isAdmin || isSignupFormsDefault || signupFormsCount > 0 ? (
           <SidebarLink link={{ label: "Sign-up Forms", icon: <ClipboardList aria-hidden="true" />, onClick: onSignupForms, active: isSignupFormsActive, badge: signupFormsCount }} />
         ) : null}
@@ -1402,9 +1397,20 @@ export default function LeftSidebar() {
                       sidebarPage={viewModel.sidebarPage}
                       eventContextSourcePage={viewModel.eventContextSourcePage}
                       hasCreateEventAccess={viewModel.hasCreateEventAccess}
-                      hasSignupFormAccess={viewModel.hasSignupFormAccess}
-                      showGymnasticsCreate={viewModel.showGymnasticsCreate}
-                      isGymnasticsCreateActive={viewModel.isGymnasticsCreateActive}
+                      defaultCreationCategory={viewModel.categoryFavorites.defaultCategory ? <SidebarCategoryShortcut
+                        favorite={viewModel.categoryFavorites.defaultCategory}
+                        active={viewModel.isDefaultCreationCategoryActive}
+                        onNavigate={viewModel.handleRootDefaultCategoryNavigate}
+                      /> : null}
+                      isDefaultCreationCategoryActive={viewModel.isDefaultCreationCategoryActive}
+                      categoryFavorites={<SidebarCategoryFavorites
+                        {...viewModel.categoryFavorites}
+                        activeId={viewModel.activeCategoryFavoriteId}
+                        onNavigate={viewModel.handleRootCategoryFavoriteNavigate}
+                        onToggle={viewModel.categoryFavorites.toggle}
+                        onRetry={viewModel.categoryFavorites.retry}
+                      />}
+                      isCategoryFavoriteActive={Boolean(viewModel.activeCategoryFavoriteId)}
                       unifiedCreation={UNIFIED_CREATION_ENABLED}
                       createEntryLabel={viewModel.createEntryLabel}
                       isCreateEntryActive={viewModel.isCreateEntryActive}
@@ -1419,9 +1425,6 @@ export default function LeftSidebar() {
                       onSnapUpload={viewModel.handleRootSnapNavigate}
                       onLiveCard={viewModel.handleRootLiveCardNavigate}
                       onCreate={viewModel.openCreateEventPage}
-                      onSignupForm={viewModel.handleRootSignupFormNavigate}
-                      onGymnastics={viewModel.handleRootGymnasticsNavigate}
-                      isSignupFormCreateActive={viewModel.isSignupFormCreateActive}
                       onMyEvents={viewModel.openMyEventsPage}
                       onSchedules={viewModel.openSchedulesPage}
                       onSignupForms={viewModel.openSignupFormsPage}
