@@ -110,7 +110,7 @@ export default function ScheduleReviewDialog({
             </Dialog.Title>
             <Dialog.Description className="mt-1 text-sm leading-6 text-slate-600">
               {isMemo
-                ? "Check the dates and choose which ones you want in your calendar. Save your memo, then use Add selected dates to calendar. Unchecked dates stay in the memo."
+                ? "Check the dates and choose which ones you want in your calendar. Save your memo, then use Add selected dates to your calendar. Unchecked dates stay in the memo."
                 : "Check every group, date, time and location. Save progress privately or publish your page when it is ready."}
             </Dialog.Description>
             <p className="mt-2 text-sm font-semibold" aria-live="polite">

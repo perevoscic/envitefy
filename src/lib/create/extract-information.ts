@@ -1,3 +1,5 @@
+import { readableSchoolMemoText, readableSchoolMemoSections } from "../school-memo-typography.server";
+import { schoolMemoSections } from "../school-memo-content";
 import { recognizeSchoolSource, schoolStarterSections } from "../school-events";
 import { classifyCreateSource } from "./classify-source";
 import { customCategoryForGuess } from "./create-intent";
@@ -39,6 +41,14 @@ export async function extractCreateInformation(input: { files?: File[]; url?: st
     signal.throwIfAborted();
     if (!schedule) throw new CreateSourceError("Your school memo could not be read. Please retry.", 502);
     const place = schoolMemoLocation(sourceText);
+    let sections;
+    try {
+      const readableSource = await readableSchoolMemoText(sourceText);
+      const notes = schoolMemoSections(readableSource);
+      sections = sourceText.length > 12_000 ? await readableSchoolMemoSections(notes) : notes;
+    }
+    catch { throw new CreateSourceError("We could not make the memo text readable. Your source is kept; please retry.", 502); }
+    signal.throwIfAborted();
     return {
       classification: { category: "school", schoolTemplate: "weekly-memo", sport: null, confidence: "high", alternatives: [] },
       sourceText,
@@ -59,10 +69,7 @@ export async function extractCreateInformation(input: { files?: File[]; url?: st
           schoolTemplate: "weekly-memo",
           venue: place.venue || "",
           location: place.location || "",
-          sections: Array.from({ length: Math.ceil(sourceText.length / 6000) }, (_, index) => ({
-            title: index ? "School memo (continued)" : "School memo",
-            body: sourceText.slice(index * 6000, (index + 1) * 6000),
-          })),
+          sections,
         },
       },
     };

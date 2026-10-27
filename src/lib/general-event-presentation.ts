@@ -231,7 +231,12 @@ export function getGeneralEventPageDesign(id?: string | null): GeneralEventPageD
   };
 }
 
+export const SCHOOL_MEMO_BODY_PRESENTATION: BodyPresentation = {
+  layout: "school-memo", surface: "ruled", heading: "caption", flow: "practical", spacing: "balanced", preserveSurfaceShape: true,
+};
+
 export function getGeneralEventBodyPresentation(id?: string | null): BodyPresentation | undefined {
+  if (getSchoolEventDesign(id)?.schoolTemplate === "weekly-memo") return SCHOOL_MEMO_BODY_PRESENTATION;
   const design = getSchoolEventDesign(id) || getGeneralEventDesign(id);
   return design ? { ...directionFor(design).body, preserveSurfaceShape: true } : undefined;
 }

@@ -102,22 +102,24 @@ export function useCalendarPreference() {
     !loading &&
     Boolean(validCalendarDefault(choice, Boolean(account), current?.connections || null));
   const remember = async (choice: CalendarProvider | null) => {
-    if (loading || (choice && !canRemember(choice))) return;
+    if (loading || (choice && !canRemember(choice))) return false;
     if (account) {
       try {
         const response = await fetch("/api/user/profile", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ preferredProvider: choice }),
+          signal: AbortSignal.timeout(15_000),
         });
-        if (!response.ok) return;
+        if (!response.ok) return false;
       } catch {
-        return;
+        return false;
       }
     }
     setPreference({ account, provider: choice, connections: current?.connections || null });
     writeLocalCalendarDefault(choice);
+    return true;
   };
 
-  return { provider, canRemember, remember, signedIn: Boolean(account) };
+  return { provider, canRemember, remember, signedIn: Boolean(account), loading: loading || !current };
 }

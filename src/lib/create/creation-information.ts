@@ -1,3 +1,4 @@
+import { schoolMemoSectionLayout } from "../school-memo-content";
 import type { EventPageComposition } from "../event-page-composition";
 import { emptyCustomEventDetails, type CustomEventInformation } from "../event-custom-design";
 import type { CreationIntake } from "./creation-intake";
@@ -12,6 +13,7 @@ export function creationComposition(information?: CustomEventInformation): Event
   if (!information) return;
   const d = information.details;
   const contact = [d.host ? `Host: ${d.host}` : "", d.rsvpPhone ? `Phone: ${d.rsvpPhone}` : "", d.rsvpEmail ? `Email: ${d.rsvpEmail}` : ""].filter(Boolean).join("\n");
-  return { version: 1, sections: [...d.sections.map((section, index) => ({ id: `info:import-${index}`, ...section })), ...(contact ? [{ id: "info:import-contact", title: "Host & RSVP", body: contact }] : [])] };
+  const sections = [...d.sections.map((section, index) => ({ id: `info:import-${index}`, ...section })), ...(contact ? [{ id: "info:import-contact", title: "Host & RSVP", body: contact }] : [])];
+  return { version: 1, sections, ...(d.scanSchedule?.kind === "school-memo" ? { sectionLayout: schoolMemoSectionLayout(sections) } : {}) };
 }
 

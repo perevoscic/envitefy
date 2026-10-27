@@ -1,3 +1,7 @@
+import { SessionContext } from "next-auth/react";
+import { resolveOwnerEditHref } from "../../src/utils/event-edit-route";
+import { EventPageCompositionProvider } from "../../src/components/events/EventPageCompositionContext";
+import { ScannedScheduleProvider } from "../../src/components/ScannedSchedule";
 import { createCreationIntake, writeCreationIntake } from "../../src/lib/create/creation-intake";
 import { prepareCreationEditor } from "../../src/lib/create/editor-navigation";
 import { normalizeScanSchedule } from "../../src/lib/scan-schedule";
@@ -58,7 +62,7 @@ const customPage = {
 };
 
 (window as any).__seedSchoolMemoCreate = async () => {
-  const source = "Weekly school memo\nBinders are returned to school daily.\nBible test October 30\nSpelling test October 30";
+  const source = "Weekly school memo\nOctober 26\nImportant Reminders: Bring a donation for Spirit Week.\nBible: memory verse and multiple choice test (we will go over the multiple choice twice before taking the test)\n\n“....Repent, for the kingdom of heaven has come near.”\nMatthew 3:2\n\nTest: Friday October 30th\nBible test October 30\nScience: Learn about clean water.\nSpelling test October 30\nAt Home Partnership Tips:\nBinders are returned to school daily.";
   const schedule = normalizeScanSchedule({ kind: "school-memo", title: "Oak classroom memo", issueDate: "2026-10-26", timezone: "America/Chicago", items: [
     { id: "bible", title: "Bible Test", type: "test", date: "2026-10-30" },
     { id: "spelling", title: "Spelling Test", type: "test", date: "2026-10-30" },
@@ -191,6 +195,23 @@ function SavedGymnasticsPreview() {
   return row ? <SimpleTemplateView eventId={id} eventData={row.data} eventTitle={row.title} isOwner={false} isReadOnly={true} viewerKind="readonly" shareUrl="" sessionEmail={null} disableProtectedSectionLocks={true} hideOwnerActions={true} /> : null;
 }
 
+function SavedSchoolMemo() {
+  const search = useSearchParams();
+  const id = search.get("edit") || "";
+  const [row, setRow] = useState<any>(null);
+  useEffect(() => { void fetch(`/api/history/${id}`).then(response => response.json()).then(setRow); }, [id]);
+  if (!row) return <p>Opening memo…</p>;
+  return <EventPageCompositionProvider value={row.data.eventPageComposition}>
+    <a href={`${resolveOwnerEditHref(id, row.data, row.title)}&mode=manual&schoolCalendar=1`}>Edit school memo</a>
+    <ScannedScheduleProvider schedule={row.data.scanSchedule} eventId={id} canManage>
+      <SimpleTemplateView eventId={id} eventData={row.data} eventTitle={row.title} isOwner={false} isReadOnly viewerKind="readonly" shareUrl={`http://localhost:43128/event/${id}`} sessionEmail="host@test.com" disableProtectedSectionLocks hideOwnerActions />
+    </ScannedScheduleProvider>
+  </EventPageCompositionProvider>;
+}
+
+function SchoolCalendarSession({ children }: { children: React.ReactNode }) {
+  return <SessionContext.Provider value={{ data: { user: { id: "qa-host", email: "host@test.com" } }, status: "authenticated" } as any}>{children}</SessionContext.Provider>;
+}
 function App() {
   const pathname = usePathname();
   const search = useSearchParams();
@@ -212,8 +233,10 @@ function App() {
         <SavedGymnasticsPreview />
       ) : mode === "gymnastics" ? (
         <Gymnastics />
+      ) : mode === "school-saved" ? (
+        <SchoolCalendarSession><SavedSchoolMemo /></SchoolCalendarSession>
       ) : mode === "manual" ? (
-        <General />
+        search.has("schoolCalendar") ? <SchoolCalendarSession><General /></SchoolCalendarSession> : <General />
       ) : mode === "wedding" ? (
         <Weddings />
       ) : mode === "upload" || mode === "create" ? (

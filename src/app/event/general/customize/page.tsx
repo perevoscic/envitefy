@@ -1,8 +1,10 @@
 // @ts-nocheck
 "use client";
+import SchoolMemoIssueDate from "@/components/SchoolMemoIssueDate";
+
 import { getSchoolEventDesign } from "@/lib/school-event-designs";
 import { schoolStarterSections } from "@/lib/school-events";
-import ScannedSchedule from "@/components/ScannedSchedule";
+import SchoolMemoDates from "@/components/SchoolMemoDates";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import ThemedEventHeader from "@/components/templates/ThemedEventHeader";
 import HolidayPageBackground, { HolidayBackgroundPicker } from "@/components/events/HolidayPageBackground";
@@ -18,7 +20,7 @@ import HeroImageEditor from "@/components/events/HeroImageEditor";
 import CreationTemplateGallery from "@/components/event-create/CreationTemplateGallery";
 import EventCanvas from "@/components/EventCanvas";
 import { GENERAL_EVENT_DESIGNS } from "@/lib/general-event-designs";
-import { getGeneralEventPageDesign, getGeneralEventBodyPresentation } from "@/lib/general-event-presentation";
+import { SCHOOL_MEMO_BODY_PRESENTATION, getGeneralEventPageDesign, getGeneralEventBodyPresentation } from "@/lib/general-event-presentation";
 import { getGeneralCreationDesigns, resolveGeneralCreationDesign, generalCreationCollectionLabel } from "@/lib/create/event-page-collections";
 import { getThemedEventBodyPresentation, getThemedEventDesign, getThemedEventTheme, isThemedEventDesignDark } from "@/lib/event-page-themed-designs";
 import { getHolidayBackground, getHolidayBackgroundChoice, normalizeHolidayBackgroundChoice } from "@/lib/holiday-backgrounds";
@@ -354,7 +356,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           time: existing.time ?? start.time,
           endTime: existing.endTime ?? end.time,
           endDate: existing.endDate ?? end.date,
-          schoolTemplate: existing.schoolTemplate || getSchoolEventDesign(existing.bodyDesignId)?.schoolTemplate,
+          schoolTemplate: existing.schoolTemplate || getSchoolEventDesign(existing.bodyDesignId)?.schoolTemplate || (existing.scanSchedule?.kind === "school-memo" ? "weekly-memo" : undefined),
           scanSchedule: existing.scanSchedule,
           guestActions: normalizeEventGuestActions(existing.guestActions),
           guestPlanning: normalizeEventGuestPlanning(existing.guestPlanning),
@@ -363,10 +365,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           venue: existing.venue ?? existing.location ?? "",
           details: existing.description ?? existing.details ?? "",
           heroImageFilterEnabled: existing.heroImageFilterEnabled !== false,
-          hero: existing.heroImage ?? existing.hero ?? "",
+          hero: existing.heroImage ?? existing.hero ?? (existing.scanSchedule?.kind === "school-memo" ? existing.thumbnail : "") ?? "",
           creationCollection: existing.creationCollection || prev.creationCollection,
           holidayOccasion: existing.holidayOccasion || null,
-          bodyDesignId: existing.bodyDesignId || existing.themeId || null,
+          bodyDesignId: existing.bodyDesignId || existing.themeId || (existing.scanSchedule?.kind === "school-memo" ? "school--weekly-memo" : null),
           pageBackground: normalizeHolidayBackgroundChoice(existing.pageBackground),
           rsvpEnabled: typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : typeof existing.rsvp?.isEnabled === "boolean" ? existing.rsvp.isEnabled : Boolean(existing.rsvp),
           rsvpDeadline: existing.rsvpDeadline ?? (typeof existing.rsvp === "string" ? existing.rsvp : existing.rsvp?.deadline) ?? "",
@@ -377,7 +379,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             passcode: "",
         }));
           setAdvancedState(existing.advancedSections || existing.customFields?.advancedSections || {});
-          setThemeId(existing.themeId || existing.theme?.id || existing.theme?.themeId || config.themes[0]?.id);
+          setThemeId(existing.themeId || existing.theme?.id || existing.theme?.themeId || (existing.scanSchedule?.kind === "school-memo" ? "school--weekly-memo" : config.themes[0]?.id));
       } catch (error) {
         if (!cancelled) setLoadError(error instanceof Error ? error.message : "Could not load this event.");
       } finally {
@@ -1047,7 +1049,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (activeView === "main" || activeView === "images") return false;
         setActiveView("main");
         return true;
-      }} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "background": renderBackgroundEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={templatesHref} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+      }} sectionEditors={{ ...(data.scanSchedule?.kind === "school-memo" ? { "schedule": () => <SchoolMemoDates schedule={data.scanSchedule} interactive={false} onScheduleChange={(scanSchedule) => setData(previous => ({ ...previous, scanSchedule }))} /> } : {}), "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "background": renderBackgroundEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={templatesHref} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
@@ -1099,13 +1101,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     >
                       {data.title || pageDesign?.coverTitle || displayName}
                     </h1>
+                    <SchoolMemoIssueDate schedule={data.scanSchedule} />
                     {infoLine}
                   </div>
                 </div>
 
                 </ThemedEventHeader>
-                <TemplateBodyLayout presentation={bodyPresentation} style={pageDesign ? { "--body-heading-font": currentTheme.fontFamily, ...(pageBackground ? { "--body-tint": pageBackground.surface } : {}) } : undefined}>
-<section id="details" className="py-10 border-t border-white/10 px-6 md:px-10">
+                <TemplateBodyLayout presentation={data.scanSchedule?.kind === "school-memo" ? SCHOOL_MEMO_BODY_PRESENTATION : bodyPresentation} style={pageDesign ? { "--body-heading-font": currentTheme.fontFamily, ...(pageBackground ? { "--body-tint": pageBackground.surface } : {}) } : undefined}>
+{data.scanSchedule?.kind === "school-memo" ? <section id="schedule" aria-label="Dates from this memo"><SchoolMemoDates schedule={data.scanSchedule} calendarNeedsSave={editor.dirty} onScheduleChange={(scanSchedule) => setData(previous => ({ ...previous, scanSchedule }))} eventId={editor.eventId} canManage={editor.authenticated} onSaveDraft={editor.saveDraft} onSelectionChange={(itemIds) => setData(previous => ({ ...previous, scanSchedule: { ...previous.scanSchedule, items: previous.scanSchedule.items.map(item => ({ ...item, calendarSelected: itemIds.includes(item.id) })) } }))} /></section> : null}
+{(data.scanSchedule?.kind !== "school-memo" || data.details || Object.values(data.extra || {}).some(value => typeof value === "string" && value.trim())) && <section id="details" className="py-10 border-t border-white/10 px-6 md:px-10">
                   <h2
                     className={`text-2xl mb-3 ${accentClass}`}
                     style={{ ...headingShadow, ...(titleColor || {}) }}
@@ -1123,7 +1127,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     location={[data.venue, data.city, data.state].filter(Boolean).join(", ")}
                     preview
                   />}
-                  {data.scanSchedule?.kind === "school-memo" ? <ScannedSchedule schedule={data.scanSchedule} interactive={false} /> : null}
                   <EventGuestPlanningNotes value={data.guestPlanning} />
                   {data.details ? (
                     <p
@@ -1165,7 +1168,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       );
                     })}
                   </div>
-                </section>
+                </section>}
 
                 {config.advancedSections?.map((section) =>
                   section.renderPreview ? (

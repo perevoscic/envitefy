@@ -26,7 +26,7 @@ test("both memo pages yield six distinct dates, retaining separate tests and lun
     { title: "No School", date: "2026-11-11", endDate: null, type: "closure" },
     { title: "Turkey Trot", date: "2026-11-16", endDate: null, type: "event" },
   ]);
-  assert.equal(memo.items.find(({ title }) => title === "Pumpkin Day").notes, "during lunch");
+  assert.equal(memo.items.find(({ title }) => title === "Pumpkin Day").notes, "during lunch · (info sent in SeeSaw)");
   assert.ok(memo.items.every((item) => item.startAt === null && item.endAt === null && item.startTime === null && item.endTime === null));
   assert.ok(memo.items.every((item) => item.yearInferred === true && item.sourceText));
   assert.ok(!memo.items.some(({ title }) => /reading|binder|study|memo|new year/i.test(title)));
@@ -86,7 +86,7 @@ test("PDF extraction spacing and wrapped dates retain the two tests from page on
   const memo = extractSchoolMemoDates(nativeText, timezone, now);
   assert.equal(memo.items.length, 6);
   assert.equal(memo.items.filter((item) => item.type === "test").length, 2);
-  assert.equal(memo.items.find((item) => item.title === "Pumpkin Day").notes, "during lunch");
+  assert.equal(memo.items.find((item) => item.title === "Pumpkin Day").notes, "during lunch · (info sent in SeeSaw)");
 });
 
 test("the PDF upload pipeline consumes both native-text pages without a live OCR call", async (t) => {

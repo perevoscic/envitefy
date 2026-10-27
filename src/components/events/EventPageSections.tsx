@@ -76,7 +76,7 @@ export function eventPageSectionEntries(children: ReactNode): EventSectionEntry[
             .replace(/^-|-$/g, "")
         : `body:${String(element?.key || index).replace(/[^a-zA-Z0-9:_-]/g, "_")}`);
     return { id, label, editorId: element?.props["data-editor-id"] || id, content };
-  });
+  }).filter(section => typeof section.content !== "string" || Boolean(section.content.trim()));
 }
 /** Native section contents keep their controls, links and theme; composition adds only page structure. */
 export default function EventPageSections({

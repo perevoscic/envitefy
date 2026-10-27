@@ -55,7 +55,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
   });
   const css = (
     await require("postcss")([require("@tailwindcss/postcss")()]).process(
-      '@import "tailwindcss" source(none); @source "../src/components/UnsavedProgressProvider.tsx"; @source "../src/app/event/birthdays/customize/page.tsx"; @source "../src/app/event/gymnastics/customize/page.tsx"; @source "../src/components/gym-meet-templates"; @source "../src/components/events/HeroImageEditor.tsx"; @source "../src/components/templates/TemplateEditorContext.tsx";',
+      '@import "tailwindcss" source(none); @source "../src/components/UnsavedProgressProvider.tsx"; @source "../src/app/event/birthdays/customize/page.tsx"; @source "../src/app/event/gymnastics/customize/page.tsx"; @source "../src/components/gym-meet-templates"; @source "../src/components/events/HeroImageEditor.tsx"; @source "../src/components/SchoolMemoDates.tsx"; @source "../src/components/templates/TemplateEditorContext.tsx";',
       { from: path.resolve("scripts/event-editor-fixture.css") },
     )
   ).css;
@@ -70,6 +70,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
   });
   page.setDefaultTimeout(10000);
   const errors = [],
+    calendarWrites = [],
     writes = [],
     urlWrites = [],
     records = new Map();
@@ -101,6 +102,13 @@ test("one Event Page editor protects saves and navigation across creation modes 
   await page.route("**/*", async (route) => {
     const req = route.request(),
       url = new URL(req.url());
+    if (url.pathname === "/api/user/profile") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ preferredProvider: "google" }) });
+    if (url.pathname === "/api/calendars") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ google: true }) });
+    if (/^\/api\/events\/[^/]+\/calendar-items$/.test(url.pathname)) {
+      if (req.method() === "GET") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ additions: [] }) });
+      const body = req.postDataJSON(); calendarWrites.push(body);
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ results: body.itemIds.map(id => ({ id, status: "added" })) }) });
+    }
     if (url.pathname === "/fixture.js")
       return route.fulfill({ contentType: "text/javascript", body: script });
     if (url.pathname === "/api/templates/media") {
@@ -1374,26 +1382,103 @@ test("one Event Page editor protects saves and navigation across creation modes 
       const importedHref = await page.evaluate(() => window.__seedSchoolMemoCreate());
       const importedUrl = new URL(importedHref, base);
       importedUrl.searchParams.set("mode", "manual");
+      importedUrl.searchParams.set("schoolCalendar", "1");
       await page.goto(importedUrl.toString());
       await openControls();
+      const memoControls = page.getByRole("complementary", { name: "Event editing controls" });
+      await memoControls.getByRole("button", { name: /^Page sections/ }).click();
+      await memoControls.getByRole("button", { name: "Edit Dates from this memo", exact: true }).click();
+      const datePanel = page.getByRole("dialog", { name: "Dates from this memo", exact: true });
+      await datePanel.getByRole("button", { name: "Edit Bible Test", exact: true }).click();
+      const dateFields = datePanel.locator("[data-memo-date-editor]");
+      await dateFields.getByLabel("Date", { exact: true }).fill("2026-11-02");
+      await dateFields.getByLabel("Start time (optional)", { exact: true }).fill("09:30");
+      await dateFields.getByLabel("End time (optional)", { exact: true }).fill("10:00");
+      await dateFields.getByLabel("Notes", { exact: true }).fill("Bring your study guide.");
+      await datePanel.getByRole("button", { name: /Close/ }).click();
       await switchView("Preview");
       await preview.locator("[data-school-memo-dates]").waitFor();
+      const inlineDates = preview.locator("[data-school-memo-dates]");
+      await inlineDates.getByRole("button", { name: "Edit Spelling Test", exact: true }).click();
+      await inlineDates.locator("[data-memo-date-editor]").getByLabel("Location (optional)", { exact: true }).fill("Classroom 2");
+      await inlineDates.getByRole("button", { name: "Done editing Spelling Test", exact: true }).click();
       assert.equal(await preview.getByRole("region", { name: "Plan your visit" }).count(), 0, "memo preview omits the generic parent calendar controls");
       assert.match(await preview.textContent(), /Binders are returned to school daily/);
+      const biblePanel = preview.locator("[data-body-section]").filter({ has: page.getByRole("heading", { name: "Bible", exact: true }) }).first();
+      assert.match(await biblePanel.textContent(), /near.”\nMatthew 3:2\n\nTest: Friday October 30th/);
+      assert.doesNotMatch(await biblePanel.textContent(), /R e p e n t|M a t t h e w/);
+      assert.equal(await biblePanel.locator("p").first().evaluate(node => getComputedStyle(node).whiteSpace), "pre-wrap");
+      const memoDates = preview.locator("[data-school-memo-dates]");
+      await memoDates.getByRole("button", { name: "Clear all", exact: true }).click();
+      await memoDates.getByRole("checkbox", { name: "Add Bible Test to calendar", exact: true }).check();
+      assert.equal(await preview.getByText("Add a short description so guests know what to expect.", { exact: true }).count(), 0);
+      await memoDates.getByRole("button", { name: "Save draft for connected calendars", exact: true }).waitFor();
       await page.screenshot({ path: path.join(output, `school-upload-memo-${width}.png`) });
-      await click("Save draft");
+      await memoDates.getByRole("button", { name: "Save draft for connected calendars", exact: true }).click();
       await page.getByText("Draft saved.", { exact: true }).first().waitFor();
+      assert.equal(await memoDates.getByRole("checkbox", { checked: true }).count(), 1, "draft save retains the selected dates");
+      await memoDates.getByRole("button", { name: "Download calendar file (.ics)", exact: true }).waitFor();
+      await memoDates.getByRole("button", { name: /^Add selected dates to (?:your )?calendar \(1\)$/, exact: true }).click();
+      await memoDates.getByRole("status").filter({ hasText: "1 added" }).waitFor();
+      assert.deepEqual(calendarWrites.at(-1), { provider: "google", itemIds: ["bible"] });
       const importedData = writes.at(-1).body.data;
       assert.equal(importedData.schoolTemplate, "weekly-memo");
       assert.equal(importedData.startISO, null);
       assert.equal(importedData.visibility, "private");
       assert.deepEqual(importedData.scanSchedule.items.map(item => item.id), ["bible", "spelling"]);
+      assert.equal(importedData.scanSchedule.items[0].date, "2026-11-02");
+      assert.equal(importedData.scanSchedule.items[0].startAt, "2026-11-02T15:30:00.000Z");
+      assert.equal(importedData.scanSchedule.items[0].notes, "Bring your study guide.");
+      assert.equal(importedData.scanSchedule.items[0].yearInferred, false);
+      assert.equal(importedData.scanSchedule.items[1].locationText, "Classroom 2");
       await page.reload();
       await openControls();
       await switchView("Preview");
       await preview.locator("[data-school-memo-dates]").waitFor();
+      assert.equal(await preview.locator("[data-school-memo-issue-date] time").textContent(), "October 26, 2026");
       assert.match(await preview.textContent(), /Bible Test/);
       assert.match(await preview.textContent(), /Spelling Test/);
+      await preview.getByRole("button", { name: "Edit Bible Test", exact: true }).click();
+      const restoredDateFields = preview.locator("[data-memo-date-editor]");
+      assert.equal(await restoredDateFields.getByLabel("Date", { exact: true }).inputValue(), "2026-11-02");
+      assert.equal(await restoredDateFields.getByLabel("Start time (optional)", { exact: true }).inputValue(), "09:30");
+      assert.equal(await restoredDateFields.getByLabel("Notes", { exact: true }).inputValue(), "Bring your study guide.");
+      await restoredDateFields.getByLabel("Notes", { exact: true }).fill("Bring your study guide and pencil.");
+      assert.equal(await preview.getByRole("button", { name: /^Add selected dates to your calendar/ }).isDisabled(), true, "connected additions wait for edited dates to be saved");
+      await preview.getByRole("button", { name: "Done editing Bible Test", exact: true }).click();
+      await click("Save draft");
+      await page.getByText("Draft saved.", { exact: true }).first().waitFor();
+      assert.equal(await preview.getByRole("button", { name: /^Add selected dates to your calendar/ }).isEnabled(), true);
+      const groups = preview.locator("[data-section-row]");
+      const geometry = await groups.evaluateAll(elements => elements.map(node => ({ width: node.getBoundingClientRect().width, parent: node.parentElement.getBoundingClientRect().width })));
+      assert.ok(geometry.length >= 3);
+      assert.ok(geometry.every(box => box.width > box.parent * 0.9), "memo rows use the whole reading width");
+      const pair = preview.locator('[data-section-row*="info:school-note-0"]').first();
+      const cells = await pair.locator(":scope > [data-section-width]").evaluateAll(nodes => nodes.map(node => ({ x: node.getBoundingClientRect().x, y: node.getBoundingClientRect().y })));
+      assert.equal(cells.length, 2);
+      assert.equal(Math.abs(cells[0].y - cells[1].y) < 2, width >= 768, "notes sit beside one another on desktop and stack on phones");
+      const savedId = new URL(page.url()).searchParams.get("edit");
+      const savedMemo = records.get(savedId);
+      savedMemo.data.status = "published"; savedMemo.data.createdVia = "template"; savedMemo.data.templateId = "general";
+      await page.goto(`${base}/event/general/customize?mode=school-saved&edit=${savedId}`);
+      const publishedDates = page.locator("[data-school-memo-dates]");
+      await publishedDates.waitFor();
+      assert.equal(await page.locator("[data-school-memo-issue-date] time").textContent(), "October 26, 2026");
+      assert.equal(await publishedDates.evaluate(node => Boolean(node.closest("[data-template-body-layout]"))), true, "published dates are inside the authored memo body");
+      const branding = page.locator("[data-envitefy-event-branding]");
+      assert.equal(await publishedDates.evaluate((node, footer) => Boolean(node.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING), await branding.elementHandle()), true, "calendar section precedes the actual page footer");
+      assert.equal(await page.getByText("No description provided.", { exact: true }).count(), 0);
+      assert.deepEqual(await page.locator("[data-body-section]").evaluateAll(nodes => nodes.filter(node => !node.textContent.trim() && !node.querySelector("img,iframe,input,button")).map(node => node.getAttribute("data-body-section"))), [], "memo omits empty logistics and placeholder panels");
+      await page.screenshot({ path: path.join(output, `school-published-memo-${width}.png`), fullPage: true });
+      await page.getByRole("link", { name: "Edit school memo", exact: true }).click();
+      assert.equal(new URL(page.url()).pathname, "/event/general/customize", "owner Edit opens the full memo editor");
+      await workspace.waitFor();
+      assert.equal(await page.getByRole("dialog", { name: "Review your school memo", exact: true }).count(), 0);
+      await switchView("Preview");
+      await preview.locator("[data-school-memo-dates]").waitFor();
+      assert.match(await preview.textContent(), /Binders are returned to school daily/);
+      assert.equal(await preview.getByRole("checkbox", { checked: true }).count(), 1, "owner editing retains calendar selection");
+
     }
     await page.setViewportSize({ width: 1440, height: 900 });
     const savedWriteCount = writes.length;

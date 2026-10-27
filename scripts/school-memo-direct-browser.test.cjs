@@ -74,6 +74,8 @@ test("a school memo upload finishes its event before showing the checked date se
           return route.fulfill({ contentType: "application/json", body: JSON.stringify(saved) });
         }
         if (url.pathname === "/api/history/memo-fixture") return route.fulfill({ contentType: "application/json", body: JSON.stringify(saved) });
+        if (request.method() === "GET" && url.pathname.endsWith("/calendar-items"))
+          return route.fulfill({ contentType: "application/json", body: JSON.stringify({ additions: [] }) });
         if (url.pathname.endsWith("/calendar-items")) {
           writes.push({ path: url.pathname, body: request.postDataJSON() });
           return route.fulfill({ contentType: "application/json", body: JSON.stringify({ results: request.postDataJSON().itemIds.map(id => ({ id, status: "added" })) }) });
@@ -99,7 +101,7 @@ test("a school memo upload finishes its event before showing the checked date se
       const section = page.locator("[data-school-memo-dates]");
       assert.equal(await section.getByRole("checkbox").count(), 6);
       assert.equal(await section.getByRole("checkbox").evaluateAll(inputs => inputs.every(input => input.checked)), true);
-      assert.equal(await section.getByRole("button", { name: /^Add selected dates to calendar/ }).count(), 1);
+      assert.equal(await section.getByRole("button", { name: /^Add selected dates to your calendar/ }).count(), 1);
       assert.equal(await page.getByRole("button", { name: /^Add to .*Calendar|^Add to calendar$/ }).count(), 0, "the memo has no competing parent calendar action");
       const flow = await section.evaluate(element => {
         const previous = element.previousElementSibling;
@@ -121,7 +123,7 @@ test("a school memo upload finishes its event before showing the checked date se
       });
       await page.screenshot({ path: path.join(output, `finished-event-all-selected-${width}.png`), fullPage: true });
       await section.getByRole("checkbox", { name: "Add Bible Test to calendar", exact: true }).uncheck();
-      await section.getByRole("button", { name: /^Add selected dates to calendar/ }).click();
+      await section.getByRole("button", { name: /^Add selected dates to your calendar/ }).click();
       await section.getByRole("status").filter({ hasText: "5 added" }).waitFor();
       assert.deepEqual(writes.at(-1).body.itemIds, ["spirit", "spelling", "pumpkin", "closure", "turkey"]);
       assert.equal(saved.data.scanSchedule.items.length, 6, "excluded dates remain in the saved memo");

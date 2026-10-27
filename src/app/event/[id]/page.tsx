@@ -1,3 +1,4 @@
+import { readableSchoolMemoData } from "@/lib/school-memo-typography.server";
 import { projectSignupForm } from "@/lib/signup-projection";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { manualEventEditHref } from "@/lib/manual-event-progress";
@@ -29,7 +30,7 @@ import EventViewTracker from "@/components/EventViewTracker";
 import FirstScanCalendarPrompt from "@/components/FirstScanCalendarPrompt";
 import FootballSkin from "@/components/FootballSkin";
 import GenericEventSkin from "@/components/GenericEventSkin";
-import ScannedSchedule, { ScannedScheduleProvider } from "@/components/ScannedSchedule";
+import { ScannedScheduleProvider } from "@/components/ScannedSchedule";
 import { normalizeScanSchedule } from "@/lib/scan-schedule";
 import ScanArtworkProvider from "@/components/ScanArtworkProvider";
 import { normalizeScanArtwork } from "@/lib/ocr/scan-artwork-state";
@@ -1128,7 +1129,7 @@ export default async function EventPage({
     }
   }
   const _createdAt = row.created_at as string | undefined;
-  const data = (() => {
+  let data = (() => {
     if (!row.data) return {};
     if (typeof row.data === "string") {
       try {
@@ -1272,7 +1273,6 @@ export default async function EventPage({
         <EventPageCompositionProvider value={normalizeEventPageComposition(data.eventPageComposition)}>
           {scanMediaPolicy && isValidElement<{ imageUrl?: string | null }>(children) && "imageUrl" in children.props && (scanMediaPolicy.heroMode === "generated" || scanMediaPolicy.medical)
             ? cloneElement(children, { imageUrl: generatedScanHero(data) }) : children}
-          {savedScanSchedule?.kind === "school-memo" && (data.createdVia === "template" || data.customEventPage) ? <div className="mx-auto my-6 w-full max-w-5xl px-6"><ScannedSchedule /></div> : null}
         </EventPageCompositionProvider>
       </ScanArtworkProvider>
       </ScannedScheduleProvider>
@@ -2286,6 +2286,7 @@ export default async function EventPage({
       ? "readonly"
       : "guest";
 
+  data = await readableSchoolMemoData(data);
   const projectedSignupForm = signupForm ? projectSignupForm(signupForm, { isOwner: viewerKind === "owner", userId: viewerKind === "guest" ? userId : null }) : null;
   const clientSafeEventData = canManageCreatedEvent
     ? data

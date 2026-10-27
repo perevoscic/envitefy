@@ -381,12 +381,7 @@ export function scanScheduleWhen(
       timeZone: item.timezone,
     }).format(new Date(item.startAt));
   if (!time && schedule?.kind === "school-memo") {
-    return [
-      date || "Date not provided",
-      item.type === "closure" || item.endDate ? null : "Time not provided",
-    ]
-      .filter(Boolean)
-      .join(" · ");
+    return date || "Date not provided";
   }
   return [date || day || "Date TBD", time || "Time TBD"].join(" · ");
 }

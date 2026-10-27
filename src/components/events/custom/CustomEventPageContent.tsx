@@ -1,4 +1,6 @@
 "use client";
+import InformationSectionBody from "../InformationSectionBody";
+import ScannedSchedule from "@/components/ScannedSchedule";
 import Link from "next/link";
 import { type CSSProperties, type ReactNode, useState } from "react";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -124,6 +126,7 @@ export default function CustomEventPageContent({
           </div>
         </header>
       </EventPageHero>
+      {d.scanSchedule?.kind === "school-memo" ? <div className={styles.section}><ScannedSchedule schedule={d.scanSchedule} /></div> : null}
       <EventSectionCanvas className={styles.content} layout={d.sectionLayout} sections={customEventSectionOrder(d).map((key) => {
           let content: ReactNode;
           if (key === "overview") content = d.description ? (
@@ -153,7 +156,7 @@ export default function CustomEventPageContent({
           content = section ? (
             <section key={key} className={styles.section} data-event-section={key} data-has-map={Boolean(section.map)}>
               <h2>{section.title}</h2>
-              <p>{section.body}</p>
+              <InformationSectionBody title={section.title} body={section.body} />
               {section.map && d.arrivalMapEnabled !== false && <EventArrivalMap map={section.map} />}
               <EventSectionExtrasContent value={section} />
             </section>
@@ -161,7 +164,7 @@ export default function CustomEventPageContent({
           return { id: key, label: key === "overview" ? "Welcome & overview" : key === "registry" ? "Registry" : d.sections[Number(key.slice(8))]?.title || "Information", content };
         }).filter((section) => section.content !== null)} />
       <div className={styles.content}>
-        {showGuestActions && (
+        {showGuestActions && d.scanSchedule?.kind !== "school-memo" && (
           <EventGuestActions
             visibility={d.guestActions}
             onVisibilityChange={onGuestActionsChange}

@@ -508,3 +508,27 @@
     display: block;
   }
 }
+
+/* Memo rows own their pairs; the surrounding template must not reserve a rail. */
+.body[data-template-body-layout="school-memo"] .composedSections,
+.body[data-template-body-layout="school-memo"] .sections {
+  grid-template-columns: minmax(0, 1fr);
+}
+.body[data-template-body-layout="school-memo"] .composedSections > :is([data-section-row], [data-section-group]) {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+}
+.body[data-template-body-layout="school-memo"] .panel {
+  padding: clamp(1rem, 2.5cqi, 2rem);
+}
+
+/* Paired memo panels share their row height while narrow, stacked notes stay natural. */
+@container event-sections (min-width: 760px) {
+  .body[data-template-body-layout="school-memo"] [data-section-row] {
+    align-items: stretch;
+  }
+  .body[data-template-body-layout="school-memo"] [data-section-row] > [data-section-width] {
+    display: grid;
+  }
+}

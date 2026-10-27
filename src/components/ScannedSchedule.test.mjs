@@ -48,7 +48,7 @@ test("school memo dates have individual choices, bulk controls and one explicit 
   assert.equal((html.match(/type="checkbox"/g) || []).length, 2);
   assert.equal((html.match(/ checked=""/g) || []).length, 1);
   assert.match(html, /Select all/); assert.match(html, /Clear all/);
-  assert.match(html, /Add selected dates to calendar \(1\)/);
+  assert.match(html, /Add selected dates to your calendar \(1\)/);
   assert.doesNotMatch(html, /sessions and games|Location TBD/);
 });
 
@@ -56,7 +56,7 @@ test("an issue-only school memo stays readable without offering an empty calenda
   const schedule = scheduleHelpers.normalizeScanSchedule({ kind: "school-memo", title: "Class newsletter", issueDate: "2026-10-26", timezone: "America/Chicago", items: [] });
   const html = renderToStaticMarkup(createElement(Provider, { schedule }, createElement(ScannedSchedule)));
   assert.match(html, /No dated items were found/);
-  assert.doesNotMatch(html, /type="checkbox"|Add selected dates to calendar|Select all/);
+  assert.doesNotMatch(html, /type="checkbox"|Add selected dates to your calendar|Select all/);
 });
 
 test("uploaded game rows render through the saved-page provider with their own calendar links", () => {
@@ -135,7 +135,7 @@ test("school memos finish directly while sports scans retain review, and saved s
   );
 });
 
-test("owner Edit and Continue creating both resume saved schedules in the schedule editor", () => {
+test("owner Edit and Continue creating open full school memos while sports retain schedule review", () => {
   const routeModule = { exports: {} };
   const source = ts.transpileModule(fs.readFileSync("src/utils/event-edit-route.ts", "utf8"), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
@@ -143,6 +143,7 @@ test("owner Edit and Continue creating both resume saved schedules in the schedu
   vm.runInNewContext(source, {
     module: routeModule,
     exports: routeModule.exports,
+    URL,
     URLSearchParams,
     require: (name) => {
       if (name === "@/lib/manual-event-progress") return { manualEventEditHref: () => null };
@@ -162,5 +163,14 @@ test("owner Edit and Continue creating both resume saved schedules in the schedu
       routeModule.exports.resolveEditHref("saved schedule", data, "Practice"),
       "/event/schedule/customize?edit=saved%20schedule",
     );
+    for (const items of [[], [{ id: "bible", title: "Bible Test" }]]) {
+      const memo = { ...data, thumbnail: "/memo.webp", scanSchedule: { kind: "school-memo", items } };
+      for (const name of ["buildEditLink", "resolveEditHref", "resolveOwnerEditHref"]) {
+        assert.equal(
+          routeModule.exports[name]("saved memo", memo, "Weekly memo"),
+          "/event/general/customize?collection=school&templateId=school--weekly-memo&edit=saved%20memo",
+        );
+      }
+    }
   }
 });

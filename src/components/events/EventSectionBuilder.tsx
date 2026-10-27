@@ -1,4 +1,5 @@
 "use client";
+import InformationSectionBody from "./InformationSectionBody";
 import { EventSectionEditorClose as EditorClose, EventSectionEditorBusy } from "./EventSectionEditorContext";
 import {
   EventPageCompositionProvider,
@@ -834,7 +835,7 @@ export function EventSectionCanvas({
         content: (
           <section data-event-section={section.id} className={styles.information}>
             <h2>{section.title}</h2>
-            <p>{section.body}</p>
+            <InformationSectionBody title={section.title} body={section.body} />
             <EventSectionExtrasContent value={section} />
             {section.map && <EventArrivalMap map={section.map} />}
           </section>

@@ -1,15 +1,18 @@
 // @ts-nocheck
 "use client";
+import SchoolMemoIssueDate from "@/components/SchoolMemoIssueDate";
+
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 import { activeImportedTheme, importedSportsTheme, importedThemeStyle, importedArtworkSrc } from "@/lib/imported-event-design";
 import { IMPORTED_THEME_FONTS } from "@/lib/imported-event-theme";
 import "@/components/event-create/imported-event-theme.css";
 
+import ScannedSchedule from "@/components/ScannedSchedule";
 import TemplateBodyLayout from "@/components/templates/TemplateBodyLayout";
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 import { getThemedEventDesign, getThemedEventBodyPresentation, getThemedEventTheme, isThemedEventDesignDark } from "@/lib/event-page-themed-designs";
-import { getGeneralEventPageDesign, getGeneralEventBodyPresentation } from "@/lib/general-event-presentation";
+import { SCHOOL_MEMO_BODY_PRESENTATION, getGeneralEventPageDesign, getGeneralEventBodyPresentation } from "@/lib/general-event-presentation";
 import ThemedEventHeader from "@/components/templates/ThemedEventHeader";
 import HolidayPageBackground from "@/components/events/HolidayPageBackground";
 import { getHolidayBackground, normalizeHolidayBackgroundChoice } from "@/lib/holiday-backgrounds";
@@ -640,6 +643,7 @@ export default function SimpleTemplateView({
       themeId: currentData?.themeId,
     });
   }
+  const schoolMemo = currentData?.scanSchedule?.kind === "school-memo";
   const description = currentData?.description || currentData?.eventDetails?.notes || "";
   const customFields = currentData?.customFields || {};
   const advancedSections = currentData?.advancedSections || customFields?.advancedSections || {};
@@ -4845,6 +4849,7 @@ export default function SimpleTemplateView({
                   >
                     {currentData?.eventTitle || eventTitle}
                   </h1>
+                  <SchoolMemoIssueDate schedule={currentData?.scanSchedule} />
                   {infoLine}
                   {/* Address line (if different from header location) */}
                   {address && (
@@ -4904,7 +4909,7 @@ export default function SimpleTemplateView({
 
               </ThemedEventHeader>
               {!isLocked ? <>
-                <EventGuestActions visibility={currentData?.guestActions} title={eventTitle} start={guestStart} end={guestEnd} description={description} location={fullLocation} shareUrl={shareUrl} eventId={eventId} preview={!shareUrl || eventId === "preview"} inverse={isDarkBackground} timezone={currentData?.timezone} />
+                {!schoolMemo && <EventGuestActions visibility={currentData?.guestActions} title={eventTitle} start={guestStart} end={guestEnd} description={description} location={fullLocation} shareUrl={shareUrl} eventId={eventId} preview={!shareUrl || eventId === "preview"} inverse={isDarkBackground} timezone={currentData?.timezone} />}
                 <EventGuestPlanningNotes value={guestPlanning} inverse={isDarkBackground} />
               </> : null}
 
@@ -4912,8 +4917,9 @@ export default function SimpleTemplateView({
 
 
               {/* Details Section */}
-              <TemplateBodyLayout presentation={getThemedEventBodyPresentation(currentData?.bodyDesignId || currentData?.templateEditor?.templateId || currentData?.themeId) || getGeneralEventBodyPresentation(currentData?.bodyDesignId || currentData?.templateEditor?.templateId || currentData?.themeId) || (normalizedCategory === "sport_event" || currentData?.templateEditor?.category === "sport-events" ? getTemplateBodyPresentation("sport-events", currentData?.bodyDesignId || currentData?.templateEditor?.templateId || `${currentData?.customFields?.sport || currentData?.activityProfile || "football"}--stadium`) : undefined)} style={pageDesign ? { "--body-heading-font": headingFontFamily, ...(pageBackground ? { "--body-tint": pageBackground.surface } : {}) } : undefined}>
-              <section
+              <TemplateBodyLayout presentation={schoolMemo ? SCHOOL_MEMO_BODY_PRESENTATION : getThemedEventBodyPresentation(currentData?.bodyDesignId || currentData?.templateEditor?.templateId || currentData?.themeId) || getGeneralEventBodyPresentation(currentData?.bodyDesignId || currentData?.templateEditor?.templateId || currentData?.themeId) || (normalizedCategory === "sport_event" || currentData?.templateEditor?.category === "sport-events" ? getTemplateBodyPresentation("sport-events", currentData?.bodyDesignId || currentData?.templateEditor?.templateId || `${currentData?.customFields?.sport || currentData?.activityProfile || "football"}--stadium`) : undefined)} style={pageDesign ? { "--body-heading-font": headingFontFamily, ...(pageBackground ? { "--body-tint": pageBackground.surface } : {}) } : undefined}>
+              {schoolMemo ? <section id="schedule" aria-label="Dates from this memo"><ScannedSchedule schedule={currentData.scanSchedule} /></section> : null}
+              {(!schoolMemo || description || detailFields.some((field: any) => String(customFields[field.key] ?? currentData?.extra?.[field.key] ?? "").trim())) && <section
                 id="details"
                 className="py-10 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
               >
@@ -4958,7 +4964,7 @@ export default function SimpleTemplateView({
                     })}
                   </ul>
                 )}
-              </section>
+              </section>}
 
               {/* Advanced Sections */}
               {renderEventsSection()}

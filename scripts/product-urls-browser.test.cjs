@@ -132,12 +132,15 @@ test("custom URLs work across Event Pages, Live Cards and Sign-up Forms without 
       templateEditor: { category: "signup-forms", templateId: "editorial--school-days", snapshot: { form: forms.signup } } }));
     await page.goto(`${base}/signup-forms/templates/editorial--school-days/customize?mode=signup&edit=${id}`);
     await page.getByRole("button", { name: "Custom URL", exact: true }).click();
+    await page.getByRole("heading", { name: "Custom URL", exact: true }).waitFor();
+    assert.equal(await page.getByRole("dialog", { name: "Custom URL", exact: true }).count(), 0, "signup URL editing uses the native settings panel");
     await input.fill("parent-conferences");
     await page.getByText(`${base}/smart-signup-form/parent-conferences`, { exact: true }).waitFor();
     await page.getByRole("button", { name: "Save link", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "Link updated" }).waitFor();
-    await page.getByRole("button", { name: "Close custom URL" }).click();
-    await page.getByRole("button", { name: "Save as draft", exact: true }).click();
+    await page.getByRole("button", { name: "Back to details", exact: true }).click();
+    await page.getByRole("heading", { name: "Add your details", exact: true }).waitFor();
+    await page.getByRole("group", { name: "Save event", exact: true }).getByRole("button", { name: "Save draft", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "Draft saved" }).waitFor();
     assert.equal(writes.at(-1).body.expectedRevision, "v1-next", "signup definitions use the URL save's new revision");
     assert.equal(records.get(id).public_slug, "parent-conferences");

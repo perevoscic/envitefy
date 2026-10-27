@@ -115,7 +115,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Good to know keeps useful extra instructions and plans, such as what to bring, where to enter or dinner and dancing to follow, while omitting generic reminders and repeated event details.",
             "For recognized paperwork and appointments, unique hero and background artwork can begin while the remaining scan details are processed. Saving reuses that work and opens the event without waiting for the artwork.",
             "Received social invitation cards can be kept with Invited events, while source material for events the customer owns belongs with My events.",
-            "School memo uploads finish on their saved Event page, with tests, deadlines, activities and no-school days listed together and initially selected. Select all, clear all or choose individual items directly on the page, then explicitly add the selected dates to a connected Google/Outlook calendar or download one calendar file. Capturing a memo does not automatically add its dates or require a review popup.",
+            "School memo uploads finish on their saved Event page, with tests, deadlines, activities and no-school days listed together and initially selected. Select all, clear all or choose individual items directly on the page, then explicitly add the selected dates to their default connected Google/Outlook calendar. If no default is set, they are prompted to set one; a separate action downloads one calendar file. Successfully added dates show an owner-only Added on status with the local date and time, retained on reload. Capturing a memo does not automatically add its dates or require a review popup.",
           ],
           sellWhen: [
             "The brief mentions snapping, scanning, photographing, uploading, a printed invitation, flyer, screenshot, schedule, or PDF.",
@@ -741,7 +741,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           customerPromise:
             "Use the same live-page and coordination foundation for events beyond social invitations.",
           proofPoints: [
-            "School & classroom has four starting templates: Weekly memo, Field trip, School celebration and Parent meeting. Create uploads recognize the school document and keep its facts in the shared Event Page editor; school memos retain individual calendar dates and complete notes.",
+            "School & classroom has four starting templates: Weekly memo, Field trip, School celebration and Parent meeting. Create uploads recognize the school document and keep its facts in the shared Event Page editor; school memos organize reminders and subjects into editable sections, with selected-date calendar actions inside the memo. Each date has an Edit action for its title, date range, optional times, location and notes; Page sections opens the same date controls. Edits persist through explicit saves while retaining each item’s calendar identity and selection. Save a draft to use connected Google/Outlook calendars, or export a calendar file.",
             "Supported creation paths include field trips/days, class events, workshops, appointments, open houses, housewarmings, special events, and general events.",
             "The page can emphasize the actions relevant to the event, such as schedule, directions, RSVP, sign-up, calendar, or updates.",
             "Smart sign-ups can coordinate school, church, volunteer, team, community, and workplace needs.",

@@ -8,6 +8,7 @@ import EventUrlDialog from "@/components/events/EventUrlEditor";
 import { normalizeScanSchedule, type ScanSchedule } from "@/lib/scan-schedule";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { buildEventPath } from "@/utils/event-url";
+import { resolveEditHref } from "@/utils/event-edit-route";
 
 function ScheduleEditor() {
   const eventHistoryClient = useEventHistoryClient();
@@ -35,6 +36,10 @@ function ScheduleEditor() {
         if (!response.ok) throw new Error(row.error || "Could not open the schedule.");
         const next = normalizeScanSchedule(row.data?.scanSchedule);
         if (!next) throw new Error("This event does not have an editable schedule.");
+        if (next.kind === "school-memo") {
+          router.replace(resolveEditHref(id, row.data, row.title || next.title));
+          return;
+        }
         setSchedule(next);
         setIsOwner(row.permissions?.role === "owner");
         setSavedStatus(isEventDraft(row.data) ? "draft" : "published");

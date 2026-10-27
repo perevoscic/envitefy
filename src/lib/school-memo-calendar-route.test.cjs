@@ -7,19 +7,20 @@ class SchoolMemoCalendarInputError extends Error {}
 function harness({ userId = "owner", email = "OWNER@EXAMPLE.INVALID", exists = true, rowOwner = "owner", syncError = null, readError = null } = {}) {
   const h = { calls: [], reads: [] };
   h.row = { id: "saved-memo", user_id: rowOwner, title: "Weekly memo", public_slug: "weekly-memo", data: { scanSchedule: { kind: "school-memo", items: [{ id: "bible", title: "Bible test", date: "2026-10-30" }] } } };
-  const { POST } = loadTs("src/app/api/events/[id]/calendar-items/route.ts", {
+  const { POST, GET } = loadTs("src/app/api/events/[id]/calendar-items/route.ts", {
     "next-auth": { getServerSession: async () => userId ? { user: { email } } : null },
     "next/server": { NextResponse: Response },
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => userId },
     "@/lib/db": { getEventHistoryById: async (id) => { h.reads.push(id); if (readError) throw readError; return exists ? h.row : null; } },
     "@/lib/absolute-url": { absoluteUrl: async (path) => `https://envitefy.example${path}` },
     "@/utils/event-product-route": { buildEventProductPath: (input) => { h.pathInput = input; return `/event/${input.publicSlug}`; } },
-    "@/lib/school-memo-calendar-sync": { SchoolMemoCalendarInputError, syncSelectedSchoolMemoDates: async (input) => {
+    "@/lib/school-memo-calendar-sync": { SchoolMemoCalendarInputError, schoolMemoCalendarAdditions: () => [{ id: "bible", addedAt: "2026-10-27T01:35:00Z" }], syncSelectedSchoolMemoDates: async (input) => {
       h.calls.push(input);
       if (syncError) throw syncError;
       return input.itemIds.map((id) => ({ id, status: "added" }));
     } },
   });
+  h.get = () => GET(new Request("https://envitefy.example/api/events/saved-memo/calendar-items"), { params: Promise.resolve({ id: "saved-memo" }) });
   h.post = (body = { provider: "google", itemIds: ["bible"] }, headers = {}) => POST(new Request("https://envitefy.example/api/events/saved-memo/calendar-items", {
     method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: typeof body === "string" ? body : JSON.stringify(body),
   }), { params: Promise.resolve({ id: "saved-memo" }) });
@@ -88,5 +89,18 @@ test("cross-site submissions cannot read the memo or start calendar work", async
   const response = await h.post({ provider: "google", itemIds: ["bible"] }, { "sec-fetch-site": "cross-site" });
   assert.equal(response.status, 403);
   assert.equal(h.reads.length, 0);
+  assert.equal(h.calls.length, 0);
+});
+
+test("addition history is private to the authenticated owner and never writes calendars", async () => {
+  for (const [options, expected] of [[{ userId: null }, 401], [{ userId: "other" }, 403], [{ exists: false }, 404]]) {
+    const h = harness(options);
+    assert.equal((await h.get()).status, expected);
+    assert.equal(h.calls.length, 0);
+  }
+  const h = harness();
+  const response = await h.get();
+  assert.equal(response.headers.get("Cache-Control"), "private, no-store");
+  assert.deepEqual(await response.json(), { additions: [{ id: "bible", addedAt: "2026-10-27T01:35:00Z" }] });
   assert.equal(h.calls.length, 0);
 });

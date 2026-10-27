@@ -1,6 +1,7 @@
 import { parseEventDates } from "../event-date-parser.ts";
 import { normalizeScanSchedule, type ScanSchedule } from "../scan-schedule.ts";
 import { isSchoolMemoText } from "../school-memo.ts";
+import { schoolMemoDateNotes } from "../school-memo-content.ts";
 import { matchesSchema, nullableString, strictObject } from "../creation/source-evidence.ts";
 import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import { resolveOcrModel } from "./constants.ts";
@@ -127,14 +128,15 @@ function normalizeSchoolMemo(value: Record<string, unknown>, source: string, tim
     if (!title || /memo|newsletter|week of/i.test(title)) continue;
     const words = title.toLowerCase().match(/[\p{L}]{3,}/gu) || [];
     if (words.some((word) => !quote.toLowerCase().includes(word))) continue;
+    const notes = schoolMemoDateNotes(typeof row.notes === "string" ? row.notes : null, quote) || null;
     const key = itemKey(title, dates.date, dates.endDate);
     const existing = items.find((item) => item.key === key);
     if (existing) {
-      if (!existing.notes && row.notes) existing.notes = row.notes;
+      existing.notes = schoolMemoDateNotes(typeof existing.notes === "string" ? existing.notes : notes, quote) || null;
       continue;
     }
     const clocks = printedDate(quote, timezone, now);
-    items.push({ ...row, ...dates, key, title, type: typeFor(title), sourceText: quote, startTime: clocks?.startTime || null, endTime: clocks?.endTime || null });
+    items.push({ ...row, ...dates, notes, key, title, type: typeFor(title), sourceText: quote, startTime: clocks?.startTime || null, endTime: clocks?.endTime || null });
   }
   const issue = typeof value.issueDateText === "string" && dateText(original).includes(dateText(value.issueDateText)) ? printedDate(value.issueDateText, timezone, now)?.date : typeof value.issueDate === "string" ? value.issueDate : null;
   return normalizeScanSchedule({ kind: "school-memo", title: memoTitle(source), issueDate: issue || null, timeframe: typeof value.timeframe === "string" ? value.timeframe : null, timezone, items });

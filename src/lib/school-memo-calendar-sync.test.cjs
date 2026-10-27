@@ -63,7 +63,7 @@ function harness() {
 test("only selected server-saved memo items reach the calendar writer", async () => {
   const h = harness();
   const result = await h.sync({ itemIds: ["spelling"] });
-  assert.deepEqual(result, [{ id: "spelling", status: "added" }]);
+  assert.deepEqual(result, [{ id: "spelling", status: "added", addedAt: "1970-01-01T00:00:00.000Z" }]);
   assert.equal(h.writes.length, 1);
   assert.equal(h.writes[0].event.title, "Spelling test");
   assert.equal(h.writes[0].event.start, "2026-10-30");
@@ -87,13 +87,13 @@ test("a repeated selection is unchanged and editing one ID updates its linked en
   const h = harness();
   await h.sync();
   const existingId = h.row.data.memoCalendarSync[h.key("bible")].externalEventId;
-  assert.deepEqual(await h.sync(), [{ id: "bible", status: "unchanged" }, { id: "spelling", status: "unchanged" }]);
+  assert.deepEqual(await h.sync(), [{ id: "bible", status: "unchanged", addedAt: "1970-01-01T00:00:00.000Z" }, { id: "spelling", status: "unchanged", addedAt: "1970-01-01T00:00:00.000Z" }]);
   assert.equal(h.writes.length, 2);
   h.row.data.scanSchedule.items[0].date = "2026-11-02";
   h.row.data.scanSchedule.items[0].title = "Updated Bible test";
   h.row.data.scanSchedule.items.reverse();
   const result = await h.sync();
-  assert.deepEqual(result, [{ id: "spelling", status: "unchanged" }, { id: "bible", status: "updated" }]);
+  assert.deepEqual(result, [{ id: "spelling", status: "unchanged", addedAt: "1970-01-01T00:00:00.000Z" }, { id: "bible", status: "updated", addedAt: "1970-01-01T00:00:00.000Z" }]);
   assert.equal(h.writes.length, 3);
   assert.equal(h.writes[2].externalEventId, existingId);
   assert.equal(h.writes[2].sourceId, h.writes[0].sourceId);
@@ -104,11 +104,11 @@ test("a partial failure retries only the failed date while retaining successful 
   const h = harness();
   h.fail.add("Spelling test");
   assert.deepEqual(await h.sync(), [
-    { id: "bible", status: "added" },
+    { id: "bible", status: "added", addedAt: "1970-01-01T00:00:00.000Z" },
     { id: "spelling", status: "failed", message: "Could not add this date. Check your calendar connection and retry." },
   ]);
   h.fail.clear();
-  assert.deepEqual(await h.sync(), [{ id: "bible", status: "unchanged" }, { id: "spelling", status: "added" }]);
+  assert.deepEqual(await h.sync(), [{ id: "bible", status: "unchanged", addedAt: "1970-01-01T00:00:00.000Z" }, { id: "spelling", status: "added", addedAt: "1970-01-01T00:00:00.000Z" }]);
   assert.deepEqual(h.writes.map((write) => write.event.title), ["Bible test", "Spelling test", "Spelling test"]);
   assert.equal(h.row.data.memoCalendarSync[h.key("bible")].status, "synced");
   assert.equal(h.row.data.memoCalendarSync[h.key("spelling")].status, "synced");
@@ -169,4 +169,36 @@ test("the batch budget returns unattempted items as retryable and a retry only a
   assert.ok(retried.slice(3).every((result) => result.status === "added"));
   assert.equal(h.writes.length, 7);
   assert.equal(new Set(h.writes.map((write) => write.sourceId)).size, 7);
+});
+
+test("addition times persist through retries and updates; failed dates have no addition time", async () => {
+  const h = harness();
+  h.clock = Date.parse("2026-10-27T01:35:00Z");
+  h.fail.add("Spelling test");
+  const first = await h.sync();
+  assert.equal(first[0].addedAt, "2026-10-27T01:35:00.000Z");
+  assert.equal(first[1].addedAt, undefined);
+  h.clock += 60_000;
+  h.row.data.scanSchedule.items[0].title = "Revised Bible test";
+  const updated = await h.sync({ itemIds: ["bible"] });
+  assert.equal(updated[0].status, "updated");
+  assert.equal(updated[0].addedAt, first[0].addedAt);
+  assert.equal(h.row.data.memoCalendarSync[h.key("bible")].addedAt, first[0].addedAt);
+});
+
+test("saved addition summaries contain only item IDs and confirmed timestamps", async () => {
+  const h = harness();
+  h.clock = Date.parse("2026-10-27T01:35:00Z");
+  h.fail.add("Spelling test");
+  await h.sync();
+  const { schoolMemoCalendarAdditions } = loadTs("src/lib/school-memo-calendar-sync.ts", {
+    "@/lib/db": { query: async () => ({ rows: [] }) },
+    "@/lib/calendar-sync-service": { writeSelectedCalendarItem: async () => {} },
+    "@/lib/history-cache": { invalidateUserHistory: () => {} },
+    "@/lib/dashboard-cache": { invalidateUserDashboard: () => {} },
+  });
+  assert.deepEqual(schoolMemoCalendarAdditions(h.row.id, h.row.data), [{ id: "bible", addedAt: "2026-10-27T01:35:00.000Z" }]);
+  delete h.row.data.memoCalendarSync[h.key("bible")].addedAt;
+  h.row.data.memoCalendarSync[h.key("bible")].updatedAt = "2026-10-26T12:00:00Z";
+  assert.equal(schoolMemoCalendarAdditions(h.row.id, h.row.data)[0].addedAt, "2026-10-26T12:00:00Z");
 });

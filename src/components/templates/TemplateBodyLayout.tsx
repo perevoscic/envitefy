@@ -11,6 +11,7 @@ export type BodyPresentation = {
   layout:
     | "editorial"
     | "stagger"
+    | "school-memo"
     | "columns"
     | "poster"
     | "mosaic"
@@ -148,7 +149,7 @@ export default function TemplateBodyLayout({
           content,
         })));
   const visible = items.filter(
-    (item) => item.content !== null && item.content !== undefined && item.content !== false,
+    (item) => item.content !== null && item.content !== undefined && item.content !== false && (typeof item.content !== "string" || Boolean(item.content.trim())),
   );
   if (!activePresentation) {
     if (composed)

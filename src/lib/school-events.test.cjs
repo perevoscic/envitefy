@@ -92,3 +92,26 @@ test("Save draft retains school identity, artwork and memo dates without publish
   assert.equal(payload.data.noindex, true);
   assert.deepEqual(payload.data.scanSchedule.items.map(item => item.id), scanSchedule.items.map(item => item.id));
 });
+
+test("memo content follows printed subjects and repairs the former single transcript block without writing", () => {
+  const { schoolMemoSections, schoolMemoSectionLayout } = read("src/lib/school-memo-content.ts");
+  const { normalizeEventPageComposition } = read("src/lib/event-page-composition.ts");
+  const source = `Page 1\n${examples[0][1].replace("Science:", "Page 2\nScience:")}`;
+  const notes = schoolMemoSections(source);
+  assert.deepEqual(notes.map(section => section.title), ["Important Reminders", "Bible", "Science", "Reading, Math & ELA", "At Home Partnership Tips", "Important Events"]);
+  assert.match(notes.find(section => section.title === "Science").body, /Water Project/);
+  assert.match(notes.find(section => section.title === "At Home Partnership Tips").body, /Binders are taken home/);
+  assert.ok(!notes.some(section => /Page [12]|Mrs. Example|October 26th$/.test(section.body)));
+  const original = { version: 1, sections: [{ id: "info:import-0", title: "School memo", body: source }] };
+  const before = JSON.stringify(original);
+  const composition = normalizeEventPageComposition(original);
+  assert.equal(JSON.stringify(original), before, "opening only normalizes in memory");
+  assert.equal(composition.sections.length, 6);
+  assert.equal(composition.sectionLayout.order[0], "schedule");
+  assert.equal(composition.sectionLayout.widths.schedule, 12);
+  assert.equal(composition.sectionLayout.pairs.length, 3);
+  assert.deepEqual(normalizeEventPageComposition(composition), composition);
+  assert.deepEqual(schoolMemoSectionLayout(composition.sections), composition.sectionLayout);
+  const custom = { ...original, sections: [{ ...original.sections[0], id: "info:my-custom-notes" }] };
+  assert.equal(normalizeEventPageComposition(custom).sections.length, 1, "custom sections keep the author's chosen structure");
+});

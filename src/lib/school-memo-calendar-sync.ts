@@ -23,7 +23,24 @@ export type MemoCalendarResult = {
   id: string;
   status: "added" | "updated" | "unchanged" | "failed" | "busy";
   message?: string;
+  addedAt?: string;
 };
+
+/** Expose only owner-visible addition times, never provider identities or leases. */
+export function schoolMemoCalendarAdditions(eventId: string, data: RecordValue) {
+  const schedule = normalizeScanSchedule(data.scanSchedule);
+  if (schedule?.kind !== "school-memo") return [];
+  const states = record(data.memoCalendarSync);
+  return schedule.items.flatMap((item) => {
+    const sourceId = createHash("sha256").update(`${eventId}:${item.id}`).digest("hex").slice(0, 32);
+    const times = ["google", "microsoft"].flatMap((provider) => {
+      const state = record(states[`${provider}:${sourceId}`]);
+      const time = state.addedAt || (state.status === "synced" ? state.updatedAt : null);
+      return typeof time === "string" && Number.isFinite(Date.parse(time)) ? [time] : [];
+    }).sort((a, b) => Date.parse(a) - Date.parse(b));
+    return times.length ? [{ id: item.id, addedAt: times[0] }] : [];
+  });
+}
 
 /** Each item has its own lease and provider identity; a failed batch can safely retry. */
 export async function syncSelectedSchoolMemoDates(input: {
@@ -72,7 +89,7 @@ export async function syncSelectedSchoolMemoDates(input: {
       previous.contentHash === contentHash &&
       typeof previous.externalEventId === "string"
     )
-      return { id: item.id, status: "unchanged" };
+      return { id: item.id, status: "unchanged", addedAt: typeof previous.addedAt === "string" ? previous.addedAt : typeof previous.updatedAt === "string" ? previous.updatedAt : undefined };
     const claimToken = randomUUID();
     const now = new Date().toISOString();
     const claimed = await schoolMemoCalendarDeps.query<{ state: RecordValue }>(
@@ -112,13 +129,19 @@ export async function syncSelectedSchoolMemoDates(input: {
         event,
         externalEventId,
       });
+      const addedAt = typeof claimedState.addedAt === "string"
+        ? claimedState.addedAt
+        : previous.status === "synced" && typeof previous.updatedAt === "string"
+          ? previous.updatedAt
+          : new Date(schoolMemoCalendarDeps.now()).toISOString();
       state = {
         status: "synced",
+        addedAt,
         contentHash,
         externalEventId: saved.externalEventId,
         updatedAt: new Date().toISOString(),
       };
-      result = { id: item.id, status: externalEventId ? "updated" : "added" };
+      result = { id: item.id, status: externalEventId ? "updated" : "added", addedAt };
     } catch {
       state = { status: "failed", updatedAt: new Date().toISOString() };
       result = {

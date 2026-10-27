@@ -1,3 +1,4 @@
+import { organizeLegacySchoolMemo } from "./school-memo-content";
 import { normalizeEventSectionLayout, type EventSectionLayout } from "./event-section-layout";
 import { EVENT_DESIGN_LAYOUTS, type EventCustomDesign } from "./event-custom-design";
 import { normalizeArrivalMap, type EventArrivalMap } from "./event-arrival-map";
@@ -48,12 +49,12 @@ export function normalizeEventPageComposition(value: unknown): EventPageComposit
   const sectionLayout = normalizeEventSectionLayout(raw.sectionLayout);
   const hero = normalizeEventHeroLayout(raw.hero);
   return layout || hero || sections.length || sectionLayout
-    ? {
+    ? organizeLegacySchoolMemo({
         version: 1,
         sections,
         ...(layout ? { layout } : {}),
         ...(hero ? { hero } : {}),
         ...(sectionLayout ? { sectionLayout } : {}),
-      }
+      })
     : undefined;
 }

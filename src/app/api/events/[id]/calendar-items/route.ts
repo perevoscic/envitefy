@@ -6,6 +6,7 @@ import { absoluteUrl } from "@/lib/absolute-url";
 import { buildEventProductPath } from "@/utils/event-product-route";
 import {
   SchoolMemoCalendarInputError,
+  schoolMemoCalendarAdditions,
   syncSelectedSchoolMemoDates,
 } from "@/lib/school-memo-calendar-sync";
 
@@ -68,4 +69,18 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       { status: 503 },
     );
   }
+}
+
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+  const session = await getServerSession(authOptions);
+  const userId = await resolveSessionUserId(session);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { id } = await context.params;
+  const row = await getEventHistoryById(id);
+  if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (row.user_id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  return NextResponse.json(
+    { additions: schoolMemoCalendarAdditions(id, row.data || {}) },
+    { headers: { "Cache-Control": "private, no-store" } },
+  );
 }

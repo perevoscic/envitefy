@@ -1,43 +1,17 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import path from "node:path";
 import test from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import sharp from "sharp";
-import ts from "typescript";
 
 const nativeRequire = createRequire(import.meta.url);
+const sharedLoad = nativeRequire("../../scripts/lib/event-messages-test-loader.cjs");
 function loader(mocks = {}) {
   const cache = new Map();
-  function load(relative) {
-    const file = path.resolve(relative);
-    if (cache.has(file)) return cache.get(file).exports;
-    const module = { exports: {} };
-    cache.set(file, module);
-    const code = ts.transpileModule(readFileSync(file, "utf8"), {
-      compilerOptions: {
-        module: ts.ModuleKind.CommonJS,
-        target: ts.ScriptTarget.ES2022,
-        jsx: ts.JsxEmit.ReactJSX,
-        esModuleInterop: true,
-      },
-    }).outputText;
-    const require = (name) => {
-      if (name in mocks) return mocks[name];
-      if (name === "lucide-react") return new Proxy({}, { get: () => () => null });
-      if (name.endsWith(".css")) return new Proxy({}, { get: (_, key) => String(key) });
-      if (!name.startsWith(".") && !name.startsWith("@/")) return nativeRequire(name);
-      const base = name.startsWith("@/")
-        ? path.resolve("src", name.slice(2))
-        : path.resolve(path.dirname(file), name);
-      return load([base, `${base}.ts`, `${base}.tsx`].find(existsSync));
-    };
-    new Function("require", "module", "exports", code)(require, module, module.exports);
-    return module.exports;
-  }
-  return load;
+  const stubs = { "lucide-react": new Proxy({}, { get: () => () => null }), ...mocks };
+  return relative => sharedLoad(relative, stubs, cache);
 }
 
 const load = loader();

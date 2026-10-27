@@ -74,7 +74,9 @@ test("school memos stay in Create after authorization without generic planning o
   expect(result.information?.details.venue).toBe("");
   expect(result.information?.details.location).toBe("");
   expect(result.information?.details.date).toBe("");
-  expect(result.information?.details.sections[0].body).toBe(sourceText);
+  expect(result.information?.details.sections.map(section => section.title)).toContain("Science");
+  expect(result.information?.details.sections.map(section => section.title)).toContain("At Home Partnership Tips");
+  expect(result.information?.details.sections.map(section => section.body).join("\n")).toContain("Binders are taken home and returned to school daily.");
   expect(stages).toEqual(["reading", "classifying", "extracting_details"]);
   const denied = await extractCreateInformation({ files: [file] }, new AbortController().signal, async () => false);
   expect(denied.accessRequired).toBe(true);
@@ -142,4 +144,23 @@ test.each([
   expect(result.information?.details.schoolTemplate).toBe(kind);
   expect(result.information?.details.sections.length).toBeGreaterThan(0);
   expect(result.information?.details.scanSchedule).toBeUndefined();
+});
+
+test("school uploads restore PDF letter spacing without changing the source transcript or calendar dates", async () => {
+  const { schoolMemoTypographyDeps } = await import("../school-memo-typography.server");
+  const previous = schoolMemoTypographyDeps.complete;
+  const spaced = '“. . . . R e p e n t , f o r t h e k i n g d o m o f h e a v e n h a s c o m e n e a r.”\nM a t t h e w 3 : 2\nT e s t : F r i d a y O c t o b e r 3 0 t h';
+  const clean = '“....Repent, for the kingdom of heaven has come near.”\nMatthew 3:2\n\nTest: Friday October 30th';
+  const sourceText = `School Weekly Memo\nOctober 26th\nImportant Reminders:\nBible Test Friday October 30th\nSpelling Test Friday October 30th\nBible - memory verse and multiple choice test\n\n${spaced}`;
+  createExtractionDeps.read = async () => ({ text: sourceText, images: [], pageCount: 1 });
+  createExtractionDeps.classify = async () => ({ category: "school", schoolTemplate: "weekly-memo", sport: null, confidence: "high", alternatives: [] });
+  schoolMemoTypographyDeps.complete = async input => { expect(input).toBe(sourceText); return input.replace(spaced, clean); };
+  try {
+    const result = await extractCreateInformation({ text: sourceText, timezone: "America/Chicago" }, new AbortController().signal);
+    expect(result.sourceText).toBe(sourceText);
+    const bible = result.information?.details.sections.find(section => section.title === "Bible");
+    expect(bible?.body).toContain(clean);
+    expect(bible?.body).not.toContain("M a t t h e w");
+    expect(result.information?.details.scanSchedule?.items.map(item => item.date)).toEqual(["2026-10-30", "2026-10-30"]);
+  } finally { schoolMemoTypographyDeps.complete = previous; }
 });

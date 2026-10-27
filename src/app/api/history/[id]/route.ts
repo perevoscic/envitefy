@@ -1,3 +1,4 @@
+import { readableSchoolMemoData } from "@/lib/school-memo-typography.server";
 import { checkDiscoveryCreationSaveAccess, checkEventCreationAccess, markDiscoveryCreationSaved } from "@/lib/creation-access-server";
 import { normalizeScanSchedule, scanScheduleHistoryFields } from "@/lib/scan-schedule";
 import { cookies } from "next/headers";
@@ -134,7 +135,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         bytes: estimateJsonBytes(row),
       });
     }
-    return NextResponse.json({ ...row, revision: eventRevision(row), permissions }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ ...row, data: await readableSchoolMemoData(row.data || {}), revision: eventRevision(row), permissions }, { headers: { "Cache-Control": "private, no-store" } });
   }
 
   const url = new URL(req.url);
@@ -168,6 +169,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 
   const publicRow = buildPublicHistoryResponse(await getEventHistoryPublicRenderById(id));
   if (!publicRow) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  publicRow.data = await readableSchoolMemoData(publicRow.data);
   if (HISTORY_ITEM_DEBUG) {
     console.error("[history] GET by id: response_bytes", {
       id,
