@@ -59,6 +59,9 @@
 
 .primary,
 .secondary {
+  --arrow-fill-color: var(--marketing-ink);
+  --arrow-fill-hover-ink: var(--marketing-paper);
+  --arrow-fill-arrow-ink: var(--marketing-paper);
   display: inline-flex;
   min-height: 3.25rem;
   align-items: center;

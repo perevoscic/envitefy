@@ -7,6 +7,27 @@
   --celebration-line: #e7d9d9;
 }
 
+.ctaLight {
+  --arrow-fill-color: var(--marketing-accent);
+  --arrow-fill-hover-ink: var(--marketing-paper);
+}
+
+.ctaPrimary {
+  --arrow-fill-color: var(--marketing-paper);
+  --arrow-fill-hover-ink: var(--marketing-accent);
+}
+
+.ctaInverse {
+  --arrow-fill-color: #fffaf5;
+  --arrow-fill-hover-ink: #412b3d;
+}
+
+.ctaText {
+  min-height: 2.5rem;
+  border-radius: 999px;
+  padding-inline-start: 0.65rem;
+}
+
 .editorial main > section:not(:first-child) {
   scroll-margin-top: 6rem;
 }

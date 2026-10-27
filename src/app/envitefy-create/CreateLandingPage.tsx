@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  ArrowDown,
-  ArrowRight,
   CalendarDays,
   Check,
   ChevronDown,
@@ -14,7 +12,6 @@ import {
   Users,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
@@ -22,6 +19,8 @@ import MarketingPage from "@/components/marketing/MarketingPage";
 import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import PublicConciergeWidget from "@/components/navigation/PublicConciergeWidget";
+import ArrowFillButton from "@/components/ui/ArrowFillButton";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 
 const navigation = [
   { label: "How it works", href: "#how-it-works" },
@@ -105,19 +104,10 @@ const faqs = [
 const primaryButton = styles.primary;
 
 function StartButton({ authenticated, onStart }: { authenticated: boolean; onStart: () => void }) {
-  const content = (
-    <>
-      Create with Envitefy <ArrowRight size={17} aria-hidden="true" />
-    </>
-  );
   return authenticated ? (
-    <Link href="/live-cards" className={primaryButton}>
-      {content}
-    </Link>
+    <ArrowFillLink href="/live-cards" className={primaryButton} label="Create with Envitefy" />
   ) : (
-    <button type="button" onClick={onStart} className={primaryButton}>
-      {content}
-    </button>
+    <ArrowFillButton onClick={onStart} className={primaryButton} label="Create with Envitefy" />
   );
 }
 
@@ -160,12 +150,11 @@ export default function CreateLandingPage() {
               </p>
               <div className={styles.actions}>
                 <StartButton authenticated={authenticated} onStart={() => openAuth("signup")} />
-                <a
+                <ArrowFillLink
                   href="#how-it-works"
-                  className="inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-[var(--marketing-muted)] hover:text-[var(--marketing-accent)]"
-                >
-                  See how it works <ArrowDown size={15} aria-hidden="true" />
-                </a>
+                  className="inline-flex min-h-12 items-center gap-2 rounded-full text-sm font-semibold text-[var(--marketing-muted)] [--arrow-fill-color:var(--marketing-accent)] [--arrow-fill-hover-ink:var(--marketing-paper)] [--arrow-fill-arrow-ink:var(--marketing-paper)] hover:text-[var(--marketing-accent)]"
+                  label="See how it works"
+                />
               </div>
               <p className="mt-5 text-xs leading-6 text-[var(--marketing-muted)]">
                 Start with what you know. Preview before you publish.
@@ -285,12 +274,11 @@ export default function CreateLandingPage() {
                 people together for. Choose what you want to make, and Envitefy Create helps you
                 shape it.
               </p>
-              <Link
+              <ArrowFillLink
                 href="/showcase"
-                className="mt-6 inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-[var(--marketing-accent)]"
-              >
-                Explore real Live Card examples <ArrowRight size={17} aria-hidden="true" />
-              </Link>
+                className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-full text-sm font-semibold text-[var(--marketing-accent)] [--arrow-fill-color:var(--marketing-accent)] [--arrow-fill-hover-ink:var(--marketing-paper)] [--arrow-fill-arrow-ink:var(--marketing-paper)]"
+                label="Explore real Live Card examples"
+              />
             </div>
             <div className="divide-y divide-[#ded3e9]">
               {[

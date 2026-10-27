@@ -20,6 +20,8 @@ import MarketingPage from "@/components/marketing/MarketingPage";
 import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import PublicConciergeWidget from "@/components/navigation/PublicConciergeWidget";
+import ArrowFillButton from "@/components/ui/ArrowFillButton";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import { marketingPageNavLinks } from "@/config/navigation";
 
 const steps = [
@@ -77,13 +79,13 @@ export default function SnapLanding() {
     setAuthModalOpen(true);
   };
   const startAction = isAuthenticated ? (
-    <Link href="/snap" className={styles.primary}>
-      Snap your invitation <ArrowRight aria-hidden="true" />
-    </Link>
+    <ArrowFillLink href="/snap" className={styles.primary} label="Snap your invitation" />
   ) : (
-    <button type="button" onClick={() => openAuth("signup")} className={styles.primary}>
-      Snap your invitation <ArrowRight aria-hidden="true" />
-    </button>
+    <ArrowFillButton
+      onClick={() => openAuth("signup")}
+      className={styles.primary}
+      label="Snap your invitation"
+    />
   );
 
   return (
@@ -112,9 +114,11 @@ export default function SnapLanding() {
             </p>
             <div className={styles.actions}>
               {startAction}
-              <a href="#how-it-works" className={styles.secondary}>
-                See how it works
-              </a>
+              <ArrowFillLink
+                href="#how-it-works"
+                className={styles.secondary}
+                label="See how it works"
+              />
             </div>
             <p className={styles.note}>Upload. Review. Publish when you’re ready.</p>
           </div>

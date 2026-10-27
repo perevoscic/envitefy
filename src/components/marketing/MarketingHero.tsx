@@ -1,7 +1,6 @@
-import { ArrowDownRight, ArrowRight } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import CategoryEditorialHero from "./CategoryEditorialHero";
 import type { EditorialCategory } from "./category-landing-themes";
 import styles from "./marketing.module.css";
@@ -72,21 +71,24 @@ export default function MarketingHero({
         <p className={styles.heroDescription}>{description}</p>
         <div className={styles.heroActions}>
           {primaryRequiresAccount ? (
-            <PublicCreationLink href={primaryHref} className={styles.primaryAction}>
-              {primaryLabel}
-              <ArrowRight size={17} aria-hidden="true" />
-            </PublicCreationLink>
+            <PublicCreationLink
+              href={primaryHref}
+              label={primaryLabel}
+              className={styles.primaryAction}
+            />
           ) : (
-            <Link href={primaryHref} className={styles.primaryAction}>
-              {primaryLabel}
-              <ArrowRight size={17} aria-hidden="true" />
-            </Link>
+            <ArrowFillLink
+              href={primaryHref}
+              label={primaryLabel}
+              className={styles.primaryAction}
+            />
           )}
           {secondaryHref && secondaryLabel && (
-            <Link href={secondaryHref} className={styles.secondaryAction}>
-              {secondaryLabel}
-              <ArrowDownRight size={17} aria-hidden="true" />
-            </Link>
+            <ArrowFillLink
+              href={secondaryHref}
+              label={secondaryLabel}
+              className={styles.secondaryAction}
+            />
           )}
         </div>
         <p className={styles.heroFootnote}>Made to share. Easy to open.</p>

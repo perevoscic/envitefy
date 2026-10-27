@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   CalendarDays,
   ClipboardList,
   Gift,
@@ -13,7 +12,6 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import Script from "next/script";
 import styles from "@/components/company/supporting-public.module.css";
 import GuestChatWidget from "@/components/guest-chat/GuestChatWidget";
@@ -21,6 +19,7 @@ import SnapEventPreview from "@/components/landing/SnapEventPreview";
 import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import PublicCreationLink from "@/components/marketing/PublicCreationLink";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import AboutTopNav from "./AboutTopNav";
 
@@ -233,10 +232,7 @@ export default function AboutPage() {
           </div>
           <div className={styles.links}>
             {pageLinks.map((link) => (
-              <Link key={link.href} href={link.href}>
-                {link.label}
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
+              <ArrowFillLink key={link.href} href={link.href} label={link.label} />
             ))}
           </div>
         </section>
@@ -316,18 +312,9 @@ export default function AboutPage() {
               Start with an original design or bring the information you already have.
             </p>
             <div className={styles.links}>
-              <PublicCreationLink href="/create">
-                Create your event
-                <ArrowRight size={16} aria-hidden="true" />
-              </PublicCreationLink>
-              <Link href="/snap">
-                Start with Snap
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-              <Link href="/contact">
-                Contact us
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
+              <PublicCreationLink href="/create" label="Create your event" />
+              <ArrowFillLink href="/snap" label="Start with Snap" />
+              <ArrowFillLink href="/contact" label="Contact us" />
             </div>
           </div>
         </section>

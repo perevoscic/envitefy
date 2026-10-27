@@ -49,10 +49,9 @@
   justify-content: center;
   box-sizing: border-box;
   padding: inherit;
-  border: inherit;
-  border-color: transparent;
+  border: 0;
   border-radius: inherit;
-  color: var(--arrow-fill-hover-ink, var(--public-header-paper, #fcf8f3));
+  color: var(--arrow-fill-hover-ink, var(--public-header-paper, #fcf8f3)) !important;
   -webkit-text-fill-color: currentColor;
   clip-path: inset(var(--arrow-fill-active-inset) round 999px);
   transition: clip-path 450ms cubic-bezier(0.785, 0.135, 0.15, 0.86);
@@ -73,7 +72,7 @@
   color: var(
     --arrow-fill-arrow-ink,
     var(--arrow-fill-hover-ink, var(--public-header-paper, #fcf8f3))
-  );
+  ) !important;
   transform: translateY(-50%);
 }
 
@@ -85,11 +84,11 @@
   transition: transform 450ms cubic-bezier(0.785, 0.135, 0.15, 0.86);
 }
 
-.currentArrow {
+.button.button [data-arrow-fill-arrow-current] {
   transform: translateX(var(--arrow-fill-current-x)) scale(var(--arrow-fill-current-scale));
 }
 
-.nextArrow {
+.button.button [data-arrow-fill-arrow-next] {
   transform: translateX(var(--arrow-fill-next-x)) scale(var(--arrow-fill-next-scale));
 }
 
@@ -97,7 +96,8 @@
   z-index: 5;
 }
 
-.button:enabled:is(:focus-visible, :active) {
+.button:not(:disabled):not([aria-disabled="true"]):is(:focus-visible, :active),
+:global(a:focus-visible) .button {
   --arrow-fill-active-inset: 0px 0px 0px 0px;
   --arrow-fill-current-x: 150%;
   --arrow-fill-current-scale: 0;
@@ -106,7 +106,8 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .button:enabled:hover {
+  .button:not(:disabled):not([aria-disabled="true"]):hover,
+  :global(a:hover) .button {
     --arrow-fill-active-inset: 0px 0px 0px 0px;
     --arrow-fill-current-x: 150%;
     --arrow-fill-current-scale: 0;

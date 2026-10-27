@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight, CalendarDays, MapPin, Share2, Users } from "lucide-react";
+import { CalendarDays, MapPin, Share2, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -8,6 +8,7 @@ import MarketingPage from "@/components/marketing/MarketingPage";
 import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import {
   getSportEventPreset,
   SPORT_EVENT_PRESETS,
@@ -258,12 +259,16 @@ export default function SportsLandingPage() {
                 ))}
               </div>
               <div className={styles.actions}>
-                <a href={primaryHref} className={styles.primary}>
-                  Choose your design <ArrowRight aria-hidden="true" />
-                </a>
-                <Link href="/gymnastics" className={styles.secondary}>
-                  Gymnastics meet pages
-                </Link>
+                <ArrowFillLink
+                  href={primaryHref}
+                  className={styles.primary}
+                  label="Choose your design"
+                />
+                <ArrowFillLink
+                  href="/gymnastics"
+                  className={styles.secondary}
+                  label="Gymnastics meet pages"
+                />
               </div>
             </div>
           </div>
@@ -310,12 +315,12 @@ export default function SportsLandingPage() {
           <Share2 className="mx-auto mb-5 h-6 w-6" aria-hidden="true" />
           <h2 className={styles.sectionTitle}>Give your team a place to come together.</h2>
           <div className={styles.actions}>
-            <a href={primaryHref} className={styles.primary}>
-              Browse templates <ArrowRight aria-hidden="true" />
-            </a>
-            <Link href="/snap?auth=signup" className={styles.secondary}>
-              Upload an existing schedule
-            </Link>
+            <ArrowFillLink href={primaryHref} className={styles.primary} label="Browse templates" />
+            <ArrowFillLink
+              href="/snap?auth=signup"
+              className={styles.secondary}
+              label="Upload an existing schedule"
+            />
           </div>
         </section>
       </main>

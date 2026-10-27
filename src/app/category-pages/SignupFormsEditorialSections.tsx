@@ -9,7 +9,8 @@ import {
   Users,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
+import styles from "./CelebrationLanding.module.css";
 import type { UseCasePage } from "./category-page-data";
 import SignupBoardPreview from "./SignupBoardPreview";
 
@@ -226,13 +227,12 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
                 );
               })}
             </div>
-            <Link
+            <ArrowFillLink
               href={browseHref}
               data-public-primary
-              className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#18214d] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_50px_rgba(24,33,77,0.22)] transition hover:-translate-y-0.5"
-            >
-              Browse templates
-            </Link>
+              className={`${styles.ctaPrimary} mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#18214d] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_50px_rgba(24,33,77,0.22)] transition hover:-translate-y-0.5`}
+              label="Browse templates"
+            />
           </div>
         </div>
       </section>
@@ -285,19 +285,17 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
             Create the signup, share one link, and let Envitefy keep every commitment organized.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link
+            <ArrowFillLink
               href={browseHref}
               data-public-primary
-              className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#18214d] transition hover:-translate-y-0.5"
-            >
-              Browse templates
-            </Link>
-            <Link
+              className={`${styles.ctaLight} inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#18214d] transition hover:-translate-y-0.5`}
+              label="Browse templates"
+            />
+            <ArrowFillLink
               href={page.secondaryHref}
-              className="inline-flex min-h-12 items-center rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur"
-            >
-              Read the signup guide
-            </Link>
+              className={`${styles.ctaInverse} inline-flex min-h-12 items-center rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur`}
+              label="Read the signup guide"
+            />
           </div>
         </div>
       </section>

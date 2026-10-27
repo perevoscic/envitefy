@@ -1,19 +1,9 @@
 "use client";
 
-import {
-  ArrowRight,
-  CalendarDays,
-  Check,
-  Clock3,
-  Gift,
-  MapPin,
-  Minus,
-  Plus,
-  Utensils,
-} from "lucide-react";
+import { CalendarDays, Check, Clock3, Gift, MapPin, Minus, Plus, Utensils } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 
 type DemoPanel = "rsvp" | "details" | "gifts";
 type RsvpChoice = "Going" | "Maybe" | "Not going";
@@ -213,13 +203,11 @@ export default function BirthdayInvitationDemo({ primaryHref }: { primaryHref: s
           </div>
         ) : null}
 
-        <Link
+        <ArrowFillLink
           href={primaryHref}
-          className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--birthday-ink)] px-5 text-sm font-bold text-white transition hover:bg-[#49372e]"
-        >
-          Create a page like this
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
+          className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--birthday-ink)] px-5 text-sm font-bold text-white transition hover:bg-[#49372e] [--arrow-fill-color:#fff] [--arrow-fill-hover-ink:var(--birthday-ink)]"
+          label="Create a page like this"
+        />
         <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[10px] font-semibold text-[#75645b]">
           <Check className="h-3 w-3" aria-hidden="true" />
           This preview is interactive

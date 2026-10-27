@@ -1,35 +1,24 @@
 import { ArrowRight } from "lucide-react";
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, CSSProperties } from "react";
 import AnimatedBorderButton from "./AnimatedBorderButton";
 import styles from "./ArrowFillButton.module.css";
+import LiquidMetalButton from "./LiquidMetalButton";
 
 type ArrowFillButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
   label: string;
   animatedBorder?: boolean;
+  liquidBorder?: boolean;
 };
 
-/** Native button with a theme-colored arrow circle that expands on interaction. */
-export default function ArrowFillButton({
-  label,
-  animatedBorder = false,
-  className,
-  style,
-  type = "button",
-  ...props
-}: ArrowFillButtonProps) {
-  const Button = animatedBorder ? AnimatedBorderButton : "button";
+export const arrowFillClassName = styles.button;
+export const arrowFillPaddingStyle: CSSProperties = {
+  paddingInlineEnd:
+    "calc(var(--arrow-fill-circle, 28px) + var(--arrow-fill-right, 6px) + var(--arrow-fill-label-gap, 10px))",
+};
+
+export function ArrowFillContent({ label }: { label: string }) {
   return (
-    <Button
-      {...props}
-      type={type}
-      className={[styles.button, className].filter(Boolean).join(" ")}
-      style={{
-        paddingInlineEnd:
-          "calc(var(--arrow-fill-circle, 28px) + var(--arrow-fill-right, 6px) + var(--arrow-fill-label-gap, 10px))",
-        ...style,
-      }}
-      data-arrow-fill-button=""
-    >
+    <>
       <span className={styles.label} data-arrow-fill-label="">
         {label}
       </span>
@@ -45,6 +34,38 @@ export default function ArrowFillButton({
           strokeWidth={1.8}
         />
       </span>
+    </>
+  );
+}
+
+/** Native button with a theme-colored arrow circle that expands on interaction. */
+export default function ArrowFillButton({
+  label,
+  animatedBorder = false,
+  liquidBorder = false,
+  className,
+  style,
+  type = "button",
+  ...props
+}: ArrowFillButtonProps) {
+  const Button = liquidBorder
+    ? LiquidMetalButton
+    : animatedBorder
+      ? AnimatedBorderButton
+      : "button";
+  return (
+    <Button
+      {...props}
+      {...(liquidBorder ? { label } : {})}
+      type={type}
+      className={[styles.button, className].filter(Boolean).join(" ")}
+      style={{
+        ...arrowFillPaddingStyle,
+        ...style,
+      }}
+      data-arrow-fill-button=""
+    >
+      <ArrowFillContent label={label} />
     </Button>
   );
 }

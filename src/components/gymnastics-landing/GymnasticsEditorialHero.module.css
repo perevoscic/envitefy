@@ -147,6 +147,9 @@
 }
 
 .primary {
+  --arrow-fill-color: var(--hero-paper);
+  --arrow-fill-hover-ink: var(--hero-ink);
+  --arrow-fill-arrow-ink: var(--hero-ink);
   min-height: 48px;
   padding: 0.8rem 1rem;
   border: 1px solid var(--hero-ink);
@@ -161,6 +164,10 @@
 }
 
 .sampleLink {
+  --arrow-fill-color: var(--hero-ink);
+  --arrow-fill-hover-ink: var(--hero-paper);
+  --arrow-fill-arrow-ink: var(--hero-paper);
+  border-radius: 999px;
   justify-content: flex-start;
   color: var(--hero-ink);
   text-decoration: underline;

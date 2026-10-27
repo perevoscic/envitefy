@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowRight,
   CalendarDays,
   Check,
   ClipboardList,
@@ -12,7 +11,6 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { type CSSProperties, useEffect, useState } from "react";
@@ -22,6 +20,8 @@ import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import PublicConciergeWidget from "@/components/navigation/PublicConciergeWidget";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import ArrowFillButton from "@/components/ui/ArrowFillButton";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import { GradientBackgroundLayer } from "@/components/ui/gradient-backgrounds";
 import { marketingPageNavLinks } from "@/config/navigation";
 import hero from "./GymnasticsEditorialHero.module.css";
@@ -156,13 +156,17 @@ export default function GymnasticsLanding() {
     setAuthModalOpen(true);
   };
   const startAction = isAuthenticated ? (
-    <Link href="/event/gymnastics" className={styles.primary}>
-      Create your meet page <ArrowRight aria-hidden="true" />
-    </Link>
+    <ArrowFillLink
+      href="/event/gymnastics"
+      className={styles.primary}
+      label="Create your meet page"
+    />
   ) : (
-    <button className={styles.primary} type="button" onClick={() => openAuth("signup")}>
-      Create your meet page <ArrowRight aria-hidden="true" />
-    </button>
+    <ArrowFillButton
+      className={styles.primary}
+      onClick={() => openAuth("signup")}
+      label="Create your meet page"
+    />
   );
   return (
     <MarketingPage tone="sports" className={`${styles.editorial} ${hero.page}`}>
@@ -225,12 +229,16 @@ export default function GymnasticsLanding() {
                   with every family.
                 </p>
                 <div className={hero.actions}>
-                  <Link href="/gymnastics/templates" className={hero.primary}>
-                    Create your meet page <ArrowRight aria-hidden="true" />
-                  </Link>
-                  <a href="#meet-demo" className={hero.sampleLink}>
-                    See a sample meet <ArrowRight aria-hidden="true" />
-                  </a>
+                  <ArrowFillLink
+                    href="/gymnastics/templates"
+                    className={hero.primary}
+                    label="Create your meet page"
+                  />
+                  <ArrowFillLink
+                    href="#meet-demo"
+                    className={hero.sampleLink}
+                    label="See a sample meet"
+                  />
                 </div>
                 <p className={hero.note}>One link. Everything families need.</p>
               </div>
@@ -273,9 +281,11 @@ export default function GymnasticsLanding() {
                 From the first check-in to the last award, give every family one place to find the
                 details.
               </p>
-              <Link href="/gymnastics/templates" className={showcase.action}>
-                Create your meet page <ArrowRight aria-hidden="true" />
-              </Link>
+              <ArrowFillLink
+                href="/gymnastics/templates"
+                className={showcase.action}
+                label="Create your meet page"
+              />
             </div>
             <div className={showcase.preview}>
               <MeetPreview />
@@ -331,9 +341,11 @@ export default function GymnasticsLanding() {
               Keep your meet’s information. Give it a home that’s easier to read, personalize and
               share.
             </p>
-            <Link href="/gymnastics/templates" className={product.textLink}>
-              Find your starting design <ArrowRight aria-hidden="true" />
-            </Link>
+            <ArrowFillLink
+              href="/gymnastics/templates"
+              className={product.textLink}
+              label="Find your starting design"
+            />
             <div className={product.typeTile} aria-hidden="true">
               <span>Your meet.</span>
               <strong>
@@ -464,9 +476,11 @@ export default function GymnasticsLanding() {
                 Pair your meet page with a separate Sign-up Form for roles, supplies or time slots.
               </p>
             </div>
-            <Link href="/signup-forms" className={styles.secondary}>
-              Explore Sign-up Forms <ArrowRight aria-hidden="true" />
-            </Link>
+            <ArrowFillLink
+              href="/signup-forms"
+              className={styles.secondary}
+              label="Explore Sign-up Forms"
+            />
           </div>
         </section>
         <GymnasticsLandingFaq />
@@ -480,9 +494,7 @@ export default function GymnasticsLanding() {
           <p className={styles.intro}>Make the page. Share the plan. Be there for the moment.</p>
           <div className={styles.actions}>
             {startAction}
-            <Link href="/snap" className={styles.secondary}>
-              Explore Snap
-            </Link>
+            <ArrowFillLink href="/snap" className={styles.secondary} label="Explore Snap" />
           </div>
         </section>
       </main>

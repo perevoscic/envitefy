@@ -5,15 +5,21 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { type AnchorHTMLAttributes, type MouseEvent, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  ArrowFillContent,
+  arrowFillClassName,
+  arrowFillPaddingStyle,
+} from "@/components/ui/ArrowFillButton";
 import { type SignupIntent, signupIntentForMarketingPath } from "@/lib/signup-intent";
 
 const AuthModal = dynamic(() => import("@/components/auth/AuthModal"), { ssr: false });
 
 type PublicCreationLinkProps = Pick<
   AnchorHTMLAttributes<HTMLAnchorElement>,
-  "children" | "className" | "aria-label" | "title"
+  "children" | "className" | "style" | "aria-label" | "title"
 > & {
   href: string;
+  label?: string;
   signupIntent?: SignupIntent;
 };
 
@@ -21,6 +27,9 @@ type PublicCreationLinkProps = Pick<
 export default function PublicCreationLink({
   href,
   children,
+  label,
+  className,
+  style,
   signupIntent,
   ...linkProps
 }: PublicCreationLinkProps) {
@@ -50,11 +59,14 @@ export default function PublicCreationLink({
       <Link
         {...linkProps}
         href={href}
+        className={label ? [arrowFillClassName, className].filter(Boolean).join(" ") : className}
+        style={label ? { ...arrowFillPaddingStyle, ...style } : style}
         onClick={onClick}
         aria-haspopup={status === "authenticated" ? undefined : "dialog"}
         data-public-create-destination={href}
+        data-arrow-fill-button={label ? "" : undefined}
       >
-        {children}
+        {label ? <ArrowFillContent label={label} /> : children}
       </Link>
       {open &&
         typeof document !== "undefined" &&

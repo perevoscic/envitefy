@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   CalendarDays,
   ClipboardList,
   Gift,
@@ -13,13 +12,13 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import Script from "next/script";
 import type { CSSProperties } from "react";
 import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import { templateCategoryForPath } from "@/lib/template-categories";
 import publicStyles from "@/styles/public-appearance.module.css";
 import editorialStyles from "./CelebrationLanding.module.css";
@@ -287,13 +286,11 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
                       Give guests one page they can actually use.
                     </h2>
                   </div>
-                  <Link
+                  <ArrowFillLink
                     href={primaryHref}
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#17111e] transition hover:-translate-y-0.5"
-                  >
-                    Browse templates
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
+                    className={`${editorialStyles.ctaLight} inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#17111e] transition hover:-translate-y-0.5`}
+                    label="Browse templates"
+                  />
                 </div>
               </div>
             </section>

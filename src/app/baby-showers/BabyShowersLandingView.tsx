@@ -12,13 +12,13 @@ import {
   Users,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import Script from "next/script";
 import type { CSSProperties } from "react";
 import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import publicStyles from "@/styles/public-appearance.module.css";
 import editorialStyles from "../category-pages/CelebrationLanding.module.css";
 import CelebrationPreview from "../category-pages/CelebrationPreview";
@@ -177,12 +177,11 @@ function CollectionCard({ collection }: { collection: (typeof collections)[numbe
           <span className="text-[0.62rem] font-bold uppercase tracking-[0.15em] text-[var(--marketing-muted)]">
             Invite + live page
           </span>
-          <Link
+          <ArrowFillLink
             href={createHref}
-            className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--marketing-accent)] transition hover:gap-2.5"
-          >
-            Browse templates
-          </Link>
+            className={`${editorialStyles.ctaLight} ${editorialStyles.ctaText} inline-flex items-center gap-1.5 text-sm font-bold text-[var(--marketing-accent)] transition hover:gap-2.5`}
+            label="Browse templates"
+          />
         </div>
       </div>
     </article>
@@ -280,9 +279,11 @@ export default function BabyShowersLandingView() {
               ))}
             </div>
             <div className="mt-10 text-center">
-              <Link href={createHref} className={styles.textLink}>
-                Browse templates
-              </Link>
+              <ArrowFillLink
+                href={createHref}
+                className={styles.textLink}
+                label="Browse templates"
+              />
             </div>
           </div>
         </section>
@@ -589,9 +590,11 @@ export default function BabyShowersLandingView() {
                 Create your baby shower invitation, add the registry, and give every guest one
                 beautiful place for the details.
               </p>
-              <Link href={createHref} className={cx(styles.primaryCta, "mt-8")}>
-                Browse templates
-              </Link>
+              <ArrowFillLink
+                href={createHref}
+                className={cx(styles.primaryCta, "mt-8")}
+                label="Browse templates"
+              />
             </div>
           </div>
         </section>

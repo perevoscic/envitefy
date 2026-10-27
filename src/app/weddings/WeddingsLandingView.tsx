@@ -1,11 +1,11 @@
-import { ArrowRight, Gift, ListChecks, UtensilsCrossed } from "lucide-react";
-import Link from "next/link";
+import { Gift, ListChecks, UtensilsCrossed } from "lucide-react";
 import Script from "next/script";
 import type { CSSProperties } from "react";
 import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import publicStyles from "@/styles/public-appearance.module.css";
 import editorialStyles from "../category-pages/CelebrationLanding.module.css";
 import CelebrationPreview from "../category-pages/CelebrationPreview";
@@ -327,12 +327,11 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                     <p className="mt-3 flex-1 text-xs font-light leading-relaxed text-slate-600 sm:text-sm">
                       {suite.body}
                     </p>
-                    <Link
+                    <ArrowFillLink
                       href={primaryHref}
-                      className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#795b3d] transition group-hover:gap-3"
-                    >
-                      Browse templates
-                    </Link>
+                      className={`${editorialStyles.ctaLight} ${editorialStyles.ctaText} mt-6 inline-flex self-start items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#795b3d] transition group-hover:gap-3`}
+                      label="Browse templates"
+                    />
                   </div>
                 </article>
               ))}
@@ -357,13 +356,11 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
             </div>
             <WeddingStudioPreview />
             <div className="mt-10 text-center">
-              <Link
+              <ArrowFillLink
                 href={studioHref}
-                className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-8 py-3.5 text-xs font-medium uppercase tracking-widest text-white transition hover:bg-[#634932]"
-              >
-                Customize Your Wedding Invitation
-                <ArrowRight className="h-3.5 w-3.5 text-[#c0a37b]" aria-hidden="true" />
-              </Link>
+                className={`${editorialStyles.ctaPrimary} inline-flex items-center gap-2 rounded-full bg-slate-900 px-8 py-3.5 text-xs font-medium uppercase tracking-widest text-white transition hover:bg-[#634932]`}
+                label="Customize Your Wedding Invitation"
+              />
             </div>
           </div>
         </section>
@@ -482,12 +479,11 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                   ready.
                 </p>
                 <div className="pt-4">
-                  <Link
+                  <ArrowFillLink
                     href={primaryHref}
                     className={`${styles.finalButton} inline-block rounded-full px-10 py-4 text-xs font-semibold uppercase tracking-widest shadow-xl transition`}
-                  >
-                    Browse templates
-                  </Link>
+                    label="Browse templates"
+                  />
                 </div>
               </div>
             </div>

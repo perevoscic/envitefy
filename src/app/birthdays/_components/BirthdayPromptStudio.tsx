@@ -1,9 +1,9 @@
 "use client";
 
-import { ArrowRight, Sparkles, WandSparkles } from "lucide-react";
+import { Sparkles, WandSparkles } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import { birthdayPromptExamples } from "../birthday-landing-data";
 
 export default function BirthdayPromptStudio({ primaryHref }: { primaryHref: string }) {
@@ -84,13 +84,11 @@ export default function BirthdayPromptStudio({ primaryHref }: { primaryHref: str
             </h3>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
               <p className="text-sm text-white/72">{example.resultNote}</p>
-              <Link
+              <ArrowFillLink
                 href={primaryHref}
-                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-bold text-[var(--birthday-ink)] transition hover:-translate-y-0.5"
-              >
-                Describe your birthday
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-bold text-[var(--birthday-ink)] transition hover:-translate-y-0.5 [--arrow-fill-color:var(--birthday-ink)] [--arrow-fill-hover-ink:#fff]"
+                label="Describe your birthday"
+              />
             </div>
           </div>
         </div>

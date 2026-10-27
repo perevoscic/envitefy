@@ -12,6 +12,13 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  ArrowFillContent,
+  arrowFillClassName,
+  arrowFillPaddingStyle,
+} from "@/components/ui/ArrowFillButton";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
+import editorialStyles from "../../category-pages/CelebrationLanding.module.css";
 import type { UseCasePage } from "../../category-pages/category-page-data";
 import {
   birthdayFinalImage,
@@ -133,13 +140,12 @@ function HostDashboard({ primaryHref }: { primaryHref: string }) {
             body="No spreadsheet. No notes-app tally. No searching the group chat for who still has not replied."
             inverse
           />
-          <Link
+          <ArrowFillLink
             href={primaryHref}
             data-public-primary
-            className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--birthday-yellow)] px-6 py-3 text-sm font-bold text-[var(--birthday-green)] transition hover:-translate-y-0.5"
-          >
-            Browse templates
-          </Link>
+            className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--birthday-yellow)] px-6 py-3 text-sm font-bold text-[var(--birthday-green)] transition hover:-translate-y-0.5 [--arrow-fill-color:var(--birthday-green)] [--arrow-fill-hover-ink:var(--birthday-yellow)]"
+            label="Browse templates"
+          />
         </div>
 
         <div
@@ -247,12 +253,12 @@ function MilestoneBirthdays() {
                   {milestone.title}
                 </h3>
                 <p className="mt-3 max-w-lg text-sm leading-7 text-white/72">{milestone.body}</p>
-                <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold">
-                  Create this celebration
-                  <ArrowRight
-                    className="h-4 w-4 transition group-hover:translate-x-1"
-                    aria-hidden="true"
-                  />
+                <span
+                  className={`${arrowFillClassName} mt-6 inline-flex min-h-10 items-center gap-2 rounded-full pl-3 text-sm font-bold [--arrow-fill-color:#fff] [--arrow-fill-hover-ink:var(--birthday-ink)]`}
+                  style={arrowFillPaddingStyle}
+                  data-arrow-fill-button=""
+                >
+                  <ArrowFillContent label="Create this celebration" />
                 </span>
               </div>
             </Link>
@@ -315,13 +321,11 @@ function StartWays() {
                 ))}
               </div>
             </div>
-            <Link
+            <ArrowFillLink
               href="/snap?auth=signup"
-              className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--birthday-accent)] underline decoration-[#d9a48a] underline-offset-8"
-            >
-              Try SNAP
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
+              className={`${editorialStyles.ctaText} mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--birthday-accent)] underline decoration-[#d9a48a] underline-offset-8 [--arrow-fill-color:var(--birthday-accent)] [--arrow-fill-hover-ink:var(--marketing-paper)]`}
+              label="Try SNAP"
+            />
           </article>
 
           <article className="rounded-[2rem] bg-[#302742] p-6 text-white shadow-[0_18px_50px_rgba(34,24,48,0.15)] sm:p-8">
@@ -355,13 +359,11 @@ function StartWays() {
                 </div>
               </div>
             </div>
-            <Link
+            <ArrowFillLink
               href="/event/birthdays"
-              className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--birthday-yellow)] underline decoration-[#ffd66b]/40 underline-offset-8"
-            >
-              Create with Envitefy
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
+              className={`${editorialStyles.ctaText} mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--birthday-yellow)] underline decoration-[#ffd66b]/40 underline-offset-8 [--arrow-fill-color:var(--birthday-yellow)] [--arrow-fill-hover-ink:var(--birthday-green)]`}
+              label="Create with Envitefy"
+            />
           </article>
         </div>
       </div>
@@ -467,13 +469,12 @@ function FinalCta({ page, primaryHref }: { page: UseCasePage; primaryHref: strin
           <p className="mt-5 max-w-xl text-sm leading-7 !text-white/90 drop-shadow-[0_2px_10px_rgba(0,0,0,0.7)] sm:text-base">
             Start with a prompt, an invitation photo, or a simple conversation.
           </p>
-          <Link
+          <ArrowFillLink
             href={primaryHref}
             data-public-primary
-            className="mt-8 inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-[var(--birthday-yellow)] px-7 py-4 text-sm font-bold text-[var(--birthday-green)] shadow-lg transition hover:-translate-y-0.5"
-          >
-            Browse templates
-          </Link>
+            className="mt-8 inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-[var(--birthday-yellow)] px-7 py-4 text-sm font-bold text-[var(--birthday-green)] shadow-lg transition hover:-translate-y-0.5 [--arrow-fill-color:var(--birthday-green)] [--arrow-fill-hover-ink:var(--birthday-yellow)]"
+            label="Browse templates"
+          />
         </div>
       </div>
     </section>

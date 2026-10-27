@@ -1,6 +1,5 @@
-import { ArrowDownRight, ArrowRight } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import styles from "./CategoryEditorialHero.module.css";
 import { categoryLandingThemes, type EditorialCategory } from "./category-landing-themes";
 import type { MarketingHeroProps } from "./MarketingHero";
@@ -25,7 +24,7 @@ export default function CategoryEditorialHero({
 }: MarketingHeroProps & { category: EditorialCategory }) {
   const theme = categoryLandingThemes[category];
   const artwork = image ? { src: image, alt: imageAlt || "" } : theme.artwork;
-  const PrimaryLink = primaryRequiresAccount ? PublicCreationLink : Link;
+  const PrimaryLink = primaryRequiresAccount ? PublicCreationLink : ArrowFillLink;
 
   return (
     <>
@@ -69,15 +68,13 @@ export default function CategoryEditorialHero({
               <p className={styles.lead}>{lead || theme.lead}</p>
               <p className={styles.description}>{description}</p>
               <div className={styles.actions}>
-                <PrimaryLink href={primaryHref} className={styles.primary}>
-                  {primaryLabel}
-                  <ArrowRight size={17} aria-hidden="true" />
-                </PrimaryLink>
+                <PrimaryLink href={primaryHref} label={primaryLabel} className={styles.primary} />
                 {secondaryHref && secondaryLabel && (
-                  <Link href={secondaryHref} className={styles.secondary}>
-                    {secondaryLabel}
-                    <ArrowDownRight size={17} aria-hidden="true" />
-                  </Link>
+                  <ArrowFillLink
+                    href={secondaryHref}
+                    label={secondaryLabel}
+                    className={styles.secondary}
+                  />
                 )}
               </div>
             </div>

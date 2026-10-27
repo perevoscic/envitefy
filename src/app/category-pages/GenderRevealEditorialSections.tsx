@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   CalendarDays,
   Camera,
   Check,
@@ -12,8 +11,9 @@ import {
   Users,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import PublicCreationLink from "@/components/marketing/PublicCreationLink";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
+import styles from "./CelebrationLanding.module.css";
 import type { UseCasePage } from "./category-page-data";
 
 const moments = [
@@ -281,11 +281,9 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
             <PublicCreationLink
               href={page.primaryHref}
               data-public-primary
-              className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#2b1748] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_50px_rgba(43,23,72,0.2)] transition hover:-translate-y-0.5"
-            >
-              {page.primaryCta}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </PublicCreationLink>
+              className={`${styles.ctaPrimary} mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#2b1748] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_50px_rgba(43,23,72,0.2)] transition hover:-translate-y-0.5`}
+              label={page.primaryCta}
+            />
           </div>
         </div>
       </section>
@@ -346,13 +344,11 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                   ))}
                 </div>
               </div>
-              <Link
+              <ArrowFillLink
                 href="/snap?auth=signup"
-                className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#8a3d5d] underline decoration-[#d7a8b8] underline-offset-8"
-              >
-                Try SNAP
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+                className={`${styles.ctaLight} ${styles.ctaText} mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#8a3d5d] underline decoration-[#d7a8b8] underline-offset-8`}
+                label="Try SNAP"
+              />
             </article>
 
             <article className="rounded-[2rem] bg-[#251b2e] p-6 text-white sm:p-8">
@@ -385,13 +381,11 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                   </div>
                 </div>
               </div>
-              <Link
+              <ArrowFillLink
                 href="/event/gender-reveal"
-                className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#f3b6cf] underline decoration-[#f3b6cf]/40 underline-offset-8"
-              >
-                Create with Envitefy
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+                className={`${styles.ctaInverse} ${styles.ctaText} mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#f3b6cf] underline decoration-[#f3b6cf]/40 underline-offset-8`}
+                label="Create with Envitefy"
+              />
             </article>
           </div>
         </div>
@@ -446,17 +440,14 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
             <PublicCreationLink
               href={page.primaryHref}
               data-public-primary
-              className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#241b29] transition hover:-translate-y-0.5"
-            >
-              Create your reveal page
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </PublicCreationLink>
-            <Link
+              className={`${styles.ctaLight} inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#241b29] transition hover:-translate-y-0.5`}
+              label="Create your reveal page"
+            />
+            <ArrowFillLink
               href={page.secondaryHref}
-              className="inline-flex min-h-12 items-center rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur"
-            >
-              Upload an invitation
-            </Link>
+              className={`${styles.ctaInverse} inline-flex min-h-12 items-center rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur`}
+              label="Upload an invitation"
+            />
           </div>
         </div>
       </section>

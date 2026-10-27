@@ -74,6 +74,8 @@
 }
 
 .primaryCta {
+  --arrow-fill-color: var(--marketing-paper);
+  --arrow-fill-hover-ink: var(--baby-orange);
   background: var(--baby-orange);
   color: var(--marketing-paper);
   box-shadow: 0 16px 32px rgba(230, 102, 39, 0.25);
@@ -161,6 +163,8 @@
 }
 
 .textLink {
+  --arrow-fill-color: var(--marketing-accent);
+  --arrow-fill-hover-ink: var(--marketing-paper);
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;

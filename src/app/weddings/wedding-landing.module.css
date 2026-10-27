@@ -39,6 +39,8 @@
 }
 
 .finalButton {
+  --arrow-fill-color: #523c2a;
+  --arrow-fill-hover-ink: #fff;
   background: #fff;
   color: #523c2a;
 }
@@ -63,6 +65,8 @@
 
 :global(html.dark) .studioShareButton,
 :global(html.dark) .finalButton {
+  --arrow-fill-color: var(--marketing-paper);
+  --arrow-fill-hover-ink: var(--marketing-accent);
   background: var(--marketing-accent);
   color: var(--marketing-paper);
 }

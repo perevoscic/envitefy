@@ -1,7 +1,6 @@
 "use client";
-import { ArrowRight, CalendarDays, Camera, MapPinned, Share2, Upload, Users } from "lucide-react";
+import { CalendarDays, Camera, MapPinned, Share2, Upload, Users } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
@@ -16,6 +15,7 @@ import MarketingPage from "@/components/marketing/MarketingPage";
 import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import editorial from "@/components/sports-landing/SportsEditorialSections.module.css";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 
 const features = [
   {
@@ -163,9 +163,11 @@ export default function FootballLanding() {
                 Choose a design, then add your schedule and team details.
               </p>
             </div>
-            <Link href="/football/templates" className={styles.secondary}>
-              Browse all {FOOTBALL_GALLERY_DESIGNS.length} designs <ArrowRight aria-hidden="true" />
-            </Link>
+            <ArrowFillLink
+              href="/football/templates"
+              className={styles.secondary}
+              label={`Browse all ${FOOTBALL_GALLERY_DESIGNS.length} designs`}
+            />
           </div>
           <TemplateMasonryGrid>
             {FOOTBALL_GALLERY_DESIGNS.slice(0, 8).map((design) => (
@@ -224,9 +226,7 @@ export default function FootballLanding() {
                 you need them.
               </p>
               <div className={styles.actions}>
-                <Link href="/snap" className={styles.secondary}>
-                  Explore Snap <ArrowRight aria-hidden="true" />
-                </Link>
+                <ArrowFillLink href="/snap" className={styles.secondary} label="Explore Snap" />
               </div>
             </div>
           </div>
@@ -246,9 +246,11 @@ export default function FootballLanding() {
         <section className={styles.closing}>
           <h2 className={styles.sectionTitle}>Give your team a home for the season.</h2>
           <div className={styles.actions}>
-            <Link href="/football/templates" className={styles.primary}>
-              Choose your football design <ArrowRight aria-hidden="true" />
-            </Link>
+            <ArrowFillLink
+              href="/football/templates"
+              className={styles.primary}
+              label="Choose your football design"
+            />
           </div>
         </section>
       </main>
