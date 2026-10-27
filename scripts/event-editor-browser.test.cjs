@@ -75,6 +75,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
     urlWrites = [],
     records = new Map();
   let failSave = false;
+  let editorRole = "owner";
   let failNextGalleryUpload = false;
   let galleryUploadCount = 0;
   const galleryPixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=", "base64");
@@ -156,7 +157,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
           await new Promise(resolve => setTimeout(resolve, 250));
         return route.fulfill({
           contentType: "application/json",
-          body: JSON.stringify({ ...records.get(id), permissions: { role: "owner", canManageCollaborators: true } }),
+          body: JSON.stringify({ ...records.get(id), permissions: { role: editorRole, canManageCollaborators: editorRole === "owner" } }),
         });
       }
       const body = req.postDataJSON();
@@ -245,7 +246,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
       const buttons = await actions.getByRole("button").evaluateAll((elements) => elements.map((button) => {
         const { x, y, width, height } = button.getBoundingClientRect();
         const style = getComputedStyle(button);
-        return { label: button.textContent.trim(), x, y, width, height, radius: Math.max(...[style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomLeftRadius, style.borderBottomRightRadius].map(parseFloat)), border: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth].reduce((sum, value) => sum + parseFloat(value), 0), background: style.backgroundColor, role: button.getAttribute("role"), pressed: button.getAttribute("aria-pressed"), selected: button.getAttribute("aria-selected") };
+        return { ownerRow: Boolean(button.closest('[data-owner-actions="true"]')), label: button.textContent.trim(), x, y, width, height, radius: Math.max(...[style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomLeftRadius, style.borderBottomRightRadius].map(parseFloat)), border: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth].reduce((sum, value) => sum + parseFloat(value), 0), background: style.backgroundColor, role: button.getAttribute("role"), pressed: button.getAttribute("aria-pressed"), selected: button.getAttribute("aria-selected") };
       }));
       assert.match(buttons[0].label, /^(Preview|Edit)$/, "the view toggle starts the visible bottom action bar");
       for (const [index, button] of buttons.entries()) {
@@ -262,10 +263,11 @@ test("one Event Page editor protects saves and navigation across creation modes 
           assert.equal(button.border, 0, `${button.label} uses the borderless top-toolbar treatment`);
           assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(button.background), `${button.label} has a transparent idle surface`);
         }
-        assert.ok(Math.abs(button.y - buttons[0].y) < 1, `${button.label} stays on the same bottom row`);
+        const rowStart = !desktop && buttons[0].ownerRow ? buttons.find((candidate) => candidate.ownerRow === button.ownerRow) : buttons[0];
+        assert.ok(Math.abs(button.y - rowStart.y) < 1, `${button.label} stays on its action row`);
         assert.ok(button.height >= 44 && button.width >= 44, `${button.label} retains a 44px touch target`);
         assert.ok(button.x >= footer.x - 1 && button.x + button.width <= footer.x + footer.width + 1, `${button.label} fits inside the footer`);
-        if (index) assert.ok(button.x >= buttons[index - 1].x + buttons[index - 1].width - 1, `${button.label} follows the preceding action without overlap`);
+        if (index && Math.abs(button.y - buttons[index - 1].y) < 1) assert.ok(button.x >= buttons[index - 1].x + buttons[index - 1].width - 1, `${button.label} follows the preceding action without overlap`);
       }
     }
     const panel = page.getByRole("complementary", { name: "Event editing controls", exact: true });
@@ -284,10 +286,10 @@ test("one Event Page editor protects saves and navigation across creation modes 
     }
   };
   const switchView = async (name) => {
-    assert.equal(await viewActions.getByRole("button").count(), 1, "one action changes the current view");
+    assert.equal(await viewActions.getByRole("button", { name: /^(Edit|Preview)$/ }).count(), 1, "one action changes the current view");
     await viewActions.getByRole("button", { name, exact: true }).click();
     await viewActions.getByRole("button", { name: name === "Preview" ? "Edit" : "Preview", exact: true }).waitFor();
-    assert.equal(await viewActions.getByRole("button").count(), 1);
+    assert.equal(await viewActions.getByRole("button", { name: /^(Edit|Preview)$/ }).count(), 1);
     await checkActionPlacement();
   };
   const openControls = async () => {
@@ -650,6 +652,36 @@ test("one Event Page editor protects saves and navigation across creation modes 
     await viewActions.getByRole("button", { name: "Preview", exact: true }).waitFor();
     assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).count(), 0);
     assert.equal(await page.getByRole("button", { name: "Save draft", exact: true }).count(), 0);
+    await switchView("Preview");
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await viewActions.getByRole("button", { name: "Edit", exact: true }).waitFor();
+      const share = viewActions.getByRole("button", { name: "Share event", exact: true });
+      const remove = viewActions.getByRole("button", { name: "Delete event", exact: true });
+      assert.equal(await share.isVisible(), true);
+      assert.equal(await remove.isVisible(), true);
+      await page.evaluate(() => {
+        navigator.share = async (data) => { window.__previewShared = data; };
+        navigator.canShare = () => true;
+      });
+      await share.click();
+      assert.equal(await page.evaluate(() => window.__previewShared.url), `${base}/event/school-trip`);
+      await remove.click();
+      await page.getByRole("heading", { name: "Delete Event", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Cancel", exact: true }).click();
+      assert.equal(writes.length, 0, "preview sharing and cancelling deletion never save or publish");
+      await page.screenshot({ path: path.join(output, `preview-owner-actions-${width}.png`) });
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
+    editorRole = "cohost";
+    await page.reload();
+    await viewActions.getByRole("button", { name: "Preview", exact: true }).waitFor();
+    await switchView("Preview");
+    assert.equal(await viewActions.getByRole("button", { name: "Share event", exact: true }).count(), 0);
+    assert.equal(await viewActions.getByRole("button", { name: "Delete event", exact: true }).count(), 0);
+    editorRole = "owner";
+    await page.reload();
+    await viewActions.getByRole("button", { name: "Preview", exact: true }).waitFor();
     await switchView("Preview");
     await switchView("Edit");
     assert.equal(writes.length, 0);

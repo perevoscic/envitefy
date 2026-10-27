@@ -32,6 +32,7 @@ import type { EventUrlUpdate } from "./EventUrlEditor";
 
 export type EventPageEditorSession = {
   eventId?: string;
+  ownerActions?: { title: string; shareHref: string };
   published: boolean;
   dirty: boolean;
   busy: boolean;
@@ -388,6 +389,9 @@ export function useEventPageEditor({
   };
   return {
     eventId: id.current,
+    ...(loaded && canEditUrl.current === true ? {
+      ownerActions: { title: loaded.title || "Event", shareHref: eventEditorPublicHref(loaded) },
+    } : {}),
     published,
     dirty: progress.dirty,
     busy: busy || externalBusy || urlBusy,

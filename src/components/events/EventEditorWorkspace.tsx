@@ -1,6 +1,9 @@
 "use client";
 
-import { ArrowLeft, ExternalLink, Eye, Link2, ListPlus, PanelsTopLeft, Pencil, Save, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, Eye, Link2, ListPlus, PanelsTopLeft, Pencil, Save, Share2, Trash2, X } from "lucide-react";
+import EventDeleteModal from "@/components/EventDeleteModal";
+import { resolveNativeShareData } from "@/utils/native-share";
+import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 import type { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { eventEditorActions } from "@/lib/event-editor";
@@ -26,6 +29,37 @@ type Drawer = Pick<
   | "previewTouchHandlers"
   | "drawerTouchHandlers"
 >;
+
+function PreviewOwnerActions({ editor }: { editor: EventPageEditorSession }) {
+  const [copied, setCopied] = useState(false);
+  if (!editor.eventId || !editor.ownerActions || !editor.authenticated || !editor.ready) return null;
+  const { title, shareHref } = editor.ownerActions;
+  const share = async () => {
+    const url = new URL(shareHref, window.location.origin).href;
+    trackEventInteraction({ eventId: editor.eventId!, eventName: "share_link_click", targetUrl: url, targetLabel: title, sourceSurface: "editor_preview" });
+    try {
+      const nativeData = resolveNativeShareData({ title, url });
+      if (nativeData) await navigator.share(nativeData);
+      else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
+      window.prompt("Copy your event link:", url);
+    }
+  };
+  return <>
+    <button type="button" onClick={() => void share()} disabled={editor.busy} aria-label="Share event">
+      <Share2 size={17} aria-hidden="true" />
+      <span role="status">{copied ? "Copied" : "Share"}</span>
+    </button>
+    <EventDeleteModal eventId={editor.eventId} eventTitle={title} ariaLabel="Delete event">
+      <Trash2 size={17} aria-hidden="true" />
+      <span>Delete</span>
+    </EventDeleteModal>
+  </>;
+}
 
 export function EventEditorActions({
   editor,
@@ -216,7 +250,7 @@ export default function EventEditorWorkspace({
   };
   const inlineHeader = typeof controls === "function";
   const viewActions = !embedded && (
-    <div className={styles.views} role="group" aria-label="Editor view">
+    <div className={styles.views} role="group" aria-label="Editor view" data-owner-actions={!currentEditing && Boolean(editor.ownerActions)}>
       {currentEditing ? (
         <button
           type="button"
@@ -234,7 +268,7 @@ export default function EventEditorWorkspace({
             </>
           )}
         </button>
-      ) : (
+      ) : (<>
         <button type="button" onClick={showEditing}>
           {pageEditing ? (
             <PanelsTopLeft size={17} aria-hidden="true" />
@@ -243,7 +277,8 @@ export default function EventEditorWorkspace({
           )}
           {viewLabels?.controls || "Edit"}
         </button>
-      )}
+        <PreviewOwnerActions editor={editor} />
+      </>)}
     </div>
   );
   const settingsInFooter = pageEditing && !currentEditing;

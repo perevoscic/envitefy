@@ -429,6 +429,18 @@
   .actions > .views button {
     width: 100%;
   }
+  .actions > .views[data-owner-actions="true"] {
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+  }
+  .workspace[data-page-editing="false"][data-embedded="false"] .actions:has(> .views[data-owner-actions="true"]) {
+    flex-wrap: wrap;
+  }
+  .actions > .views[data-owner-actions="true"] button {
+    flex: 1;
+    min-width: 44px;
+    width: auto;
+  }
 }
 @media (max-width: 374px) {
   .workspace[data-page-editing="false"][data-embedded="false"] .actions {
