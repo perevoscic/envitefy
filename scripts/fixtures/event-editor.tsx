@@ -5,6 +5,7 @@ import { ScannedScheduleProvider } from "../../src/components/ScannedSchedule";
 import { createCreationIntake, writeCreationIntake } from "../../src/lib/create/creation-intake";
 import { prepareCreationEditor } from "../../src/lib/create/editor-navigation";
 import { normalizeScanSchedule } from "../../src/lib/scan-schedule";
+import { isEventDraft } from "../../src/lib/event-draft-access";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
@@ -64,8 +65,8 @@ const customPage = {
 (window as any).__seedSchoolMemoCreate = async () => {
   const source = "Weekly school memo\nOctober 26\nImportant Reminders: Bring a donation for Spirit Week.\nBible: memory verse and multiple choice test (we will go over the multiple choice twice before taking the test)\n\n“....Repent, for the kingdom of heaven has come near.”\nMatthew 3:2\n\nTest: Friday October 30th\nBible test October 30\nScience: Learn about clean water.\nSpelling test October 30\nAt Home Partnership Tips:\nBinders are returned to school daily.";
   const schedule = normalizeScanSchedule({ kind: "school-memo", title: "Oak classroom memo", issueDate: "2026-10-26", timezone: "America/Chicago", items: [
-    { id: "bible", title: "Bible Test", type: "test", date: "2026-10-30" },
-    { id: "spelling", title: "Spelling Test", type: "test", date: "2026-10-30" },
+    { id: "bible", title: "Bible Test", type: "test", date: "2026-10-30", calendarSelected: true },
+    { id: "spelling", title: "Spelling Test", type: "test", date: "2026-10-30", calendarSelected: false },
   ] })!;
   const intake = await writeCreationIntake({ ...createCreationIntake("qa-host", { kind: "files", files: [new File([source], "memo.pdf", { type: "application/pdf" })], text: "" }),
     guess: { category: "school", schoolTemplate: "weekly-memo", sport: null }, sourceText: source,
@@ -203,7 +204,7 @@ function SavedSchoolMemo() {
   if (!row) return <p>Opening memo…</p>;
   return <EventPageCompositionProvider value={row.data.eventPageComposition}>
     <a href={`${resolveOwnerEditHref(id, row.data, row.title)}&mode=manual&schoolCalendar=1`}>Edit school memo</a>
-    <ScannedScheduleProvider schedule={row.data.scanSchedule} eventId={id} canManage>
+    <ScannedScheduleProvider schedule={row.data.scanSchedule} eventId={id} canManage published={!isEventDraft(row.data)}>
       <SimpleTemplateView eventId={id} eventData={row.data} eventTitle={row.title} isOwner={false} isReadOnly viewerKind="readonly" shareUrl={`http://localhost:43128/event/${id}`} sessionEmail="host@test.com" disableProtectedSectionLocks hideOwnerActions />
     </ScannedScheduleProvider>
   </EventPageCompositionProvider>;

@@ -46,3 +46,11 @@ jobs:
         # Keep browser evidence when the offline suite fails; its failure still fails the job.
         if: ${{ !cancelled() && steps.typecheck.outcome == 'success' && steps.chromium.outcome == 'success' && steps.ffmpeg.outcome == 'success' }}
         run: npm run test:create-browser
+      - name: Keep editor screenshots on failure
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: event-editor-failure
+          path: .qa/event-editor-browser/*.png
+          if-no-files-found: ignore
+          retention-days: 7

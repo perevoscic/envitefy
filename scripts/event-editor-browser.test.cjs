@@ -1434,25 +1434,26 @@ test("one Event Page editor protects saves and navigation across creation modes 
       assert.doesNotMatch(await biblePanel.textContent(), /R e p e n t|M a t t h e w/);
       assert.equal(await biblePanel.locator("p").first().evaluate(node => getComputedStyle(node).whiteSpace), "pre-wrap");
       const memoDates = preview.locator("[data-school-memo-dates]");
-      await memoDates.getByRole("button", { name: "Clear all", exact: true }).click();
-      await memoDates.getByRole("checkbox", { name: "Add Bible Test to calendar", exact: true }).check();
+      const assertReviewOnly = async () => {
+        assert.equal(await memoDates.getByRole("checkbox").count(), 0, "editor dates are for review, including after saving");
+        assert.equal(await memoDates.getByRole("button", { name: /Clear all|Select all|calendar/i }).count(), 0, "calendar actions require the published saved page");
+      };
+      const beforeMemoCalendars = calendarWrites.length;
+      await assertReviewOnly();
       assert.equal(await preview.getByText("Add a short description so guests know what to expect.", { exact: true }).count(), 0);
-      await memoDates.getByRole("button", { name: "Save draft for connected calendars", exact: true }).waitFor();
       await page.screenshot({ path: path.join(output, `school-upload-memo-${width}.png`) });
       await memoDates.evaluate(node => { window.__memoDatesBeforeSave = node; });
-      await memoDates.getByRole("button", { name: "Save draft for connected calendars", exact: true }).click();
+      await click("Save draft");
       await page.getByText("Draft saved.", { exact: true }).first().waitFor();
       assert.equal(await page.evaluate(() => window.__memoDatesBeforeSave.isConnected), true, "first draft save keeps the memo controls mounted");
-      assert.equal(await memoDates.getByRole("checkbox", { checked: true }).count(), 1, "draft save retains the selected dates");
-      await memoDates.getByRole("button", { name: "Download calendar file (.ics)", exact: true }).waitFor();
-      await memoDates.getByRole("button", { name: /^Add selected dates to (?:your )?calendar \(1\)$/, exact: true }).click();
-      await memoDates.getByRole("status").filter({ hasText: "1 added" }).waitFor();
-      assert.deepEqual(calendarWrites.at(-1), { provider: "google", itemIds: ["bible"] });
+      await assertReviewOnly();
+      assert.equal(calendarWrites.length, beforeMemoCalendars, "draft saves never add dates to a calendar");
       const importedData = writes.at(-1).body.data;
       assert.equal(importedData.schoolTemplate, "weekly-memo");
       assert.equal(importedData.startISO, null);
       assert.equal(importedData.visibility, "private");
       assert.deepEqual(importedData.scanSchedule.items.map(item => item.id), ["bible", "spelling"]);
+      assert.deepEqual(importedData.scanSchedule.items.map(item => item.calendarSelected), [true, false], "draft saves retain stored per-item selections without exposing calendar controls");
       assert.equal(importedData.scanSchedule.items[0].date, "2026-11-02");
       assert.equal(importedData.scanSchedule.items[0].startAt, "2026-11-02T15:30:00.000Z");
       assert.equal(importedData.scanSchedule.items[0].notes, "Bring your study guide.");
@@ -1471,11 +1472,12 @@ test("one Event Page editor protects saves and navigation across creation modes 
       assert.equal(await restoredDateFields.getByLabel("Start time (optional)", { exact: true }).inputValue(), "09:30");
       assert.equal(await restoredDateFields.getByLabel("Notes", { exact: true }).inputValue(), "Bring your study guide.");
       await restoredDateFields.getByLabel("Notes", { exact: true }).fill("Bring your study guide and pencil.");
-      assert.equal(await preview.getByRole("button", { name: /^Add selected dates to your calendar/ }).isDisabled(), true, "connected additions wait for edited dates to be saved");
+      await assertReviewOnly();
       await preview.getByRole("button", { name: "Done editing Bible Test", exact: true }).click();
       await click("Save draft");
       await page.getByText("Draft saved.", { exact: true }).first().waitFor();
-      assert.equal(await preview.getByRole("button", { name: /^Add selected dates to your calendar/ }).isEnabled(), true);
+      await assertReviewOnly();
+      assert.deepEqual(writes.at(-1).body.data.scanSchedule.items.map(item => item.calendarSelected), [true, false]);
       const groups = preview.locator("[data-section-row]");
       const geometry = await groups.evaluateAll(elements => elements.map(node => ({ width: node.getBoundingClientRect().width, parent: node.parentElement.getBoundingClientRect().width })));
       assert.ok(geometry.length >= 3);
@@ -1486,10 +1488,18 @@ test("one Event Page editor protects saves and navigation across creation modes 
       assert.equal(Math.abs(cells[0].y - cells[1].y) < 2, width >= 768, "notes sit beside one another on desktop and stack on phones");
       const savedId = new URL(page.url()).searchParams.get("edit");
       const savedMemo = records.get(savedId);
-      savedMemo.data.status = "published"; savedMemo.data.createdVia = "template"; savedMemo.data.templateId = "general";
+      savedMemo.data.status = "published"; savedMemo.data.draftStatus = "published"; savedMemo.data.createdVia = "template"; savedMemo.data.templateId = "general";
       await page.goto(`${base}/event/general/customize?mode=school-saved&edit=${savedId}`);
       const publishedDates = page.locator("[data-school-memo-dates]");
       await publishedDates.waitFor();
+      await publishedDates.getByRole("button", { name: "Clear all", exact: true }).click();
+      await publishedDates.getByRole("checkbox", { name: "Add Bible Test to calendar", exact: true }).check();
+      assert.equal(await publishedDates.getByRole("checkbox", { checked: true }).count(), 1);
+      await publishedDates.getByRole("button", { name: "Download calendar file (.ics)", exact: true }).waitFor();
+      assert.equal(calendarWrites.length, beforeMemoCalendars, "opening the published memo never adds dates automatically");
+      await publishedDates.getByRole("button", { name: /^Add selected dates to your calendar \(1\)$/, exact: true }).click();
+      await publishedDates.getByRole("status").filter({ hasText: "1 added" }).waitFor();
+      assert.deepEqual(calendarWrites.at(-1), { provider: "google", itemIds: ["bible"] });
       assert.equal(await page.locator("[data-school-memo-issue-date] time").textContent(), "October 26, 2026");
       assert.equal(await publishedDates.evaluate(node => Boolean(node.closest("[data-template-body-layout]"))), true, "published dates are inside the authored memo body");
       const branding = page.locator("[data-envitefy-event-branding]");
@@ -1504,7 +1514,8 @@ test("one Event Page editor protects saves and navigation across creation modes 
       await switchView("Preview");
       await preview.locator("[data-school-memo-dates]").waitFor();
       assert.match(await preview.textContent(), /Binders are returned to school daily/);
-      assert.equal(await preview.getByRole("checkbox", { checked: true }).count(), 1, "owner editing retains calendar selection");
+      await assertReviewOnly();
+      assert.deepEqual(records.get(savedId).data.scanSchedule.items.map(item => item.calendarSelected), [true, false], "owner editing retains stored selection while hiding calendar controls");
 
     }
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -1526,8 +1537,12 @@ test("one Event Page editor protects saves and navigation across creation modes 
     assert.equal(await name.inputValue(), "Unsigned host changes");
   } catch (failure) {
     await page.screenshot({ path: path.join(output, "failure.png") });
+    const recentWrites = writes.slice(-3).map(({ path, method, body }) => ({
+      path, method, title: body.title, status: body.data?.status,
+      memoItems: body.data?.scanSchedule?.items.map(({ id, calendarSelected }) => ({ id, calendarSelected })),
+    }));
     throw new Error(
-      `${failure.message}\nURL: ${page.url()}\nAlerts: ${JSON.stringify(await page.getByRole("alert").allTextContents())}\nWrites: ${JSON.stringify(writes)}\nBrowser errors: ${errors.join("\n")}`,
+      `${failure.message}\nURL: ${page.url()}\nAlerts: ${JSON.stringify(await page.getByRole("alert").allTextContents())}\nWrites: ${writes.length} total; last three: ${JSON.stringify(recentWrites)}\nBrowser errors: ${errors.join("\n")}`,
       { cause: failure },
     );
   } finally {
