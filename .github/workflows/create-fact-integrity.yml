@@ -23,14 +23,21 @@ jobs:
       - name: Check application TypeScript before running regressions
         id: typecheck
         run: npm run typecheck
+      - name: Cache Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-headless-${{ hashFiles('package-lock.json') }}
       - name: Install Chromium for isolated campaign checks
         id: chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps --only-shell chromium
       - name: Install and verify FFmpeg for artwork checks
         id: ffmpeg
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ffmpeg
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install --yes --no-install-recommends ffmpeg
+          fi
           ffmpeg -version
           ffprobe -version
       - name: Check Create facts, prompts, output contracts and guest actions offline

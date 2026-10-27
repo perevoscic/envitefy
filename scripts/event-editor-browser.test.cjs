@@ -149,11 +149,16 @@ test("one Event Page editor protects saves and navigation across creation modes 
     }
     if (url.pathname.startsWith("/api/history")) {
       const id = url.pathname.split("/")[3];
-      if (req.method() === "GET")
+      if (req.method() === "GET") {
+        // A real history read can lag behind the first draft save. Keep that
+        // transition observable instead of masking an editor remount locally.
+        if (records.get(id)?.data.scanSchedule?.kind === "school-memo")
+          await new Promise(resolve => setTimeout(resolve, 250));
         return route.fulfill({
           contentType: "application/json",
           body: JSON.stringify({ ...records.get(id), permissions: { role: "owner", canManageCollaborators: true } }),
         });
+      }
       const body = req.postDataJSON();
       writes.push({
         path: url.pathname,
@@ -1434,8 +1439,10 @@ test("one Event Page editor protects saves and navigation across creation modes 
       assert.equal(await preview.getByText("Add a short description so guests know what to expect.", { exact: true }).count(), 0);
       await memoDates.getByRole("button", { name: "Save draft for connected calendars", exact: true }).waitFor();
       await page.screenshot({ path: path.join(output, `school-upload-memo-${width}.png`) });
+      await memoDates.evaluate(node => { window.__memoDatesBeforeSave = node; });
       await memoDates.getByRole("button", { name: "Save draft for connected calendars", exact: true }).click();
       await page.getByText("Draft saved.", { exact: true }).first().waitFor();
+      assert.equal(await page.evaluate(() => window.__memoDatesBeforeSave.isConnected), true, "first draft save keeps the memo controls mounted");
       assert.equal(await memoDates.getByRole("checkbox", { checked: true }).count(), 1, "draft save retains the selected dates");
       await memoDates.getByRole("button", { name: "Download calendar file (.ics)", exact: true }).waitFor();
       await memoDates.getByRole("button", { name: /^Add selected dates to (?:your )?calendar \(1\)$/, exact: true }).click();

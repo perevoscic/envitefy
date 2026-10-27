@@ -194,6 +194,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, [defaultDate, initialDesign, editEventId]);
 
     const [savedEventData, setSavedEventData] = useState<Record<string, any>>({});
+    const newlySavedEventId = useRef<string | undefined>(undefined);
     const [loadingExisting, setLoadingExisting] = useState(Boolean(editEventId));
     const [loadError, setLoadError] = useState("");
     const [data, setData] = useState(() => ({
@@ -327,6 +328,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
   useEffect(() => {
     if (!editEventId) { setLoadingExisting(false); return; }
+    if (newlySavedEventId.current === editEventId) {
+      // The first explicit save adds ?edit= to this mounted editor. Its current
+      // fields already match the saved draft; reloading would unmount the
+      // preview and can discard edits made while that read is in flight.
+      newlySavedEventId.current = undefined;
+      setSavedEventData(eventHistoryClient.read(`/api/history/${encodeURIComponent(editEventId)}`)?.data || {});
+      setLoadingExisting(false);
+      return;
+    }
     let cancelled = false;
     setLoadingExisting(true);
     setLoadError("");
@@ -602,7 +612,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       version: 1 as const,
       sections: schoolStarterSections(data.schoolTemplate).map((section, index) => ({ id: `info:school-${index}`, ...section })),
     } : undefined;
-    const editor = useEventPageEditor({ initialComposition: initialSchoolComposition, snapshot: { data, advancedState, themeId, theme: currentTheme }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting && creationReady, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
+    const editor = useEventPageEditor({ initialComposition: initialSchoolComposition, snapshot: { data, advancedState, themeId, theme: currentTheme }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting && creationReady, busy: false, onBusyChange: setSubmitting, onSaved: id => { if (!editEventId) newlySavedEventId.current = id; }, buildPayload: buildEventPayload });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
