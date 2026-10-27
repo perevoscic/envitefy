@@ -3,6 +3,7 @@ import { ArrowRight, CalendarDays, MapPin, Share2, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
@@ -12,6 +13,7 @@ import {
   SPORT_EVENT_PRESETS,
   type SportEventPreset,
 } from "@/lib/sport-event-presets";
+import editorial from "./SportsEditorialSections.module.css";
 
 const styleOptions = [
   {
@@ -120,49 +122,41 @@ export default function SportsLandingPage() {
   const selectedStyle = search?.get("style") || "stadium";
   const primaryHref = "#templates";
   return (
-    <MarketingPage tone="sports" className={styles.editorial}>
+    <MarketingPage tone="sports" className={`${styles.editorial} ${editorial.page}`}>
       <SignedOutPageChrome
         activeBottomNavLabel="Create"
         brandHref="/"
         topNavVariant="transparent-light"
       />
       <main>
-        <section id="hero" className={styles.hero}>
-          <div>
-            <p className={styles.eyebrow}>For teams, families & fans</p>
-            <h1 className={styles.title}>
+        <MarketingHero
+          category="sports"
+          id="hero"
+          eyebrow="For teams, families & fans"
+          title={
+            <>
               Your team. <em>One clear plan.</em>
-            </h1>
-            <p className={styles.description}>
-              Every game-day detail in one familiar link. Bring schedules, venues, attendance and
-              team notes together so everyone arrives ready.
-            </p>
-            <div className={styles.actions}>
-              <Link href={primaryHref} className={styles.primary}>
-                Browse templates <ArrowRight aria-hidden="true" />
-              </Link>
-              <Link href="/snap?auth=signup" className={styles.secondary}>
-                Upload a schedule
-              </Link>
-            </div>
-            <p className={styles.note}>For the whole season, or one big game.</p>
-          </div>
-          <figure className={styles.visual}>
-            <GameDayPreview sport={selectedSport} />
-            <figcaption className={styles.caption}>
-              Illustrative game details · Built around your sport.
-            </figcaption>
-          </figure>
-        </section>
+            </>
+          }
+          description="Every game-day detail in one familiar link. Bring schedules, venues, attendance and team notes together so everyone arrives ready."
+          primaryHref={primaryHref}
+          primaryLabel="Browse templates"
+          secondaryHref="/snap?auth=signup"
+          secondaryLabel="Upload a schedule"
+        >
+          <GameDayPreview sport={selectedSport} />
+        </MarketingHero>
         <PublicTemplateGallery category="sport-events" featured />
-        <section id="features" className={styles.section}>
+        <section id="features" className={`${styles.section} ${editorial.features}`}>
           <p className={styles.eyebrow}>More time for the team</p>
-          <h2>Keep the focus on the game.</h2>
+          <h2>
+            Keep the focus <strong>on the game.</strong>
+          </h2>
           <p className={styles.intro}>
             When families have the current plan in one place, finding the time, field and parking is
             a little easier.
           </p>
-          <div className={styles.grid}>
+          <div className={editorial.benefits}>
             {[
               {
                 icon: CalendarDays,
@@ -179,22 +173,27 @@ export default function SportsLandingPage() {
                 title: "Your people, in the loop",
                 copy: "Keep team notes, attendance and updates beside the event information.",
               },
-            ].map(({ icon: Icon, title, copy }) => (
-              <article className={styles.item} key={title}>
-                <Icon aria-hidden="true" />
-                <h3>{title}</h3>
-                <p>{copy}</p>
-              </article>
+            ].map(({ icon: Icon, title, copy }, index) => (
+              <div className={editorial.benefitWrap} key={title} data-motion-reveal>
+                <article className={editorial.benefit}>
+                  <div className={editorial.identity} aria-hidden="true">
+                    <span>0{index + 1}</span>
+                    <Icon />
+                  </div>
+                  <h3>{title}</h3>
+                  <p>{copy}</p>
+                </article>
+              </div>
             ))}
           </div>
         </section>
         <section className={styles.section}>
           <p className={styles.eyebrow}>Any field. Any court.</p>
           <h2>A home for every game.</h2>
-          <div className={styles.grid}>
+          <div className={`${styles.grid} ${editorial.stories}`}>
             {sportsStories.map((story) => (
-              <article key={story.label}>
-                <div className="relative aspect-[4/3] overflow-hidden rounded-t-[45%] rounded-b-2xl">
+              <article key={story.label} data-motion-reveal>
+                <div className={editorial.storyImage}>
                   <Image
                     src={story.src}
                     alt={story.alt}

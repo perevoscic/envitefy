@@ -30,26 +30,7 @@
   font-family: var(--marketing-sans, sans-serif);
 }
 
-:global(html.dark) .demo {
-  --demo-ink: #edf4ec;
-  --demo-muted: #b6c6bc;
-  --demo-green: #b8d9ad;
-  --demo-line: #3e5549;
-  --demo-paper: #1c2b25;
-  --demo-header: #293f34;
-  --demo-header-blue: #223b43;
-  --demo-wash-blue: #2a58634d;
-  --demo-wash-sage: #3f624b45;
-  --demo-badge: #344e3c;
-  --demo-badge-line: #648366;
-  --demo-pattern: #b8d9ad1a;
-  --demo-dot: #a4c79a;
-  --demo-focus: #badcf5;
-  color-scheme: dark;
-  box-shadow:
-    0 1.5rem 4rem #00000030,
-    0 0.2rem 0.6rem #00000014;
-}
+/* This sample event keeps its authored paper and ink in either app appearance. */
 
 .header {
   position: relative;

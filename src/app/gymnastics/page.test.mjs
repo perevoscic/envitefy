@@ -9,7 +9,8 @@ test("gymnastics keeps public browsing and all local navigation targets", () => 
   assert.match(readSource("src/app/gymnastics/page.tsx"), /<GymnasticsLanding \/>/);
   assert.match(landing, /marketingPageNavLinks\("\/gymnastics"\)/);
   assert.match(landing, /<MarketingPage tone="sports"/);
-  assert.doesNotMatch(landing, /PublicTemplateGallery|href="#templates"|getElementById\("templates"\)/);
+  assert.match(landing, /<PublicTemplateGallery category="gymnastics" featured \/>/);
+  assert.doesNotMatch(landing, /href="#templates"|getElementById\("templates"\)/);
   assert.match(landing, /guestPrimaryHref="\/gymnastics\/templates"/);
   assert.match(landing, /authenticatedPrimaryHref="\/gymnastics\/templates"/);
   for (const id of ["hero", "features", "how-it-works", "use-cases", "why-envitefy"])

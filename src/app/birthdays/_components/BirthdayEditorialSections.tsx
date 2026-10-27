@@ -135,11 +135,17 @@ function HostDashboard({ primaryHref }: { primaryHref: string }) {
           />
           <Link
             href={primaryHref}
+            data-public-primary
             className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--birthday-yellow)] px-6 py-3 text-sm font-bold text-[var(--birthday-green)] transition hover:-translate-y-0.5"
-          >Browse templates</Link>
+          >
+            Browse templates
+          </Link>
         </div>
 
-        <div className="overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.07] shadow-[0_32px_80px_rgba(7,18,12,0.2)]">
+        <div
+          data-appearance-scope="authored"
+          className="overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.07] shadow-[0_32px_80px_rgba(7,18,12,0.2)]"
+        >
           <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-7">
             <div>
               <p className="text-sm font-bold">Host bar</p>
@@ -333,10 +339,10 @@ function StartWays() {
               </div>
             </div>
             <p className="mt-5 text-sm leading-7 text-white/68">
-              Envitefy Create asks for anything missing, then drafts the invitation, household RSVP, map,
-              and gift notes for you.
+              Envitefy Create asks for anything missing, then drafts the invitation, household RSVP,
+              map, and gift notes for you.
             </p>
-            <div className="mt-6 space-y-3">
+            <div data-appearance-scope="authored" className="mt-6 space-y-3">
               <div className="ml-8 rounded-2xl rounded-tr-md bg-white px-4 py-3 text-sm leading-6 text-[var(--birthday-ink)]">
                 Maya is turning eight at Oak Pavilion, Saturday 2–4. Household RSVP, please.
               </div>
@@ -463,8 +469,11 @@ function FinalCta({ page, primaryHref }: { page: UseCasePage; primaryHref: strin
           </p>
           <Link
             href={primaryHref}
+            data-public-primary
             className="mt-8 inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-[var(--birthday-yellow)] px-7 py-4 text-sm font-bold text-[var(--birthday-green)] shadow-lg transition hover:-translate-y-0.5"
-          >Browse templates</Link>
+          >
+            Browse templates
+          </Link>
         </div>
       </div>
     </section>

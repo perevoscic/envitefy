@@ -1,7 +1,9 @@
+"use client";
+
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { landingCategoryMedia } from "@/lib/landing-category-media";
 import { landingCategoryCards } from "../landing-data";
 import styles from "./LandingCategoryCollection.module.css";
@@ -18,12 +20,30 @@ const categoryColors = [
 ];
 
 export default function LandingCategoryCollection() {
+  const [fragmentTargeted, setFragmentTargeted] = useState(false);
+
+  useEffect(() => {
+    // Client routing can mount this collection after pushState without setting CSS :target.
+    const syncFragment = () =>
+      setFragmentTargeted(
+        window.location.hash === "#categories" || window.location.hash === "#examples",
+      );
+    syncFragment();
+    window.addEventListener("hashchange", syncFragment);
+    window.addEventListener("popstate", syncFragment);
+    return () => {
+      window.removeEventListener("hashchange", syncFragment);
+      window.removeEventListener("popstate", syncFragment);
+    };
+  }, []);
+
   return (
     <section
       id="examples"
       className={styles.collection}
       aria-labelledby="template-heading"
       data-category-collection
+      data-category-targeted={fragmentTargeted ? "true" : undefined}
       data-motion-scene
       data-motion-range="contain"
     >

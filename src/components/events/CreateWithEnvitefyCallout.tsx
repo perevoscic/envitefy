@@ -2,9 +2,10 @@
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
+import AnimatedBorderButton from "@/components/ui/AnimatedBorderButton";
 import {
-  getCategoryCustomDesignProfile,
   type CustomDesignCategory,
+  getCategoryCustomDesignProfile,
 } from "@/lib/category-custom-design-profiles";
 import {
   CategoryCustomDesignIcon,
@@ -20,6 +21,7 @@ export default function CreateWithEnvitefyCallout({
   onImport,
   busy = false,
   compact = false,
+  presentation,
 }: {
   onClick: () => void;
   category: CustomDesignCategory;
@@ -27,6 +29,7 @@ export default function CreateWithEnvitefyCallout({
   busy?: boolean;
   /** A single toolbar button for galleries whose header already carries the primary actions. */
   compact?: boolean;
+  presentation?: "hero";
 }) {
   const { status, update } = useSession();
   const [authOpen, setAuthOpen] = useState(false);
@@ -48,6 +51,30 @@ export default function CreateWithEnvitefyCallout({
       }}
     />
   );
+  if (presentation === "hero") {
+    const create = () => {
+      if (status === "authenticated") {
+        onClick();
+      } else {
+        setAuthMode("login");
+        setAuthOpen(true);
+      }
+    };
+    return (
+      <div data-custom-design-category={category} data-custom-design-presentation="hero">
+        <AnimatedBorderButton
+          type="button"
+          data-wedding-create
+          data-custom-design-create
+          onClick={create}
+          disabled={busy || status === "loading"}
+        >
+          Generate with Envitefy
+        </AnimatedBorderButton>
+        {authModal}
+      </div>
+    );
+  }
   if (compact) {
     return (
       <div
@@ -111,7 +138,16 @@ export default function CreateWithEnvitefyCallout({
             →
           </span>
         </button>
-        {onImport && <button type="button" onClick={onImport} disabled={!canCreate} className="mt-2 inline-flex min-h-11 items-center justify-center rounded-full border border-[#d7c6dc] px-5 py-2 text-sm font-semibold text-[#684675] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#684675]">Upload event information</button>}
+        {onImport && (
+          <button
+            type="button"
+            onClick={onImport}
+            disabled={!canCreate}
+            className="mt-2 inline-flex min-h-11 items-center justify-center rounded-full border border-[#d7c6dc] px-5 py-2 text-sm font-semibold text-[#684675] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#684675]"
+          >
+            Upload event information
+          </button>
+        )}
         {status === "unauthenticated" && (
           <button
             type="button"

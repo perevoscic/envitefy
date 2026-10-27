@@ -1,14 +1,8 @@
 "use client";
 
-import {
-  Calendar,
-  CheckCircle2,
-  Copy,
-  MapPin,
-  Share2,
-  Wine,
-} from "lucide-react";
+import { Calendar, CheckCircle2, Copy, MapPin, Share2, Wine } from "lucide-react";
 import { useMemo, useState } from "react";
+import styles from "./wedding-landing.module.css";
 
 type ThemeId = "gold" | "ivory" | "midnight";
 
@@ -65,7 +59,7 @@ export default function WeddingStudioPreview() {
 
   const actionClass =
     theme === "midnight"
-      ? "bg-[#94724c] hover:bg-[#795b3d]"
+      ? "bg-[#795b3d] hover:bg-[#634932]"
       : theme === "ivory"
         ? "bg-slate-800 hover:bg-slate-900"
         : "bg-[#795b3d] hover:bg-[#634932]";
@@ -187,7 +181,7 @@ export default function WeddingStudioPreview() {
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#94724c] to-[#795b3d] px-7 py-3.5 text-xs font-medium uppercase tracking-widest text-white shadow-md transition hover:from-[#795b3d] hover:to-[#634932] sm:w-auto"
+              className={`${styles.studioShareButton} inline-flex w-full items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-xs font-medium uppercase tracking-widest shadow-md transition sm:w-auto`}
             >
               <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
               Generate Wedding Suite Link
@@ -212,9 +206,7 @@ export default function WeddingStudioPreview() {
               <Wine className="h-5 w-5" aria-hidden="true" />
             </div>
             <div className="relative space-y-2">
-              <span
-                className={`text-[10px] font-bold uppercase tracking-[0.3em] ${subtitleClass}`}
-              >
+              <span className={`text-[10px] font-bold uppercase tracking-[0.3em] ${subtitleClass}`}>
                 The Wedding Celebration
               </span>
               <h3 className="font-wedding-serif text-3xl font-normal tracking-wide sm:text-4xl">

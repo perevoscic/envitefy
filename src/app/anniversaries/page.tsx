@@ -2,6 +2,7 @@ import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import { buildCategoryShareMetadata } from "@/lib/category-share-metadata";
 import styles from "../category-pages/CelebrationLanding.module.css";
 import CelebrationPreview from "../category-pages/CelebrationPreview";
 
@@ -10,6 +11,12 @@ export const metadata = {
   description:
     "Celebrate your years together. Customize an anniversary invitation with your names, photos, celebration details, and RSVP.",
   alternates: { canonical: "/anniversaries" },
+  ...buildCategoryShareMetadata("anniversaries", {
+    title: "Anniversary invitations and event pages | Envitefy",
+    description:
+      "Celebrate your years together. Customize an anniversary invitation with your names, photos, celebration details, and RSVP.",
+    url: "/anniversaries",
+  }),
 };
 
 export default function AnniversariesLandingPage() {
@@ -18,6 +25,7 @@ export default function AnniversariesLandingPage() {
       <SignedOutPageChrome />
       <main>
         <MarketingHero
+          category="anniversaries"
           eyebrow="Every chapter deserves a celebration"
           title={
             <>
@@ -27,6 +35,7 @@ export default function AnniversariesLandingPage() {
             </>
           }
           description="From your first year to a golden anniversary, make an invitation that feels like you. Bring your favorite people together around the story you share."
+          lead="Your people. Your memories. Another beautiful chapter."
           image="/templates/anniversaries/collection-2026/vinyl-love-song-anniversary.webp"
           imageAlt="Original illustrated anniversary invitation with a vintage record player"
           primaryHref="#templates"

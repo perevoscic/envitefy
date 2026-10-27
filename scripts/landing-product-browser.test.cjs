@@ -164,6 +164,21 @@ async function serveContext(context, css, unexpected) {
         contentType: "text/html",
         body: '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/global.css"></head><body class="font-vars"><div id="root"></div><script src="/bundles/fixture.js"></script></body></html>',
       });
+    if (url.pathname === "/baby-showers/templates")
+      return route.fulfill({
+        contentType: "text/html",
+        // Match client routing: update history before mounting the destination.
+        // A native page load or hash assignment would also set CSS :target.
+        body: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/global.css"></head><body class="font-vars"><div id="root"><a href="/#categories">All categories</a></div><script>
+          document.querySelector('a').addEventListener('click', (event) => {
+            event.preventDefault();
+            history.pushState(null, '', event.currentTarget.href);
+            const script = document.createElement('script');
+            script.src = '/bundles/fixture.js';
+            document.body.append(script);
+          });
+        </script></body></html>`,
+      });
     unexpected.push(`${request.method()} ${url.href}`);
     return route.abort();
   });
@@ -1831,6 +1846,35 @@ test("category fragment navigation aligns the section at the top and opens every
         Math.abs(collection.getBoundingClientRect().top) < 2 &&
         eyebrowTop >= header.offsetHeight && eyebrowTop < header.offsetHeight + 32;
     }, fragment);
+    for (const width of [1920, 375]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${base}/baby-showers/templates`);
+      await page.getByRole("link", { name: "All categories", exact: true }).click();
+      await page.locator('[data-marketing-page][data-motion-enhanced="true"]').waitFor();
+      await page.evaluate(() => document.getElementById("categories").scrollIntoView({
+        block: "start", behavior: "instant",
+      }));
+      assert.equal(await page.locator(":target").count(), 0,
+        "Client navigation does not set the browser's native fragment target");
+      await waitForOpenCategories("#categories");
+      await waitForAnchorArrival("#categories");
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await waitForOpenCategories("#categories");
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+      await waitForOpenCategories("#categories");
+      await page.waitForFunction(() => [...document.querySelectorAll("[data-category] img")]
+        .every((image) => image.complete && image.naturalWidth > 0));
+      await page.screenshot({ path: path.join(output, `all-categories-client-${width}.png`) });
+      await assertNoOverflow(page, `All categories client navigation at ${width}px`);
+      await page.evaluate(() => { location.hash = "#how-it-works"; });
+      await page.waitForFunction(() =>
+        !document.querySelector("[data-category-collection]").hasAttribute("data-category-targeted"));
+      await page.goBack();
+      await waitForOpenCategories("#categories");
+      await page.waitForFunction(() =>
+        document.querySelector("[data-category-collection]").dataset.categoryTargeted === "true");
+    }
+    await page.setViewportSize({ width: 1920, height: 900 });
     await page.goto(base);
     await page.locator('[data-marketing-page][data-motion-enhanced="true"]').waitFor();
     const navigation = page.getByRole("navigation", { name: "Main navigation", exact: true });

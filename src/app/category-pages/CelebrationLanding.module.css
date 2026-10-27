@@ -11,7 +11,10 @@
   scroll-margin-top: 6rem;
 }
 
-.editorial main > section:not(:first-child) :is(h2, h3):not([data-appearance-scope="authored"] *) {
+.editorial
+  main
+  > section:not(:first-child):not([data-category-preview])
+  :is(h2, h3):not([data-appearance-scope="authored"] *) {
   font-family: var(--font-playfair), Georgia, serif;
   font-weight: 400;
   letter-spacing: -0.035em;
@@ -94,7 +97,7 @@
 
 .previewNote {
   margin: 1rem 0 0;
-  color: #8a737d;
+  color: #76686a;
   font-size: 0.6rem;
   line-height: 1.5;
 }

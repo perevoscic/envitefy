@@ -1,7 +1,9 @@
 "use client";
 
 import { ArrowLeft, ExternalLink, Eye, Link2, ListPlus, PanelsTopLeft, Pencil, Save, Share2, Trash2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import EventDeleteModal from "@/components/EventDeleteModal";
+import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
 import { resolveNativeShareData } from "@/utils/native-share";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
@@ -162,6 +164,9 @@ export default function EventEditorWorkspace({
   /** Return true after going back within the controls; shared tools request the main menu. */
   onBackWithinControls?: (toMainMenu?: boolean) => boolean;
 }) {
+  const router = useRouter();
+  const template = useTemplateEditor();
+  const guestExit = !embedded && template && !template.authenticated;
   const nativeBuilder = useEventSectionBuilder();
   const panelRef = useRef<HTMLElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -443,6 +448,15 @@ export default function EventEditorWorkspace({
         <footer className={styles.footer} data-bottom-settings={settingsInFooter}>
           {pageEditing && viewActions}
           <EventEditorActions editor={editor} onBack={goBack}>
+            {guestExit && (
+              <button
+                type="button"
+                disabled={editor.busy || !editor.ready}
+                onClick={() => router.push(`/${template.category}/templates`)}
+              >
+                Cancel
+              </button>
+            )}
             {!pageEditing && viewActions}
           </EventEditorActions>
         </footer>

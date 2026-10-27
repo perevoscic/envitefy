@@ -1,0 +1,593 @@
+.page[data-marketing-page],
+.layout,
+.gallery {
+  --bridal-paper: #fbf4ee;
+  --bridal-surface: #fffaf6;
+  --bridal-ink: #41263d;
+  --bridal-muted: #755f6e;
+  --bridal-line: #a88c98;
+  --bridal-accent: #9a5262;
+  --bridal-primary: #efbdc1;
+  --bridal-on-primary: #3e283b;
+  --bridal-primary-hover: #f4cbd0;
+  --bridal-header-line: #e8d8d1;
+  --bridal-soft: #f2e5df;
+  --bridal-error: #a02f42;
+  --bridal-shadow: #62433138;
+  --bridal-hero-scrim: linear-gradient(
+    90deg,
+    #fbf4ee96,
+    #fbf4eef2 9%,
+    #fbf4eee8 36%,
+    #fbf4ee4d 48%,
+    transparent 62%
+  );
+  --bridal-color-scheme: light;
+}
+
+:global(html.dark) .page[data-marketing-page],
+:global(html.dark) .layout,
+:global(html.dark) .gallery {
+  --bridal-paper: #2b1e2c;
+  --bridal-surface: #382739;
+  --bridal-ink: #fff7f3;
+  --bridal-muted: #e0cfdb;
+  --bridal-line: #a0879c;
+  --bridal-accent: #e7b5b8;
+  --bridal-header-line: #5b404f;
+  --bridal-soft: #46303e;
+  --bridal-error: #ffd1ca;
+  --bridal-shadow: #160b166e;
+  --bridal-hero-scrim: linear-gradient(
+    90deg,
+    #2b1e2c94,
+    #2b1e2cee 9%,
+    #2b1e2ce6 36%,
+    #2b1e2c4d 48%,
+    transparent 62%
+  );
+  --bridal-color-scheme: dark;
+}
+
+.page[data-marketing-page] {
+  background: var(--bridal-paper);
+}
+
+.page[data-marketing-page] [data-public-landing-header] {
+  --public-header-paper: var(--bridal-paper);
+  --public-header-ink: var(--bridal-ink);
+  --public-header-accent: var(--bridal-accent);
+  --public-header-soft: var(--bridal-soft);
+  --public-header-line: var(--bridal-header-line);
+  --public-header-surface: var(--bridal-soft);
+}
+
+.layout.layout.layout {
+  padding-top: calc(80px + env(safe-area-inset-top));
+  padding-bottom: 0;
+  background: var(--bridal-paper);
+}
+
+.gallery.gallery.gallery {
+  padding: 0 0 calc(5rem + env(safe-area-inset-bottom));
+  background: var(--bridal-paper);
+  color: var(--bridal-ink);
+}
+
+.shell {
+  width: 100%;
+  max-width: none;
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  border-bottom: 1px solid var(--bridal-header-line);
+  background: var(--bridal-paper);
+  color: var(--bridal-ink);
+}
+
+.backdrop {
+  z-index: -2;
+  object-fit: cover;
+  object-position: center bottom;
+}
+
+.darkBackdrop,
+:global(html.dark) .lightBackdrop {
+  visibility: hidden;
+}
+
+:global(html.dark) .darkBackdrop {
+  visibility: visible;
+}
+
+.hero::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: var(--bridal-hero-scrim);
+  mask-image: linear-gradient(180deg, #000 75%, transparent);
+  content: "";
+}
+
+.heroInner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  align-items: center;
+  gap: clamp(1.1rem, 2vw, 2rem);
+  max-width: 1600px;
+  min-height: 470px;
+  margin-inline: auto;
+  padding: 1.1rem clamp(1.25rem, 4.5vw, 4.5rem) 0.8rem;
+}
+
+.copy {
+  position: relative;
+  z-index: 5;
+  min-width: 0;
+  padding-block: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 1.15rem;
+  color: var(--bridal-accent);
+  font: 650 0.72rem / 1.5 var(--marketing-sans, Arial, sans-serif);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.title.title {
+  margin: 0;
+  color: var(--bridal-ink);
+  font-family: var(--marketing-serif, var(--font-playfair), Georgia, serif);
+  font-size: clamp(2.65rem, 3.8vw, 3.95rem);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 1.1;
+}
+
+.description {
+  max-width: 35rem;
+  margin: 1.1rem 0 1.5rem;
+  color: var(--bridal-muted);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(1.1rem, 1.35vw, 1.32rem);
+  line-height: 1.3;
+}
+
+.actions [data-custom-design-presentation="hero"] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.actions [data-custom-design-create] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  min-height: 52px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.8rem 1.8rem;
+  background: var(--bridal-primary);
+  color: var(--bridal-on-primary);
+  font: 600 0.95rem / 1.4 var(--marketing-sans, var(--font-geist-sans), Arial, sans-serif);
+  cursor: pointer;
+  transition: background 180ms ease;
+}
+
+.actions [data-custom-design-create]::after {
+  font-size: 1.1rem;
+  content: "→" / "";
+}
+
+.actions [data-custom-design-create]:hover {
+  background: var(--bridal-primary-hover);
+}
+
+.actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.actions [role="alert"] {
+  color: var(--bridal-error);
+}
+
+.actions :is(button, a):focus-visible,
+.previewCard:focus-visible {
+  outline: 3px solid var(--bridal-accent);
+  outline-offset: 5px;
+}
+
+.previews {
+  position: relative;
+  width: 100%;
+  height: clamp(390px, 30vw, 445px);
+}
+
+.previewCard {
+  position: absolute;
+  z-index: 1;
+  bottom: 2%;
+  left: 3%;
+  width: 42%;
+  height: 86%;
+  overflow: hidden;
+  border: 1px solid #bc9c873f;
+  border-radius: 12px;
+  background: var(--preview-paper);
+  box-shadow: 0 0.8rem 1.7rem var(--bridal-shadow);
+  text-decoration: none;
+  transform: rotate(-4deg);
+  transform-origin: center bottom;
+  transition: translate 180ms ease;
+}
+
+.previewCard:nth-child(2) {
+  z-index: 3;
+  bottom: 0;
+  left: 34%;
+  width: 41%;
+  height: 99%;
+  transform: rotate(-1.5deg);
+}
+
+.previewCard:nth-child(3) {
+  z-index: 2;
+  bottom: 1.5%;
+  left: 62%;
+  width: 35%;
+  height: 86%;
+  transform: rotate(3deg);
+}
+
+.previewCard:is(:hover, :focus-visible) {
+  z-index: 6;
+  translate: 0 -5px;
+}
+
+.previewContent {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--preview-paper);
+  color: var(--preview-ink);
+  font-family: var(--preview-font, "Cormorant Garamond", Georgia, serif);
+  container-type: inline-size;
+}
+
+.previewNavigation {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3cqw;
+  min-height: 13cqw;
+  padding: 3cqw 5cqw;
+  color: var(--preview-ink);
+  font:
+    400 2.8cqw / 1.3 "Cormorant Garamond",
+    Georgia,
+    serif;
+}
+
+.previewNavigation span:first-child {
+  flex: 1;
+  font-style: italic;
+}
+
+.previewNavigation span:last-child {
+  border-radius: 999px;
+  padding: 1.3cqw 3cqw;
+  border: 1px solid var(--preview-accent);
+}
+
+.invitationArtwork {
+  position: relative;
+  flex: 1 1 40%;
+  min-height: 0;
+}
+
+.invitationArtwork img {
+  object-fit: cover;
+}
+
+.previewCard:first-child .invitationArtwork img {
+  object-position: 50% 51%;
+}
+
+.previewCard:nth-child(2) .invitationArtwork {
+  flex-basis: 46%;
+}
+
+.previewCard:nth-child(2) .invitationArtwork img {
+  object-position: 57% 48%;
+}
+
+.previewCard:nth-child(3) .invitationArtwork img {
+  object-position: 51% 34%;
+}
+
+.invitationIntro {
+  flex: 0 0 auto;
+  padding: 7cqw 4cqw 2cqw;
+  text-align: center;
+}
+
+.invitationHeading {
+  margin: 0 0 4cqw;
+  color: var(--preview-accent);
+  font:
+    400 14cqw / 1 "Great Vibes",
+    cursive;
+}
+
+.previewCard:first-child .invitationHeading {
+  font-size: 12cqw;
+}
+
+.invitationOccasion {
+  margin: 0;
+  font:
+    400 2.7cqw / 1.5 "Cormorant Garamond",
+    Georgia,
+    serif;
+  font-weight: 600;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+.invitationName {
+  margin: 3cqw 0 0;
+  font:
+    400 9cqw / 1.1 "Great Vibes",
+    cursive;
+}
+
+.invitationDetails {
+  flex: 0 0 auto;
+  padding: 0 4cqw 4cqw;
+  text-align: center;
+}
+
+.invitationDetails p {
+  margin: 0;
+  font:
+    400 2.6cqw / 1.8 "Cormorant Garamond",
+    Georgia,
+    serif;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.invitationRule {
+  display: block;
+  width: 13cqw;
+  height: 1px;
+  margin: 3cqw auto;
+  background: var(--preview-accent);
+  opacity: 0.45;
+}
+
+.invitationHeart {
+  display: block;
+  margin-top: 2cqw;
+  color: var(--preview-accent);
+  font:
+    400 6cqw / 1 Georgia,
+    serif;
+}
+
+.previewCard:nth-child(3) .invitationIntro {
+  padding-top: 8cqw;
+  padding-bottom: 7cqw;
+}
+
+.previewCard:nth-child(3) .invitationHeading {
+  max-width: 70cqw;
+  margin-inline: auto;
+  font-size: 17cqw;
+}
+
+.previewCard:nth-child(3) .invitationDetails {
+  padding-bottom: 4cqw;
+}
+
+.catalog {
+  width: 100%;
+  max-width: 1600px;
+  margin-inline: auto;
+  padding: 1.6rem clamp(1.25rem, 4.5vw, 4.5rem) 0;
+}
+
+.catalog [data-public-gallery-controls] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-bottom: 1.75rem;
+}
+
+.catalog [data-public-gallery-controls] > label {
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+
+.catalog [data-public-gallery-controls] > label:first-child {
+  position: relative;
+  flex: 2.5 1 16rem;
+}
+
+.catalog.catalog [data-public-gallery-controls] :is(input, select) {
+  --placeholder: var(--bridal-muted);
+  --foreground: var(--bridal-ink);
+  --surface: var(--bridal-surface);
+  width: 100%;
+  max-width: none;
+  border: 1px solid var(--bridal-line);
+  background: var(--bridal-surface);
+  color: var(--bridal-ink);
+  font-size: 0.85rem;
+  color-scheme: var(--bridal-color-scheme);
+}
+
+.catalog [data-public-gallery-controls] input {
+  padding-left: 3.1rem;
+}
+
+.catalog.catalog [data-public-gallery-controls] input::placeholder {
+  color: var(--bridal-muted);
+  opacity: 1;
+}
+
+.catalog.catalog [data-public-gallery-controls] input:autofill {
+  background: var(--bridal-surface);
+  color: var(--bridal-ink);
+  -webkit-text-fill-color: var(--bridal-ink);
+  box-shadow: 0 0 0 1000px var(--bridal-surface) inset;
+}
+
+.searchIcon {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 1.1rem;
+  color: var(--bridal-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.catalog [data-public-gallery-controls] :is(input, select):focus-visible {
+  outline: 2px solid var(--bridal-accent);
+  outline-offset: 4px;
+}
+
+.catalog [data-template-masonry-grid] {
+  --tile-inset: 0px;
+}
+
+.catalog.catalog [data-template-masonry-card],
+:global(html.dark) .catalog.catalog [data-template-masonry-card] {
+  --tile-radius: 1rem;
+  border-color: var(--bridal-header-line);
+  background: var(--bridal-surface);
+}
+
+.resume {
+  margin-bottom: 1.5rem;
+  border-color: var(--bridal-line);
+  background: var(--bridal-surface);
+  color: var(--bridal-ink);
+}
+
+.catalog [data-template-autoload] [role="status"] {
+  color: var(--bridal-muted);
+}
+
+@media (max-width: 1099px) {
+  .heroInner {
+    min-height: 415px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.7rem;
+  }
+
+  .title.title {
+    font-size: clamp(2.15rem, 3.75vw, 3rem);
+  }
+
+  .previews {
+    height: 360px;
+  }
+
+  .description {
+    font-size: 1.16rem;
+  }
+
+  .desktopBreak {
+    display: none;
+  }
+
+  .catalog [data-public-gallery-controls] > label {
+    flex-basis: calc(50% - 0.8rem);
+  }
+
+  .catalog [data-public-gallery-controls] > label:first-child {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 699px) {
+  .heroInner {
+    display: flex;
+    flex-direction: column;
+    gap: 1.3rem;
+    min-height: 0;
+    padding-top: 2.1rem;
+    padding-bottom: 1rem;
+  }
+
+  .copy {
+    width: 100%;
+    padding: 0;
+  }
+
+  .title.title {
+    max-width: 35rem;
+    font-size: clamp(2rem, 7.65vw, 3.35rem);
+  }
+
+  .eyebrow {
+    margin-bottom: 0.85rem;
+    font-size: 0.64rem;
+  }
+
+  .description {
+    max-width: 29rem;
+    margin-block: 1rem 1.25rem;
+    font-size: 1.2rem;
+    line-height: 1.35;
+  }
+
+  .actions [data-custom-design-create] {
+    padding-inline: 1.4rem;
+  }
+
+  .previews {
+    width: min(98%, 490px);
+    height: clamp(275px, 77vw, 365px);
+    margin-inline: auto;
+  }
+
+  .previewCard {
+    border-radius: 8px;
+  }
+
+  .catalog {
+    padding-top: 1.25rem;
+  }
+}
+
+@media (max-width: 359px) {
+  .catalog [data-public-gallery-controls] > label {
+    flex-basis: 100%;
+  }
+
+  .title.title {
+    font-size: 1.92rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .previewCard,
+  .actions [data-custom-design-create] {
+    transition: none;
+  }
+
+  .previewCard:is(:hover, :focus-visible) {
+    translate: none;
+  }
+}

@@ -11,6 +11,8 @@
   font-family: var(--font-geist-sans), var(--font-sans), system-ui, sans-serif;
 }
 :global(html.dark) .page {
+  --baby-orange: var(--marketing-accent);
+  --baby-orange-dark: color-mix(in srgb, var(--marketing-accent) 85%, var(--marketing-paper));
   --baby-navy: var(--foreground);
   --baby-blue: var(--primary);
   --baby-cream: var(--background);
@@ -73,7 +75,7 @@
 
 .primaryCta {
   background: var(--baby-orange);
-  color: white;
+  color: var(--marketing-paper);
   box-shadow: 0 16px 32px rgba(230, 102, 39, 0.25);
 }
 
@@ -179,11 +181,25 @@
 }
 
 .registryPreview {
-  border: 1px solid #e1e8ee;
+  border: 1px solid var(--marketing-line);
   border-radius: 2rem;
-  background: white;
+  background: var(--marketing-surface);
+  color: var(--marketing-ink);
   padding: 1.5rem;
   box-shadow: 0 26px 70px rgba(19, 35, 61, 0.12);
+}
+
+.registryRow {
+  border-color: var(--marketing-line);
+  background: var(--marketing-paper);
+  color: var(--marketing-ink);
+}
+
+.calendarStat,
+.collectionBadge {
+  border-color: var(--marketing-line);
+  background: var(--marketing-soft);
+  color: var(--marketing-accent);
 }
 
 .stepCard,

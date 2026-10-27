@@ -1,0 +1,102 @@
+{
+  "gymnastics": {
+    "name": "Gymnastics",
+    "headline": ["One meet.", "Everyone ready."],
+    "description": "Schedules, meet details and families. Together in one link.",
+    "photo": "/images/gymnastics/gymnast-editorial-hero-v2.webp",
+    "position": "center 35%",
+    "paper": "#f5f0fb",
+    "ink": "#362442",
+    "accent": "#79509a"
+  },
+  "weddings": {
+    "name": "Weddings",
+    "headline": ["Your day.", "All together."],
+    "description": "The invitation, the replies and every beautiful detail.",
+    "photo": "/images/landing/categories/stories-2026/weddings.webp",
+    "position": "center",
+    "paper": "#faf4ed",
+    "ink": "#49362f",
+    "accent": "#8b5d55"
+  },
+  "birthdays": {
+    "name": "Birthdays",
+    "headline": ["Make a wish.", "Make it yours."],
+    "description": "Party invitations, guest replies and all the happy details.",
+    "photo": "/images/landing/categories/stories-2026/birthdays.webp",
+    "position": "center",
+    "paper": "#fff3e3",
+    "ink": "#573126",
+    "accent": "#9c4c32"
+  },
+  "baby-showers": {
+    "name": "Baby showers",
+    "headline": ["A little one.", "A lot of love."],
+    "description": "A thoughtful welcome, with every shower detail in one place.",
+    "photo": "/images/landing/categories/stories-2026/baby-showers.webp",
+    "position": "center",
+    "paper": "#f1f5ed",
+    "ink": "#344d40",
+    "accent": "#52705c"
+  },
+  "bridal-showers": {
+    "name": "Bridal showers",
+    "headline": ["To the bride.", "With love."],
+    "description": "Bring your favorite people and the celebration details together.",
+    "photo": "/images/landing/categories/stories-2026/bridal-showers.webp",
+    "position": "center 30%",
+    "paper": "#fcf0f2",
+    "ink": "#542e43",
+    "accent": "#9a4f70"
+  },
+  "gender-reveal": {
+    "name": "Gender reveals",
+    "headline": ["One sweet", "surprise."],
+    "description": "The invitation, guest replies and guesses. One shared moment.",
+    "photo": "/images/landing/categories/stories-2026/gender-reveal.webp",
+    "position": "center",
+    "paper": "#f4f0fa",
+    "ink": "#463352",
+    "accent": "#7d528d"
+  },
+  "signup-forms": {
+    "name": "Sign-up forms",
+    "headline": ["Good people.", "Great plans."],
+    "description": "Potlucks, volunteer shifts and helping hands. All coordinated.",
+    "photo": "/images/landing/categories/stories-2026/signup-forms.webp",
+    "position": "center",
+    "paper": "#f4f5e9",
+    "ink": "#3d4a33",
+    "accent": "#5b7045"
+  },
+  "anniversaries": {
+    "name": "Anniversaries",
+    "headline": ["Your story.", "Still unfolding."],
+    "description": "Celebrate another chapter with your favorite people.",
+    "photo": "/images/landing/template-proof/generated/anniversary-party.webp",
+    "position": "65% center",
+    "paper": "#fbf0e8",
+    "ink": "#52332f",
+    "accent": "#995548"
+  },
+  "sports": {
+    "name": "Sports",
+    "headline": ["Your team.", "One place."],
+    "description": "Schedules, venues and team details. Ready for game time.",
+    "photo": "/images/landing/categories/stories-2026/sports.webp",
+    "position": "center",
+    "paper": "#edf4ef",
+    "ink": "#24483d",
+    "accent": "#386858"
+  },
+  "football": {
+    "name": "Football",
+    "headline": ["Every game.", "One team."],
+    "description": "Game days, season schedules and families. On the same page.",
+    "photo": "/images/landing/football/friday-night-team.webp",
+    "position": "center",
+    "paper": "#edf2e8",
+    "ink": "#2e4332",
+    "accent": "#526c3f"
+  }
+}

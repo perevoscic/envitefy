@@ -220,7 +220,7 @@ export default function BirthdayInvitationDemo({ primaryHref }: { primaryHref: s
           Create a page like this
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
-        <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[10px] font-semibold text-[#8b7a70]">
+        <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[10px] font-semibold text-[#75645b]">
           <Check className="h-3 w-3" aria-hidden="true" />
           This preview is interactive
         </p>

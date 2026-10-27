@@ -156,7 +156,12 @@ function CollectionCard({ collection }: { collection: (typeof collections)[numbe
           className="object-cover transition duration-700 group-hover:scale-[1.04]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#13233d]/58 via-transparent to-transparent" />
-        <span className="absolute top-4 right-4 rounded-full border border-white/70 bg-white/90 px-3 py-1 text-[0.65rem] font-bold text-[var(--baby-card-accent)] shadow-sm backdrop-blur">
+        <span
+          className={cx(
+            styles.collectionBadge,
+            "absolute top-4 right-4 rounded-full border px-3 py-1 text-[0.65rem] font-bold shadow-sm backdrop-blur",
+          )}
+        >
           {collection.badge}
         </span>
         <div className="absolute right-5 bottom-5 left-5 rounded-2xl border border-white/30 bg-[#13233d]/58 p-4 text-white backdrop-blur-md">
@@ -174,7 +179,7 @@ function CollectionCard({ collection }: { collection: (typeof collections)[numbe
           </span>
           <Link
             href={createHref}
-            className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--baby-card-accent)] transition hover:gap-2.5"
+            className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--marketing-accent)] transition hover:gap-2.5"
           >
             Browse templates
           </Link>
@@ -214,6 +219,7 @@ export default function BabyShowersLandingView() {
 
       <main className="pb-24 md:pb-0">
         <MarketingHero
+          category="baby-showers"
           eyebrow="Invitations · RSVP · registries"
           title={
             <>
@@ -223,6 +229,7 @@ export default function BabyShowersLandingView() {
             </>
           }
           description="A lovely invitation for the sweetest new chapter. Bring your baby shower details, registry links, and guest replies together."
+          lead="A warm welcome, beautifully brought together."
           image="/templates/baby-showers/pear-orchard-cradle.webp"
           imageAlt="Original pear orchard baby shower artwork with a woven cradle"
           primaryHref={createHref}
@@ -328,7 +335,7 @@ export default function BabyShowersLandingView() {
               </div>
             </div>
 
-            <div className={styles.registryPreview}>
+            <div className={styles.registryPreview} data-baby-registry-preview>
               <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-5">
                 <div>
                   <p className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
@@ -343,7 +350,7 @@ export default function BabyShowersLandingView() {
                     Registry & wishes
                   </h3>
                 </div>
-                <span className="rounded-full bg-[#eaf3fb] px-3 py-1.5 text-[0.62rem] font-bold text-[var(--marketing-accent)]">
+                <span className="rounded-full bg-[var(--marketing-soft)] px-3 py-1.5 text-[0.62rem] font-bold text-[var(--marketing-accent)]">
                   Sample guest view
                 </span>
               </div>
@@ -374,7 +381,11 @@ export default function BabyShowersLandingView() {
                 ].map((item) => (
                   <div
                     key={item.name}
-                    className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-[#f8fafc] p-3.5"
+                    className={cx(
+                      styles.registryRow,
+                      "flex items-center gap-3 rounded-2xl border p-3.5",
+                    )}
+                    data-baby-registry-row
                   >
                     <div
                       className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-xs font-extrabold"
@@ -388,7 +399,10 @@ export default function BabyShowersLandingView() {
                         {item.note}
                       </p>
                     </div>
-                    <ExternalLink className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+                    <ExternalLink
+                      className="h-4 w-4 shrink-0 text-[var(--marketing-muted)]"
+                      aria-hidden="true"
+                    />
                   </div>
                 ))}
               </div>
@@ -401,10 +415,13 @@ export default function BabyShowersLandingView() {
                     Guests going
                   </p>
                 </div>
-                <div className="rounded-2xl bg-[var(--marketing-soft)] p-4 text-[#7a2f0f]">
+                <div
+                  className={cx(styles.calendarStat, "rounded-2xl p-4")}
+                  data-baby-calendar-example
+                >
                   <CalendarDays className="h-4 w-4" aria-hidden="true" />
                   <p className="mt-3 text-sm font-bold">Saved to calendar</p>
-                  <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#7a2f0f]">
+                  <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em]">
                     One tap for guests
                   </p>
                 </div>

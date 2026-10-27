@@ -2,10 +2,14 @@ import { ArrowDownRight, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import PublicCreationLink from "./PublicCreationLink";
+import CategoryEditorialHero from "./CategoryEditorialHero";
+import type { EditorialCategory } from "./category-landing-themes";
 import styles from "./marketing.module.css";
+import PublicCreationLink from "./PublicCreationLink";
 
 export type MarketingHeroProps = {
+  category?: EditorialCategory;
+  lead?: string;
   eyebrow: string;
   title: ReactNode;
   description: string;
@@ -21,6 +25,8 @@ export type MarketingHeroProps = {
 };
 
 export default function MarketingHero({
+  category,
+  lead,
   eyebrow,
   title,
   description,
@@ -34,6 +40,27 @@ export default function MarketingHero({
   children,
   id = "landing-hero",
 }: MarketingHeroProps) {
+  if (category) {
+    return (
+      <CategoryEditorialHero
+        category={category}
+        lead={lead}
+        eyebrow={eyebrow}
+        title={title}
+        description={description}
+        image={image}
+        imageAlt={imageAlt}
+        primaryHref={primaryHref}
+        primaryLabel={primaryLabel}
+        primaryRequiresAccount={primaryRequiresAccount}
+        secondaryHref={secondaryHref}
+        secondaryLabel={secondaryLabel}
+        id={id}
+      >
+        {children}
+      </CategoryEditorialHero>
+    );
+  }
   return (
     <section id={id} className={styles.hero} data-marketing-hero>
       <div className={styles.heroCopy} data-motion-reveal>

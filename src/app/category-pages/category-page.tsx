@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { absoluteUrl } from "@/lib/absolute-url";
+import { buildCategoryShareMetadata } from "@/lib/category-share-metadata";
 import UseCaseLandingView from "./CategoryLandingView";
 import { getUseCasePageByPath } from "./category-page-data";
 
@@ -15,7 +16,6 @@ export async function buildUseCaseCategoryMetadata(path: string): Promise<Metada
   }
 
   const canonical = await absoluteUrl(page.path);
-  const imageUrl = await absoluteUrl(page.heroImage);
 
   return {
     title: page.metadataTitle,
@@ -24,20 +24,11 @@ export async function buildUseCaseCategoryMetadata(path: string): Promise<Metada
     alternates: {
       canonical,
     },
-    openGraph: {
+    ...buildCategoryShareMetadata(page.path.slice(1), {
       title: page.metadataTitle,
       description: page.description,
       url: canonical,
-      siteName: "Envitefy",
-      images: [{ url: imageUrl, alt: page.heroImageAlt }],
-      type: "website",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: page.metadataTitle,
-      description: page.description,
-      images: [imageUrl],
-    },
+    }),
   };
 }
 

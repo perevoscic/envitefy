@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 import TemplateGalleryLayout from "@/components/templates/TemplateGalleryLayout";
 import { getTemplateCategory } from "@/lib/template-categories";
+import { buildCategoryShareMetadata } from "@/lib/category-share-metadata";
 
 type Props = {
   params: Promise<{ category: string }>;
@@ -10,10 +11,14 @@ type Props = {
 export async function generateMetadata({ params }: Props) {
   const category = getTemplateCategory((await params).category);
   if (!category) return {};
+  const title = `${category.name} templates | Envitefy`;
+  const description = `Browse ${category.name.toLowerCase()} templates and customize your own. Create an account when you’re ready to save and share.`;
+  const canonical = `/${category.slug}/templates`;
   return {
-    title: `${category.name} templates | Envitefy`,
-    description: `Browse ${category.name.toLowerCase()} templates and customize your own. Create an account when you’re ready to save and share.`,
-    alternates: { canonical: `/${category.slug}/templates` },
+    title,
+    description,
+    alternates: { canonical },
+    ...buildCategoryShareMetadata(category.slug, { title, description, url: canonical }),
   };
 }
 export default async function TemplatesPage({ params, searchParams }: Props) {

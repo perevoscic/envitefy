@@ -148,6 +148,8 @@ test("guests use the native workspace without marketing navigation and retain ed
           if (scenario === "save-login") await account.getByRole("button", { name: "Switch to sign in", exact: true }).click();
           await account.getByRole("button", { name: scenario === "save-login" ? "Complete login" : "Complete account signup", exact: true }).click();
           await page.waitForURL(/edit=account-draft/);
+          assert.equal(await page.getByRole("button", { name: "Cancel", exact: true }).count(), 0, "the guest cancel disappears after authentication");
+          assert.equal(await page.getByRole("button", { name: "Close editor", exact: true }).count(), 0, "the former close control remains removed");
           assert.equal(await page.evaluate(() => window.__guestEditorBeforeAuth === (document.querySelector("#signup-panel-title") || document.querySelector("#signup-panel-title") || document.querySelector("#signup-title") || document.querySelector('input'))), true, "app chrome changes keep the actual editor mounted across authentication");
           assert.equal(writes.length, 1, "the explicit save becomes one account write after authentication");
           assert.equal(writes[0].pathname, "/api/history");
@@ -159,6 +161,128 @@ test("guests use the native workspace without marketing navigation and retain ed
           await page.screenshot({ path: path.join(output, `failure-${scenario}-${colorScheme}-${width}.png`), fullPage: true });
           throw new Error(`${scenario} in ${colorScheme} at ${width}px: ${error.message}\nPage errors: ${JSON.stringify(errors)}\nPage text: ${(await page.locator("body").innerText()).slice(0, 2400)}`);
         } finally { await context.close(); }
+      }
+    }
+  } finally { await browser.close(); }
+});
+
+test("guest Cancel sits before Preview and returns to its template gallery with the existing unsaved-progress choice", { timeout: 180000 }, async () => {
+  const output = path.resolve("output/public-template-guest-browser");
+  const { script, css } = await fixture(output);
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
+  const base = "http://localhost:43131";
+  try {
+    for (const width of [320, 390, 1280]) {
+      for (const colorScheme of ["light", "dark"]) {
+        for (const category of ["birthdays", "signup-forms"]) {
+          const context = await browser.newContext({ viewport: { width, height: 960 }, reducedMotion: "reduce", colorScheme });
+          const page = await context.newPage();
+          page.setDefaultTimeout(12000);
+          const errors = [];
+          const writes = [];
+          page.on("pageerror", (error) => errors.push(error.stack || error.message));
+          await context.route("**/*", async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            if (url.origin !== base) return route.abort();
+            if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: script });
+            if (url.pathname.startsWith("/api/")) {
+              if (request.method() !== "GET") writes.push({ pathname: url.pathname, method: request.method() });
+              return route.fulfill({ json: { people: [], recipients: [], events: [] } });
+            }
+            const publicFile = path.resolve("public", url.pathname.slice(1));
+            if (publicFile.startsWith(path.resolve("public") + path.sep) && fs.existsSync(publicFile) && fs.statSync(publicFile).isFile()) return route.fulfill({ body: fs.readFileSync(publicFile) });
+            if (/\.(?:woff2?|ttf|webp|png|svg|jpe?g)$/.test(url.pathname)) return route.fulfill({ status: 404, body: "" });
+            return route.fulfill({ contentType: "text/html; charset=utf-8", body: `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body><div id="root"></div><script src="/fixture.js"></script></body></html>` });
+          });
+          const signup = category === "signup-forms";
+          const editorPath = `/${category}/templates/${signup ? "editorial--school-days" : "party-pop"}/customize`;
+          const galleryPath = `/${category}/templates`;
+          const cancel = page.getByRole("button", { name: "Cancel", exact: true });
+          const progress = page.getByRole("dialog", { name: "Save your progress?", exact: true });
+          const assertFooterReachable = async (viewAction = "Preview") => {
+            assert.equal(await cancel.count(), 1, "one Cancel control is shared by editing and preview");
+            assert.equal(await cancel.isVisible(), true);
+            assert.equal(await page.getByRole("button", { name: "Close editor", exact: true }).count(), 0, "the X control is removed");
+            const bounds = await cancel.boundingBox();
+            assert.ok(bounds && bounds.width >= 44 && bounds.height >= 44, "Cancel has a 44px touch target");
+            assert.ok(bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= width && bounds.y + bounds.height <= 960, "Cancel remains inside the viewport");
+            assert.equal(await cancel.evaluate((element) => {
+              const box = element.getBoundingClientRect();
+              const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+              return hit === element || element.contains(hit);
+            }), true, "Cancel is not covered by the editor or preview");
+            let previous = null;
+            for (const label of ["Cancel", viewAction, "Save draft", "Publish"]) {
+              const action = page.getByRole("button", { name: label, exact: true });
+              assert.equal(await action.isVisible(), true, `${label} remains visible in the footer`);
+              const actionBounds = await action.boundingBox();
+              assert.ok(actionBounds && actionBounds.height >= 44, `${label} retains a 44px touch target height`);
+              assert.ok(Math.abs(actionBounds.y - bounds.y) <= 1, `${label} stays in the same row as Cancel`);
+              assert.ok(actionBounds.x >= 0 && actionBounds.x + actionBounds.width <= width, `${label} fits inside the viewport`);
+              if (previous) assert.ok(actionBounds.x >= previous.x + previous.width - 1, `${label} does not overlap the preceding action`);
+              previous = actionBounds;
+            }
+            const footerLabels = await cancel.evaluate((element) => [...element.closest("footer").querySelectorAll("button")]
+              .filter((button) => button.getClientRects().length)
+              .map((button) => button.textContent.trim()));
+            assert.deepEqual(footerLabels, ["Cancel", viewAction, "Save draft", "Publish"], "Cancel sits immediately before the view action");
+            assert.equal(await cancel.evaluate((element) => {
+              const footer = element.closest("footer");
+              return footer.scrollWidth <= footer.clientWidth && document.documentElement.scrollWidth <= window.innerWidth;
+            }), true, "the footer and document do not overflow horizontally");
+            return bounds;
+          };
+          try {
+            await page.goto(`${base}/previous`);
+            await page.goto(`${base}${editorPath}`);
+            await cancel.waitFor();
+            const exitBounds = await assertFooterReachable();
+            if (signup) {
+              for (const label of ["Page sections", "Layout", "Custom URL"]) {
+                const tool = page.getByRole("button", { name: label, exact: true });
+                assert.equal(await tool.isVisible(), true);
+                const bounds = await tool.boundingBox();
+                assert.ok(bounds && bounds.y + bounds.height <= exitBounds.y, `${label} stays above the footer Cancel action`);
+              }
+            }
+            await cancel.focus();
+            await page.keyboard.press("Enter");
+            await page.getByText(`Destination: ${galleryPath}`, { exact: true }).waitFor();
+            assert.equal(await progress.count(), 0, "an unchanged template cancels without a dialog");
+            assert.deepEqual(writes, [], "Cancel never saves or publishes");
+
+            await page.goto(`${base}${editorPath}`);
+            await cancel.waitFor();
+            if (signup) await page.getByRole("button", { name: /^Headline/ }).click();
+            const title = `Guest exit ${category} ${colorScheme} ${width}`;
+            const titleField = page.getByRole("textbox", { name: "Event title", exact: true });
+            await titleField.fill(title);
+            await cancel.click();
+            await progress.waitFor();
+            assert.equal(await page.getByRole("dialog").count(), 1, "Cancel opens one shared progress dialog");
+            assert.equal(new URL(page.url()).pathname, editorPath);
+            await progress.getByRole("button", { name: "Keep editing", exact: true }).click();
+            await progress.waitFor({ state: "hidden" });
+            assert.equal(await titleField.inputValue(), title, "Keep editing retains the edited title");
+            assert.equal(await cancel.evaluate((element) => document.activeElement === element), true, "Keep editing restores focus to Cancel");
+
+            await page.getByRole("button", { name: "Preview", exact: true }).click();
+            await assertFooterReachable("Edit");
+            assert.equal(await titleField.isVisible(), false, "preview hides the editing controls");
+            if (width === 390 && colorScheme === "light") await page.screenshot({ path: path.join(output, `guest-cancel-preview-${category}-${width}.png`) });
+            await cancel.focus();
+            await page.keyboard.press("Enter");
+            await progress.waitFor();
+            await progress.getByRole("button", { name: "Discard and leave", exact: true }).click();
+            await page.getByText(`Destination: ${galleryPath}`, { exact: true }).waitFor();
+            assert.deepEqual(writes, [], "discarding guest edits never performs account mutations");
+            assert.deepEqual(errors, []);
+          } catch (error) {
+            await page.screenshot({ path: path.join(output, `failure-cancel-${category}-${colorScheme}-${width}.png`), fullPage: true });
+            throw new Error(`guest Cancel for ${category} in ${colorScheme} at ${width}px: ${error.message}\nPage errors: ${JSON.stringify(errors)}\nPage text: ${(await page.locator("body").innerText()).slice(0, 2400)}`);
+          } finally { await context.close(); }
+        }
       }
     }
   } finally { await browser.close(); }

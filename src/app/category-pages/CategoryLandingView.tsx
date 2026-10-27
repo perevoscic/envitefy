@@ -113,6 +113,9 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
 
       <main style={cssVars}>
         <MarketingHero
+          category={
+            page.slug === "gender-reveal" || page.slug === "signup-forms" ? page.slug : undefined
+          }
           eyebrow={page.eyebrow}
           title={
             page.slug === "gender-reveal" ? (

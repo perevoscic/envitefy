@@ -14,3 +14,60 @@
 .studioDescription {
   color: var(--marketing-muted);
 }
+
+.studioShareButton {
+  background: linear-gradient(90deg, #795b3d, #634932);
+  color: #fff;
+}
+
+.studioShareButton:hover {
+  background: #523c2a;
+}
+
+.finalCta {
+  background: #0f172a;
+  color: #fff;
+}
+
+.finalCard {
+  border-color: #ab8a5f4d;
+  background: linear-gradient(90deg, #795b3d, #634932, #523c2a);
+}
+
+.finalDescription {
+  color: #f2ece1;
+}
+
+.finalButton {
+  background: #fff;
+  color: #523c2a;
+}
+
+.finalButton:hover {
+  background: #fbf9f5;
+}
+
+:global(html.dark) .finalCta {
+  background: var(--marketing-paper);
+  color: var(--marketing-ink);
+}
+
+:global(html.dark) .finalCard {
+  border-color: var(--marketing-line);
+  background: linear-gradient(90deg, var(--marketing-soft), var(--marketing-surface));
+}
+
+:global(html.dark) .finalDescription {
+  color: var(--marketing-muted);
+}
+
+:global(html.dark) .studioShareButton,
+:global(html.dark) .finalButton {
+  background: var(--marketing-accent);
+  color: var(--marketing-paper);
+}
+
+:global(html.dark) .studioShareButton:hover,
+:global(html.dark) .finalButton:hover {
+  background: color-mix(in srgb, var(--marketing-accent) 88%, white);
+}

@@ -280,6 +280,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
             </div>
             <PublicCreationLink
               href={page.primaryHref}
+              data-public-primary
               className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#2b1748] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_50px_rgba(43,23,72,0.2)] transition hover:-translate-y-0.5"
             >
               {page.primaryCta}
@@ -370,7 +371,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                 Tell Envitefy Create who it is for, when, and where. It collects missing details,
                 then drafts the invitation, Team Pink or Team Blue, RSVP, and guest page.
               </p>
-              <div className="mt-6 space-y-3">
+              <div data-appearance-scope="authored" className="mt-6 space-y-3">
                 <div className="ml-8 rounded-2xl rounded-tr-md bg-white px-4 py-3 text-sm leading-6 text-[#241b29]">
                   Saturday reveal at Cedar Park, 2 PM. RSVP plus Team Pink or Team Blue, please.
                 </div>
@@ -444,6 +445,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <PublicCreationLink
               href={page.primaryHref}
+              data-public-primary
               className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#241b29] transition hover:-translate-y-0.5"
             >
               Create your reveal page

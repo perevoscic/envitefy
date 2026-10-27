@@ -112,6 +112,10 @@
   color: var(--public-header-accent);
 }
 
+.create {
+  flex-shrink: 0;
+}
+
 .primary {
   display: inline-flex;
   align-items: center;
@@ -200,6 +204,40 @@
   .join {
     padding-inline: 1rem;
     font-size: 0.75rem;
+  }
+
+  .header[data-create-account-actions] {
+    padding-inline: 1rem;
+  }
+
+  .header[data-create-account-actions] .inner,
+  .header[data-create-account-actions] .actions {
+    gap: 0.5rem;
+  }
+
+  .header[data-create-account-actions] .brand img {
+    width: clamp(72px, calc(100vw - 270px), 125px);
+  }
+
+  .header[data-create-account-actions] .join {
+    min-width: 56px;
+    padding-inline: 0.625rem;
+  }
+
+  .create {
+    --liquid-button-min-width: 108px;
+    --liquid-button-padding: 12px;
+    --liquid-button-font-size: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .header[data-create-account-actions] {
+    padding-inline: 0.75rem;
+  }
+
+  .create {
+    --liquid-button-min-width: 100px;
   }
 }
 

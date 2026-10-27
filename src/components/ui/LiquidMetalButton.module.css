@@ -1,0 +1,159 @@
+.button {
+  --liquid-button-ink: var(--public-header-paper, #fcf8f3);
+  --liquid-button-accent: var(--public-header-accent, #853652);
+  --liquid-button-paper: var(--public-header-accent, #853652);
+  --liquid-button-hover: var(--public-header-ink, #442c3b);
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--liquid-button-min-width, 142px);
+  min-height: 44px;
+  height: 44px;
+  padding: 2px var(--liquid-button-padding, 22px);
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    var(--liquid-button-accent),
+    color-mix(in srgb, var(--liquid-button-accent) 55%, var(--liquid-button-ink)),
+    var(--liquid-button-accent)
+  );
+  color: var(--liquid-button-ink);
+  font-family: inherit;
+  font-size: var(--liquid-button-font-size, 0.8rem);
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 160ms ease,
+    color 180ms ease;
+}
+
+.button:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--liquid-button-accent);
+  outline-offset: 4px;
+}
+
+.button:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.shader,
+.inset,
+.ripples {
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.shader {
+  z-index: -2;
+  inset: 0;
+  overflow: hidden;
+  mix-blend-mode: luminosity;
+  opacity: 0.4;
+}
+
+.shader canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: inherit;
+}
+
+.inset {
+  z-index: -1;
+  inset: 1px;
+  background: var(--liquid-button-paper);
+  transition: background 180ms ease;
+}
+
+.button:hover .inset {
+  background: var(--liquid-button-hover);
+}
+
+.button:active .inset {
+  box-shadow: inset 0 1px 3px color-mix(in srgb, var(--liquid-button-accent) 20%, transparent);
+}
+
+.label {
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+}
+
+.ripples {
+  z-index: 1;
+  inset: 1px;
+  overflow: hidden;
+}
+
+.ripple {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--liquid-button-ink) 20%, transparent),
+    transparent 70%
+  );
+  animation: liquid-button-ripple 600ms ease-out both;
+}
+
+@keyframes liquid-button-ripple {
+  from {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(8);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .inset {
+    transition: none;
+  }
+
+  .button:active {
+    transform: none;
+  }
+
+  .ripple {
+    display: none;
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .button {
+    border: 2px solid ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+
+  .shader,
+  .inset,
+  .ripples {
+    display: none;
+  }
+
+  .button:focus-visible {
+    outline-color: Highlight;
+  }
+}

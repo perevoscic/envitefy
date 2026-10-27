@@ -11,7 +11,10 @@ export default function BirthdayPromptStudio({ primaryHref }: { primaryHref: str
   const example = birthdayPromptExamples[activeIndex];
 
   return (
-    <div className="mt-12 overflow-hidden rounded-[2.5rem] border border-[#e5d8cf] bg-white shadow-[0_26px_80px_rgba(73,48,34,0.1)]">
+    <div
+      data-appearance-scope="authored"
+      className="mt-12 overflow-hidden rounded-[2.5rem] border border-[#e5d8cf] bg-white shadow-[0_26px_80px_rgba(73,48,34,0.1)]"
+    >
       <div className="grid lg:grid-cols-[0.82fr_1.18fr]">
         <div className="flex flex-col bg-[#302742] p-6 text-white sm:p-9 lg:min-h-[40rem]">
           <div className="flex items-center justify-between gap-4">

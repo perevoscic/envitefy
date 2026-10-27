@@ -228,6 +228,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
             </div>
             <Link
               href={browseHref}
+              data-public-primary
               className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#18214d] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_50px_rgba(24,33,77,0.22)] transition hover:-translate-y-0.5"
             >
               Browse templates
@@ -286,6 +287,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href={browseHref}
+              data-public-primary
               className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#18214d] transition hover:-translate-y-0.5"
             >
               Browse templates

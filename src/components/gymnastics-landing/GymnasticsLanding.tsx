@@ -21,6 +21,7 @@ import MarketingPage from "@/components/marketing/MarketingPage";
 import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import PublicConciergeWidget from "@/components/navigation/PublicConciergeWidget";
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 import { GradientBackgroundLayer } from "@/components/ui/gradient-backgrounds";
 import { marketingPageNavLinks } from "@/config/navigation";
 import hero from "./GymnasticsEditorialHero.module.css";
@@ -256,6 +257,7 @@ export default function GymnasticsLanding() {
             </li>
           </ul>
         </div>
+        <PublicTemplateGallery category="gymnastics" featured />
         <section
           id="meet-demo"
           className={showcase.section}

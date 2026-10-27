@@ -1,0 +1,55 @@
+.button {
+  position: relative;
+}
+
+.border {
+  position: absolute;
+  inset: -1px;
+  padding: 2px;
+  border-radius: inherit;
+  pointer-events: none;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.runner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, currentColor 80%, transparent),
+    currentColor
+  );
+  offset-path: inset(0 round 999px);
+  offset-anchor: 50% 50%;
+  animation: envitefy-button-border 5s linear infinite;
+}
+
+.button:disabled .runner {
+  animation-play-state: paused;
+}
+
+@keyframes envitefy-button-border {
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .runner {
+    animation: none;
+    offset-distance: 25%;
+  }
+}
+
+@media (forced-colors: active) {
+  .border {
+    display: none;
+  }
+}

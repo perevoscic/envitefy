@@ -25,7 +25,7 @@ export default function SignupBoardPreview({ compact = false }: { compact?: bool
             Interactive sample
           </p>
           <h2 className="mt-2 text-2xl font-semibold !text-white sm:text-3xl">Spring Carnival</h2>
-          <p className="mt-1.5 text-xs text-white/52">Saturday · 10:00 AM–3:00 PM</p>
+          <p className="mt-1.5 text-xs text-white/70">Saturday · 10:00 AM–3:00 PM</p>
         </div>
         <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/9">
           <ClipboardList className="h-5 w-5 text-[#b9c4ff]" aria-hidden="true" />
@@ -35,19 +35,19 @@ export default function SignupBoardPreview({ compact = false }: { compact?: bool
       <div className="mt-5 flex items-end justify-between border-y border-white/12 py-4">
         <div>
           <p className="text-3xl font-semibold">{claimed ? 32 : 31}</p>
-          <p className="mt-1 text-[0.6rem] font-bold uppercase tracking-[0.16em] text-white/42">
+          <p className="mt-1 text-[0.6rem] font-bold uppercase tracking-[0.16em] text-white/70">
             claimed
           </p>
         </div>
         <div className="text-center">
           <p className="text-3xl font-semibold text-[#f2c27b]">{claimed ? 13 : 14}</p>
-          <p className="mt-1 text-[0.6rem] font-bold uppercase tracking-[0.16em] text-white/42">
+          <p className="mt-1 text-[0.6rem] font-bold uppercase tracking-[0.16em] text-white/70">
             still open
           </p>
         </div>
         <div className="text-right">
           <p className="text-3xl font-semibold">4</p>
-          <p className="mt-1 text-[0.6rem] font-bold uppercase tracking-[0.16em] text-white/42">
+          <p className="mt-1 text-[0.6rem] font-bold uppercase tracking-[0.16em] text-white/70">
             lists
           </p>
         </div>
@@ -63,11 +63,11 @@ export default function SignupBoardPreview({ compact = false }: { compact?: bool
                   {complete ? (
                     <CheckCircle2 className="h-4 w-4 text-emerald-300" aria-hidden="true" />
                   ) : (
-                    <Clock3 className="h-4 w-4 text-white/38" aria-hidden="true" />
+                    <Clock3 className="h-4 w-4 text-white/65" aria-hidden="true" />
                   )}
                   <span className="text-sm font-semibold">{row.label}</span>
                 </div>
-                <span className="text-xs font-bold text-white/55">
+                <span className="text-xs font-bold text-white/70">
                   {row.claimed}/{row.total}
                 </span>
               </div>

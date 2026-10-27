@@ -26,18 +26,23 @@ async function buildFixture() {
     function App() {
       const params = new URLSearchParams(location.search);
       const editorial = params.has("editorial");
-      const primaryLabel = params.has("wide") ? "Browse all invitation and event page templates" : "Create your event";
-      const links = params.has("wide")
+      const gallery = params.has("gallery");
+      const primaryLabel = gallery ? "Let's create" : params.has("wide") ? "Browse all invitation and event page templates" : "Create your event";
+      const links = gallery
+        ? [{ label: "Home", href: "/" }, { label: "Bridal showers", href: "/bridal-showers" }, { label: "All categories", href: "/#categories" }]
+        : params.has("wide")
         ? ["Introduction", "Template collections", "Live preview", "How it works", "Planning tools", "Guest responses", "Questions"].map((label) => ({ label, href: "#examples" }))
         : [{ label: "Examples", href: "#examples" }, { label: "Questions", href: "#questions" }];
       return <ThemeProvider>
         {editorial ? <MarketingPage tone={(params.get("tone") || "celebration") as "celebration" | "sports" | "product"}>
           <HeroTopNav editorialTone={(params.get("tone") || "celebration") as "celebration" | "sports" | "product"}
             navLinks={links} primaryCtaLabel={primaryLabel}
+            editorialAccountAction={gallery ? "login" : "signup"}
+            hideEditorialPrimary={gallery}
             authenticatedPrimaryHref="/create" guestPrimaryHref={params.has("href") ? "/birthdays/templates" : undefined}
             loginSuccessRedirectUrl="/category-login"
             onGuestLoginAction={() => window.__landingProductAuth.push({ mode: "login", redirect: "/category-login" })}
-            onGuestSignupAction={params.has("signup") ? () => window.__landingProductAuth.push({ mode: "signup", redirect: "/category-signup" }) : undefined}
+            onGuestSignupAction={params.has("signup") || gallery ? () => window.__landingProductAuth.push({ mode: "signup", redirect: "/category-signup" }) : undefined}
             onGuestPrimaryAction={() => window.__landingProductAuth.push({ mode: "signup", redirect: "/category-create" })} />
           <main style={{ minHeight: 6000, paddingTop: 140 }}>
             <h1>Public category page</h1>
@@ -509,18 +514,11 @@ test("public headers follow scroll direction while the homepage avoids duplicate
             await assertLogo(header, false, `${label}: restored deep scroll shows small logo`);
           }
           if (kind === "landing" && width >= 1024) {
-            await header.getByRole("link", { name: "Templates", exact: true }).focus();
+            await header.getByRole("link", { name: "Categories", exact: true }).focus();
             await page.keyboard.press("Enter");
             await page.waitForFunction(() => {
-              const target = document.getElementById("examples").getBoundingClientRect();
-              const navigation = document
-                .querySelector("header[data-scroll-hidden]")
-                .getBoundingClientRect();
-              return (
-                location.hash === "#examples" &&
-                target.top >= navigation.bottom &&
-                target.top <= 120
-              );
+              const target = document.getElementById("categories").getBoundingClientRect();
+              return location.hash === "#categories" && Math.abs(target.top) < 2;
             });
           }
           assert.deepEqual(errors, [], `${label}: no browser errors`);
@@ -563,7 +561,8 @@ test("public headers follow scroll direction while the homepage avoids duplicate
             await page.waitForFunction((dark) => document.documentElement.classList.contains("dark") === dark, scheme === "dark");
             await page.evaluate(() => document.fonts.ready);
             const actual = await headerPresentation(header);
-            for (const part of ["header", "layout", "geometry", "brand", "images", "join", "primary", "primaryIcon", "menu", "menuIcon", "nav", "navLink"]) {
+            // Page-specific account and creation controls are checked by the per-action assertions below.
+            for (const part of ["header", "layout", "geometry", "brand", "images", "menu", "menuIcon", "nav", "navLink"]) {
               assert.deepEqual(actual[part], reference[part], `${label}: ${part} matches the current main landing header`);
             }
             assert.equal(await header.evaluate((node) => getComputedStyle(node).position), "fixed", `${label}: other public pages retain fixed positioning`);
@@ -691,4 +690,218 @@ test("public headers follow scroll direction while the homepage avoids duplicate
     await browser.close();
   }
   fs.writeFileSync(path.join(output, "results.json"), JSON.stringify(results, null, 2));
+});
+
+test("gallery liquid-metal create action stays beside Sign in on desktop and phones", {
+  timeout: 180000,
+}, async () => {
+  const css = await buildFixture();
+  const chrome = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ||
+    (fs.existsSync(chromium.executablePath()) ? chromium.executablePath()
+      : path.join(process.env.PROGRAMFILES || "C:\\Program Files", "Google/Chrome/Application/chrome.exe"));
+  const browser = await chromium.launch({ headless: true, executablePath: chrome });
+  const results = [];
+  const readCreatePalette = (create) => create.evaluate((node) => {
+    const shader = node.querySelector("[data-liquid-metal-shader]");
+    const inset = shader.nextElementSibling;
+    const label = inset.nextElementSibling;
+    const tokenColor = (token) => {
+      const probe = document.createElement("span");
+      probe.style.color = `var(${token})`;
+      node.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    };
+    return {
+      fill: getComputedStyle(inset).backgroundColor,
+      label: getComputedStyle(label).color,
+      textFill: getComputedStyle(label).webkitTextFillColor,
+      accent: tokenColor("--public-header-accent"),
+      paper: tokenColor("--public-header-paper"),
+      hover: tokenColor("--public-header-ink"),
+    };
+  });
+  try {
+    for (const scheme of ["light", "dark"])
+      for (const width of [320, 375, 390, 768, 1024, 1440]) {
+        const label = `gallery create ${scheme} ${width}px`;
+        const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: scheme, reducedMotion: "reduce" });
+        const errors = [], unexpected = [];
+        await serve(context, css, unexpected);
+        const page = await context.newPage();
+        page.setDefaultTimeout(10000);
+        page.on("pageerror", (error) => errors.push(error.message));
+        try {
+          await page.goto(`${base}/?editorial&gallery`);
+          const header = page.locator("header[data-public-landing-header]");
+          await header.waitFor();
+          await page.waitForFunction((dark) => document.documentElement.classList.contains("dark") === dark, scheme === "dark");
+          await page.evaluate(() => document.fonts.ready);
+          const signIn = header.getByRole("button", { name: "Sign in", exact: true });
+          const create = header.getByRole("button", { name: "Let's create", exact: true });
+          assert.equal(await signIn.isVisible(), true, `${label}: Sign in remains visible`);
+          assert.equal(await create.isVisible(), true, `${label}: Let's create is visible beside Sign in`);
+          assert.notEqual(await create.getAttribute("data-header-create"), null, `${label}: the gallery owns the creation action`);
+          assert.equal(await header.locator("[data-header-primary]").count(), 0, `${label}: the former hidden primary action stays absent`);
+          await page.mouse.move(0, 300);
+          const palette = await readCreatePalette(create);
+          assert.equal(palette.fill, palette.accent, `${label}: creation uses the native primary fill`);
+          assert.equal(palette.label, palette.paper, `${label}: creation uses matching theme text`);
+          assert.equal(palette.textFill, palette.paper, `${label}: WebKit text follows the theme`);
+          await create.hover();
+          await page.waitForFunction(() => {
+            const node = document.querySelector("[data-header-create]");
+            const inset = node.querySelector("[data-liquid-metal-shader]").nextElementSibling;
+            return getComputedStyle(inset).backgroundColor === getComputedStyle(node.closest("header")).color;
+          });
+          const hoverPalette = await readCreatePalette(create);
+          assert.equal(hoverPalette.fill, hoverPalette.hover, `${label}: hover uses native theme ink`);
+          assert.equal(hoverPalette.label, palette.paper, `${label}: hover retains matching theme text`);
+          await page.mouse.move(0, 300);
+          if (width === 1440) {
+            await page.emulateMedia({ colorScheme: scheme === "dark" ? "light" : "dark" });
+            await page.waitForFunction((dark) => document.documentElement.classList.contains("dark") === dark, scheme !== "dark");
+            const switchedPalette = await readCreatePalette(create);
+            assert.equal(switchedPalette.fill, switchedPalette.accent, `${label}: a live appearance change updates the native fill`);
+            assert.equal(switchedPalette.label, switchedPalette.paper, `${label}: a live appearance change updates matching text`);
+            assert.notEqual(switchedPalette.fill, palette.fill, `${label}: both appearances have distinct primary colors`);
+            await page.emulateMedia({ colorScheme: scheme });
+            await page.waitForFunction((dark) => document.documentElement.classList.contains("dark") === dark, scheme === "dark");
+          }
+          await assertBoundedHeader(page, header, label);
+          const geometry = await header.evaluate((node) => {
+            const visible = (selector) => [...node.querySelectorAll(selector)]
+              .map((control) => ({ label: control.getAttribute("aria-label") || control.textContent.trim(), ...control.getBoundingClientRect().toJSON() }))
+              .filter((box) => box.width > 0 && box.height > 0);
+            return visible('a[aria-label="Envitefy home"], [data-header-join], [data-header-create], button[aria-label="Open navigation"]');
+          });
+          for (const box of geometry) {
+            assert.ok(box.height >= 44 && box.width >= 44, `${label}: ${box.label} retains a 44px target`);
+          }
+          for (let index = 1; index < geometry.length; index++) {
+            const previous = geometry[index - 1], current = geometry[index];
+            assert.ok(previous.right <= current.left + 0.5, `${label}: ${previous.label} and ${current.label} do not overlap`);
+            assert.ok(Math.abs((previous.top + previous.height / 2) - (current.top + current.height / 2)) < 1, `${label}: header actions remain on one row`);
+          }
+          await page.keyboard.press("Tab");
+          for (const control of [signIn, create]) {
+            await control.focus();
+            const focus = await control.evaluate((node) => {
+              const style = getComputedStyle(node);
+              return { visible: node.matches(":focus-visible"), outline: style.outlineStyle, width: parseFloat(style.outlineWidth), active: node === document.activeElement };
+            });
+            assert.ok(focus.active && focus.visible && focus.outline !== "none" && focus.width >= 2, `${label}: both actions expose keyboard focus`);
+          }
+          await create.click();
+          await signIn.click();
+          assert.deepEqual(await page.evaluate(() => window.__landingProductAuth), [
+            { mode: "signup", redirect: "/category-signup" },
+            { mode: "login", redirect: "/category-login" },
+          ], `${label}: creation and Sign in keep their separate account callbacks`);
+          await page.waitForFunction(() => Boolean(document.querySelector("[data-liquid-metal-shader]")?.paperShaderMount));
+          const shader = await create.locator("[data-liquid-metal-shader]").evaluate(async (node) => {
+            const mount = node.paperShaderMount;
+            const before = mount.getCurrentFrame();
+            await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+            const after = mount.getCurrentFrame();
+            // Render the same static frame immediately before reading WebGL pixels.
+            mount.setFrame(after);
+            const canvas = node.querySelector("canvas"), gl = canvas.getContext("webgl2");
+            const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+            gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+            let min = 255, max = 0, opaque = 0;
+            for (let index = 0; index < pixels.length; index += 4) {
+              min = Math.min(min, pixels[index], pixels[index + 1], pixels[index + 2]);
+              max = Math.max(max, pixels[index], pixels[index + 1], pixels[index + 2]);
+              if (pixels[index + 3] > 0) opaque++;
+            }
+            return { before, after, min, max, opaque, width: canvas.width, height: canvas.height, hidden: node.getAttribute("aria-hidden"), pointerEvents: getComputedStyle(node).pointerEvents };
+          });
+          assert.equal(shader.after, shader.before, `${label}: reduced motion holds the liquid metal still`);
+          assert.ok(shader.width > 0 && shader.height > 0 && shader.opaque > 0 && shader.max - shader.min > 30, `${label}: the shader renders varied effect pixels`);
+          assert.equal(shader.hidden, "true", `${label}: the decorative effect stays outside the accessible label`);
+          assert.equal(shader.pointerEvents, "none", `${label}: the shader cannot intercept the button`);
+          await page.evaluate(() => document.activeElement?.blur());
+          if ([320, 375, 1440].includes(width)) await page.screenshot({ path: path.join(output, `gallery-create-${scheme}-${width}.png`) });
+          await page.goto(`${base}/?editorial&gallery&authenticated`);
+          const dashboard = header.getByRole("link", { name: "Dashboard", exact: true });
+          await dashboard.waitFor();
+          assert.equal(await dashboard.getAttribute("href"), "/", `${label}: authenticated Dashboard keeps its destination`);
+          assert.equal(await header.locator("[data-header-create], [data-liquid-metal-button]").count(), 0, `${label}: authenticated accounts do not receive the guest signup effect`);
+          await assertBoundedHeader(page, header, `${label} authenticated`);
+          assert.deepEqual(errors, [], `${label}: no browser errors`);
+          assert.deepEqual(unexpected, [], `${label}: no external or write requests`);
+          results.push({ label, shader });
+        } finally {
+          await context.close();
+        }
+      }
+
+    {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "no-preference" });
+      const errors = [], unexpected = [];
+      await serve(context, css, unexpected);
+      const page = await context.newPage();
+      page.setDefaultTimeout(10000);
+      page.on("pageerror", (error) => errors.push(error.message));
+      try {
+        await page.goto(`${base}/?editorial&gallery`);
+        await page.waitForFunction(() => Boolean(document.querySelector("[data-liquid-metal-shader]")?.paperShaderMount));
+        const start = await page.locator("[data-liquid-metal-shader]").evaluate((node) => node.paperShaderMount.getCurrentFrame());
+        await page.waitForFunction((start) => document.querySelector("[data-liquid-metal-shader]").paperShaderMount.getCurrentFrame() > start, start);
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        const frames = await page.locator("[data-liquid-metal-shader]").evaluate(async (node) => {
+          await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const start = node.paperShaderMount.getCurrentFrame();
+          await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          return [start, node.paperShaderMount.getCurrentFrame()];
+        });
+        assert.equal(frames[0], frames[1], "a live reduced-motion change immediately freezes the liquid metal");
+        assert.deepEqual(errors, [], "animated liquid metal produces no browser errors");
+        assert.deepEqual(unexpected, [], "animated liquid metal makes no external or write requests");
+      } finally {
+        await context.close();
+      }
+    }
+
+    {
+      const context = await browser.newContext({ viewport: { width: 390, height: 900 }, reducedMotion: "reduce" });
+      const errors = [], unexpected = [];
+      await context.addInitScript(() => {
+        const original = HTMLCanvasElement.prototype.getContext;
+        window.__blockedWebGLCalls = 0;
+        HTMLCanvasElement.prototype.getContext = function (kind, ...args) {
+          if (kind === "webgl2") {
+            window.__blockedWebGLCalls++;
+            return null;
+          }
+          return original.call(this, kind, ...args);
+        };
+      });
+      await serve(context, css, unexpected);
+      const page = await context.newPage();
+      page.setDefaultTimeout(10000);
+      page.on("pageerror", (error) => errors.push(error.message));
+      try {
+        await page.goto(`${base}/?editorial&gallery`);
+        const create = page.locator("[data-header-create]");
+        await create.waitFor();
+        await page.waitForFunction(() => window.__blockedWebGLCalls > 0 && !document.querySelector("[data-liquid-metal-shader] canvas"));
+        const fallback = await create.evaluate((node) => ({ background: getComputedStyle(node).backgroundImage, color: getComputedStyle(node).color, text: node.textContent.trim() }));
+        assert.match(fallback.background, /linear-gradient/, "WebGL failure retains the theme-colored CSS rim");
+        assert.equal(fallback.text, "Let's create", "WebGL failure keeps the button label");
+        await create.click();
+        assert.deepEqual(await page.evaluate(() => window.__landingProductAuth), [{ mode: "signup", redirect: "/category-signup" }], "WebGL failure keeps account creation usable");
+        await page.screenshot({ path: path.join(output, "gallery-create-webgl-fallback-390.png") });
+        assert.deepEqual(errors, [], "WebGL failure is handled without a browser error");
+        assert.deepEqual(unexpected, [], "WebGL fallback makes no external or write requests");
+      } finally {
+        await context.close();
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+  fs.writeFileSync(path.join(output, "gallery-create-results.json"), JSON.stringify(results, null, 2));
 });

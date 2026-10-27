@@ -251,6 +251,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
         }
       >
         <MarketingHero
+          category="weddings"
           eyebrow="Wedding invitations & guest pages"
           title={
             <>
@@ -260,6 +261,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
             </>
           }
           description="A beautiful invitation, every wedding detail, and your guest replies. Bring it all together in one thoughtful link."
+          lead="Every detail, from yes to I do."
           image="/templates/weddings/generated-heroes/blush-linen-romance-hero.webp"
           imageAlt="Original blush floral wedding invitation artwork"
           primaryHref={primaryHref}
@@ -338,14 +340,15 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
           </div>
         </section>
 
-        <section
-          id="studio"
-          className={`${styles.studio} border-y py-24`}
-        >
+        <section id="studio" className={`${styles.studio} border-y py-24`}>
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto mb-16 max-w-3xl space-y-4 text-center">
-              <SectionEyebrow className={styles.studioEyebrow}>Wedding Invitation Design</SectionEyebrow>
-              <h2 className={`${styles.studioTitle} font-wedding-serif text-3xl font-light tracking-wide sm:text-5xl`}>
+              <SectionEyebrow className={styles.studioEyebrow}>
+                Wedding Invitation Design
+              </SectionEyebrow>
+              <h2
+                className={`${styles.studioTitle} font-wedding-serif text-3xl font-light tracking-wide sm:text-5xl`}
+              >
                 Design Your Wedding Invitation Live
               </h2>
               <p className={`${styles.studioDescription} text-sm font-light sm:text-base`}>
@@ -459,9 +462,11 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
           </div>
         </section>
 
-        <section className="bg-slate-900 px-4 pt-20 pb-16 text-white sm:px-6 lg:px-8">
+        <section className={`${styles.finalCta} px-4 pt-20 pb-16 sm:px-6 lg:px-8`}>
           <div className="mx-auto max-w-7xl space-y-16">
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-[#ab8a5f]/30 bg-gradient-to-r from-[#795b3d] via-[#634932] to-[#523c2a] p-10 text-center shadow-2xl sm:p-14">
+            <div
+              className={`${styles.finalCard} relative overflow-hidden rounded-[2.5rem] border p-10 text-center shadow-2xl sm:p-14`}
+            >
               <div
                 className="pointer-events-none absolute inset-0 opacity-10 [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]"
                 aria-hidden="true"
@@ -470,14 +475,16 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
                 <h3 className="font-wedding-serif text-3xl font-light tracking-wide sm:text-5xl">
                   Begin Your Wedding Stationery Journey
                 </h3>
-                <p className="text-xs font-light tracking-wider text-[#f2ece1] sm:text-sm">
+                <p
+                  className={`${styles.finalDescription} text-xs font-light tracking-wider sm:text-sm`}
+                >
                   Start with a design you love, personalize the details, and share when you are
                   ready.
                 </p>
                 <div className="pt-4">
                   <Link
                     href={primaryHref}
-                    className="inline-block rounded-full bg-white px-10 py-4 text-xs font-semibold uppercase tracking-widest text-[#523c2a] shadow-xl transition hover:bg-[#fbf9f5]"
+                    className={`${styles.finalButton} inline-block rounded-full px-10 py-4 text-xs font-semibold uppercase tracking-widest shadow-xl transition`}
                   >
                     Browse templates
                   </Link>

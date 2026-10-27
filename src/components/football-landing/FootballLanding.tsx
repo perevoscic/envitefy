@@ -11,9 +11,11 @@ import {
 } from "@/components/events/TemplateMasonryGallery";
 import FootballThumbnail from "@/components/football-season-templates/FootballThumbnail";
 import { FOOTBALL_GALLERY_DESIGNS } from "@/components/football-season-templates/footballGallery";
+import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
+import editorial from "@/components/sports-landing/SportsEditorialSections.module.css";
 
 const features = [
   {
@@ -77,7 +79,6 @@ function SeasonPreview() {
           src="/images/landing/football/friday-night-team.webp"
           alt="A football team on the sideline under stadium lights"
           fill
-          priority
           sizes="(max-width: 767px) 85vw, 40vw"
           className="object-cover"
         />
@@ -110,46 +111,46 @@ export default function FootballLanding() {
   const [destination, setDestination] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   return (
-    <MarketingPage tone="sports" className={styles.editorial}>
+    <MarketingPage
+      tone="sports"
+      className={`${styles.editorial} ${editorial.page} ${editorial.football}`}
+    >
       <SignedOutPageChrome topNavVariant="transparent-light" />
       <main>
-        <section id="hero" className={styles.hero}>
-          <div>
-            <p className={styles.eyebrow}>Football pages for teams & families</p>
-            <h1 className={styles.title}>
+        <MarketingHero
+          category="football"
+          id="hero"
+          eyebrow="Football pages for teams & families"
+          title={
+            <>
               One team. <em>A whole season together.</em>
-            </h1>
-            <p className={styles.description}>
-              Every matchup, away-game direction and team note in one link. Give players and
-              families a familiar place for the latest plan.
-            </p>
-            <div className={styles.actions}>
-              <a href="#templates" className={styles.primary}>
-                Start your football page <ArrowRight aria-hidden="true" />
-              </a>
-              <a href="#how-it-works" className={styles.secondary}>
-                See how it works
-              </a>
-            </div>
-            <p className={styles.note}>For a big game, a full season, and everyone cheering.</p>
-          </div>
-          <figure className={styles.visual}>
-            <SeasonPreview />
-            <figcaption className={styles.caption}>
-              Illustrative schedule · Make the season your own.
-            </figcaption>
-          </figure>
-        </section>
-        <section id="features" className={styles.section}>
+            </>
+          }
+          description="Every matchup, away-game direction and team note in one link. Give players and families a familiar place for the latest plan."
+          primaryHref="#templates"
+          primaryLabel="Start your football page"
+          secondaryHref="#how-it-works"
+          secondaryLabel="See how it works"
+        >
+          <SeasonPreview />
+        </MarketingHero>
+        <section id="features" className={`${styles.section} ${editorial.features}`}>
           <p className={styles.eyebrow}>Built around your team</p>
-          <h2>From the first kickoff to the final whistle.</h2>
-          <div className={styles.grid}>
-            {features.map(({ icon: Icon, title, copy }) => (
-              <article key={title} className={styles.item}>
-                <Icon aria-hidden="true" />
-                <h3>{title}</h3>
-                <p>{copy}</p>
-              </article>
+          <h2>
+            From the first kickoff <strong>to the final whistle.</strong>
+          </h2>
+          <div className={editorial.benefits}>
+            {features.map(({ icon: Icon, title, copy }, index) => (
+              <div className={editorial.benefitWrap} key={title} data-motion-reveal>
+                <article className={editorial.benefit}>
+                  <div className={editorial.identity} aria-hidden="true">
+                    <span>0{index + 1}</span>
+                    <Icon />
+                  </div>
+                  <h3>{title}</h3>
+                  <p>{copy}</p>
+                </article>
+              </div>
             ))}
           </div>
         </section>
@@ -167,7 +168,7 @@ export default function FootballLanding() {
             </Link>
           </div>
           <TemplateMasonryGrid>
-            {FOOTBALL_GALLERY_DESIGNS.slice(0, 4).map((design) => (
+            {FOOTBALL_GALLERY_DESIGNS.slice(0, 8).map((design) => (
               <TemplateMasonryCard
                 key={design.id}
                 designId={design.id}

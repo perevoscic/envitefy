@@ -1,31 +1,19 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import GymnasticsLanding from "@/components/gymnastics-landing/GymnasticsLanding";
-import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
+import { buildCategoryShareMetadata } from "@/lib/category-share-metadata";
 import { themeColorPalette } from "@/lib/theme-color";
-
-const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 export const metadata: Metadata = {
   title: "Envitefy Gymnastics | One meet page for your whole team",
   description:
     "Bring schedules, venue directions, hotel links and meet notes together in one shareable gymnastics page. Start with a packet or a design, review, then publish.",
-  openGraph: {
+  ...buildCategoryShareMetadata("gymnastics", {
     title: "Envitefy Gymnastics",
     description:
       "One gymnastics meet page for schedules, arrival details, hotel links and the whole weekend. Easy for families to open, easy for you to keep current.",
     url: "https://envitefy.com/gymnastics",
-    siteName: "Envitefy",
-    images: [buildSiteOgImage(siteOgImageUrl, "Envitefy Gymnastics preview")],
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Envitefy Gymnastics",
-    description:
-      "One gymnastics meet page for schedules, arrival details, hotel links and the whole weekend. Easy for families to open, easy for you to keep current.",
-    images: [siteOgImageUrl],
-  },
+  }),
   alternates: { canonical: "/gymnastics" },
 };
 

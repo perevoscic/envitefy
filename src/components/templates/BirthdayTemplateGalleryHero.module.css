@@ -1,0 +1,514 @@
+.page[data-marketing-page],
+.layout,
+.gallery {
+  --birthday-paper: #fffaf7;
+  --birthday-surface: #fffcfa;
+  --birthday-ink: #32132f;
+  --birthday-muted: #62425f;
+  --birthday-line: #a68b9e;
+  --birthday-accent: #a52b79;
+  --birthday-primary: #f8b9e9;
+  --birthday-on-primary: #32132f;
+  --birthday-primary-hover: #f9c9ee;
+  --birthday-header-line: #eadce3;
+  --birthday-soft: #f5e5ee;
+  --birthday-shadow: #64374e33;
+  --birthday-hero-scrim: linear-gradient(90deg, #fffaf780, #fffaf726 42%, transparent 65%);
+  --birthday-color-scheme: light;
+}
+
+:global(html.dark) .page[data-marketing-page],
+:global(html.dark) .layout,
+:global(html.dark) .gallery {
+  --birthday-paper: #271f2d;
+  --birthday-surface: #352a3c;
+  --birthday-ink: #fff6fb;
+  --birthday-muted: #dfcce2;
+  --birthday-line: #907894;
+  --birthday-accent: #f5b7e6;
+  --birthday-header-line: #5b425c;
+  --birthday-soft: #413047;
+  --birthday-shadow: #0d071a66;
+  --birthday-hero-scrim: linear-gradient(
+    90deg,
+    #271f2df5,
+    #271f2dc9 38%,
+    #271f2d38 65%,
+    transparent
+  );
+  --birthday-color-scheme: dark;
+}
+
+.page[data-marketing-page] {
+  background: var(--birthday-paper);
+}
+.page[data-marketing-page] [data-public-landing-header] {
+  --public-header-paper: var(--birthday-paper);
+  --public-header-ink: var(--birthday-ink);
+  --public-header-accent: var(--birthday-accent);
+  --public-header-soft: var(--birthday-soft);
+  --public-header-line: var(--birthday-header-line);
+  --public-header-surface: var(--birthday-soft);
+}
+.layout.layout {
+  padding-top: calc(80px + env(safe-area-inset-top));
+  padding-bottom: 0;
+  background: var(--birthday-paper);
+}
+.gallery.gallery {
+  padding: 0 0 calc(5rem + env(safe-area-inset-bottom));
+  background: var(--birthday-paper);
+  color: var(--birthday-ink);
+}
+.shell {
+  width: 100%;
+  max-width: none;
+}
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-bottom: 1px solid var(--birthday-header-line);
+  background: var(--birthday-paper);
+  color: var(--birthday-ink);
+}
+.backdrop {
+  z-index: -2;
+  object-fit: cover;
+  object-position: center bottom;
+}
+.darkBackdrop {
+  visibility: hidden;
+}
+:global(html.dark) .lightBackdrop {
+  visibility: hidden;
+}
+:global(html.dark) .darkBackdrop {
+  visibility: visible;
+}
+.hero::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: var(--birthday-hero-scrim);
+  content: "";
+}
+.heroInner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: clamp(1rem, 2vw, 2rem);
+  max-width: 1600px;
+  min-height: 470px;
+  margin-inline: auto;
+  padding: 1.5rem clamp(1.25rem, 4.5vw, 4.5rem) 1rem;
+}
+.copy {
+  position: relative;
+  z-index: 5;
+  min-width: 0;
+  padding-block: 2rem;
+}
+.eyebrow {
+  margin: 0 0 1.15rem;
+  color: var(--birthday-accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.title.title {
+  margin: 0;
+  color: var(--birthday-ink);
+  font-family: var(--marketing-serif, var(--font-playfair), "Playfair Display", Georgia, serif);
+  font-size: clamp(2.7rem, 4.6vw, 4.6rem);
+  font-weight: 400;
+  letter-spacing: -0.065em;
+  line-height: 1.06;
+}
+.description {
+  margin: 1.15rem 0 1.7rem;
+  color: var(--birthday-muted);
+  font-size: clamp(1rem, 1.4vw, 1.3rem);
+  line-height: 1.55;
+}
+.actions [data-custom-design-presentation="hero"] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.actions [data-custom-design-create] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  border: 1px solid var(--birthday-line);
+  border-radius: 999px;
+  padding: 0.8rem 1.8rem;
+  background: var(--birthday-primary);
+  color: var(--birthday-on-primary);
+  font: 600 0.9rem / 1.4 var(--marketing-sans, var(--font-geist-sans), Arial, sans-serif);
+  cursor: pointer;
+  transition: background 180ms ease;
+}
+.actions [data-custom-design-create] {
+  border-color: transparent;
+}
+.actions [data-custom-design-create]:hover {
+  background: var(--birthday-primary-hover);
+}
+.actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.actions [role="alert"] {
+  color: var(--birthday-ink);
+}
+.actions :is(button, a):focus-visible,
+.previewCard:focus-visible {
+  outline: 3px solid var(--birthday-accent);
+  outline-offset: 5px;
+}
+.previews {
+  position: relative;
+  width: 100%;
+  height: clamp(365px, 31vw, 470px);
+}
+.previewCard {
+  position: absolute;
+  z-index: 1;
+  bottom: 1%;
+  left: 0;
+  width: 40%;
+  height: 91%;
+  overflow: hidden;
+  border: 1px solid #725b4426;
+  border-radius: 0.8rem;
+  background: #faf2df;
+  box-shadow: 0 1rem 2rem var(--birthday-shadow);
+  text-decoration: none;
+  transform: rotate(-4deg);
+  transform-origin: center bottom;
+  transition: translate 180ms ease;
+}
+.previewCard:nth-child(2) {
+  z-index: 3;
+  left: 27%;
+  width: 44%;
+  height: 100%;
+  transform: none;
+}
+.previewCard:nth-child(3) {
+  z-index: 2;
+  left: 64%;
+  width: 36%;
+  transform: rotate(4deg);
+}
+.previewCard:is(:hover, :focus-visible) {
+  z-index: 6;
+  translate: 0 -6px;
+}
+.previewContent {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: #faf2df;
+  color: #553d2c;
+  container-type: inline-size;
+}
+.invitationHeading {
+  position: relative;
+  z-index: 2;
+  padding: 11cqw 7cqw 5cqw;
+  text-align: center;
+}
+.invitationEyebrow {
+  margin: 0;
+  font:
+    500 2.7cqw / 1.6 Arial,
+    sans-serif;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+}
+.playfulAge {
+  display: flex;
+  justify-content: center;
+  margin: 2cqw 0 0;
+  font:
+    700 18cqw / 1.1 "Quicksand",
+    sans-serif;
+}
+.playfulAge span:nth-child(5n + 1) {
+  color: #53773b;
+  rotate: -6deg;
+}
+.playfulAge span:nth-child(5n + 2) {
+  color: #d96c4a;
+  rotate: 4deg;
+}
+.playfulAge span:nth-child(5n + 3) {
+  color: #4c91ae;
+  rotate: -3deg;
+}
+.playfulAge span:nth-child(5n + 4) {
+  color: #d7a32a;
+  rotate: 5deg;
+}
+.playfulAge span:nth-child(5n + 5) {
+  color: #638e65;
+  rotate: -4deg;
+}
+.invitationPhoto {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.invitationPhoto img {
+  object-fit: cover;
+}
+.invitationFooter {
+  position: relative;
+  z-index: 2;
+  padding: 6cqw 6cqw 8cqw;
+  text-align: center;
+}
+.invitationName {
+  margin: 0;
+  font:
+    400 4.5cqw / 1.6 "Playfair Display",
+    Georgia,
+    serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.invitationVenue {
+  margin: 4cqw 0 0;
+  font:
+    400 2.6cqw / 1.6 Arial,
+    sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.invitationRule {
+  display: block;
+  width: 12cqw;
+  height: 1px;
+  margin: 4cqw auto;
+  background: currentColor;
+  opacity: 0.4;
+}
+.invitationSignoff {
+  margin: 0;
+  font:
+    400 2.4cqw / 1.7 Arial,
+    sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.scriptName {
+  margin: 3cqw 0 1cqw;
+  font:
+    400 13cqw / 1.2 "Satisfy",
+    cursive;
+}
+.milestone {
+  margin: 0;
+  font:
+    400 32cqw / 1.1 "Playfair Display",
+    Georgia,
+    serif;
+}
+.previewCard:nth-child(2) .previewContent {
+  position: relative;
+  justify-content: space-between;
+  background: #241b12;
+  color: #f9e1b5;
+}
+.previewCard:nth-child(2) .invitationHeading {
+  padding-top: 9cqw;
+  background: linear-gradient(#19130ef0, #19130ebf 75%, transparent);
+}
+.previewCard:nth-child(2) .invitationPhoto {
+  position: absolute;
+  inset: 0;
+}
+.previewCard:nth-child(2) .invitationPhoto img {
+  object-position: 50% 60%;
+}
+.invitationTitle {
+  margin: 3cqw 0 6cqw;
+  font:
+    400 9cqw / 1.2 "Playfair Display",
+    Georgia,
+    serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.previewCard:nth-child(2) .invitationFooter {
+  background: linear-gradient(transparent, #19130ee6);
+}
+.previewCard:nth-child(2) .invitationName {
+  font-size: 3.2cqw;
+}
+.previewCard:nth-child(2) .invitationVenue {
+  display: none;
+}
+.previewCard:nth-child(3) .previewContent {
+  background: #faf0ea;
+  color: #8d4b42;
+}
+.previewCard:nth-child(3) .scriptName {
+  font-size: 8.8cqw;
+}
+.catalog {
+  max-width: 1600px;
+  margin-inline: auto;
+  padding: 1.5rem clamp(1.25rem, 4.5vw, 4.5rem) 0;
+}
+.catalog [data-public-gallery-controls] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+}
+.catalog [data-public-gallery-controls] > label {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+.catalog [data-public-gallery-controls] > label:first-child {
+  position: relative;
+  flex: 2.5 1 15rem;
+}
+.catalog.catalog [data-public-gallery-controls] :is(input, select) {
+  --placeholder: var(--birthday-muted);
+  --foreground: var(--birthday-ink);
+  --surface: var(--birthday-surface);
+  width: 100%;
+  max-width: none;
+  border: 1px solid var(--birthday-line);
+  background: var(--birthday-surface);
+  color: var(--birthday-ink);
+  font-size: 0.85rem;
+  color-scheme: var(--birthday-color-scheme);
+}
+.catalog [data-public-gallery-controls] input {
+  padding-left: 3rem;
+}
+.catalog.catalog [data-public-gallery-controls] input::placeholder {
+  color: var(--birthday-muted);
+  opacity: 1;
+}
+.searchIcon {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 1rem;
+  color: var(--birthday-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+.catalog [data-public-gallery-controls] :is(input, select):focus-visible {
+  outline: 2px solid var(--birthday-accent);
+  outline-offset: 4px;
+}
+.catalog [data-template-masonry-grid] {
+  --tile-inset: 0px;
+}
+.catalog.catalog [data-template-masonry-card],
+:global(html.dark) .catalog.catalog [data-template-masonry-card] {
+  --tile-radius: 1rem;
+  border-color: var(--birthday-header-line);
+  background: var(--birthday-surface);
+}
+.resume {
+  margin-bottom: 1.5rem;
+  border-color: var(--birthday-line);
+  background: var(--birthday-surface);
+  color: var(--birthday-ink);
+}
+.catalog [data-template-autoload] [role="status"] {
+  color: var(--birthday-muted);
+}
+
+@media (max-width: 1099px) {
+  .heroInner {
+    min-height: 430px;
+  }
+  .previews {
+    height: 350px;
+  }
+  .title.title {
+    font-size: clamp(2.2rem, 4.6vw, 3.2rem);
+  }
+  .description {
+    font-size: 1rem;
+  }
+  .desktopBreak {
+    display: none;
+  }
+  .catalog [data-public-gallery-controls] > label {
+    flex-basis: calc(50% - 0.75rem);
+  }
+  .catalog [data-public-gallery-controls] > label:first-child {
+    flex-basis: 100%;
+  }
+}
+@media (max-width: 699px) {
+  .heroInner {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-height: 0;
+    padding-top: 2.5rem;
+    padding-bottom: 1.5rem;
+  }
+  .copy {
+    width: 100%;
+    padding: 0;
+  }
+  .title.title {
+    max-width: 32rem;
+    font-size: clamp(2.2rem, 8.5vw, 3.8rem);
+  }
+  .eyebrow {
+    margin-bottom: 1rem;
+  }
+  .description {
+    max-width: 23rem;
+    margin-block: 1rem 1.4rem;
+  }
+  .previews {
+    width: min(100%, 460px);
+    height: clamp(260px, 75vw, 350px);
+  }
+  .previewCard {
+    left: 2%;
+    width: 40%;
+  }
+  .previewCard:nth-child(2) {
+    left: 27%;
+    width: 46%;
+  }
+  .previewCard:nth-child(3) {
+    left: 63%;
+    width: 35%;
+  }
+  .catalog {
+    padding-top: 1.25rem;
+  }
+}
+@media (max-width: 359px) {
+  .catalog [data-public-gallery-controls] > label {
+    flex-basis: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .previewCard,
+  .actions button {
+    transition: none;
+  }
+  .previewCard:is(:hover, :focus-visible) {
+    translate: none;
+  }
+}

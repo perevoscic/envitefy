@@ -12,6 +12,7 @@ import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import type { MarketingTone } from "@/components/marketing/MarketingPage";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
+import LiquidMetalButton from "@/components/ui/LiquidMetalButton";
 import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
 import appearanceStyles from "./navigation-appearance.module.css";
 import editorialStyles from "./editorial-navigation.module.css";
@@ -458,6 +459,11 @@ export default function HeroTopNav({
       data-scroll-hidden={headerHidden ? "true" : "false"}
       data-scrolled-past-hero={hasScrolledPastHero ? "true" : "false"}
       data-public-landing-header={editorialTone ? "" : undefined}
+      data-create-account-actions={
+        editorialTone && editorialAccountAction === "login" && status !== "authenticated"
+          ? ""
+          : undefined
+      }
       className={cx(
         scrollStyles.header,
         editorialTone
@@ -514,6 +520,14 @@ export default function HeroTopNav({
                 >
                   {editorialAccountAction === "login" ? "Sign in" : "Let's create"}
                 </button>
+              )}
+              {status !== "authenticated" && editorialAccountAction === "login" && (
+                <LiquidMetalButton
+                  label="Let's create"
+                  onClick={onGuestSignupAction}
+                  className={landingHeaderStyles.create}
+                  data-header-create
+                />
               )}
               {hideEditorialPrimary ? null : status === "authenticated" || guestPrimaryHref ? (
                 <Link

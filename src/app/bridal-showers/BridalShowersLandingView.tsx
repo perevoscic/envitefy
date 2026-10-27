@@ -157,6 +157,7 @@ export default function BridalShowersLandingView() {
 
       <main>
         <MarketingHero
+          category="bridal-showers"
           eyebrow="Bridal showers, beautifully hosted"
           title={
             <>
@@ -166,6 +167,7 @@ export default function BridalShowersLandingView() {
             </>
           }
           description="For the garden brunch, the afternoon tea, the people who make it special. Your invitation, RSVP, registry, and every detail in one lovely place."
+          lead="Your favorite people. A toast to the bride."
           image="/images/landing/template-proof/rose-garden-bridal-brunch.webp"
           imageAlt="Original rose garden bridal brunch invitation artwork"
           primaryHref="#templates"
