@@ -29,6 +29,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const row = await getEventHistoryById(id);
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (row.user_id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (row.data?.status !== "published" || row.data?.draftStatus === "draft")
+      return NextResponse.json({ error: "Publish your memo before adding dates to a calendar." }, { status: 409 });
     const body = await request.json().catch(() => null);
     if (
       !body ||

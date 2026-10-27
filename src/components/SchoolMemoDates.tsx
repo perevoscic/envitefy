@@ -73,7 +73,7 @@ export default function SchoolMemoDates({
   interactive = true,
   eventId,
   canManage = false,
-  onSaveDraft,
+  published = false,
   onSelectionChange,
   onScheduleChange,
   calendarNeedsSave = false,
@@ -82,12 +82,12 @@ export default function SchoolMemoDates({
   interactive?: boolean;
   eventId?: string;
   canManage?: boolean;
-  onSaveDraft?: () => Promise<void>;
+  published?: boolean;
   onSelectionChange?: (itemIds: string[]) => void;
   onScheduleChange?: (schedule: ScanSchedule) => void;
   calendarNeedsSave?: boolean;
 }) {
-  const calendarEnabled = interactive;
+  const calendarEnabled = interactive && published && !onScheduleChange;
   const [editingId, setEditingId] = useState<string | null>(null);
   const eligible = schedule.items.filter((item) =>
     scanScheduleCalendarEvent(item, schedule, eventId),
@@ -335,7 +335,7 @@ export default function SchoolMemoDates({
             </svg>
           </span>
           <div className="min-w-0">
-            <h2 className="!m-0 !font-serif !text-2xl !font-medium !normal-case !leading-tight !tracking-tight !text-[#302633] sm:!text-3xl">{onScheduleChange ? "Dates from this memo" : "Dates from this memo"}</h2>
+            <h2 className="!m-0 !font-serif !text-2xl !font-medium !normal-case !leading-tight !tracking-tight !text-[#302633] sm:!text-3xl">{onScheduleChange ? "Review dates from this memo" : "Dates from this memo"}</h2>
             <p className="mt-1 text-sm leading-6 text-[#756b79]">
               {schedule.items.length
                 ? onScheduleChange ? "Review and edit these dates before publishing. Publishing won’t add them to your calendar." : published ? "Choose the dates you’d like to add to your calendar." : "Calendar actions will be available after publishing."
@@ -448,12 +448,6 @@ export default function SchoolMemoDates({
       }}>Add date</button>}
       {calendarEnabled && eligible.length > 0 && (
         <div className="mt-6 border-t border-[#eee8ed] pt-5">
-          {onSaveDraft && !eventId && (
-            <div className="mb-3">
-              <p className="mb-2 text-sm text-slate-600">Save a draft to add dates directly to your connected Google or Outlook calendar. You can download a calendar file now.</p>
-              <button type="button" className={actionClass} onClick={() => void onSaveDraft()} disabled={busy}>Save draft for connected calendars</button>
-            </div>
-          )}
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
