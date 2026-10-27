@@ -319,7 +319,7 @@ test("header and hero creation continue to Create after authentication while men
   const landing = readSource("src/app/landing/LandingExperience.tsx");
   const html = renderLanding();
   assert.match(landing, /\[authRedirect, setAuthRedirect\] = useState\("\/"\)/);
-  assert.match(landing, /onClick=\{onCreateEvent\}[^>]*>\s*Let&apos;s create/);
+  assert.match(landing, /<ArrowFillButton\s+label="Let's create"\s+onClick=\{onCreateEvent\}/);
   assert.match(landing, /openAuth\("signup", "\/create"\)/);
   assert.match(landing, /status === "authenticated"[\s\S]*?router\.push\("\/create"\)/);
   assert.match(landing, /successRedirectUrl=\{authRedirect\}/);

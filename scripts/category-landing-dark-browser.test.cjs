@@ -64,7 +64,9 @@ async function buildFixture() {
         new compiled.webpack.NormalModuleReplacementPlugin(
           /(?:^|[/\\])PublicCreationLink(?:\.tsx)?$/,
           (resource) => {
-            resource.request = navigation;
+            resource.request = path.resolve(
+              "scripts/fixtures/category-landing-dark-creation-link.tsx",
+            );
           },
         ),
       ],

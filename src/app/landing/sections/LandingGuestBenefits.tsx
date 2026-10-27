@@ -1,8 +1,7 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useRef } from "react";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import styles from "./LandingGuestBenefits.module.css";
 
 const benefits = [
@@ -150,7 +149,8 @@ export default function LandingGuestBenefits() {
       const currentMode = mode();
       if (currentMode) canvas.setAttribute("data-glow-mode", currentMode);
       else canvas.removeAttribute("data-glow-mode");
-      if (currentMode === "pointer") canvas.addEventListener("pointermove", move, { passive: true });
+      if (currentMode === "pointer")
+        canvas.addEventListener("pointermove", move, { passive: true });
       else schedule();
     };
     const endPointer = () => {
@@ -211,9 +211,7 @@ export default function LandingGuestBenefits() {
             A lovely invitation is just the beginning. Give everyone a place to return to for the
             plan, the little details and the latest updates.
           </p>
-          <Link href="#showcase">
-            Explore the guest experience <ArrowRight size={17} aria-hidden="true" />
-          </Link>
+          <ArrowFillLink href="#showcase" label="Explore the guest experience" />
         </div>
       </div>
       <div ref={canvasRef} className={styles.cards} data-benefit-canvas>

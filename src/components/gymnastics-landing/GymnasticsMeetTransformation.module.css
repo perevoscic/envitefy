@@ -87,6 +87,9 @@
 }
 
 .createLink {
+  --arrow-fill-color: var(--marketing-accent);
+  --arrow-fill-hover-ink: var(--marketing-paper);
+  --arrow-fill-arrow-ink: var(--marketing-paper);
   display: inline-flex;
   align-items: center;
   justify-content: center;

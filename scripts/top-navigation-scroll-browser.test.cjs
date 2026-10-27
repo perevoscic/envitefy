@@ -963,7 +963,7 @@ test("gallery liquid-metal create action stays beside Sign in on desktop and pho
         const create = page.locator("[data-header-create]");
         await create.waitFor();
         await page.waitForFunction(() => window.__blockedWebGLCalls > 0 && !document.querySelector("[data-liquid-metal-shader] canvas"));
-        const fallback = await create.evaluate((node) => ({ background: getComputedStyle(node).backgroundImage, color: getComputedStyle(node).color, text: node.textContent.trim() }));
+        const fallback = await create.evaluate((node) => ({ background: getComputedStyle(node).backgroundImage, color: getComputedStyle(node).color, text: node.querySelector('[data-arrow-fill-label]').textContent.trim() }));
         assert.match(fallback.background, /linear-gradient/, "WebGL failure retains the theme-colored CSS rim");
         assert.equal(fallback.text, "Let's create", "WebGL failure keeps the button label");
         await create.click();

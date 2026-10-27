@@ -107,11 +107,17 @@
     background-color 180ms;
 }
 .primaryButton {
+  --arrow-fill-color: var(--landing-ink);
+  --arrow-fill-hover-ink: var(--marketing-paper, #fcf8f3);
   border-radius: 999px;
   background: var(--landing-accent);
   color: var(--marketing-paper, #fcf8f3);
 }
 .secondaryButton {
+  --arrow-fill-color: var(--landing-accent);
+  --arrow-fill-hover-ink: var(--marketing-paper, #fcf8f3);
+  border-radius: 999px;
+  padding-inline-start: 0.75rem;
   padding-inline: 0;
   background: transparent;
   color: var(--landing-ink);
@@ -124,6 +130,21 @@
 }
 .secondaryButton:hover {
   text-decoration-color: currentColor;
+}
+
+.opening [data-arrow-fill-button],
+.guestPreview [data-arrow-fill-button],
+.occasions [data-arrow-fill-button],
+.howItWorks [data-arrow-fill-button] {
+  --arrow-fill-color: var(--landing-accent, var(--marketing-accent));
+  --arrow-fill-hover-ink: var(--marketing-paper);
+  border-radius: 999px;
+  min-height: 44px;
+  padding-inline-start: 0.75rem;
+}
+
+.hero .primaryButton {
+  --arrow-fill-color: var(--landing-ink);
 }
 .reassurance {
   display: flex;

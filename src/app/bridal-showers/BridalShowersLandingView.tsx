@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowRight,
   CalendarDays,
   Feather,
   Gift,
@@ -12,12 +11,13 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import { type CSSProperties, useMemo, useState } from "react";
 import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import ArrowFillButton from "@/components/ui/ArrowFillButton";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import editorialStyles from "../category-pages/CelebrationLanding.module.css";
 import CelebrationPreview from "../category-pages/CelebrationPreview";
 import styles from "./BridalShowersLandingView.module.css";
@@ -279,9 +279,11 @@ export default function BridalShowersLandingView() {
 
                 <div className={styles.formFooter}>
                   <p>Everything stays editable after sharing.</p>
-                  <Link className={`${styles.button} ${styles.buttonDark}`} href="#templates">
-                    Browse templates
-                  </Link>
+                  <ArrowFillLink
+                    className={`${styles.button} ${styles.buttonDark}`}
+                    href="#templates"
+                    label="Browse templates"
+                  />
                 </div>
               </form>
 
@@ -363,9 +365,11 @@ export default function BridalShowersLandingView() {
                       <p>{collection.label}</p>
                       <h3>{collection.title}</h3>
                     </div>
-                    <button type="button" onClick={() => selectCollection(collection.key)}>
-                      Explore suite <ArrowRight aria-hidden="true" />
-                    </button>
+                    <ArrowFillButton
+                      type="button"
+                      onClick={() => selectCollection(collection.key)}
+                      label="Explore suite"
+                    />
                   </div>
                 </article>
               ))}
@@ -385,9 +389,11 @@ export default function BridalShowersLandingView() {
                   Guests get a polished mobile experience. You get a calm command center for
                   replies, links, and last-minute updates.
                 </p>
-                <Link className={`${styles.button} ${styles.buttonDark}`} href="#templates">
-                  Browse templates
-                </Link>
+                <ArrowFillLink
+                  className={`${styles.button} ${styles.buttonDark}`}
+                  href="#templates"
+                  label="Browse templates"
+                />
               </div>
               <div className={styles.guestFlowList}>
                 <article>
@@ -459,12 +465,16 @@ export default function BridalShowersLandingView() {
               to open.
             </p>
             <div className={styles.finalActions}>
-              <Link className={`${styles.button} ${styles.buttonIvory}`} href="#templates">
-                Browse templates
-              </Link>
-              <Link className={styles.finalTextLink} href="/snap">
-                Upload an existing invite
-              </Link>
+              <ArrowFillLink
+                className={`${styles.button} ${styles.buttonIvory}`}
+                href="#templates"
+                label="Browse templates"
+              />
+              <ArrowFillLink
+                className={styles.finalTextLink}
+                href="/snap"
+                label="Upload an existing invite"
+              />
             </div>
           </div>
         </section>

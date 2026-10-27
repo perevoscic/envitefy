@@ -57,6 +57,10 @@
 }
 
 .helpLink {
+  --arrow-fill-color: var(--marketing-accent);
+  --arrow-fill-hover-ink: var(--marketing-paper);
+  --arrow-fill-arrow-ink: var(--marketing-paper);
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;

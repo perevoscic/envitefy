@@ -1,5 +1,5 @@
-import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import styles from "./GymnasticsLandingFaq.module.css";
 
 const items = [
@@ -50,9 +50,7 @@ export default function GymnasticsLandingFaq() {
         <p className={styles.helpCopy}>
           From your first upload to the link you send families, here’s what to expect.
         </p>
-        <Link href="/faq" className={styles.helpLink}>
-          Visit the Envitefy FAQ <ArrowRight size={17} aria-hidden="true" />
-        </Link>
+        <ArrowFillLink href="/faq" className={styles.helpLink} label="Visit the Envitefy FAQ" />
       </div>
       <div className={styles.questions}>
         {items.map(({ q, a }) => (

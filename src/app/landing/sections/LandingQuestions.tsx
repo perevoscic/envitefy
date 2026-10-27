@@ -1,5 +1,5 @@
-import { ArrowRight, MessageCircle } from "lucide-react";
-import Link from "next/link";
+import ArrowFillButton from "@/components/ui/ArrowFillButton";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import styles from "./LandingQuestions.module.css";
 
 const questions = [
@@ -78,12 +78,8 @@ export default function LandingQuestions({ onHelp }: { onHelp: () => void }) {
             A few useful answers before you bring everyone together. Anything else? We’re here to
             help.
           </p>
-          <button type="button" onClick={onHelp} className={styles.helpLink}>
-            <MessageCircle size={17} aria-hidden="true" /> Ask Concierge
-          </button>
-          <Link href="/faq" className={styles.faqLink}>
-            Visit our FAQ <ArrowRight size={15} aria-hidden="true" />
-          </Link>
+          <ArrowFillButton onClick={onHelp} className={styles.helpLink} label="Ask Concierge" />
+          <ArrowFillLink href="/faq" className={styles.faqLink} label="Visit our FAQ" />
         </div>
       </div>
       <div className={styles.questions}>

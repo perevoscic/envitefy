@@ -45,6 +45,10 @@
 }
 .helpLink,
 .faqLink {
+  --arrow-fill-color: var(--marketing-accent);
+  --arrow-fill-hover-ink: var(--marketing-paper);
+  border-radius: 999px;
+  padding-inline-start: 0.75rem;
   display: flex;
   width: fit-content;
   min-height: 44px;
@@ -59,7 +63,7 @@
 }
 .helpLink {
   border: 0;
-  padding: 0;
+  padding: 0 0 0 0.75rem;
   background: transparent;
 }
 .faqLink {

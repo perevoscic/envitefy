@@ -11,7 +11,7 @@ import {
 } from "react";
 import styles from "./LiquidMetalButton.module.css";
 
-type LiquidMetalButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
+type LiquidMetalButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   label?: string;
 };
 
@@ -20,6 +20,7 @@ type Ripple = { id: number; x: number; y: number };
 export function LiquidMetalButton({
   label = "Let's create",
   className,
+  children,
   onClick,
   onPointerEnter,
   onPointerLeave,
@@ -194,7 +195,7 @@ export function LiquidMetalButton({
         aria-hidden="true"
       />
       <span className={styles.inset} aria-hidden="true" />
-      <span className={styles.label}>{label}</span>
+      {children ?? <span className={styles.label}>{label}</span>}
       <span className={styles.ripples} aria-hidden="true">
         {ripples.map((ripple) => (
           <span

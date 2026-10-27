@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Script from "next/script";
 import CompanyTopNav from "@/components/company/CompanyTopNav";
 import styles from "@/components/company/supporting-public.module.css";
 import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 
 const siteOgImageUrl = getRandomSiteOgImageUrl();
@@ -95,18 +95,10 @@ export default function WhoItsForPage() {
             </article>
           </div>
           <div className={styles.links}>
-            <Link href="/birthdays">
-              Celebrations<span aria-hidden="true">↗</span>
-            </Link>
-            <Link href="/signup-forms">
-              Sign-up forms<span aria-hidden="true">↗</span>
-            </Link>
-            <Link href="/sport-events">
-              Sports and teams<span aria-hidden="true">↗</span>
-            </Link>
-            <Link href="/gymnastics">
-              Gymnastics meet pages<span aria-hidden="true">↗</span>
-            </Link>
+            <ArrowFillLink href="/birthdays" label="Celebrations" />
+            <ArrowFillLink href="/signup-forms" label="Sign-up forms" />
+            <ArrowFillLink href="/sport-events" label="Sports and teams" />
+            <ArrowFillLink href="/gymnastics" label="Gymnastics meet pages" />
           </div>
         </section>
         <Script id="ld-breadcrumb-who" type="application/ld+json" strategy="afterInteractive">

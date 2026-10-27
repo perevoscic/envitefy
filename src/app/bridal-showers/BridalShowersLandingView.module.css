@@ -144,6 +144,8 @@
 }
 
 .buttonIvory {
+  --arrow-fill-color: var(--bridal-ink);
+  --arrow-fill-hover-ink: var(--bridal-pearl);
   border-color: white;
   background: var(--bridal-pearl);
   color: var(--bridal-ink);
@@ -151,6 +153,8 @@
 }
 
 .buttonDark {
+  --arrow-fill-color: #fff;
+  --arrow-fill-hover-ink: #2c2522;
   border-color: #2c2522;
   background: #2c2522;
   color: white;
@@ -844,6 +848,11 @@
 }
 
 .collectionBody button {
+  --arrow-fill-color: var(--marketing-ink);
+  --arrow-fill-hover-ink: var(--marketing-paper);
+  --arrow-fill-circle: 22px;
+  min-height: 2.25rem;
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1067,6 +1076,10 @@
 }
 
 .finalTextLink {
+  --arrow-fill-color: #fff;
+  --arrow-fill-hover-ink: #2c2522;
+  min-height: 2.5rem;
+  border-radius: 999px;
   color: rgba(255, 255, 255, 0.8);
 }
 

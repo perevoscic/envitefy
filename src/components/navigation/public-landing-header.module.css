@@ -171,10 +171,16 @@
 }
 
 .create {
+  --arrow-fill-color: var(--public-header-ink);
+  --arrow-fill-hover-ink: var(--public-header-paper);
+  --arrow-fill-arrow-ink: var(--public-header-paper);
   flex-shrink: 0;
 }
 
 .primary {
+  --arrow-fill-color: var(--public-header-paper);
+  --arrow-fill-hover-ink: var(--public-header-accent);
+  --arrow-fill-arrow-ink: var(--public-header-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -194,8 +200,29 @@
     background 180ms;
 }
 
-.primary:hover {
+.primary:hover:not([data-arrow-fill-button]) {
   background: var(--public-header-ink);
+}
+
+.legacyPrimary {
+  --arrow-fill-color: var(--app-primary-foreground, var(--primary-foreground));
+  --arrow-fill-hover-ink: var(--nav-chrome-active-start);
+  --arrow-fill-arrow-ink: var(--nav-chrome-active-start);
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.legacyPrimaryGlass {
+  --arrow-fill-color: #140a27;
+  --arrow-fill-hover-ink: var(--color-white);
+  --arrow-fill-arrow-ink: var(--color-white);
+}
+
+.editorialMenuPrimary {
+  --arrow-fill-color: var(--editorial-paper);
+  --arrow-fill-hover-ink: var(--editorial-accent);
+  --arrow-fill-arrow-ink: var(--editorial-accent);
 }
 
 .menuButton {
@@ -264,6 +291,12 @@
     font-size: 0.75rem;
   }
 
+  .signIn {
+    --arrow-fill-circle: 16px;
+    --arrow-fill-right: 4px;
+    --arrow-fill-label-gap: 5px;
+  }
+
   .header[data-create-account-actions] {
     padding-inline: 1rem;
   }
@@ -295,6 +328,9 @@
   }
 
   .create {
+    --arrow-fill-circle: 16px;
+    --arrow-fill-right: 4px;
+    --arrow-fill-label-gap: 5px;
     --liquid-button-min-width: 108px;
     --liquid-button-padding: 12px;
     --liquid-button-font-size: 12px;
@@ -302,6 +338,18 @@
 }
 
 @media (max-width: 360px) {
+  .header {
+    padding-inline: 0.75rem;
+  }
+
+  .brand img {
+    width: 95px;
+  }
+
+  .inner {
+    gap: 0.5rem;
+  }
+
   .header[data-create-account-actions] {
     padding-inline: 0.75rem;
   }

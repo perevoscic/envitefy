@@ -7,6 +7,11 @@ const { renderToString } = require("react-dom/server");
 const postcss = require("postcss");
 const ts = require("typescript");
 const { chromium } = require("playwright");
+const {
+  assertArrowFillCta,
+  assertArrowFillInteraction,
+  assertArrowFillReducedMotion,
+} = require("./lib/landing-arrow-fill-assertions.cjs");
 const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
 
@@ -299,8 +304,50 @@ async function assertLayout(page, category) {
   }
 }
 
+async function assertHeroCtas(page, category, scheme, width, interaction = false) {
+  const hero = page.locator("[data-marketing-hero]");
+  const primaryLabel = category === "signup-forms" ? "Browse templates" : "Create your page";
+  const primaryHref =
+    {
+      birthdays: "/event/birthdays",
+      "gender-reveal": "/event/gender-reveal",
+      "signup-forms": "/signup-forms?auth=signup",
+    }[category] || (category ? "#templates" : "/create");
+  assert.equal(await hero.getByRole("link").count(), 2, "Keep both original hero actions");
+  assert.equal(
+    await hero.locator("a[data-arrow-fill-button]").count(),
+    2,
+    `${category || "generic"}: every primary and secondary CTA uses the login effect`,
+  );
+  const actions = [
+    { label: primaryLabel, href: primaryHref },
+    { label: "See the details", href: "#details" },
+  ];
+  for (const action of actions) {
+    const cta = hero.getByRole("link", { name: action.label, exact: true });
+    const description = `${category || "generic"} ${scheme} ${width}px ${action.label}`;
+    await assertArrowFillCta(cta, { ...action, description });
+    if (interaction) await assertArrowFillInteraction(page, cta, description);
+  }
+  if (interaction) {
+    for (const action of actions) {
+      await assertArrowFillReducedMotion(
+        page,
+        hero.getByRole("link", { name: action.label, exact: true }),
+        `${category || "generic"} ${scheme} ${width}px`,
+      );
+    }
+    await hero.screenshot({
+      path: path.join(output, `cta-${category || "generic"}-${width}-${scheme}.png`),
+    });
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.mouse.move(0, 0);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+  }
+}
+
 test("category editorial heroes retain readable media, actions and authored previews across viewport and motion settings", {
-  timeout: 120000,
+  timeout: 180000,
 }, async () => {
   const { default: Component, categories } = await buildFixture();
   const fallbackChrome = path.join(
@@ -334,8 +381,24 @@ test("category editorial heroes retain readable media, actions and authored prev
       });
       for (const category of [...categories, undefined]) {
         await ready(page, category);
-        await assertLayout(page, category);
+        for (const scheme of viewport.width === 1440 || viewport.width === 390
+          ? ["light", "dark"]
+          : ["light"]) {
+          await page.evaluate(
+            (dark) => document.documentElement.classList.toggle("dark", dark),
+            scheme === "dark",
+          );
+          await assertLayout(page, category);
+          await assertHeroCtas(
+            page,
+            category,
+            scheme,
+            viewport.width,
+            viewport.width === 1440 || viewport.width === 390,
+          );
+        }
       }
+      await page.evaluate(() => document.documentElement.classList.remove("dark"));
       if (viewport.width === 1440 || viewport.width === 390) {
         await page.emulateMedia({ reducedMotion: "reduce" });
         for (const category of [
@@ -380,6 +443,7 @@ test("category editorial heroes retain readable media, actions and authored prev
       for (const category of categories) {
         await ready(page, category);
         await assertLayout(page, category);
+        await assertHeroCtas(page, category, "light", 390);
         const hidden = await page
           .locator("[data-motion-reveal]")
           .evaluateAll(

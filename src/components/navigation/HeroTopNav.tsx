@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -11,9 +11,8 @@ import LoginForm from "@/components/auth/LoginForm";
 import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import type { MarketingTone } from "@/components/marketing/MarketingPage";
-import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 import ArrowFillButton from "@/components/ui/ArrowFillButton";
-import LiquidMetalButton from "@/components/ui/LiquidMetalButton";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
 import editorialStyles from "./editorial-navigation.module.css";
 import appearanceStyles from "./navigation-appearance.module.css";
@@ -520,17 +519,16 @@ export default function HeroTopNav({
                   data-header-join
                 />
               ) : (
-                <button
-                  type="button"
+                <ArrowFillButton
+                  label="Let's create"
                   onClick={onGuestSignupAction}
-                  className={landingHeaderStyles.join}
+                  className={cx(landingHeaderStyles.join, landingHeaderStyles.signIn)}
                   data-header-join
-                >
-                  Let's create
-                </button>
+                />
               )}
               {status !== "authenticated" && editorialAccountAction === "login" && (
-                <LiquidMetalButton
+                <ArrowFillButton
+                  liquidBorder
                   label="Let's create"
                   onClick={onGuestSignupAction}
                   className={landingHeaderStyles.create}
@@ -538,22 +536,20 @@ export default function HeroTopNav({
                 />
               )}
               {hideEditorialPrimary ? null : status === "authenticated" || guestPrimaryHref ? (
-                <Link
+                <ArrowFillLink
                   href={status === "authenticated" ? authenticatedPrimaryHref : guestPrimaryHref!}
+                  label={primaryCtaLabel}
                   className={landingHeaderStyles.primary}
                   data-header-primary
-                >
-                  {primaryCtaLabel} <ArrowRight size={15} aria-hidden="true" />
-                </Link>
+                />
               ) : primaryCtaLabel !== "Let's create" ? (
-                <button
+                <ArrowFillButton
                   type="button"
+                  label={primaryCtaLabel}
                   onClick={onGuestPrimaryAction}
                   className={landingHeaderStyles.primary}
                   data-header-primary
-                >
-                  {primaryCtaLabel} <ArrowRight size={15} aria-hidden="true" />
-                </button>
+                />
               ) : null}
               <button
                 ref={mobileMenuToggleRef}
@@ -726,42 +722,47 @@ export default function HeroTopNav({
                 )}
 
                 {status === "authenticated" ? (
-                  <Link
+                  <ArrowFillLink
                     href={authenticatedPrimaryHref}
+                    label={primaryCtaLabel}
                     className={cx(
+                      landingHeaderStyles.legacyPrimary,
+                      isDarkGlass && landingHeaderStyles.legacyPrimaryGlass,
                       "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
                       isDarkGlass
                         ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
                         : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
                     )}
-                  >
-                    <AnimatedButtonLabel label={primaryCtaLabel} />
-                  </Link>
+                  />
                 ) : guestPrimaryHref ? (
-                  <Link
+                  <ArrowFillLink
                     href={guestPrimaryHref}
+                    label={primaryCtaLabel}
                     className={cx(
+                      landingHeaderStyles.legacyPrimary,
+                      (isDarkGlass || isTransparentOverHero) &&
+                        landingHeaderStyles.legacyPrimaryGlass,
                       "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
                       isDarkGlass || isTransparentOverHero
                         ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
                         : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
                     )}
-                  >
-                    <AnimatedButtonLabel label={primaryCtaLabel} />
-                  </Link>
+                  />
                 ) : (
-                  <button
+                  <ArrowFillButton
                     type="button"
+                    label={primaryCtaLabel}
                     onClick={onGuestPrimaryAction}
                     className={cx(
+                      landingHeaderStyles.legacyPrimary,
+                      (isDarkGlass || isTransparentOverHero) &&
+                        landingHeaderStyles.legacyPrimaryGlass,
                       "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
                       isDarkGlass || isTransparentOverHero
                         ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
                         : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
                     )}
-                  >
-                    <AnimatedButtonLabel label={primaryCtaLabel} />
-                  </button>
+                  />
                 )}
               </div>
 
@@ -1003,9 +1004,13 @@ export default function HeroTopNav({
                         )}
 
                         {status === "authenticated" ? (
-                          <Link
+                          <ArrowFillLink
                             href={authenticatedPrimaryHref}
+                            label={primaryCtaLabel}
                             className={cx(
+                              landingHeaderStyles.legacyPrimary,
+                              useDarkMobileMenu && landingHeaderStyles.legacyPrimaryGlass,
+                              editorialTone && landingHeaderStyles.editorialMenuPrimary,
                               "mt-1.5 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
                               editorialTone && editorialStyles.primaryAction,
                               useDarkMobileMenu
@@ -1013,14 +1018,16 @@ export default function HeroTopNav({
                                 : "nav-chrome-pill-primary text-white",
                             )}
                             onClick={() => setMobileMenuOpen(false)}
-                          >
-                            <AnimatedButtonLabel label={primaryCtaLabel} />
-                          </Link>
+                          />
                         ) : showMobileGuestActions ? (
                           guestPrimaryHref ? (
-                            <Link
+                            <ArrowFillLink
                               href={guestPrimaryHref}
+                              label={primaryCtaLabel}
                               className={cx(
+                                landingHeaderStyles.legacyPrimary,
+                                useDarkMobileMenu && landingHeaderStyles.legacyPrimaryGlass,
+                                editorialTone && landingHeaderStyles.editorialMenuPrimary,
                                 "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
                                 editorialTone && editorialStyles.primaryAction,
                                 useDarkMobileMenu
@@ -1031,27 +1038,27 @@ export default function HeroTopNav({
                                 setMobileMenuOpen(false);
                                 setMobileLoginExpanded(false);
                               }}
-                            >
-                              <AnimatedButtonLabel label={primaryCtaLabel} />
-                            </Link>
+                            />
                           ) : (
-                            <button
+                            <ArrowFillButton
                               type="button"
+                              label={primaryCtaLabel}
                               onClick={() => {
                                 setMobileMenuOpen(false);
                                 setMobileLoginExpanded(false);
                                 onGuestPrimaryAction();
                               }}
                               className={cx(
+                                landingHeaderStyles.legacyPrimary,
+                                useDarkMobileMenu && landingHeaderStyles.legacyPrimaryGlass,
+                                editorialTone && landingHeaderStyles.editorialMenuPrimary,
                                 "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
                                 editorialTone && editorialStyles.primaryAction,
                                 useDarkMobileMenu
                                   ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
                                   : "nav-chrome-pill-primary text-white",
                               )}
-                            >
-                              <AnimatedButtonLabel label={primaryCtaLabel} />
-                            </button>
+                            />
                           )
                         ) : null}
                       </>

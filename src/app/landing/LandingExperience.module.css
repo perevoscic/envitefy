@@ -257,6 +257,8 @@
   line-height: 1.7;
 }
 .primaryButton {
+  --arrow-fill-color: var(--landing-ink);
+  --arrow-fill-hover-ink: var(--marketing-paper);
   display: inline-flex;
   min-height: 50px;
   align-items: center;
@@ -384,6 +386,8 @@
   border-bottom: 1px solid var(--landing-line);
 }
 .headerCreate {
+  --arrow-fill-color: var(--landing-accent);
+  --arrow-fill-hover-ink: var(--marketing-paper);
   border-radius: 999px;
   background: var(--landing-accent);
   border-color: var(--landing-accent);

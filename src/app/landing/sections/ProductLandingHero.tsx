@@ -1,20 +1,13 @@
 "use client";
 
-import {
-  ArrowRight,
-  CalendarDays,
-  Check,
-  CheckCircle2,
-  Link2,
-  MapPin,
-  Play,
-  X,
-} from "lucide-react";
+import { CalendarDays, Check, CheckCircle2, Link2, MapPin, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import ArrowFillButton from "@/components/ui/ArrowFillButton";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
 import styles from "./ProductLandingHero.module.css";
 
@@ -285,14 +278,16 @@ export default function ProductLandingHero({ onCreate }: { onCreate: () => void 
               latest updates.
             </p>
             <div className={styles.actions}>
-              <button type="button" className={styles.primaryButton} onClick={onCreate}>
-                Create your event
-                <ArrowRight size={19} aria-hidden="true" />
-              </button>
-              <a href="#showcase" className={styles.secondaryButton}>
-                <Play size={16} aria-hidden="true" />
-                See an example
-              </a>
+              <ArrowFillButton
+                label="Create your event"
+                className={styles.primaryButton}
+                onClick={onCreate}
+              />
+              <ArrowFillLink
+                href="#showcase"
+                className={styles.secondaryButton}
+                label="See an example"
+              />
             </div>
             <div className={styles.reassurance}>
               <p>
@@ -427,9 +422,7 @@ export function LandingGatheringNote() {
               school events and volunteer sign-ups, give every gathering a place to come together.
             </p>
           </div>
-          <a href="#examples">
-            Find your kind of gathering <ArrowRight size={17} aria-hidden="true" />
-          </a>
+          <ArrowFillLink href="#examples" label="Find your kind of gathering" />
         </div>
       </div>
     </section>
@@ -454,9 +447,7 @@ export function LandingGuestPreview() {
           One place for the invitation, the replies and all the useful little details. Take a look
           around — this sample is yours to try.
         </p>
-        <a href="#how-it-works">
-          See how it comes together <ArrowRight size={17} aria-hidden="true" />
-        </a>
+        <ArrowFillLink href="#how-it-works" label="See how it comes together" />
       </div>
       <div data-motion-reveal>
         <SampleEventPage />
@@ -486,10 +477,7 @@ export function LandingOccasionLinks() {
             </li>
           ))}
           <li>
-            <Link href="#examples" className={styles.exploreLink}>
-              Explore all
-              <ArrowRight size={14} aria-hidden="true" />
-            </Link>
+            <ArrowFillLink href="#examples" className={styles.exploreLink} label="Explore all" />
           </li>
         </ul>
       </div>
@@ -503,7 +491,11 @@ const steps = [
     description: "Pick a design, upload a flyer or paste an event link.",
     detail:
       "Bring the invitation you already have, or find a design that feels like your occasion. Keep the artwork and the practical details together from the start.",
-    highlights: ["Ready-made invitation designs", "Flyer and screenshot uploads", "Details from an event link"],
+    highlights: [
+      "Ready-made invitation designs",
+      "Flyer and screenshot uploads",
+      "Details from an event link",
+    ],
     image: "/images/marketing/birthday-step-theme.png",
     imagePosition: "50% 50%",
   },
@@ -512,7 +504,11 @@ const steps = [
     description: "Add your details, your style and the sections you need.",
     detail:
       "Give guests the information they’ll look for: when to arrive, where to go and what to bring. Add the response and sign-up sections your gathering needs.",
-    highlights: ["Schedules and directions", "RSVPs and guest questions", "Potluck and volunteer sign-ups"],
+    highlights: [
+      "Schedules and directions",
+      "RSVPs and guest questions",
+      "Potluck and volunteer sign-ups",
+    ],
     image: "/images/marketing/birthday-step-details.png",
     imagePosition: "34% 50%",
   },
@@ -537,13 +533,10 @@ export function LandingHowItWorks() {
               <span>Less planning.</span>
               <strong>More celebrating.</strong>
             </h2>
-            <a href="#showcase" className={styles.howLink}>
-              See an example <ArrowRight size={15} aria-hidden="true" />
-            </a>
+            <ArrowFillLink href="#showcase" className={styles.howLink} label="See an example" />
             <p className={styles.howStatement} data-how-statement>
               <span className={styles.howStatementWords}>
-                <span>From idea</span>{" "}
-                <strong>to invited.</strong>
+                <span>From idea</span> <strong>to invited.</strong>
               </span>
             </p>
           </div>
@@ -560,9 +553,7 @@ export function LandingHowItWorks() {
                   className={styles.stepImage}
                   style={{ objectPosition: step.imagePosition }}
                 />
-                <span className={styles.stepNumber}>
-                  {String(index + 1).padStart(2, "0")}
-                </span>
+                <span className={styles.stepNumber}>{String(index + 1).padStart(2, "0")}</span>
               </span>
               <div>
                 <h3>{step.title}</h3>

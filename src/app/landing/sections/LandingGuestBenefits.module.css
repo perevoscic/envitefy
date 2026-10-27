@@ -53,6 +53,11 @@
   text-wrap: pretty;
 }
 .intro a {
+  --arrow-fill-color: var(--marketing-accent);
+  --arrow-fill-hover-ink: var(--marketing-paper);
+  min-height: 44px;
+  border-radius: 999px;
+  padding-inline-start: 0.75rem;
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -154,8 +159,12 @@
     rgb(var(--glow-edge-soft) / 0.82) 42%,
     transparent 82%
   );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Script from "next/script";
 import CompanyTopNav from "@/components/company/CompanyTopNav";
 import styles from "@/components/company/supporting-public.module.css";
 import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import PublicCreationLink from "@/components/marketing/PublicCreationLink";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 
 const siteOgImageUrl = getRandomSiteOgImageUrl();
@@ -96,18 +96,10 @@ export default function HowItWorksPage() {
             </article>
           </div>
           <div className={styles.links}>
-            <PublicCreationLink href="/create">
-              Start from scratch<span aria-hidden="true">↗</span>
-            </PublicCreationLink>
-            <Link href="/snap">
-              Upload with Snap<span aria-hidden="true">↗</span>
-            </Link>
-            <PublicCreationLink href="/live-cards">
-              Explore live cards<span aria-hidden="true">↗</span>
-            </PublicCreationLink>
-            <Link href="/guides">
-              Read a guide<span aria-hidden="true">↗</span>
-            </Link>
+            <PublicCreationLink href="/create" label="Start from scratch" />
+            <ArrowFillLink href="/snap" label="Upload with Snap" />
+            <PublicCreationLink href="/live-cards" label="Explore live cards" />
+            <ArrowFillLink href="/guides" label="Read a guide" />
           </div>
         </section>
         <Script id="ld-breadcrumb-how" type="application/ld+json" strategy="afterInteractive">

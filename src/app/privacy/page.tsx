@@ -1,6 +1,7 @@
-import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 import Link from "next/link";
 import CompanyPageShell from "@/components/company/CompanyPageShell";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
+import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 import { legalConfig } from "@/lib/legal-config";
 import { LEGAL_EFFECTIVE_DATE_LABEL } from "@/lib/legal-versions";
 
@@ -60,7 +61,9 @@ const privacySections = [
     title: "6. Google user data and Limited Use",
     body: [
       ...(!CONNECTED_CALENDAR_SYNC_ENABLED
-        ? ["Current availability: Google Calendar and Outlook connections and automatic syncing are temporarily paused. Envitefy does not request new calendar permissions or read or write connected calendar events during this pause. Google sign-in, manual calendar links, ICS downloads, and disconnecting existing connections remain available."]
+        ? [
+            "Current availability: Google Calendar and Outlook connections and automatic syncing are temporarily paused. Envitefy does not request new calendar permissions or read or write connected calendar events during this pause. Google sign-in, manual calendar links, ICS downloads, and disconnecting existing connections remain available.",
+          ]
         : []),
       "Access and features: Google sign-in uses the openid, email, and profile permissions to authenticate you, create or locate your Envitefy account, and display the account information you chose to share. The Google Calendar connection requests calendar.events.owned so Envitefy can add an event you created or scanned to your primary calendar and retrieve that specific Envitefy-created calendar event when needed to prevent a duplicate or confirm the calendar action. Envitefy does not import or analyze your general Google Calendar history.",
       "Administrative analytics connection: analytics.readonly is requested only when an expressly authorized Envitefy administrator starts the separate Google Analytics connection. It is used solely to display reports for Envitefy’s own GA4 property in Envitefy’s internal administrator dashboard. It is not requested during an ordinary user’s Google sign-in or calendar connection.",
@@ -134,9 +137,7 @@ export default function PrivacyPage() {
       <section className="px-4 py-16 sm:px-6 lg:py-24">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10">
-            <p className="text-xs font-bold uppercase text-[#2f6f64]">
-              Policy summary
-            </p>
+            <p className="text-xs font-bold uppercase text-[#2f6f64]">Policy summary</p>
             <h2
               className="mt-4 text-3xl font-semibold leading-tight text-[#202124] sm:text-5xl"
               style={{
@@ -145,9 +146,7 @@ export default function PrivacyPage() {
             >
               What we collect, why, and how to manage it.
             </h2>
-            <p className="mt-4 text-sm text-[#52605c]">
-              Effective {LEGAL_EFFECTIVE_DATE_LABEL}
-            </p>
+            <p className="mt-4 text-sm text-[#52605c]">Effective {LEGAL_EFFECTIVE_DATE_LABEL}</p>
           </div>
 
           <div className="grid gap-4">
@@ -156,9 +155,7 @@ export default function PrivacyPage() {
                 key={section.title}
                 className="rounded-lg border border-[#d9ded3] bg-white p-6 shadow-[0_18px_48px_rgba(32,49,55,0.08)]"
               >
-                <h3 className="text-xl font-semibold text-[#202124]">
-                  {section.title}
-                </h3>
+                <h3 className="text-xl font-semibold text-[#202124]">{section.title}</h3>
                 <div className="mt-4 space-y-3 text-base leading-7 text-[#52605c]">
                   {section.body.length > 1 ? (
                     <ul className="list-disc space-y-2 pl-5">
@@ -176,8 +173,16 @@ export default function PrivacyPage() {
 
           <div className="mt-10 rounded-lg border border-[#d9ded3] bg-white p-5 text-sm leading-6 text-[#52605c]">
             <p className="font-semibold text-[#203137]">Account deletion</p>
-            <p className="mt-2">Request deletion of your Envitefy account and associated data from Settings → Profile, or use our public request page without signing in.</p>
-            <Link href="/delete-account" className="mt-2 inline-flex min-h-11 items-center font-semibold text-[#203137] underline underline-offset-4">Request account deletion</Link>
+            <p className="mt-2">
+              Request deletion of your Envitefy account and associated data from Settings → Profile,
+              or use our public request page without signing in.
+            </p>
+            <Link
+              href="/delete-account"
+              className="mt-2 inline-flex min-h-11 items-center font-semibold text-[#203137] underline underline-offset-4"
+            >
+              Request account deletion
+            </Link>
           </div>
 
           <div className="mt-10 rounded-lg border border-[#b7d8ce] bg-[#edf9f5] p-5 text-sm leading-6 text-[#52605c]">
@@ -200,15 +205,16 @@ export default function PrivacyPage() {
           <div className="mt-10 flex flex-col gap-3 rounded-lg border border-[#d9ded3] bg-[#edf9f5] p-5 text-sm leading-6 text-[#52605c] sm:flex-row sm:items-center sm:justify-between">
             <p>
               Privacy requests can be submitted through the contact page
-              {legalConfig.privacyContactEmail ? ` or by email to ${legalConfig.privacyContactEmail}` : ""}.
-              {legalConfig.legalPostalAddress ? ` Mail: ${legalConfig.legalPostalAddress}.` : ""}
+              {legalConfig.privacyContactEmail
+                ? ` or by email to ${legalConfig.privacyContactEmail}`
+                : ""}
+              .{legalConfig.legalPostalAddress ? ` Mail: ${legalConfig.legalPostalAddress}.` : ""}
             </p>
-            <Link
+            <ArrowFillLink
               href="/contact"
-              className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[#203137] px-5 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#2b4148]"
-            >
-              Contact Envitefy
-            </Link>
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[#203137] px-5 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#2b4148] [--arrow-fill-color:#fff] [--arrow-fill-hover-ink:#203137]"
+              label="Contact Envitefy"
+            />
           </div>
         </div>
       </section>

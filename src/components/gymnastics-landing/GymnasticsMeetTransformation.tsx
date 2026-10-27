@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import GymnasticsMeetComparison from "./GymnasticsMeetComparison";
 import styles from "./GymnasticsMeetTransformation.module.css";
 
@@ -32,9 +32,11 @@ export default function GymnasticsMeetTransformation() {
               </dd>
             </div>
           </dl>
-          <a href="/gymnastics/templates" className={styles.createLink}>
-            Create your meet page <ArrowRight aria-hidden="true" />
-          </a>
+          <ArrowFillLink
+            href="/gymnastics/templates"
+            className={styles.createLink}
+            label="Create your meet page"
+          />
         </div>
         <GymnasticsMeetComparison />
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Check, Menu } from "lucide-react";
+import { Check, Menu } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -151,9 +151,11 @@ export default function LandingExperience() {
             onClick={() => openAuth("login")}
             className={`${styles.login} ${styles.publicSignIn}`}
           />
-          <button type="button" onClick={onCreateEvent} className={styles.headerCreate}>
-            Let&apos;s create <ArrowRight size={15} aria-hidden="true" />
-          </button>
+          <ArrowFillButton
+            label="Let's create"
+            onClick={onCreateEvent}
+            className={styles.headerCreate}
+          />
           <button
             type="button"
             className={styles.menuButton}
@@ -193,14 +195,13 @@ export default function LandingExperience() {
             Make it an <em>occasion.</em>
           </h2>
           <p>Your people. Your plans. One beautiful place for it all.</p>
-          <button
+          <ArrowFillButton
             id="upload"
             type="button"
+            label="Create your event"
             onClick={onCreateEvent}
             className={styles.primaryButton}
-          >
-            Create your event <ArrowRight size={18} aria-hidden="true" />
-          </button>
+          />
           <span className={styles.finalNote}>
             <Check size={14} aria-hidden="true" />
             No app needed for your guests

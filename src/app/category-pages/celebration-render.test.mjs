@@ -53,8 +53,15 @@ function load(file) {
     if (name.endsWith("/PublicCreationLink"))
       return {
         __esModule: true,
-        default: ({ children, signupIntent, ...props }) =>
-          React.createElement("a", { ...props, "data-public-create-destination": props.href }, children),
+        default: ({ children, label, signupIntent, ...props }) => {
+          const linkProps = { ...props, "data-public-create-destination": props.href };
+          return label
+            ? React.createElement(load("src/components/ui/ArrowFillLink.tsx").default, {
+                ...linkProps,
+                label,
+              })
+            : React.createElement("a", linkProps, children);
+        },
       };
     if (name === "@/components/navigation/SignedOutPageChrome")
       return {
@@ -151,10 +158,17 @@ test("signup browsing actions open the public gallery without requiring an accou
   const html = renderToStaticMarkup(
     React.createElement(Component, { page: getUseCasePageByPath("/signup-forms") }),
   );
-  const browseLinks = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)]
-    .filter((match) => match[2].replace(/<[^>]*>/g, "").trim() === "Browse templates");
+  const browseLinks = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].filter((match) => {
+    const visibleLabel =
+      match[2].match(/data-arrow-fill-label=""[^>]*>([\s\S]*?)<\/span>/)?.[1] ?? match[2];
+    return visibleLabel.replace(/<[^>]*>/g, "").trim() === "Browse templates";
+  });
   assert.equal(browseLinks.length, 2);
-  for (const link of browseLinks) assert.match(link[1], /href="\/signup-forms\/templates"/);
+  for (const link of browseLinks) {
+    assert.match(link[1], /href="\/signup-forms\/templates"/);
+    assert.match(link[1], /data-arrow-fill-button=""/);
+    assert.doesNotMatch(link[1], /data-public-create-destination|aria-haspopup="dialog"/);
+  }
 });
 
 test("all reveal creation actions retain the reveal editor destination", () => {
@@ -164,5 +178,8 @@ test("all reveal creation actions retain the reveal editor destination", () => {
   );
   const createLinks = [...html.matchAll(/<a\b([^>]*data-public-create-destination[^>]*)>/g)];
   assert.equal(createLinks.length, 3);
-  for (const link of createLinks) assert.match(link[1], /href="\/event\/gender-reveal"/);
+  for (const link of createLinks) {
+    assert.match(link[1], /href="\/event\/gender-reveal"/);
+    assert.match(link[1], /data-arrow-fill-button=""/);
+  }
 });

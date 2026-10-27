@@ -3,6 +3,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const { chromium } = require("playwright");
+const {
+  assertArrowFillCta,
+  assertArrowFillInteraction,
+  assertArrowFillReducedMotion,
+} = require("./lib/landing-arrow-fill-assertions.cjs");
 const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
 
@@ -951,6 +956,60 @@ async function assertPageReady(page, scheme, width) {
   await assertNoOverflow(page, `${scheme} ${width}px initial`);
 }
 
+async function assertLandingCtas(page, scheme, width) {
+  const actions = [
+    ["#landing-hero", "button", "Create your event"],
+    ["#landing-hero", "link", "See an example", "#showcase"],
+    ["#gathering-note", "link", "Find your kind of gathering", "#examples"],
+    ["#landing-guest-preview", "link", "See how it comes together", "#how-it-works"],
+    ['nav[aria-label="Find your event type"]', "link", "Explore all", "#examples"],
+    ["#how-it-works", "link", "See an example", "#showcase"],
+    ["#guest-flow", "link", "Explore the guest experience", "#showcase"],
+    ["[data-landing-faq]", "button", "Ask Concierge"],
+    ["[data-landing-faq]", "link", "Visit our FAQ", "/faq"],
+    ["#creation-paths", "button", "Create your event"],
+  ];
+  for (const [scope, role, label, href] of actions) {
+    await assertArrowFillCta(page.locator(scope).getByRole(role, { name: label, exact: true }), {
+      label,
+      href,
+      description: `Homepage ${scheme} ${width}px ${scope} ${label}`,
+    });
+  }
+  const hero = page.locator("#landing-hero");
+  assert.equal(
+    await hero.locator("[data-arrow-fill-button]").count(),
+    2,
+    "The homepage hero applies the login effect to both original actions",
+  );
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  for (const [role, label] of [
+    ["button", "Create your event"],
+    ["link", "See an example"],
+  ]) {
+    const cta = hero.getByRole(role, { name: label, exact: true });
+    await assertArrowFillInteraction(page, cta, `Homepage ${scheme} ${width}px ${label}`);
+    await assertArrowFillReducedMotion(page, cta, `Homepage ${scheme} ${width}px ${label}`);
+    await hero.screenshot({
+      path: path.join(
+        output,
+        `cta-${scheme}-${width === 375 ? "mobile" : "desktop"}-${role === "button" ? "create" : "example"}-hover.png`,
+      ),
+    });
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+  }
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await hero.getByRole("button", { name: "Create your event", exact: true }).focus();
+  await hero.screenshot({
+    path: path.join(output, `cta-${scheme}-${width === 375 ? "mobile" : "desktop"}-hero.png`),
+  });
+  await page.evaluate(() => {
+    document.activeElement?.blur();
+    window.scrollTo({ top: 0, behavior: "instant" });
+  });
+  await page.mouse.move(0, 0);
+}
+
 async function assertGuestBenefits(page, scheme, width) {
   const section = page.locator("#guest-flow");
   const cards = section.locator("article[data-guest-benefit]");
@@ -1336,12 +1395,22 @@ async function exerciseAuthentication(page) {
   await page.keyboard.press("Escape");
   assert.equal(await page.getByRole("dialog").count(), 0);
   await showHeaderBelowWordmark(page);
-  await page.locator("header").getByRole("button", { name: "Let's create", exact: true }).click();
+  const headerCreate = page
+    .locator("header")
+    .getByRole("button", { name: "Let's create", exact: true });
+  if (await headerCreate.isVisible()) {
+    await headerCreate.click();
+  } else {
+    await page
+      .locator("#creation-paths")
+      .getByRole("button", { name: "Create your event", exact: true })
+      .click();
+  }
   dialog = page.getByRole("dialog", { name: "Create an account", exact: true });
   assert.equal(
     await dialog.locator("form").getAttribute("data-auth-redirect"),
     "/create",
-    "The header creation action opens signup with the creation destination",
+    "The desktop header or phone closing creation action opens signup with the creation destination",
   );
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
   assert.equal(await page.getByRole("dialog").count(), 0);
@@ -1815,7 +1884,8 @@ test("category fragment navigation aligns the section at the top and opens every
     colorScheme: "light",
     reducedMotion: "no-preference",
   });
-  const errors = [], unexpected = [];
+  const errors = [],
+    unexpected = [];
   try {
     await serveContext(context, css, unexpected);
     const page = await context.newPage();
@@ -1824,55 +1894,82 @@ test("category fragment navigation aligns the section at the top and opens every
     const waitForOpenCategories = async (fragment) => {
       await page.waitForFunction((fragment) => {
         const cards = [...document.querySelectorAll("[data-category]")];
-        return location.hash === fragment && cards.length === 8 && cards.every((card) => {
-          const arch = card.querySelector("[data-category-arch]");
-          const cover = card.querySelector("[data-category-cover]");
-          const frame = arch.getBoundingClientRect();
-          const window = arch.parentElement.getBoundingClientRect();
-          return Math.abs(frame.top - window.top) < 1 &&
-            cover.getBoundingClientRect().top - frame.top > frame.height * 0.99 &&
-            Number(getComputedStyle(arch.querySelector("img")).scale) < 1.01 &&
-            Number(getComputedStyle(card.lastElementChild).opacity) > 0.99;
-        });
+        return (
+          location.hash === fragment &&
+          cards.length === 8 &&
+          cards.every((card) => {
+            const arch = card.querySelector("[data-category-arch]");
+            const cover = card.querySelector("[data-category-cover]");
+            const frame = arch.getBoundingClientRect();
+            const window = arch.parentElement.getBoundingClientRect();
+            return (
+              Math.abs(frame.top - window.top) < 1 &&
+              cover.getBoundingClientRect().top - frame.top > frame.height * 0.99 &&
+              Number(getComputedStyle(arch.querySelector("img")).scale) < 1.01 &&
+              Number(getComputedStyle(card.lastElementChild).opacity) > 0.99
+            );
+          })
+        );
       }, fragment);
     };
-    const waitForAnchorArrival = (fragment) => page.waitForFunction((fragment) => {
-      const anchor = document.querySelector(fragment);
-      const collection = document.querySelector("[data-category-collection]");
-      const eyebrow = collection.querySelector("p");
-      const header = document.querySelector("header");
-      const eyebrowTop = eyebrow.getBoundingClientRect().top;
-      return Math.abs(anchor.getBoundingClientRect().top) < 2 &&
-        Math.abs(collection.getBoundingClientRect().top) < 2 &&
-        eyebrowTop >= header.offsetHeight && eyebrowTop < header.offsetHeight + 32;
-    }, fragment);
+    const waitForAnchorArrival = (fragment) =>
+      page.waitForFunction((fragment) => {
+        const anchor = document.querySelector(fragment);
+        const collection = document.querySelector("[data-category-collection]");
+        const eyebrow = collection.querySelector("p");
+        const header = document.querySelector("header");
+        const eyebrowTop = eyebrow.getBoundingClientRect().top;
+        return (
+          Math.abs(anchor.getBoundingClientRect().top) < 2 &&
+          Math.abs(collection.getBoundingClientRect().top) < 2 &&
+          eyebrowTop >= header.offsetHeight &&
+          eyebrowTop < header.offsetHeight + 32
+        );
+      }, fragment);
     for (const width of [1920, 375]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${base}/baby-showers/templates`);
       await page.getByRole("link", { name: "All categories", exact: true }).click();
       await page.locator('[data-marketing-page][data-motion-enhanced="true"]').waitFor();
-      await page.evaluate(() => document.getElementById("categories").scrollIntoView({
-        block: "start", behavior: "instant",
-      }));
-      assert.equal(await page.locator(":target").count(), 0,
-        "Client navigation does not set the browser's native fragment target");
+      await page.evaluate(() =>
+        document.getElementById("categories").scrollIntoView({
+          block: "start",
+          behavior: "instant",
+        }),
+      );
+      assert.equal(
+        await page.locator(":target").count(),
+        0,
+        "Client navigation does not set the browser's native fragment target",
+      );
       await waitForOpenCategories("#categories");
       await waitForAnchorArrival("#categories");
       await page.emulateMedia({ reducedMotion: "reduce" });
       await waitForOpenCategories("#categories");
       await page.emulateMedia({ reducedMotion: "no-preference" });
       await waitForOpenCategories("#categories");
-      await page.waitForFunction(() => [...document.querySelectorAll("[data-category] img")]
-        .every((image) => image.complete && image.naturalWidth > 0));
+      await page.waitForFunction(() =>
+        [...document.querySelectorAll("[data-category] img")].every(
+          (image) => image.complete && image.naturalWidth > 0,
+        ),
+      );
       await page.screenshot({ path: path.join(output, `all-categories-client-${width}.png`) });
       await assertNoOverflow(page, `All categories client navigation at ${width}px`);
-      await page.evaluate(() => { location.hash = "#how-it-works"; });
-      await page.waitForFunction(() =>
-        !document.querySelector("[data-category-collection]").hasAttribute("data-category-targeted"));
+      await page.evaluate(() => {
+        location.hash = "#how-it-works";
+      });
+      await page.waitForFunction(
+        () =>
+          !document
+            .querySelector("[data-category-collection]")
+            .hasAttribute("data-category-targeted"),
+      );
       await page.goBack();
       await waitForOpenCategories("#categories");
-      await page.waitForFunction(() =>
-        document.querySelector("[data-category-collection]").dataset.categoryTargeted === "true");
+      await page.waitForFunction(
+        () =>
+          document.querySelector("[data-category-collection]").dataset.categoryTargeted === "true",
+      );
     }
     await page.setViewportSize({ width: 1920, height: 900 });
     await page.goto(base);
@@ -1887,8 +1984,11 @@ test("category fragment navigation aligns the section at the top and opens every
       await waitForOpenCategories(fragment);
       await waitForAnchorArrival(fragment);
       if (label === "Categories") {
-        await page.waitForFunction(() => [...document.querySelectorAll("[data-category] img")]
-          .every((image) => image.complete && image.naturalWidth > 0));
+        await page.waitForFunction(() =>
+          [...document.querySelectorAll("[data-category] img")].every(
+            (image) => image.complete && image.naturalWidth > 0,
+          ),
+        );
         await page.screenshot({ path: path.join(output, "category-fragment-desktop.png") });
       }
       await page.evaluate(() => document.activeElement?.blur());
@@ -1896,8 +1996,11 @@ test("category fragment navigation aligns the section at the top and opens every
       await page.keyboard.press("Enter");
       await waitForOpenCategories(fragment);
       await waitForAnchorArrival(fragment);
-      assert.equal(await page.locator(":target").getAttribute("id"), fragment.slice(1),
-        `${label} remains fully expanded when activated again with the keyboard`);
+      assert.equal(
+        await page.locator(":target").getAttribute("id"),
+        fragment.slice(1),
+        `${label} remains fully expanded when activated again with the keyboard`,
+      );
     }
     await page.goto(`${base}/#categories`);
     await page.locator('[data-marketing-page][data-motion-enhanced="true"]').waitFor();
@@ -1906,12 +2009,14 @@ test("category fragment navigation aligns the section at the top and opens every
     await page.setViewportSize({ width: 1280, height: 700 });
     await waitForOpenCategories("#categories");
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.waitForFunction(() =>
-      !document.querySelector("[data-category-collection]").hasAttribute("data-motion-ready"));
+    await page.waitForFunction(
+      () => !document.querySelector("[data-category-collection]").hasAttribute("data-motion-ready"),
+    );
     await waitForOpenCategories("#categories");
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.waitForFunction(() =>
-      document.querySelector("[data-category-collection]").hasAttribute("data-motion-ready"));
+      document.querySelector("[data-category-collection]").hasAttribute("data-motion-ready"),
+    );
     await waitForOpenCategories("#categories");
     await page.setViewportSize({ width: 375, height: 900 });
     await page.goto(`${base}/#categories`);
@@ -2196,6 +2301,7 @@ test("product landing delivers light and dark layouts, sample actions and explic
           await page
             .locator("#landing-hero")
             .screenshot({ path: path.join(output, `${scheme}-${device}-hero.png`) });
+          await assertLandingCtas(page, scheme, width);
           await assertGuestBenefits(page, scheme, width);
           await assertMosaicLayout(page, width, `${scheme} ${width}px reduced-motion mosaic`);
           await exerciseFeedback(page, scheme, width);
@@ -2232,10 +2338,6 @@ test("product landing delivers light and dark layouts, sample actions and explic
             await page.keyboard.press("Escape");
             await menu.waitFor({ state: "hidden" });
           } else {
-            assert.equal(
-              await page.locator("header").getByRole("switch", { name: "Dark mode" }).isVisible(),
-              true,
-            );
             assert.equal(
               await page
                 .getByRole("navigation", { name: "Main navigation", exact: true })

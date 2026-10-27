@@ -17,6 +17,7 @@ import styles from "@/components/company/supporting-public.module.css";
 import MarketingHero from "@/components/marketing/MarketingHero";
 import MarketingPage from "@/components/marketing/MarketingPage";
 import PublicCreationLink from "@/components/marketing/PublicCreationLink";
+import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import GuidesTopNav from "./GuidesTopNav";
 import { guidePages } from "./guide-content";
@@ -191,10 +192,7 @@ export default function GuidesPage() {
             <p className={styles.eyebrow}>Start with what you have</p>
             <div className={styles.links}>
               {startingPoints.slice(0, 3).map((item) => (
-                <Link href={item.href} key={item.title}>
-                  {item.title}
-                  <ArrowRight size={16} aria-hidden="true" />
-                </Link>
+                <ArrowFillLink href={item.href} key={item.title} label={item.title} />
               ))}
             </div>
           </div>
@@ -234,14 +232,8 @@ export default function GuidesPage() {
               into a page to share.
             </h2>
             <div className={styles.links}>
-              <Link href="/snap">
-                Start with a file
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-              <PublicCreationLink href="/live-cards">
-                Design a live card
-                <ArrowRight size={16} aria-hidden="true" />
-              </PublicCreationLink>
+              <ArrowFillLink href="/snap" label="Start with a file" />
+              <PublicCreationLink href="/live-cards" label="Design a live card" />
             </div>
           </div>
         </section>

@@ -1,10 +1,8 @@
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
 const test = require("node:test");
 const React = require("react");
 const { renderToStaticMarkup } = require("react-dom/server");
-const ts = require("typescript");
+const loadTs = require("../../../scripts/lib/event-messages-test-loader.cjs");
 
 // Exercise real component handlers without submitting credentials or creating an event.
 function componentHarness(file, initialStatus = "unauthenticated") {
@@ -13,7 +11,6 @@ function componentHarness(file, initialStatus = "unauthenticated") {
   let status = initialStatus;
   const AuthModal = () => null;
   const Link = ({ children, ...props }) => React.createElement("a", props, children);
-  const cache = new Map();
   const body = {};
   const portalTargets = [];
   const hooks = {
@@ -30,40 +27,19 @@ function componentHarness(file, initialStatus = "unauthenticated") {
       ];
     },
   };
-  function load(relative) {
-    const filename = path.resolve(relative);
-    if (cache.has(filename)) return cache.get(filename).exports;
-    const module = { exports: {} };
-    cache.set(filename, module);
-    const source = ts.transpileModule(fs.readFileSync(filename, "utf8"), {
-      fileName: filename,
-      compilerOptions: {
-        module: ts.ModuleKind.CommonJS,
-        target: ts.ScriptTarget.ES2022,
-        jsx: ts.JsxEmit.ReactJSX,
-        esModuleInterop: true,
+  const Component = loadTs(file, {
+    react: hooks,
+    "react-dom": {
+      createPortal: (children, target) => {
+        portalTargets.push(target);
+        return children;
       },
-    }).outputText;
-    const localRequire = (name) => {
-      if (name === "react") return hooks;
-      if (name === "react-dom")
-        return {
-          createPortal: (children, target) => {
-            portalTargets.push(target);
-            return children;
-          },
-        };
-      if (name === "next-auth/react") return { useSession: () => ({ status }) };
-      if (name === "next/dynamic") return { __esModule: true, default: () => AuthModal };
-      if (name === "next/link") return { __esModule: true, default: Link };
-      if (name === "lucide-react") return new Proxy({}, { get: () => () => null });
-      if (name.startsWith("@/")) return load(path.join("src", `${name.slice(2)}.ts`));
-      return require(name);
-    };
-    new Function("require", "module", "exports", source)(localRequire, module, module.exports);
-    return module.exports;
-  }
-  const Component = load(file).default;
+    },
+    "next-auth/react": { useSession: () => ({ status }) },
+    "next/dynamic": { __esModule: true, default: () => AuthModal },
+    "next/link": { __esModule: true, default: Link },
+    "lucide-react": new Proxy({}, { get: () => () => null }),
+  }).default;
   return {
     render(props = {}) {
       cursor = 0;
@@ -157,6 +133,46 @@ test("authenticated creation links retain native navigation and exact destinatio
   assert.equal(event.defaultPrevented, false);
   assert.equal(link.props.href, "/live-cards?create=1");
   assert.equal(link.props["aria-haspopup"], undefined);
+});
+
+test("an opt-in effect renders the real label while preserving signup and login destinations", () => {
+  const harness = componentHarness("src/components/marketing/PublicCreationLink.tsx");
+  const props = {
+    href: "/event/gender-reveal",
+    label: "Create your reveal page",
+    className: "existing-cta",
+    style: { backgroundColor: "pink" },
+  };
+  let tree = harness.render(props);
+  let link = elements(tree).find((node) => node.type === harness.Link);
+  const html = renderToStaticMarkup(tree);
+  assert.match(html, /data-arrow-fill-button=""/);
+  assert.match(html, /data-arrow-fill-label="">Create your reveal page<\/span>/);
+  assert.match(html, /data-arrow-fill-label-overlay="" aria-hidden="true"/);
+  assert.match(html, /data-arrow-fill-surface=""/);
+  assert.match(html, /data-arrow-fill-icon=""/);
+  assert.match(link.props.className, /existing-cta/);
+  assert.equal(link.props.style.backgroundColor, "pink");
+  assert.match(link.props.style.paddingInlineEnd, /--arrow-fill-circle/);
+  const event = click();
+  link.props.onClick(event);
+  assert.equal(event.defaultPrevented, true);
+  let modal = elements(harness.render(props)).find((node) => node.type === harness.AuthModal);
+  assert.equal(modal.props.successRedirectUrl, props.href);
+  assert.equal(modal.props.signupIntent, "gender_reveal");
+  modal.props.onModeChange("login");
+  modal = elements(harness.render(props)).find((node) => node.type === harness.AuthModal);
+  assert.equal(modal.props.mode, "login");
+  assert.equal(modal.props.successRedirectUrl, props.href);
+  modal.props.onClose();
+  harness.setStatus("authenticated");
+  tree = harness.render(props);
+  link = elements(tree).find((node) => node.type === harness.Link);
+  const nativeEvent = click();
+  link.props.onClick(nativeEvent);
+  assert.equal(nativeEvent.defaultPrevented, false);
+  assert.equal(link.props.href, props.href);
+  assert.equal(link.props["data-arrow-fill-button"], "");
 });
 
 test("modified clicks and already handled link presses keep native behavior", () => {
