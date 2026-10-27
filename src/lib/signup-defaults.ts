@@ -1,6 +1,12 @@
 import { resolveVisibility, type TemplateKey } from "@/config/feature-visibility";
 import { normalizeSignupPath, type SignupIntent } from "@/lib/signup-intent";
 
+export type CategoryOnboardingStatus = "pending" | "completed" | "skipped" | null;
+
+export function normalizeCategoryOnboarding(value: unknown): CategoryOnboardingStatus {
+  return value === "pending" || value === "completed" || value === "skipped" ? value : null;
+}
+
 const templatesByIntent: Partial<Record<SignupIntent, TemplateKey[]>> = {
   gymnastics: ["gymnastics"],
   football: ["football_season"],
@@ -15,6 +21,11 @@ const templatesByIntent: Partial<Record<SignupIntent, TemplateKey[]>> = {
 };
 
 export function buildSignupDefaults(intent: SignupIntent, signupPath?: string | null) {
+  const path = normalizeSignupPath(signupPath);
+  const categoryOnboarding: CategoryOnboardingStatus =
+    intent === "snap" && (path === null || path === "/" || path === "/landing")
+      ? "pending"
+      : null;
   const sport = intent === "gymnastics" || intent === "football" ? intent : null;
   const sportsStaff = Boolean(sport) || intent === "sport_events";
   const visibility = resolveVisibility({
@@ -32,6 +43,7 @@ export function buildSignupDefaults(intent: SignupIntent, signupPath?: string | 
     visibleTemplateKeys: visibility.visibleTemplateKeys,
     defaultCreateIntent: visibility.defaultCreateIntent,
     sportPreferences: visibility.sportPreferences,
-    signupAttribution: { intent, path: normalizeSignupPath(signupPath) },
+    categoryOnboarding,
+    signupAttribution: { intent, path },
   };
 }

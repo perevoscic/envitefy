@@ -26,7 +26,7 @@ test("AppShell hides app chrome on marketing and full live-card routes", () => {
   assert.match(appShell, /showAppChrome/);
   assert.match(
     appShell,
-    /const showAppChrome\s*=\s*isAuthenticated && !onMarketing && !isStudioCardShare && !isCreateLanding && !isEventPreview;/,
+    /const showAppChrome\s*=\s*isAuthenticated && !onMarketing && !isStudioCardShare && !isCreateLanding && !isEventPreview && !isCalendarHandoff && !isCoHostInvitation && !pathname\.startsWith\("\/mobile\/"\);/,
   );
   assert.match(appShell, /const isRedirectingFromMarketing = pathname === "\/landing" && isAuthenticated/);
   assert.match(appShell, /templateCategoryForPath\(pathname\)/);
@@ -55,7 +55,13 @@ function loadComponent(relativePath, mocks) {
   }).outputText;
   const module = { exports: {} };
   new Function("require", "module", "exports", code)(
-    (name) => (name in mocks ? mocks[name] : nativeRequire(name)),
+    (name) => {
+      if (name in mocks) return mocks[name];
+      if (name.endsWith(".module.css")) {
+        return new Proxy({}, { get: (_, key) => key === "__esModule" ? false : `public-${String(key)}` });
+      }
+      return nativeRequire(name);
+    },
     module,
     module.exports,
   );
@@ -65,7 +71,11 @@ function loadComponent(relativePath, mocks) {
 function renderRoute(pathname, status, { serverSession = null, preview = false } = {}) {
   const menuContext = React.createContext(null);
   const mocks = {
-    "next/dynamic": () => () => React.createElement("aside", null, "Account navigation"),
+    "next/dynamic": (loader) => () => React.createElement(
+      "aside",
+      null,
+      String(loader).includes("CategoryInterestOnboarding") ? "Category onboarding" : "Account navigation",
+    ),
     "next/navigation": {
       usePathname: () => pathname,
       useSearchParams: () => new URLSearchParams(preview ? "preview=owner" : ""),
@@ -75,6 +85,14 @@ function renderRoute(pathname, status, { serverSession = null, preview = false }
     "@/app/event-cache-context": { EventCacheProvider: React.Fragment },
     "@/components/branding/EnvitefyWordmark": { default: () => null, __esModule: true },
     "@/components/ConditionalFooter": { default: () => null, __esModule: true },
+    "@/components/CoHostInvitationProvider": {
+      default: ({ children }) => React.createElement(React.Fragment, null, children),
+      __esModule: true,
+    },
+    "@/components/marketing/MarketingPage": {
+      default: ({ children, className }) => React.createElement("div", { "data-public-marketing-page": true, className }, children),
+      __esModule: true,
+    },
     "@/components/MobileOverflowReporter": { default: () => null, __esModule: true },
     "@/components/MainContentWrapper": {
       MainContentWrapper: ({ children }) => React.createElement("div", null, children),
@@ -116,20 +134,22 @@ test("signed-in signup galleries and editors retain the account menu", () => {
   ]) {
     const html = renderRoute(route, "authenticated");
     assert.match(html, /Account navigation/, route);
-    assert.doesNotMatch(html, /Public navigation|pt-24/, route);
+    assert.doesNotMatch(html, /Public navigation|data-public-marketing-page|public-gallery|public-layout/, route);
   }
   const hydrating = renderRoute("/signup-forms/templates", "loading", {
     serverSession: { user: { name: "Organizer" } },
   });
   assert.match(hydrating, /Account navigation/);
-  assert.doesNotMatch(hydrating, /Public navigation|pt-24/);
+  assert.doesNotMatch(hydrating, /Public navigation|data-public-marketing-page|public-gallery|public-layout/);
 });
 
 test("anonymous signup browsing keeps public navigation and editors remain accessible", () => {
   for (const status of ["unauthenticated", "loading"]) {
     const gallery = renderRoute("/signup-forms/templates", status);
     assert.match(gallery, /Public navigation/);
-    assert.match(gallery, /pt-24/);
+    assert.match(gallery, /data-public-marketing-page/);
+    assert.match(gallery, /public-gallery/);
+    assert.match(gallery, /public-layout/);
     assert.match(gallery, /Signup gallery/);
     assert.doesNotMatch(gallery, /Account navigation/);
     const editor = renderRoute("/signup-forms/templates/editorial--clean-clear/customize", status);
@@ -148,4 +168,27 @@ test("signup marketing, other public galleries, live cards and clean previews st
     renderRoute("/signup-forms/templates/editorial--clean-clear/customize", "authenticated", { preview: true }),
     /Account navigation/,
   );
+});
+
+test("category onboarding mounts with the authenticated workspace and stays out of public, preview and handoff surfaces", () => {
+  for (const route of ["/", "/create", "/settings", "/signup-forms/templates"]) {
+    assert.match(renderRoute(route, "authenticated"), /Category onboarding/, route);
+    for (const status of ["unauthenticated", "loading"]) {
+      assert.doesNotMatch(renderRoute(route, status), /Category onboarding/, `${status}: ${route}`);
+    }
+  }
+  assert.match(renderRoute("/create", "loading", {
+    serverSession: { user: { name: "Organizer" } },
+  }), /Category onboarding/);
+
+  for (const route of [
+    "/landing", "/birthdays", "/weddings/templates", "/card/example",
+    "/envitefy-create", "/envitefy-concierge", "/calendar/add", "/calendar/add/",
+    "/cohost-invite", "/cohost-invite/", "/mobile/sign-in", "/mobile/auth-return",
+  ]) {
+    const html = renderRoute(route, "authenticated");
+    assert.doesNotMatch(html, /Category onboarding|Account navigation/, route);
+  }
+  assert.doesNotMatch(renderRoute("/event/general/customize", "authenticated", { preview: true }), /Category onboarding/);
+  assert.doesNotMatch(renderRoute("/event", "unauthenticated"), /Category onboarding/);
 });

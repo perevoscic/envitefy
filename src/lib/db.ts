@@ -1,4 +1,4 @@
-import { buildSignupDefaults } from "@/lib/signup-defaults";
+import { buildSignupDefaults, type CategoryOnboardingStatus } from "@/lib/signup-defaults";
 import type { SignupIntent, SignupSource } from "@/lib/signup-intent";
 import { canReadEventDraft, legacyDiscoveryDraftSql } from "@/lib/event-draft-access";
 import { buildSidebarSportsProjectionSql } from "@/lib/sports-schedule-navigation";
@@ -1213,6 +1213,7 @@ export async function updateFeatureVisibilityByEmail(params: {
   sportPreferences?: SportPreferences;
   quickAccess?: string[];
   pinnedCategoryIds?: string[];
+  categoryOnboarding?: Exclude<CategoryOnboardingStatus, "pending" | null>;
 }): Promise<void> {
   await ensureUsersHasFeatureVisibilityColumn();
   const lower = params.email.toLowerCase();
@@ -1232,6 +1233,7 @@ export async function updateFeatureVisibilityByEmail(params: {
   }
   if (params.quickAccess) payload.quickAccess = params.quickAccess;
   if (params.pinnedCategoryIds !== undefined) payload.pinnedCategoryIds = params.pinnedCategoryIds;
+  if (params.categoryOnboarding !== undefined) payload.categoryOnboarding = params.categoryOnboarding;
   await query(
     `update users
         set feature_visibility = coalesce(feature_visibility, '{}'::jsonb) || $2::jsonb

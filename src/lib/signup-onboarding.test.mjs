@@ -171,7 +171,7 @@ test("Create Event offers sign-up forms alongside enabled categories and respect
     const defaults = buildSignupDefaults(intent);
     assert.deepEqual(hrefs(items(defaults.visibleTemplateKeys, { defaultCreateIntent: intent }, defaults.sportPreferences)), [`/event/${intent}`, formHref]);
   }
-  assert.deepEqual(new Set(hrefs(items([], { isAdmin: true }))), new Set([...hrefs(getTemplateLinks()), formHref]));
+  assert.deepEqual(new Set(hrefs(items([], { isAdmin: true }))), new Set([...hrefs(getTemplateLinks()), "/event/school", formHref]));
 });
 
 test("sign-up galleries and editors keep Create Event active without classifying published forms as creation", () => {
@@ -498,10 +498,10 @@ test("both account inserts persist category preferences atomically with the new 
   }
 });
 
-test("football landing uses shared navigation and a real WebP hero", () => {
+test("football landing uses shared navigation, the category hero and real WebP images", () => {
   const page = readFileSync("src/components/football-landing/FootballLanding.tsx", "utf8");
-  assert.match(page, /SignedOutPageChrome topNavVariant="transparent-dark"/);
-  assert.match(page, /LandingHeroMedia images=\{heroImages\}/);
+  assert.match(page, /SignedOutPageChrome topNavVariant="transparent-light"/);
+  assert.match(page, /<MarketingHero\s+category="football"/);
   assert.match(page, /signupIntent="football"/);
   for (const image of page.matchAll(/(?:src: |src=)"(\/images\/[^"]+)"/g)) {
     assert.ok(existsSync(`public${image[1]}`));

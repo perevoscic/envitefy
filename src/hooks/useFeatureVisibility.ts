@@ -17,6 +17,7 @@ import {
 } from "@/lib/sports-preferences";
 import { invalidateFeatureVisibility, loadFeatureVisibility } from "@/lib/feature-visibility-client";
 import { normalizePinnedCategoryIds } from "@/lib/category-favorites";
+import { normalizeCategoryOnboarding, type CategoryOnboardingStatus } from "@/lib/signup-defaults";
 
 type FeatureVisibilityState = {
   persona: UserPersona | null;
@@ -28,6 +29,7 @@ type FeatureVisibilityState = {
   sportPreferenceSuggestion: SportPreferenceSuggestion | null;
   quickAccess: QuickAccessKey[];
   pinnedCategoryIds?: string[];
+  categoryOnboarding: CategoryOnboardingStatus;
 };
 
 const DEFAULT_STATE: FeatureVisibilityState = {
@@ -39,6 +41,7 @@ const DEFAULT_STATE: FeatureVisibilityState = {
   sportPreferences: { ...EMPTY_SPORT_PREFERENCES },
   sportPreferenceSuggestion: null,
   quickAccess: ["snap", "upload", "smart_signup"],
+  categoryOnboarding: null,
 };
 
 const FEATURE_VISIBILITY_UPDATED_EVENT = "envitefy:feature-visibility-updated";
@@ -85,6 +88,7 @@ export function useFeatureVisibility() {
         pinnedCategoryIds: Array.isArray(json.pinnedCategoryIds)
           ? normalizePinnedCategoryIds(json.pinnedCategoryIds)
           : undefined,
+        categoryOnboarding: normalizeCategoryOnboarding(json.categoryOnboarding),
         sportPreferenceSuggestion:
           json?.sportPreferenceSuggestion &&
           typeof json.sportPreferenceSuggestion === "object"

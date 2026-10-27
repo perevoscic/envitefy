@@ -18,6 +18,7 @@ import { AUTH_TRANSITION_CLEAR_EVENT, AUTH_TRANSITION_EVENT } from "@/utils/auth
 const LeftSidebar = dynamic(() => import("./left-sidebar"), {
   loading: () => null,
 });
+const CategoryInterestOnboarding = dynamic(() => import("@/components/account/CategoryInterestOnboarding"), { ssr: false });
 
 /** Must stay aligned with middleware signed-in redirects for marketing URLs. */
 const MARKETING_PATHS = new Set([
@@ -153,6 +154,7 @@ export default function AppShell({
       <CoHostInvitationProvider active={showAppChrome}>
         {process.env.NODE_ENV === "development" ? <MobileOverflowReporter /> : null}
         {authTransitionMessage ? <AuthTransitionOverlay /> : null}
+        {showAppChrome ? <CategoryInterestOnboarding /> : null}
         {isPublicTemplateEditor ? (
           // Keep the editor mounted while account creation adds the signed-in
           // navigation. Its pending save and chosen leave destination live here.

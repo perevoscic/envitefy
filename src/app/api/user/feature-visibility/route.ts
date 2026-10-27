@@ -17,6 +17,7 @@ import {
   updateFeatureVisibilityByEmail,
 } from "@/lib/db";
 import { normalizeSignupIntent } from "@/lib/signup-intent";
+import { normalizeCategoryOnboarding } from "@/lib/signup-defaults";
 import {
   EMPTY_SPORT_PREFERENCES,
   normalizeSportPreferences,
@@ -33,6 +34,7 @@ type FeatureVisibilityPayload = {
   sportPreferences?: unknown;
   quickAccess?: unknown;
   pinnedCategoryIds?: unknown;
+  categoryOnboarding?: unknown;
 };
 
 function readMetadata(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmail>>) {
@@ -69,6 +71,7 @@ function buildResponse(
       sportPreferenceSuggestion,
       quickAccess: ["snap", "upload", "smart_signup"],
       pinnedCategoryIds: undefined,
+      categoryOnboarding: null,
     };
   }
 
@@ -96,6 +99,7 @@ function buildResponse(
     pinnedCategoryIds: Array.isArray(metadata.pinnedCategoryIds)
       ? normalizePinnedCategoryIds(metadata.pinnedCategoryIds)
       : undefined,
+    categoryOnboarding: normalizeCategoryOnboarding(metadata.categoryOnboarding),
   };
 }
 
@@ -162,6 +166,14 @@ export async function PUT(req: Request) {
   const body: Record<string, unknown> =
     rawBody && typeof rawBody === "object" ? (rawBody as Record<string, unknown>) : {};
   const hasPinnedCategoryIds = Object.hasOwn(body, "pinnedCategoryIds");
+  const hasCategoryOnboarding = Object.hasOwn(body, "categoryOnboarding");
+  const categoryOnboarding = body.categoryOnboarding;
+  if (hasCategoryOnboarding && categoryOnboarding !== "completed" && categoryOnboarding !== "skipped") {
+    return NextResponse.json(
+      { error: "Category onboarding must be completed or skipped." },
+      { status: 400 },
+    );
+  }
   if (hasPinnedCategoryIds && (
     !Array.isArray(body.pinnedCategoryIds) ||
     body.pinnedCategoryIds.some((id) => typeof id !== "string")
@@ -227,6 +239,9 @@ export async function PUT(req: Request) {
     pinnedCategoryIds: hasPinnedCategoryIds
       ? filterPinnedCategoryIds(normalizePinnedCategoryIds(body.pinnedCategoryIds), access)
       : undefined,
+    categoryOnboarding: categoryOnboarding === "completed" || categoryOnboarding === "skipped"
+      ? categoryOnboarding
+      : undefined,
   });
 
   if (
@@ -249,6 +264,9 @@ export async function PUT(req: Request) {
 
   const row = await getFeatureVisibilityByEmail(email);
   const payload = buildResponse(row);
+  payload.visibleTemplateKeys = filterCreationTemplateKeys(payload.visibleTemplateKeys, access);
+  payload.sportPreferences = allowedSportPreferences(payload.sportPreferences, access);
+  payload.defaultCreateIntent = allowedDefaultIntent(payload.defaultCreateIntent, access);
   if (payload.pinnedCategoryIds !== undefined) {
     payload.pinnedCategoryIds = filterPinnedCategoryIds(payload.pinnedCategoryIds, access);
   }

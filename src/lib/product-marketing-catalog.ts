@@ -57,6 +57,18 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
       id: "account-control",
       name: "Account and data control",
       features: [{
+        id: "personalized-event-favorites",
+        name: "Your event types and sports in Favorites",
+        availability: "core",
+        customerPromise: "Keep the occasions and sports you plan close at hand with Favorites you choose.",
+        proofPoints: [
+          "New generic homepage signups receive a skippable, full-screen interest chooser. Birthdays and Holidays & seasonal start selected, and hosts can choose Weddings, other event types and multiple sports.",
+          "Continue saves the confirmed choices as account Favorites and remembers selected sports. Skip dismisses the introduction without adding Favorites; existing accounts and category-specific signups retain their current preferences.",
+          "Settings → Favorites and the sidebar pencil let hosts change or clear their pinned categories later. Favorites follow current account permissions and do not grant access to additional products or event types.",
+          "The chooser supports phones, desktops, light and dark appearance, keyboard access and enlarged text, with visible Continue and Skip actions.",
+        ],
+        sellWhen: ["A host plans several kinds of occasions or sports and wants quick access to the event types they use."],
+      }, {
         id: "account-deletion-request",
         name: "Account deletion requests",
         availability: "core",

@@ -5,6 +5,7 @@ import { CONNECTED_CALENDAR_SYNC_ENABLED, CALENDAR_SYNC_PAUSED_MESSAGE } from "@
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   CalendarDays,
+  Bookmark,
   Camera,
   Check,
   ChevronRight,
@@ -57,10 +58,11 @@ import ProfileAccountDeletion from "@/components/account/ProfileAccountDeletion"
 import CreationAccessSettings from "@/components/account/CreationAccessSettings";
 import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 import AppearanceSelector from "@/components/AppearanceSelector";
+import CategoryFavoritesSettings from "@/components/account/CategoryFavoritesSettings";
 
 type CalendarProvider = "google" | "microsoft" | "apple";
 type ConnectedCalendarProvider = Exclude<CalendarProvider, "apple">;
-type SettingsSectionKey = "profile" | "calendars" | "security" | "creation" | "appearance";
+type SettingsSectionKey = "profile" | "calendars" | "security" | "creation" | "appearance" | "favorites";
 
 const SETTINGS_SECTIONS: Array<{
   id: SettingsSectionKey;
@@ -70,6 +72,7 @@ const SETTINGS_SECTIONS: Array<{
 }> = [
   { id: "profile", label: "Profile", description: "Name and account email", icon: UserRound },
   { id: "appearance", label: "Appearance", description: "Light or dark", icon: Settings2 },
+  { id: "favorites", label: "Favorites", description: "Event types and sports", icon: Bookmark },
   {
     id: "calendars",
     label: "Calendars",
@@ -276,7 +279,7 @@ export default function SettingsPage() {
       const hash = window.location.hash.replace(/^#/, "") || settingsSectionQuery;
       if (hash === "your-sports" || hash === "creation") {
         setActiveSettingsSection("creation");
-      } else if (hash === "calendars" || hash === "security" || hash === "profile" || hash === "appearance") {
+      } else if (hash === "calendars" || hash === "security" || hash === "profile" || hash === "appearance" || hash === "favorites") {
         setActiveSettingsSection(hash);
       }
     };
@@ -841,6 +844,10 @@ export default function SettingsPage() {
           </aside>
 
           <div className="min-w-0">
+          <section id="favorites" aria-labelledby="settings-favorites-heading" className={`${activeSettingsSection === "favorites" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-border bg-card p-5 text-card-foreground sm:p-7`}>
+            <h2 id="settings-favorites-heading" className="text-2xl font-bold">Favorites</h2>
+            <CategoryFavoritesSettings />
+          </section>
           <section className={`${activeSettingsSection === "appearance" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-border bg-card p-5 text-card-foreground sm:p-7`}>
             <h2 className="text-2xl font-bold">Appearance</h2>
             <AppearanceSelector />
