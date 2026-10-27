@@ -41,13 +41,16 @@ export async function extractCreateInformation(input: { files?: File[]; url?: st
     signal.throwIfAborted();
     if (!schedule) throw new CreateSourceError("Your school memo could not be read. Please retry.", 502);
     const place = schoolMemoLocation(sourceText);
-    let sections;
+    let readableSource = sourceText;
     try {
-      const readableSource = await readableSchoolMemoText(sourceText);
-      const notes = schoolMemoSections(readableSource);
-      sections = sourceText.length > 12_000 ? await readableSchoolMemoSections(notes) : notes;
+      readableSource = await readableSchoolMemoText(sourceText);
     }
-    catch { throw new CreateSourceError("We could not make the memo text readable. Your source is kept; please retry.", 502); }
+    catch { /* Typography is optional; keep the successfully read source and dates. */ }
+    signal.throwIfAborted();
+    const notes = schoolMemoSections(readableSource);
+    // Smaller sections can succeed when a whole-document repair times out or
+    // changes source characters. Each failed repair retains its original text.
+    const sections = readableSource === sourceText ? await readableSchoolMemoSections(notes) : notes;
     signal.throwIfAborted();
     return {
       classification: { category: "school", schoolTemplate: "weekly-memo", sport: null, confidence: "high", alternatives: [] },

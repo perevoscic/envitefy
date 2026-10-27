@@ -13,6 +13,7 @@ function load(file, mocks = {}, cache = new Map()) {
   }, cache);
 }
 const { GENERAL_EVENT_DESIGNS, getGeneralEventDesign } = load("src/lib/general-event-designs.ts");
+const { SCHOOL_EVENT_DESIGNS } = load("src/lib/school-event-designs.ts");
 const { AVAILABLE_HOLIDAY_TEMPLATE_IDS } = load("src/assets/holiday-template-availability.ts");
 const { getHolidayBackground, getHolidayBackgroundChoice } = load("src/lib/holiday-backgrounds.ts");
 const { config } = load("src/components/event-templates/GeneralEventsTemplate.tsx");
@@ -49,7 +50,7 @@ test("General Events renders template links directly to the editor and preserves
 });
 
 test("choosing a template opens the real editor with its artwork, theme, and empty event facts", async (t) => {
-  const representative = GENERAL_EVENT_DESIGNS.filter((design, index) => index < 22 || (index - 12) % 10 === 0);
+  const representative = [...GENERAL_EVENT_DESIGNS.filter((design, index) => index < 22 || (index - 12) % 10 === 0), ...SCHOOL_EVENT_DESIGNS];
   let progress, selectedDesign;
   const Editor = load("src/app/event/general/customize/page.tsx", {
       "next/navigation": { useRouter: () => ({}), useSearchParams: () => new URLSearchParams({ templateId: selectedDesign.id }) },
@@ -77,11 +78,12 @@ test("choosing a template opens the real editor with its artwork, theme, and emp
       assert.equal(progress.snapshot.themeId, design.id, "selected design identity");
       assert.equal(progress.snapshot.data.hero, design.artwork, "selected artwork");
       let expectedPalette = { backgroundColor: design.background, color: design.ink };
-      if (design.occasion) {
+      if (design.occasion || design.schoolTemplate) {
         const background = getHolidayBackground(design.id);
-        assert.ok(background, "holiday template has an authored background");
-        assert.equal(progress.snapshot.data.creationCollection, "holidays-seasonal");
-        assert.equal(progress.snapshot.data.holidayOccasion, design.occasion);
+        assert.ok(background, "template has an authored background");
+        assert.equal(progress.snapshot.data.creationCollection, design.schoolTemplate ? "school" : "holidays-seasonal");
+        if (design.schoolTemplate) assert.equal(progress.snapshot.data.schoolTemplate, design.schoolTemplate);
+        else assert.equal(progress.snapshot.data.holidayOccasion, design.occasion);
         assert.deepEqual(progress.snapshot.data.pageBackground, getHolidayBackgroundChoice(background.id, "template"), "the template background choice is retained for saving");
         assert.ok(markup.includes(`data-holiday-background="${background.id}"`), "rendered background matches the saved preset");
         expectedPalette = { backgroundColor: background.page, color: background.ink };
@@ -226,4 +228,29 @@ test("General editor design changes and recovery retain imported facts, custom a
     assert.ok(page?.includes(`background-color:${design.background};color:${design.ink}`), `${design.id}: original background and ink are rendered`);
     assert.doesNotMatch(markup, /data-holiday-background=/, `${design.id}: recovery does not activate a newly recommended preset`);
   }
+
+  const { getSchoolEventDesign } = load("src/lib/school-event-designs.ts");
+  const legacySchool = getSchoolEventDesign("school--weekly-memo");
+  const schoolSnapshot = {
+    ...progress.snapshot, themeId: "civic_blue",
+    data: { ...progress.snapshot.data, schoolTemplate: "weekly-memo", creationCollection: "school", bodyDesignId: legacySchool.id, holidayOccasion: null, hero: legacySchool.artwork },
+  };
+  delete schoolSnapshot.data.pageBackground;
+  hydration.restore(schoolSnapshot);
+  render();
+  assert.equal(progress.snapshot.data.hero, legacySchool.artwork, "opening an older saved school page retains its artwork");
+  assert.equal(progress.snapshot.data.pageBackground, undefined, "opening a saved school page does not replace its background");
+  select(render(), SCHOOL_EVENT_DESIGNS[0]);
+  render();
+  assert.equal(progress.snapshot.data.hero, SCHOOL_EVENT_DESIGNS[0].artwork, "choosing a new school design replaces retired template artwork even after a palette change");
+  assert.equal(progress.snapshot.data.title, schoolSnapshot.data.title);
+  assert.equal(progress.snapshot.data.venue, schoolSnapshot.data.venue);
+  const customSchoolBackground = getHolidayBackgroundChoice("school--lilac-stars");
+  const uploadedSchool = { ...progress.snapshot, data: { ...progress.snapshot.data, hero: recovered.data.hero, pageBackground: customSchoolBackground } };
+  hydration.restore(uploadedSchool);
+  select(render(), SCHOOL_EVENT_DESIGNS[1]);
+  render();
+  assert.equal(progress.snapshot.data.hero, recovered.data.hero, "uploaded artwork stays when changing school designs");
+  assert.deepEqual(progress.snapshot.data.pageBackground, customSchoolBackground, "an explicit school background stays when changing school designs");
+
 });

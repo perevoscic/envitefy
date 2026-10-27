@@ -22,8 +22,8 @@ const examples = [
   ["parent-meeting", "Oak School parent-teacher conferences November 6 at 4 PM. Meet in Room 3. Agenda: student progress."],
 ];
 
-test("four school purposes select four delivered designs in the Create event flow", async () => {
-  assert.equal(SCHOOL_EVENT_DESIGNS.length, 4);
+test("four school purposes select current designs in the expanded Create collection", async () => {
+  assert.equal(SCHOOL_EVENT_DESIGNS.length, 12);
   for (const [kind, source] of examples) {
     const guess = classifyCreateText(source);
     assert.equal(guess.category, "school");
@@ -33,7 +33,8 @@ test("four school purposes select four delivered designs in the Create event flo
     const sync = getCreationTemplates(guess), asyncCatalog = await loadCreationCatalog(guess);
     assert.deepEqual(sync.map(({ id }) => id), asyncCatalog.templates.map(({ id }) => id));
     const selected = defaultCreationTemplate(sync, guess);
-    assert.equal(selected.id, `school--${kind}`);
+    assert.ok(selected.id.startsWith(`school--${kind}--`));
+    assert.equal(getGeneralEventPageDesign(selected.id).schoolTemplate, kind);
     const href = new URL(selected.href, "https://envitefy.test");
     assert.equal(href.pathname, "/event/general/customize");
     assert.equal(href.searchParams.get("collection"), "school");
@@ -42,7 +43,7 @@ test("four school purposes select four delivered designs in the Create event flo
     assert.ok(fs.existsSync(path.join("public", design.artwork)));
     assert.ok(schoolStarterSections(kind).every(section => section.title && section.body === ""));
   }
-  assert.equal(new Set(SCHOOL_EVENT_DESIGNS.map(({ id }) => getGeneralEventPageDesign(id).editorLayout)).size, 4);
+  assert.ok(new Set(SCHOOL_EVENT_DESIGNS.map(({ id }) => getGeneralEventPageDesign(id).editorLayout)).size >= 7);
 });
 
 test("unclear school uploads show the collection; other school contexts retain their original workflows", () => {
@@ -114,4 +115,38 @@ test("memo content follows printed subjects and repairs the former single transc
   assert.deepEqual(schoolMemoSectionLayout(composition.sections), composition.sectionLayout);
   const custom = { ...original, sections: [{ ...original.sections[0], id: "info:my-custom-notes" }] };
   assert.equal(normalizeEventPageComposition(custom).sections.length, 1, "custom sections keep the author's chosen structure");
+});
+
+
+test("all school choices use delivered new artwork, distinct layouts and scoped durable backgrounds", () => {
+  const { getSchoolEventDesign } = read("src/lib/school-event-designs.ts");
+  const { getHolidayBackground, getHolidayBackgrounds, getHolidayBackgroundChoice, normalizeHolidayBackgroundChoice } = read("src/lib/holiday-backgrounds.ts");
+  const backgrounds = getHolidayBackgrounds("school");
+  assert.equal(backgrounds.length, 8);
+  assert.equal(new Set(SCHOOL_EVENT_DESIGNS.map(design => design.artwork)).size, 12);
+  assert.equal(new Set(SCHOOL_EVENT_DESIGNS.map(design => design.id)).size, 12);
+  for (const design of SCHOOL_EVENT_DESIGNS) {
+    assert.match(design.artwork, /^\/templates\/event-pages\/v2\//);
+    assert.ok(fs.existsSync(path.join("public", design.artwork)));
+    assert.ok(getGeneralEventPageDesign(design.id));
+    assert.ok(getGeneralEventBodyPresentation(design.id));
+    const background = getHolidayBackground(design.id);
+    assert.equal(background.id, design.backgroundId);
+    assert.equal(background.occasion, "school");
+    for (const option of backgrounds) {
+      const choice = getHolidayBackgroundChoice(option.id);
+      assert.deepEqual(normalizeHolidayBackgroundChoice(JSON.parse(JSON.stringify(choice))), choice);
+      assert.equal(getHolidayBackground(design.id, choice).id, option.id);
+    }
+    const unrelated = getHolidayBackgroundChoice(getHolidayBackgrounds("halloween")[0].id);
+    assert.equal(getHolidayBackground(design.id, unrelated).id, background.id);
+    assert.equal(getHolidayBackground(read("src/lib/general-event-designs.ts").GENERAL_EVENT_DESIGNS.find(item => item.occasion === "halloween").id, getHolidayBackgroundChoice(background.id)).occasion === "school", false);
+  }
+  for (const [kind] of examples) {
+    const oldId = `school--${kind}`;
+    assert.ok(!SCHOOL_EVENT_DESIGNS.some(design => design.id === oldId), "retired covers stay out of new pickers");
+    assert.equal(getSchoolEventDesign(oldId).schoolTemplate, kind, "existing pages retain the old design identity and artwork");
+    assert.match(getSchoolEventDesign(oldId).artwork, /^\/templates\/signup\//);
+    assert.equal(getHolidayBackground(oldId, getHolidayBackgroundChoice(backgrounds[1].id)).id, backgrounds[1].id, "legacy owners can explicitly choose a new school background");
+  }
 });

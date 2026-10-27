@@ -164,3 +164,43 @@ test("school uploads restore PDF letter spacing without changing the source tran
     expect(result.information?.details.scanSchedule?.items.map(item => item.date)).toEqual(["2026-10-30", "2026-10-30"]);
   } finally { schoolMemoTypographyDeps.complete = previous; }
 });
+
+test.each(["timeout", "changed wording"])("memo import retains source notes and dates when typography fails: %s", async failure => {
+  const { schoolMemoTypographyDeps } = await import("../school-memo-typography.server");
+  const previous = schoolMemoTypographyDeps.complete;
+  const sourceText = `School Weekly Memo\nOctober 26th\nImportant Reminders:\nBible Test Friday October 30th\nSpelling Test Friday October 30th\nBible - R e a d t h e v e r s e\nScience - Bring your workbook.`;
+  createExtractionDeps.read = async () => ({ text: sourceText, images: [], pageCount: 1 });
+  createExtractionDeps.classify = async () => ({ category: "school", schoolTemplate: "weekly-memo", sport: null, confidence: "high", alternatives: [] });
+  schoolMemoTypographyDeps.complete = async () => {
+    if (failure === "timeout") throw new Error("Typography timed out");
+    return "Invented replacement notes";
+  };
+  try {
+    const result = await extractCreateInformation({ text: sourceText, timezone: "America/Chicago" }, new AbortController().signal);
+    expect(result.sourceText).toBe(sourceText);
+    expect(result.information?.details.sections.find(section => section.title === "Bible")?.body).toBe("R e a d t h e v e r s e");
+    expect(result.information?.details.sections.find(section => section.title === "Science")?.body).toBe("Bring your workbook.");
+    expect(result.information?.details.scanSchedule?.items.map(item => item.date)).toEqual(["2026-10-30", "2026-10-30"]);
+    expect(result.information?.details.schoolTemplate).toBe("weekly-memo");
+  } finally { schoolMemoTypographyDeps.complete = previous; }
+});
+
+test("a rejected whole-memo typography repair can recover using smaller sections", async () => {
+  const { schoolMemoTypographyDeps } = await import("../school-memo-typography.server");
+  const previous = schoolMemoTypographyDeps.complete;
+  const spaced = "S t u d y t h e v e r s e";
+  const sourceText = `School Weekly Memo\nOctober 26th\nImportant Reminders:\nBible Test Friday October 30th\nSpelling Test Friday October 30th\nBible - ${spaced}`;
+  createExtractionDeps.read = async () => ({ text: sourceText, images: [], pageCount: 1 });
+  createExtractionDeps.classify = async () => ({ category: "school", schoolTemplate: "weekly-memo", sport: null, confidence: "high", alternatives: [] });
+  const calls: string[] = [];
+  schoolMemoTypographyDeps.complete = async input => {
+    calls.push(input);
+    return input === spaced ? "Study the verse" : "Changed source wording";
+  };
+  try {
+    const result = await extractCreateInformation({ text: sourceText }, new AbortController().signal);
+    expect(result.sourceText).toBe(sourceText);
+    expect(result.information?.details.sections.find(section => section.title === "Bible")?.body).toBe("Study the verse");
+    expect(calls).toEqual([sourceText, spaced]);
+  } finally { schoolMemoTypographyDeps.complete = previous; }
+});

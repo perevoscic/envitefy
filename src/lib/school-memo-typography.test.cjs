@@ -66,3 +66,37 @@ test("section extraction retains the cleaned quote, reference and test as distin
   assert.match(notes[0].body, /test\)\n\n“/);
   assert.match(notes[0].body, /near.”\nMatthew 3:2\n\nTest: Friday October 30th/);
 });
+
+test("section repairs keep successful cleanup and preserve failed sections independently", async () => {
+  const api = load("src/lib/school-memo-typography.server.ts");
+  const failed = { title: "Science", body: "B r i n g y o u r b o o k" };
+  const plain = { title: "Reminders", body: "Bring lunch." };
+  api.schoolMemoTypographyDeps.complete = async input => input === source ? readable : "Changed facts";
+  const sections = [{ title: "Bible", body: source }, failed, plain];
+  const result = await api.readableSchoolMemoSections(sections);
+  assert.equal(result[0].body, readable);
+  assert.equal(result[1], failed);
+  assert.deepEqual(result[2], plain);
+  assert.equal(sections[0].body, source);
+});
+
+test("equivalent typography and capitalization reuse readable spacing while retaining every original glyph", async () => {
+  const api = load("src/lib/school-memo-typography.server.ts");
+  const original = 'B i b l e – “R e a d …”\nM a t t h e w 3 : 2\nO ﬃ c e — F r i d a y';
+  api.schoolMemoTypographyDeps.complete = async () => 'Bible - "Read..."\nMatthew 3:2\nOffice - friday';
+  const result = await api.readableSchoolMemoText(original);
+  assert.equal(result, 'Bible – “Read…”\nMatthew 3:2\nOﬃce — Friday');
+  assert.equal(result.replace(/\s/gu, ""), original.replace(/\s/gu, ""));
+});
+
+test("typographic tolerance still excludes changed numbers, added words and missing text", async () => {
+  for (const replacement of [
+    readable.replace("Matthew 3:2", "Matthew 3:3"),
+    readable.replace("Repent", "Please Repent"),
+    readable.replace("kingdom of heaven", "heaven"),
+  ]) {
+    const api = load("src/lib/school-memo-typography.server.ts");
+    api.schoolMemoTypographyDeps.complete = async () => replacement;
+    await assert.rejects(api.readableSchoolMemoText(source), /preserve source wording/);
+  }
+});

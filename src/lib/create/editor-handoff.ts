@@ -46,7 +46,7 @@ export function hydrateCreationValue<S>(category: string, key: string, initial: 
   if (d.schoolTemplate) { data.schoolTemplate = d.schoolTemplate; data.creationCollection = "school"; }
   if (d.scanSchedule?.kind === "school-memo") {
     data.scanSchedule = structuredClone(d.scanSchedule);
-    if (!templateId?.startsWith("school--")) data.hero = "/templates/signup/school-and-education/classroom-supply-drive.webp";
+    if (!templateId?.startsWith("school--")) data.hero = "/templates/event-pages/v2/open-house/school-open-house-paper-learning-garden.webp";
   }
   if ("rsvp" in data) data.rsvp = { ...object(data.rsvp), isEnabled: d.rsvpEnabled, deadline: "", phone: d.rsvpPhone, email: d.rsvpEmail };
   if ("hosts" in data) data.hosts = d.host ? [{ id: 1, name: d.host, role: "Host" }] : [];

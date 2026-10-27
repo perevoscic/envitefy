@@ -1350,10 +1350,27 @@ test("one Event Page editor protects saves and navigation across creation modes 
     assert.equal(coreSaved.data.extra.meetDateRangeLabel, "November 6–8, 2026");
     assert.equal(coreSaved.advancedState.meet.judgingNotes, "New judging details from enrichment.");
     assert.equal(errors.length, 0, errors.join("\n"));
-    for (const width of [390, 1440]) for (const kind of ["weekly-memo", "field-trip", "school-celebration", "parent-meeting"]) {
+    for (const width of [390, 1440]) for (const { schoolTemplate: kind, id: schoolDesignId } of require("./lib/event-messages-test-loader.cjs")("src/lib/school-event-designs.ts").SCHOOL_EVENT_DESIGNS) {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto(`${base}/event/general/customize?mode=manual&templateId=school--${kind}&collection=school`);
+      await page.goto(`${base}/event/general/customize?mode=manual&templateId=${schoolDesignId}&collection=school`);
       await openControls();
+      if (schoolDesignId.endsWith("learning-garden")) {
+        const schoolControls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+        await page.getByRole("button", { name: /^Design/ }).click();
+        assert.equal(await page.getByText("Text Size", { exact: true }).count(), 0);
+        await page.getByText("Showing 12 of 12 designs", { exact: true }).waitFor();
+        const schoolImages = schoolControls.locator("[data-template-artwork] img");
+        await schoolImages.evaluateAll(images => Promise.all(images.map(image => { image.loading = "eager"; return image.decode().catch(() => {}); })));
+        assert.equal(await schoolImages.evaluateAll(images => images.every(image => image.naturalWidth > 0)), true, "all 12 school covers load their real artwork");
+        await page.screenshot({ path: path.join(output, `school-design-picker-${width}.png`) });
+        await page.getByRole("button", { name: "Back to details", exact: true }).click();
+        await page.getByRole("button", { name: /^Background/ }).click();
+        assert.equal(await page.getByText(/Color presets/).count(), 0);
+        assert.equal(await schoolControls.getByRole("radio").count(), 8);
+        await schoolControls.getByRole("radio", { name: "Blue graph paper", exact: true }).check();
+        await page.screenshot({ path: path.join(output, `school-background-picker-${width}.png`) });
+        await page.getByRole("button", { name: "Back to details", exact: true }).click();
+      }
       await page.getByRole("button", { name: /^Headline/ }).click();
       await page.getByLabel("Headline", { exact: true }).fill(`Oak School ${kind}`);
       await switchView("Preview");
@@ -1365,6 +1382,9 @@ test("one Event Page editor protects saves and navigation across creation modes 
       const schoolData = writes.at(-1).body.data;
       assert.equal(schoolData.category, "School & classroom");
       assert.equal(schoolData.schoolTemplate, kind);
+      assert.equal(schoolData.bodyDesignId, schoolDesignId);
+      assert.match(schoolData.pageBackground.presetId, /^school--/);
+      if (schoolDesignId.endsWith("learning-garden")) assert.equal(schoolData.pageBackground.presetId, "school--blue-grid");
       assert.equal(schoolData.creationCollection, "school");
       assert.equal(schoolData.manualEditor.snapshot.data.date, "");
       assert.equal(schoolData.manualEditor.snapshot.data.venue, "");

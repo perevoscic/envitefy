@@ -19,7 +19,7 @@ type CategoryPresentation = Pick<
 
 const categories: Record<Exclude<CreateCategory, "sports">, CategoryPresentation> = {
   school: {
-    artwork: "/templates/signup/school-and-education/classroom-supply-drive.webp",
+    artwork: "/templates/event-pages/v2/open-house/school-open-house-paper-learning-garden.webp",
     description: "Weekly memos, field trips, celebrations & parent meetings",
     previewHeading: "Keep school days and families connected.",
     previewCategory: "School & classroom · Learning together",

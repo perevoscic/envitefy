@@ -214,7 +214,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       creationCollection: initialCollection,
       holidayOccasion: search?.get("occasion") || initialDesign?.occasion || null,
       bodyDesignId: initialDesign?.id || null,
-      pageBackground: !editEventId && initialDesign?.occasion
+      pageBackground: !editEventId && initialDesign && getHolidayBackground(initialDesign.id)
         ? getHolidayBackgroundChoice(getHolidayBackground(initialDesign.id)?.id, "template")
         : undefined,
       rsvpEnabled: config.prefill?.rsvpEnabled ?? true,
@@ -287,7 +287,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           pageBackground: nextDefault
             ? keepBackground ? previousChoice : getHolidayBackgroundChoice(nextDefault.id, "template")
             : undefined,
-          hero: !previous.hero || previous.hero === config.defaultHero || previous.hero === config.prefill?.hero || previous.hero === resolveGeneralCreationDesign(themeId)?.artwork || GENERAL_EVENT_DESIGNS.some((item) => item.artwork === previous.hero)
+          hero: !previous.hero || previous.hero === config.defaultHero || previous.hero === config.prefill?.hero || previous.hero === resolveGeneralCreationDesign(previous.bodyDesignId)?.artwork || previous.hero === resolveGeneralCreationDesign(themeId)?.artwork || GENERAL_EVENT_DESIGNS.some((item) => item.artwork === previous.hero)
             ? design.artwork
             : previous.hero,
         };
@@ -779,34 +779,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <div ref={designGalleryScrollRef} className="max-h-[65vh] overflow-y-auto overscroll-contain pr-1" role="region" aria-label={collectionLabel ? `${collectionLabel} designs` : "General event designs"} tabIndex={0}>
             <CreationTemplateGallery templates={designTemplates} previews={Object.fromEntries(designTemplates.map(template => [template.id, resolveGeneralCreationDesign(template.id)]))} onSelect={selectDesign} selectedTemplateId={themeId} scrollRoot={designGalleryScrollRef} compact />
           </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
-              Text Size
-            </label>
-            <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
-              {["small", "medium", "large"].map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setData((p) => ({ ...p, fontSize: size }))}
-                  className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
-                    data.fontSize === size
-                      ? "bg-white text-indigo-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </EditorLayout>
     );
 
     const renderBackgroundEditor = () => (
       <EditorLayout title="Background" onBack={() => setActiveView("main")} showBack>
-        {pageDesign?.occasion ? (
+        {getHolidayBackground(pageDesign?.id) ? (
           <HolidayBackgroundPicker
             designId={pageDesign.id}
             value={pageBackgroundChoice}

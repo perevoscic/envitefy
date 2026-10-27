@@ -40,7 +40,7 @@ const groupPreviews = {
     artwork: "/templates/signup/photographic/general/monthly-meetup.webp",
     position: "center",
   },
-  school: { artwork: "/templates/signup/school-and-education/classroom-supply-drive.webp", position: "center" },
+  school: { artwork: "/templates/event-pages/v2/open-house/school-open-house-paper-learning-garden.webp", position: "center" },
   sports: {
     artwork: "/studio/game-day.webp",
     position: "center 70%",

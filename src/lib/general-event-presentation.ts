@@ -190,6 +190,7 @@ const generalDirections: Record<string, PageDirection> = {
 function directionFor(design: GeneralEventDesign): PageDirection {
   const school = getSchoolEventDesign(design.id);
   if (school) {
+    if (school.direction !== undefined) return occasionDirections[school.direction];
     if (school.schoolTemplate === "field-trip") return { ...occasionDirections[1], editorLayout: "split", alignment: "left" };
     return occasionDirections[{ "weekly-memo": 0, "school-celebration": 2, "parent-meeting": 3 }[school.schoolTemplate]];
   }

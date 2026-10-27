@@ -26,7 +26,30 @@ async function complete(source: string): Promise<string> {
 }
 export const schoolMemoTypographyDeps = { complete };
 const cached = new Map<string, { expires: number; result: Promise<string> }>();
-const characters = (value: string) => value.replace(/\s/gu, "");
+
+// Compare equivalent printed glyphs, then apply only the reader's whitespace
+// to the original glyphs. Smart quotes, ligatures, ellipses and case changes
+// need not waste an otherwise useful repair or change the source's wording.
+const typographyKey = (value: string) => value.normalize("NFKC")
+  .replace(/[‘’]/gu, "'").replace(/[“”]/gu, '"')
+  .replace(/[‐‑‒–—−]/gu, "-").toLowerCase();
+
+function sourceWithReadableWhitespace(source: string, readable: string): string {
+  const glyphs = [...source].filter(glyph => !/\s/u.test(glyph));
+  const whitespace = new Map<number, string>();
+  let candidateKey = "";
+  for (const part of readable.match(/\s+|\S/gu) || []) {
+    if (/^\s/u.test(part)) whitespace.set(candidateKey.length, part);
+    else candidateKey += typographyKey(part);
+  }
+  if (glyphs.map(typographyKey).join("") !== candidateKey) throw new Error("Memo cleanup must preserve source wording");
+  let offset = 0;
+  return glyphs.map(glyph => {
+    const gap = whitespace.get(offset) || "";
+    offset += typographyKey(glyph).length;
+    return gap + glyph;
+  }).join("").trim();
+}
 
 /** Semantic word boundaries need a reader; accept whitespace changes only, never rewritten facts. */
 export async function readableSchoolMemoText(source: string): Promise<string> {
@@ -34,16 +57,16 @@ export async function readableSchoolMemoText(source: string): Promise<string> {
   const previous = cached.get(source);
   if (previous && previous.expires > Date.now()) return previous.result;
   if (cached.size >= 200) cached.delete(cached.keys().next().value!);
-  const result = schoolMemoTypographyDeps.complete(source).then(text => {
-    if (characters(text) !== characters(source)) throw new Error("Memo cleanup must preserve source wording");
-    return text.trim();
-  });
+  const result = schoolMemoTypographyDeps.complete(source).then(text => sourceWithReadableWhitespace(source, text));
   cached.set(source, { expires: Date.now() + 60 * 60_000, result });
   try { return await result; } catch (error) { cached.delete(source); throw error; }
 }
 
 export async function readableSchoolMemoSections<T extends { title: string; body: string }>(sections: T[]): Promise<T[]> {
-  return Promise.all(sections.map(async section => ({ ...section, body: schoolMemoParagraphs(await readableSchoolMemoText(section.body)) })));
+  return Promise.all(sections.map(async section => {
+    try { return { ...section, body: schoolMemoParagraphs(await readableSchoolMemoText(section.body)) }; }
+    catch { return section; } // Optional display cleanup must not discard readable source facts.
+  }));
 }
 const record = (value: unknown): Record<string, any> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : {};
 

@@ -1,3 +1,5 @@
+import { SCHOOL_BACKGROUNDS } from "./school-backgrounds";
+import { SCHOOL_EVENT_DESIGNS } from "./school-event-designs";
 import type { HolidayCollectionId } from "./holiday-collections";
 import { HOLIDAY_BACKGROUND_CELEBRATIONS } from "@/data/holiday-backgrounds-celebrations";
 import { HOLIDAY_BACKGROUND_CULTURAL_SEASONAL } from "@/data/holiday-backgrounds-cultural-seasonal";
@@ -3192,6 +3194,22 @@ for (const [occasion, recipe] of Object.entries(RECIPES)) {
     if (defaultsByDesignId.has(designId)) throw new Error(`Duplicate holiday background default for ${designId}`);
     defaultsByDesignId.set(designId, preset);
   }
+}
+
+// School shares the durable background selection contract, with its own scoped papers.
+backgroundsByOccasion.set("school", SCHOOL_BACKGROUNDS);
+for (const preset of SCHOOL_BACKGROUNDS) backgroundsById.set(preset.id, preset);
+for (const design of SCHOOL_EVENT_DESIGNS) {
+  const preset = backgroundsById.get(design.backgroundId || "");
+  if (!preset) throw new Error(`Unknown school background for ${design.id}`);
+  defaultsByDesignId.set(design.id, preset);
+}
+
+// Old IDs retain their original paper until the owner explicitly chooses a new background.
+for (const kind of ["weekly-memo", "field-trip", "school-celebration", "parent-meeting"]) {
+  const current = SCHOOL_EVENT_DESIGNS.find(design => design.schoolTemplate === kind);
+  const preset = backgroundsById.get(current?.backgroundId || "");
+  if (preset) defaultsByDesignId.set(`school--${kind}`, preset);
 }
 
 /** Return only the named occasion's authored choices, in their curated display order. */
