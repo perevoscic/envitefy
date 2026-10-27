@@ -52,6 +52,8 @@ export async function syncSelectedSchoolMemoDates(input: {
   data: RecordValue;
   itemIds: string[];
 }): Promise<MemoCalendarResult[]> {
+  if (input.data.status !== "published" || input.data.draftStatus === "draft")
+    throw new SchoolMemoCalendarInputError("Publish your memo before adding dates to a calendar.");
   const schedule = normalizeScanSchedule(input.data.scanSchedule);
   if (schedule?.kind !== "school-memo")
     throw new SchoolMemoCalendarInputError("Choose a saved school memo.");
@@ -97,6 +99,7 @@ export async function syncSelectedSchoolMemoDates(input: {
          coalesce(data->'memoCalendarSync', '{}'::jsonb) || jsonb_build_object($3::text,
            coalesce(data->'memoCalendarSync'->$3, '{}'::jsonb) || $4::jsonb))
        WHERE id = $1 AND user_id = $2 AND data->'scanSchedule' = $6::jsonb
+         AND data->>'status' = 'published' AND coalesce(data->>'draftStatus', '') <> 'draft'
          AND (data->'memoCalendarSync'->$3->>'status' IS DISTINCT FROM 'syncing'
            OR coalesce(data->'memoCalendarSync'->$3->>'updatedAt', '') < $5)
        RETURNING data->'memoCalendarSync'->$3 AS state`,

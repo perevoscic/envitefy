@@ -10,20 +10,23 @@ const ScheduleContext = createContext<{
   schedule: ScanSchedule | null;
   eventId?: string;
   canManage?: boolean;
+  published?: boolean;
 } | null>(null);
 export function ScannedScheduleProvider({
   schedule,
   children,
   eventId,
   canManage,
+  published = false,
 }: {
   schedule: ScanSchedule | null;
   children: ReactNode;
   eventId?: string;
   canManage?: boolean;
+  published?: boolean;
 }) {
   return (
-    <ScheduleContext.Provider value={{ schedule, eventId, canManage }}>
+    <ScheduleContext.Provider value={{ schedule, eventId, canManage, published }}>
       {children}
     </ScheduleContext.Provider>
   );
@@ -44,6 +47,7 @@ export default function ScannedSchedule({
       <SchoolMemoDates
         schedule={schedule}
         interactive={interactive}
+        published={context?.published}
         eventId={context?.eventId}
         canManage={context?.canManage}
       />

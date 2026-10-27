@@ -6,7 +6,7 @@ const loadTs = require("../../scripts/lib/event-messages-test-loader.cjs");
 function harness() {
   const h = { queries: [], writes: [], invalidations: [], fail: new Set() };
   h.row = {
-    id: "memo-one", user_id: "owner", data: {
+    id: "memo-one", user_id: "owner", data: { status: "published",
       scanSchedule: {
         kind: "school-memo", title: "Weekly memo", timezone: "America/Chicago",
         items: [
@@ -78,7 +78,7 @@ test("unknown IDs, empty selections and non-memos are rejected before any provid
   const h = harness();
   for (const itemIds of [[], ["another-memos-id"], Array.from({ length: 51 }, (_, i) => `item-${i}`)])
     await assert.rejects(h.sync({ itemIds }), (error) => error instanceof h.InputError && /Select between 1 and 50/.test(error.message));
-  await assert.rejects(h.sync({ data: { scanSchedule: { items: [{ title: "Game" }] } } }), (error) => error instanceof h.InputError && /saved school memo/.test(error.message));
+  await assert.rejects(h.sync({ data: { status: "published", scanSchedule: { items: [{ title: "Game" }] } } }), (error) => error instanceof h.InputError && /saved school memo/.test(error.message));
   assert.equal(h.writes.length, 0);
   assert.equal(h.queries.length, 0);
 });
@@ -201,4 +201,14 @@ test("saved addition summaries contain only item IDs and confirmed timestamps", 
   delete h.row.data.memoCalendarSync[h.key("bible")].addedAt;
   h.row.data.memoCalendarSync[h.key("bible")].updatedAt = "2026-10-26T12:00:00Z";
   assert.equal(schoolMemoCalendarAdditions(h.row.id, h.row.data)[0].addedAt, "2026-10-26T12:00:00Z");
+});
+
+ test("draft memos cannot write calendar items even with a direct sync call", async () => {
+  const h = harness();
+  for (const status of ["draft", undefined]) {
+    h.row.data.status = status;
+    await assert.rejects(h.sync(), /Publish your memo/);
+  }
+  assert.equal(h.writes.length, 0);
+  assert.equal(h.queries.length, 0);
 });

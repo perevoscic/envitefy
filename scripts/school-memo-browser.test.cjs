@@ -4,6 +4,8 @@ const path = require("node:path");
 const test = require("node:test");
 const { chromium } = require("playwright");
 const compiled = require("next/dist/compiled/webpack/webpack");
+const loadTs = require("./lib/event-messages-test-loader.cjs");
+const { buildAppearanceBootstrap } = loadTs("src/lib/appearance.ts");
 compiled.init();
 
 test("school memo dates require an explicit selected-calendar action on phone and desktop", { timeout: 120000 }, async t => {
@@ -25,7 +27,8 @@ test("school memo dates require an explicit selected-calendar action on phone an
     });
     compiler.run((error, stats) => compiler.close(() => error || stats?.hasErrors() ? reject(error || new Error(stats.toString({ all: false, errors: true }))) : resolve()));
   });
-  const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process('@import "tailwindcss" source(none); @source "../src/components/SchoolMemoDates.tsx"; @source "../src/components/ScheduleReviewDialog.tsx";', { from: path.resolve("scripts/school-memo-fixture.css") })).css;
+  const source = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none); @source "../components/SchoolMemoDates.tsx"; @source "../components/ScheduleReviewDialog.tsx";');
+  const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process(source, { from: path.resolve("src/app/globals.css") })).css;
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
   try {
     for (const width of [390, 1440]) {
@@ -64,9 +67,32 @@ test("school memo dates require an explicit selected-calendar action on phone an
           }
           return route.fulfill({ contentType: "text/html", body: `<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}body{margin:0;font-family:Arial,sans-serif;background:#f7f3fa}</style></head><body><div id="root"></div><script src="/fixture.js"></script></body></html>` });
         });
-        const base = "http://school-memo.test/memo";
+        const base = "https://school-memo.test/memo";
         const action = () => page.getByRole("button", { name: /^Add selected dates to your calendar/ });
         const checks = () => page.getByRole("checkbox");
+        await page.goto(base + "?draft=1&connected=google&provider=google");
+        await page.getByRole("heading", { name: "Review dates from this memo" }).waitFor();
+        assert.equal(await checks().count(), 0);
+        assert.equal(await action().count(), 0);
+        assert.equal(await page.getByRole("button", { name: "Download calendar file (.ics)" }).count(), 0);
+        await page.getByRole("button", { name: "Edit Bible Test", exact: true }).click();
+        await page.getByLabel("Title", { exact: true }).fill("Updated Bible Test");
+        await page.getByLabel("Date", { exact: true }).fill("2026-11-02");
+        await page.getByLabel("Notes", { exact: true }).fill("Bring your workbook");
+        await page.getByRole("button", { name: "Add date", exact: true }).click();
+        await page.getByLabel("Title", { exact: true }).last().fill("Extra date");
+        await page.getByLabel("Date", { exact: true }).last().fill("2026-11-03");
+        await page.getByRole("button", { name: "Remove date", exact: true }).last().click();
+        assert.equal(await page.locator("[data-school-memo-dates] > ul > li").count(), 6);
+        await page.getByRole("button", { name: "Save draft", exact: true }).click();
+        assert.equal(await action().count(), 0, "saving a draft does not enable calendar actions");
+        assert.equal(requests.length, 0);
+        await page.getByRole("button", { name: "Publish", exact: true }).click();
+        await action().waitFor();
+        assert.equal(requests.length, 0, "publishing never writes calendar events");
+        assert.match(await page.locator("[data-school-memo-dates]").innerText(), /Updated Bible Test/);
+        assert.match(await page.locator("[data-school-memo-dates]").innerText(), /Nov 2, 2026/);
+        assert.equal(await page.getByRole("button", { name: "Edit Updated Bible Test" }).count(), 0);
         await page.goto(base);
         await action().waitFor();
         const memoDates = page.locator("[data-school-memo-dates]");
@@ -137,6 +163,25 @@ test("school memo dates require an explicit selected-calendar action on phone an
         await page.goto(base + "?connected=google,microsoft");
         await action().click();
         await page.getByRole("dialog", { name: "Set your default calendar", exact: true }).waitFor();
+        const dialog = page.getByRole("dialog", { name: "Set your default calendar", exact: true });
+        for (const theme of ["light", "dark"]) {
+          await page.evaluate(theme => localStorage.setItem("envitefy:appearance:v1", theme), theme);
+          await page.addScriptTag({ content: buildAppearanceBootstrap() });
+          const contrasts = await dialog.evaluate(element => {
+            const rgb = value => value.match(/[\d.]+/g).slice(0, 3).map(Number);
+            const luminance = value => rgb(value).map(v => v / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4).reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0);
+            return [element.querySelector("h2"), element.querySelector("p"), ...element.querySelectorAll("button")].map(node => {
+              const style = getComputedStyle(node);
+              const background = node.matches("button") ? style.backgroundColor : getComputedStyle(element).backgroundColor;
+              const a = luminance(style.color), b = luminance(background);
+              return { text: node.textContent, ratio: (Math.max(a, b) + .05) / (Math.min(a, b) + .05) };
+            });
+          });
+          for (const { text, ratio } of contrasts) assert.ok(ratio >= 4.5, `${theme} ${text}: contrast ${ratio}`);
+          await page.screenshot({ path: path.join(output, `calendar-dialog-${width}-${theme}.png`) });
+        }
+        await page.evaluate(() => localStorage.setItem("envitefy:appearance:v1", "light"));
+        await page.addScriptTag({ content: buildAppearanceBootstrap() });
         const beforeDefault = requests.length;
         await page.getByRole("button", { name: "Cancel", exact: true }).click();
         await page.waitForFunction(() => document.activeElement?.textContent?.startsWith("Add selected dates to your calendar"));

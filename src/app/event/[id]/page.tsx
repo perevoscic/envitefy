@@ -1246,7 +1246,7 @@ export default async function EventPage({
           category={typeof (data as any)?.category === "string" ? (data as any).category : null}
         />
       ) : null}
-      <ScannedScheduleProvider schedule={savedScanSchedule} eventId={row.id} canManage={isOwner}>
+      <ScannedScheduleProvider schedule={savedScanSchedule} eventId={row.id} canManage={isOwner} published={data.status === "published" && data.draftStatus !== "draft"}>
       <ScanArtworkProvider
         eventId={row.id}
         initialArtwork={normalizeScanArtwork(data.scanArtwork)}

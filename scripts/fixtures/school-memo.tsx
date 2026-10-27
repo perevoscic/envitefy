@@ -23,15 +23,18 @@ const router = { push: (url: string) => history.pushState(null, "", url), replac
 (window as any).__memoSaves = [];
 function App() {
   const [schedule, setSchedule] = useState<ScanSchedule>(() => query.has("restore") ? JSON.parse(localStorage.getItem("school-memo-fixture") || "null") || initial : initial);
+  const [published, setPublished] = useState(!query.has("draft"));
+  const [editing, setEditing] = useState(query.has("draft"));
   const [review, setReview] = useState(query.has("review"));
   return <main className="mx-auto max-w-7xl p-4 sm:p-8">
     <section><h2>Important Events</h2><InformationSectionBody title="Important Events" body="Spirit Week October 26 - 30 (info sent in SeeSaw) Pumpkin Day : October 30 (info sent in SeeSaw) No School Wednesday November 11th Turkey Trot Monday November 16th" /></section>
     <button type="button" className="mb-4 min-h-11 rounded-xl border px-4" onClick={() => setReview(true)}>Edit memo</button>
+    {query.has("draft") && <><button onClick={() => { localStorage.setItem("school-memo-fixture", JSON.stringify(schedule)); }}>Save draft</button><button onClick={() => { setPublished(true); setEditing(false); }}>Publish</button></>}
     {review ? <ScheduleReviewDialog initialSchedule={schedule} saved savedStatus="draft" onDiscard={() => setReview(false)} onSave={async (next, status) => {
       (window as any).__memoSaves.push({ schedule: structuredClone(next), status });
       localStorage.setItem("school-memo-fixture", JSON.stringify(next)); setSchedule(next); setReview(false);
       const target = new URL(location.href); target.searchParams.delete("review"); return target.pathname + target.search;
-    }} /> : <SchoolMemoDates schedule={schedule} eventId="memo-fixture" canManage />}
+    }} /> : <SchoolMemoDates schedule={schedule} published={published} onScheduleChange={editing ? setSchedule : undefined} eventId="memo-fixture" canManage />}
   </main>;
 }
 createRoot(document.getElementById("root")!).render(<AppRouterContext.Provider value={router}><UnsavedProgressProvider><App /></UnsavedProgressProvider></AppRouterContext.Provider>);

@@ -6,7 +6,7 @@ class SchoolMemoCalendarInputError extends Error {}
 
 function harness({ userId = "owner", email = "OWNER@EXAMPLE.INVALID", exists = true, rowOwner = "owner", syncError = null, readError = null } = {}) {
   const h = { calls: [], reads: [] };
-  h.row = { id: "saved-memo", user_id: rowOwner, title: "Weekly memo", public_slug: "weekly-memo", data: { scanSchedule: { kind: "school-memo", items: [{ id: "bible", title: "Bible test", date: "2026-10-30" }] } } };
+  h.row = { id: "saved-memo", user_id: rowOwner, title: "Weekly memo", public_slug: "weekly-memo", data: { status: "published", scanSchedule: { kind: "school-memo", items: [{ id: "bible", title: "Bible test", date: "2026-10-30" }] } } };
   const { POST, GET } = loadTs("src/app/api/events/[id]/calendar-items/route.ts", {
     "next-auth": { getServerSession: async () => userId ? { user: { email } } : null },
     "next/server": { NextResponse: Response },
@@ -41,7 +41,7 @@ test("the route trusts server records and session identity rather than supplied 
     provider: "google", itemIds: ["bible"],
     userId: "attacker", email: "attacker@example.invalid", eventId: "another-memo",
     eventUrl: "https://malicious.invalid", externalEventId: "unrelated-calendar-entry",
-    data: { scanSchedule: { items: [{ id: "bible", title: "Injected title", date: "2030-01-01" }] } },
+    data: { status: "published", scanSchedule: { items: [{ id: "bible", title: "Injected title", date: "2030-01-01" }] } },
   });
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("Cache-Control"), "private, no-store");
@@ -102,5 +102,16 @@ test("addition history is private to the authenticated owner and never writes ca
   const response = await h.get();
   assert.equal(response.headers.get("Cache-Control"), "private, no-store");
   assert.deepEqual(await response.json(), { additions: [{ id: "bible", addedAt: "2026-10-27T01:35:00Z" }] });
+  assert.equal(h.calls.length, 0);
+});
+
+test("saved drafts reject explicit additions before any provider work", async () => {
+  const h = harness();
+  for (const data of [{ status: "draft" }, {}, { status: "published", draftStatus: "draft" }]) {
+    h.row.data = { ...data, scanSchedule: h.row.data.scanSchedule };
+    const response = await h.post();
+    assert.equal(response.status, 409);
+    assert.match((await response.json()).error, /Publish your memo/);
+  }
   assert.equal(h.calls.length, 0);
 });

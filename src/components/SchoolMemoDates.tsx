@@ -17,6 +17,10 @@ import { schoolMemoDateNotes } from "@/lib/school-memo-content";
 const actionClass =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#ded5e0] bg-white px-4 py-2 text-sm font-medium text-[#513951] hover:bg-[#f7f3f7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#704568] disabled:cursor-not-allowed disabled:opacity-45";
 
+// The chooser is portalled outside the memo's authored color boundary.
+const dialogActionClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--app-border,#ded5e0)] bg-[var(--app-surface-alt,#f7f3f7)] px-4 py-2 text-sm font-medium text-[var(--app-foreground,#513951)] hover:bg-[var(--app-surface-raised,#efe8ef)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-focus-ring,#704568)] disabled:cursor-not-allowed disabled:opacity-45";
+
 function MemoDateFields({ item, schedule, onChange }: {
   item: ScanScheduleItem;
   schedule: ScanSchedule;
@@ -69,7 +73,7 @@ export default function SchoolMemoDates({
   interactive = true,
   eventId,
   canManage = false,
-  onSaveDraft,
+  published = false,
   onSelectionChange,
   onScheduleChange,
   calendarNeedsSave = false,
@@ -78,11 +82,12 @@ export default function SchoolMemoDates({
   interactive?: boolean;
   eventId?: string;
   canManage?: boolean;
-  onSaveDraft?: () => Promise<void>;
+  published?: boolean;
   onSelectionChange?: (itemIds: string[]) => void;
   onScheduleChange?: (schedule: ScanSchedule) => void;
   calendarNeedsSave?: boolean;
 }) {
+  const calendarEnabled = interactive && published && !onScheduleChange;
   const [editingId, setEditingId] = useState<string | null>(null);
   const eligible = schedule.items.filter((item) =>
     scanScheduleCalendarEvent(item, schedule, eventId),
@@ -125,14 +130,15 @@ export default function SchoolMemoDates({
     previousEventId.current = eventId;
     setMessage("");
     setError("");
+    if (!calendarEnabled) setChooser(false);
     return () => {
       request.current?.abort();
       locked.current = false;
     };
-  }, [schedule, eventId, accountKey, selectionKey]);
+  }, [schedule, eventId, accountKey, selectionKey, calendarEnabled]);
   useEffect(() => {
     setAdditions({});
-    if (!eventId || !canManage || !preference.signedIn) return;
+    if (!calendarEnabled || !eventId || !canManage || !preference.signedIn) return;
     const controller = new AbortController();
     void fetch(`/api/events/${encodeURIComponent(eventId)}/calendar-items`, {
       credentials: "include",
@@ -156,7 +162,7 @@ export default function SchoolMemoDates({
       });
     }).catch(() => {});
     return () => controller.abort();
-  }, [eventId, canManage, accountKey, preference.signedIn]);
+  }, [eventId, canManage, accountKey, preference.signedIn, calendarEnabled]);
   const choose = (next: Set<string>) => {
     setSelected(next);
     onSelectionChange?.([...next]);
@@ -169,7 +175,7 @@ export default function SchoolMemoDates({
       ? (["google", "microsoft"] as const).filter((provider) => preference.canRemember(provider))
       : [];
   const add = async (provider: "google" | "microsoft" | "file") => {
-    if (locked.current || !selectedItems.length) return;
+    if (!calendarEnabled || locked.current || !selectedItems.length) return;
     if (provider !== "file" && calendarNeedsSave) {
       setError("Save your changes before adding dates to a connected calendar.");
       return;
@@ -329,10 +335,10 @@ export default function SchoolMemoDates({
             </svg>
           </span>
           <div className="min-w-0">
-            <h2 className="!m-0 !font-serif !text-2xl !font-medium !normal-case !leading-tight !tracking-tight !text-[#302633] sm:!text-3xl">Dates from this memo</h2>
+            <h2 className="!m-0 !font-serif !text-2xl !font-medium !normal-case !leading-tight !tracking-tight !text-[#302633] sm:!text-3xl">{onScheduleChange ? "Review dates from this memo" : "Dates from this memo"}</h2>
             <p className="mt-1 text-sm leading-6 text-[#756b79]">
               {schedule.items.length
-                ? "Choose the dates you’d like to add to your calendar."
+                ? onScheduleChange ? "Review and edit these dates before publishing. Publishing won’t add them to your calendar." : published ? "Choose the dates you’d like to add to your calendar." : "Calendar actions will be available after publishing."
                 : "No dated items were found in this memo."}
             </p>
           </div>
@@ -343,7 +349,7 @@ export default function SchoolMemoDates({
           </p>
         )}
       </header>
-      {interactive && eligible.length > 0 && (
+      {calendarEnabled && eligible.length > 0 && (
         <div className="mt-6 flex flex-wrap items-center justify-between gap-x-2 gap-y-0 border-t border-[#eee8ed] pt-2">
           <p className="text-xs font-medium tabular-nums text-[#756b79]" aria-live="polite" aria-atomic="true">
             {selectedItems.length} of {eligible.length} dates selected
@@ -374,13 +380,13 @@ export default function SchoolMemoDates({
           const valid = eligible.some((candidate) => candidate.id === item.id);
           const calendarDate = item.date ? new Date(`${item.date}T12:00:00Z`) : null;
           const displayDate = calendarDate && Number.isFinite(calendarDate.getTime()) ? calendarDate : null;
-          const isSelected = interactive && selected.has(item.id) && valid;
+          const isSelected = calendarEnabled && selected.has(item.id) && valid;
           return (
             <li
               key={item.id}
-              className={`relative min-w-0 overflow-hidden rounded-2xl border focus-within:ring-2 focus-within:ring-[#704568] focus-within:ring-offset-2 motion-safe:transition-colors ${isSelected ? "border-[#dfd1dd] bg-[#faf7fa]" : "border-[#e9e3e8] bg-white"} ${interactive && valid && !busy && !settingDefault ? "hover:border-[#bba2b6]" : ""}`}
+              className={`relative min-w-0 overflow-hidden rounded-2xl border focus-within:ring-2 focus-within:ring-[#704568] focus-within:ring-offset-2 motion-safe:transition-colors ${isSelected ? "border-[#dfd1dd] bg-[#faf7fa]" : "border-[#e9e3e8] bg-white"} ${calendarEnabled && valid && !busy && !settingDefault ? "hover:border-[#bba2b6]" : ""}`}
             >
-              <label className={`flex min-h-24 items-start gap-3 p-4 sm:gap-4 sm:p-5 ${onScheduleChange ? "!pr-16" : ""} ${interactive && valid && !busy && !settingDefault ? "cursor-pointer" : "cursor-default"}`}>
+              <label className={`flex min-h-24 items-start gap-3 p-4 sm:gap-4 sm:p-5 ${onScheduleChange ? "!pr-16" : ""} ${calendarEnabled && valid && !busy && !settingDefault ? "cursor-pointer" : "cursor-default"}`}>
                 {displayDate && (
                   <span aria-hidden="true" className={`flex w-12 shrink-0 flex-col items-center justify-center rounded-xl border py-2 ${isSelected ? "border-[#e7dce5] bg-white text-[#64405e]" : "border-[#eee8ed] bg-[#faf8fa] text-[#756b79]"}`}>
                     <span className="text-[10px] font-semibold uppercase leading-4 tracking-[0.12em]">{displayDate.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" })}</span>
@@ -391,7 +397,7 @@ export default function SchoolMemoDates({
                   <span className="block break-words text-[15px] font-semibold leading-6 text-[#302633]">{item.title}</span>
                   <span className="mt-0.5 block text-sm leading-6 text-[#6c6071]">{scanScheduleWhen(item, schedule)}</span>
                   {notes && <span className="mt-1.5 block whitespace-pre-line text-xs leading-5 text-[#756b79]">{notes}</span>}
-                  {canManage && additions[item.id] && (
+                  {calendarEnabled && canManage && additions[item.id] && (
                     <span className="mt-2 block text-xs font-medium leading-5 text-emerald-800">
                       Added on <time dateTime={additions[item.id]}>{new Date(additions[item.id]).toLocaleString(undefined, {
                         month: "short", day: "numeric", year: "numeric",
@@ -399,9 +405,9 @@ export default function SchoolMemoDates({
                       })}</time>
                     </span>
                   )}
-                  {!valid && <span className="mt-2 block text-xs leading-5 text-[#756b79]">Edit this item to confirm its date before adding it.</span>}
+                  {!valid && onScheduleChange && <span className="mt-2 block text-xs leading-5 text-[#756b79]">Edit this item to confirm its date before adding it.</span>}
                 </span>
-                {interactive && (
+                {calendarEnabled && (
                   <input
                     type="checkbox"
                     aria-label={`Add ${item.title} to calendar`}
@@ -418,25 +424,30 @@ export default function SchoolMemoDates({
                 )}
               </label>
               {onScheduleChange && (
-                <button type="button" className={`absolute right-1 flex size-11 items-center justify-center rounded-full text-[#704568] hover:bg-[#eee5ed] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#704568] disabled:cursor-not-allowed disabled:opacity-45 sm:right-2 ${interactive ? "top-11" : "top-2"}`} aria-label={`${editingId === item.id ? "Done editing" : "Edit"} ${item.title}`} title={editingId === item.id ? "Done editing" : "Edit date"} aria-expanded={editingId === item.id} disabled={busy || settingDefault} onClick={() => setEditingId(editingId === item.id ? null : item.id)}>
+                <button type="button" className={`absolute right-1 flex size-11 items-center justify-center rounded-full text-[#704568] hover:bg-[#eee5ed] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#704568] disabled:cursor-not-allowed disabled:opacity-45 sm:right-2 ${calendarEnabled ? "top-11" : "top-2"}`} aria-label={`${editingId === item.id ? "Done editing" : "Edit"} ${item.title}`} title={editingId === item.id ? "Done editing" : "Edit date"} aria-expanded={editingId === item.id} disabled={busy || settingDefault} onClick={() => setEditingId(editingId === item.id ? null : item.id)}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
                     {editingId === item.id ? <path d="m5 12 4 4L19 6" /> : <><path d="m16 3 5 5M4 20l4-1L20 7a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></>}
                   </svg>
                 </button>
               )}
-              {onScheduleChange && editingId === item.id && <MemoDateFields item={item} schedule={schedule} onChange={next => onScheduleChange({ ...schedule, items: schedule.items.map(current => current.id === item.id ? { ...current, ...next } : current) })} />}
+              {onScheduleChange && editingId === item.id && <>
+                <MemoDateFields item={item} schedule={schedule} onChange={next => onScheduleChange({ ...schedule, items: schedule.items.map(current => current.id === item.id ? { ...current, ...next } : current) })} />
+                <button type="button" className={`${actionClass} mb-4 ml-4`} onClick={() => {
+                  onScheduleChange({ ...schedule, items: schedule.items.filter(current => current.id !== item.id) });
+                  setEditingId(null);
+                }}>Remove date</button>
+              </>}
             </li>
           );
         })}
       </ul>
-      {interactive && eligible.length > 0 && (
+      {onScheduleChange && <button type="button" className={`${actionClass} mt-4`} disabled={schedule.items.length >= 50} onClick={() => {
+        const id = crypto.randomUUID();
+        const next = normalizeScanSchedule({ ...schedule, items: [...schedule.items, { id, title: "New date", type: "event", date: null, calendarSelected: true }] });
+        if (next) { onScheduleChange(next); setEditingId(id); }
+      }}>Add date</button>}
+      {calendarEnabled && eligible.length > 0 && (
         <div className="mt-6 border-t border-[#eee8ed] pt-5">
-          {!eventId && onSaveDraft && (
-            <div className="mb-3">
-              <p className="mb-2 text-sm text-slate-600">Save a draft to add dates directly to your connected Google or Outlook calendar. You can download a calendar file now.</p>
-              <button type="button" className={actionClass} onClick={() => void onSaveDraft()} disabled={busy}>Save draft for connected calendars</button>
-            </div>
-          )}
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -478,7 +489,8 @@ export default function SchoolMemoDates({
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[13000] bg-black/50" />
           <Dialog.Content
-            className="fixed left-1/2 top-1/2 z-[13001] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-[#e8e0e5] bg-[#fffefd] p-6 text-[#302633] shadow-xl"
+            data-app-dialog="school-memo-calendar"
+            className="fixed left-1/2 top-1/2 z-[13001] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-[var(--app-border,#e8e0e5)] bg-[var(--app-surface,#fffefd)] p-6 text-[var(--app-foreground,#302633)] shadow-xl"
             onCloseAutoFocus={(event) => {
               event.preventDefault();
               if (!locked.current) chooserTrigger.current?.focus();
@@ -487,7 +499,7 @@ export default function SchoolMemoDates({
             <Dialog.Title className="text-lg font-semibold">
               {needsConnectedCalendar ? "Set your default calendar" : `Add ${selectedItems.length} selected dates`}
             </Dialog.Title>
-            <Dialog.Description className="mt-2 text-sm text-slate-600">
+            <Dialog.Description className="mt-2 text-sm text-[var(--app-muted-foreground,#756b79)]">
               {needsConnectedCalendar
                 ? `Choose a default calendar to add these ${selectedItems.length} selected dates. Future additions will use it automatically.`
                 : "Download a file to import into Apple, Google or Outlook Calendar."}
@@ -497,7 +509,7 @@ export default function SchoolMemoDates({
                 <button
                   key={provider}
                   type="button"
-                  className={actionClass}
+                  className={dialogActionClass}
                   disabled={settingDefault}
                   onClick={() => void setDefaultAndAdd(provider)}
                 >
@@ -505,14 +517,14 @@ export default function SchoolMemoDates({
                 </button>
               ))}
               {needsConnectedCalendar ? (
-                connected.length === 0 && <a href="/settings#calendars" className={actionClass}>Connect a default calendar</a>
+                connected.length === 0 && <a href="/settings#calendars" className={dialogActionClass}>Connect a default calendar</a>
               ) : (
-                <button type="button" className={actionClass} onClick={() => void add("file")}>
+                <button type="button" className={dialogActionClass} onClick={() => void add("file")}>
                   Download calendar file (.ics)
                 </button>
               )}
-              {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-              <Dialog.Close className={actionClass} disabled={settingDefault}>Cancel</Dialog.Close>
+              {error && <p role="alert" className="text-sm text-[var(--app-error,#b91c1c)]">{error}</p>}
+              <Dialog.Close className={dialogActionClass} disabled={settingDefault}>Cancel</Dialog.Close>
             </div>
           </Dialog.Content>
         </Dialog.Portal>

@@ -44,7 +44,7 @@ test("school memo dates have individual choices, bulk controls and one explicit 
     { id: "bible", type: "test", title: "Bible test", date: "2026-10-30" },
     { id: "spelling", type: "test", title: "Spelling test", date: "2026-10-30", calendarSelected: false },
   ] });
-  const html = renderToStaticMarkup(createElement(Provider, { schedule }, createElement(ScannedSchedule)));
+  const html = renderToStaticMarkup(createElement(Provider, { schedule, published: true }, createElement(ScannedSchedule)));
   assert.equal((html.match(/type="checkbox"/g) || []).length, 2);
   assert.equal((html.match(/ checked=""/g) || []).length, 1);
   assert.match(html, /Select all/); assert.match(html, /Clear all/);
@@ -54,7 +54,7 @@ test("school memo dates have individual choices, bulk controls and one explicit 
 
 test("an issue-only school memo stays readable without offering an empty calendar addition", () => {
   const schedule = scheduleHelpers.normalizeScanSchedule({ kind: "school-memo", title: "Class newsletter", issueDate: "2026-10-26", timezone: "America/Chicago", items: [] });
-  const html = renderToStaticMarkup(createElement(Provider, { schedule }, createElement(ScannedSchedule)));
+  const html = renderToStaticMarkup(createElement(Provider, { schedule, published: true }, createElement(ScannedSchedule)));
   assert.match(html, /No dated items were found/);
   assert.doesNotMatch(html, /type="checkbox"|Add selected dates to your calendar|Select all/);
 });
@@ -82,7 +82,7 @@ test("uploaded game rows render through the saved-page provider with their own c
   });
   const schedule = JSON.parse(JSON.stringify(payload.data.scanSchedule));
   const html = renderToStaticMarkup(
-    createElement(Provider, { schedule }, createElement(ScannedSchedule)),
+    createElement(Provider, { schedule, published: true }, createElement(ScannedSchedule)),
   );
   assert.equal((html.match(/<li\b/g) || []).length, 2);
   assert.match(html, /Panthers vs Cougars/);
@@ -115,12 +115,13 @@ test("all 48 rows render, weekly practices show their group/day, and unknown dat
   assert.doesNotMatch(html, /Add to calendar/);
 });
 
-test("school memos finish directly while sports scans retain review, and saved skins receive every date", () => {
+test("school memo uploads open date editing while sports scans retain review, and saved skins receive every date", () => {
   const dashboard = fs.readFileSync("src/components/Dashboard.tsx", "utf8");
   assert.match(
     dashboard,
     /if \(scannedParams\.ocrMeta\?\.scanSchedule\?\.kind === "school-memo"\) \{[\s\S]*?calendarSelected: true[\s\S]*?scanScheduleHistoryFields\(schedule\)[\s\S]*?\} else if \(scannedParams\.ocrMeta\?\.scanSchedule\) \{[\s\S]*?setPendingSchedule\(scannedParams\);[\s\S]*?return;[\s\S]*?submitScannedEventRef\.current\(scannedParams\)/,
   );
+  assert.match(dashboard, /router\.replace\(schoolMemo \? resolveEditHref\(eventId, \{ scanSchedule: ocrMeta\?\.scanSchedule \}, eventTitle\) : eventHref\)/);
   assert.match(dashboard, /onDrop=/);
   const page = fs.readFileSync("src/app/event/[id]/page.tsx", "utf8");
   assert.match(
@@ -173,4 +174,11 @@ test("owner Edit and Continue creating open full school memos while sports retai
       }
     }
   }
+});
+
+test("saved draft dates are readable without any calendar controls", () => {
+  const schedule = scheduleHelpers.normalizeScanSchedule({ kind: "school-memo", title: "Memo", timezone: "America/Chicago", items: [{ id: "test", type: "test", title: "Math test", date: "2026-10-30" }] });
+  const html = renderToStaticMarkup(createElement(Provider, { schedule, eventId: "saved-draft", canManage: true, published: false }, createElement(ScannedSchedule)));
+  assert.match(html, /Math test|Calendar actions will be available after publishing/);
+  assert.doesNotMatch(html, /type="checkbox"|Select all|Clear all|Add selected dates|Download calendar file/);
 });

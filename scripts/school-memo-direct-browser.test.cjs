@@ -6,7 +6,7 @@ const { chromium } = require("playwright");
 const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
 
-test("a school memo upload finishes its event before showing the checked date section", { timeout: 120000 }, async t => {
+test("a school memo upload opens editable draft dates and reveals calendar actions only after publishing", { timeout: 120000 }, async t => {
   const output = path.resolve("output/qa/school-memo-direct-browser");
   fs.mkdirSync(output, { recursive: true });
   const mock = (name, source) => { const file = path.join(output, `${name}.tsx`); fs.writeFileSync(file, source); return file; };
@@ -44,7 +44,7 @@ test("a school memo upload finishes its event before showing the checked date se
   const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process('@import "tailwindcss" source(none); @source "../src/components/SchoolMemoDates.tsx"; @source "../src/components/ScannedInviteSkin.tsx"; @source "../src/components/snap/SnapProcessingCard.tsx";', { from: path.resolve("scripts/school-memo-direct-fixture.css") })).css;
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
   try {
-    for (const width of [390, 1440]) await t.test(`${width}px upload opens a completed event without a review gate`, async () => {
+    for (const width of [390, 1440]) await t.test(`${width}px upload opens editable draft dates before explicit publication`, async () => {
       const page = await browser.newPage({ viewport: { width, height: 1000 }, reducedMotion: "reduce", timezoneId: "America/Chicago" });
       const errors = [], writes = [];
       let saved = null, ocrCalls = 0, sportsMode = false;
@@ -73,6 +73,11 @@ test("a school memo upload finishes its event before showing the checked date se
           saved = { id: "memo-fixture", title: body.title, data: body.data, public_slug: "weekly-school-memo", user_id: "memo-owner" };
           return route.fulfill({ contentType: "application/json", body: JSON.stringify(saved) });
         }
+        if (url.pathname === "/api/history/memo-fixture" && request.method() === "PATCH") {
+          writes.push({ path: url.pathname, body: request.postDataJSON() });
+          saved.data = request.postDataJSON().data;
+          return route.fulfill({ contentType: "application/json", body: JSON.stringify(saved) });
+        }
         if (url.pathname === "/api/history/memo-fixture") return route.fulfill({ contentType: "application/json", body: JSON.stringify(saved) });
         if (request.method() === "GET" && url.pathname.endsWith("/calendar-items"))
           return route.fulfill({ contentType: "application/json", body: JSON.stringify({ additions: [] }) });
@@ -89,6 +94,17 @@ test("a school memo upload finishes its event before showing the checked date se
       assert.equal(writes.filter(write => write.path === "/api/history").length, 1, "the normal scan save finishes the memo without another review action");
       assert.equal(await page.getByRole("dialog", { name: "Review your school memo", exact: true }).count(), 0);
       assert.equal(await page.getByRole("button", { name: "Save memo", exact: true }).count(), 0);
+      assert.equal(new URL(page.url()).pathname, "/event/general/customize", "parsing opens the native General editor route");
+      assert.equal(saved.data.status, "draft");
+      assert.equal(await page.getByRole("checkbox").count(), 0);
+      assert.equal(await page.getByRole("button", { name: /^Add selected dates/ }).count(), 0);
+      assert.equal(await page.getByRole("button", { name: /Download calendar file/ }).count(), 0);
+      await page.getByRole("button", { name: "Edit Bible Test", exact: true }).click();
+      await page.getByLabel("Date", { exact: true }).fill("2026-11-02");
+      await page.getByRole("button", { name: "Publish", exact: true }).click();
+      await page.getByRole("button", { name: /^Add selected dates/ }).waitFor();
+      assert.equal(saved.data.scanSchedule.items.find(item => item.id === "bible").date, "2026-11-02");
+      assert.equal(writes.filter(write => write.path.endsWith("/calendar-items")).length, 0, "publishing never adds dates");
       assert.equal(new URL(page.url()).pathname.startsWith("/event/"), true);
       assert.equal(new URL(page.url()).searchParams.get("tab"), "event", "the upload opens the finished event instead of the owner dashboard");
       assert.equal(await page.evaluate(() => window.__memoActiveTab), "design", "the internal owner tab selects the existing event-page surface");

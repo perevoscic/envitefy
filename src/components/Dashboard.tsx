@@ -1955,7 +1955,7 @@ export default function Dashboard({
           scanAttemptId,
           details: { eventId, eventHref },
         });
-        router.replace(eventHref);
+        router.replace(schoolMemo ? resolveEditHref(eventId, { scanSchedule: ocrMeta?.scanSchedule }, eventTitle) : eventHref);
         return true;
       } finally {
         isSubmittingRef.current = false;
