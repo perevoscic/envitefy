@@ -2,6 +2,10 @@
   position: relative;
 }
 
+.button.button {
+  overflow: visible;
+}
+
 .border {
   position: absolute;
   inset: -1px;

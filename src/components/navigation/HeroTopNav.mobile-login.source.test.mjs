@@ -54,7 +54,7 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
   assert.match(source, /if \(!mobileMenuOpen\) {\s*setMobileLoginExpanded\(false\);/s);
   assert.match(
     source,
-    /showMobileGuestActions \? \(\s*<button[\s\S]*if \(externalMobileLogin\) \{\s*setMobileMenuOpen\(false\);\s*onGuestLoginAction\(\);\s*\} else setMobileLoginExpanded\(\(value\) => !value\)/s,
+    /showMobileGuestActions \? \(\s*<ArrowFillButton[\s\S]*if \(externalMobileLogin\) \{\s*setMobileMenuOpen\(false\);\s*onGuestLoginAction\(\);\s*\} else setMobileLoginExpanded\(\(value\) => !value\)/s,
   );
   assert.match(source, /externalMobileLogin = false/);
   assert.match(source, /id="hero-top-nav-mobile"/);

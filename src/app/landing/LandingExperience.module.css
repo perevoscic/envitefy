@@ -134,6 +134,16 @@
 .login:hover {
   background: var(--landing-surface);
 }
+.publicSignIn {
+  --arrow-fill-color: var(--landing-accent);
+  --arrow-fill-hover-ink: var(--marketing-paper);
+  --arrow-fill-arrow-ink: var(--marketing-paper);
+  flex-shrink: 0;
+}
+.publicSignIn:hover {
+  background: var(--landing-wash);
+  color: var(--landing-ink);
+}
 .headerCreate {
   display: inline-flex;
   min-height: 44px;
@@ -306,6 +316,11 @@
   .login {
     font-size: 0.75rem;
     padding-inline: 1rem;
+  }
+  .publicSignIn {
+    --arrow-fill-circle: 20px;
+    --arrow-fill-right: 4px;
+    --arrow-fill-label-gap: 6px;
   }
   .menuButton {
     display: inline-flex;

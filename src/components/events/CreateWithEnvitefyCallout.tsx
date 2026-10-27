@@ -2,7 +2,7 @@
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
-import AnimatedBorderButton from "@/components/ui/AnimatedBorderButton";
+import ArrowFillButton from "@/components/ui/ArrowFillButton";
 import {
   type CustomDesignCategory,
   getCategoryCustomDesignProfile,
@@ -62,15 +62,15 @@ export default function CreateWithEnvitefyCallout({
     };
     return (
       <div data-custom-design-category={category} data-custom-design-presentation="hero">
-        <AnimatedBorderButton
+        <ArrowFillButton
           type="button"
+          label="Generate with Envitefy"
+          animatedBorder
           data-wedding-create
           data-custom-design-create
           onClick={create}
           disabled={busy || status === "loading"}
-        >
-          Generate with Envitefy
-        </AnimatedBorderButton>
+        />
         {authModal}
       </div>
     );

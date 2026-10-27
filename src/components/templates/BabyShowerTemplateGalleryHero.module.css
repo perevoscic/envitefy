@@ -178,6 +178,8 @@
 }
 
 .actions [data-custom-design-create] {
+  --arrow-fill-color: var(--baby-on-primary);
+  --arrow-fill-hover-ink: var(--baby-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;

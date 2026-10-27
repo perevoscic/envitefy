@@ -163,6 +163,8 @@
 }
 
 .actions [data-wedding-create] {
+  --arrow-fill-color: var(--wedding-ink);
+  --arrow-fill-hover-ink: var(--wedding-paper);
   display: inline-flex;
   align-items: center;
   justify-content: center;

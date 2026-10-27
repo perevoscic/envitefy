@@ -22,7 +22,8 @@ const featuredIds = [
 let building;
 
 function buildFixture() {
-  return building ||= (async () => {
+  if (building) return building;
+  building = (async () => {
     fs.mkdirSync(output, { recursive: true });
     const navigation = path.resolve("scripts/fixtures/wedding-template-gallery-navigation.tsx");
     const infrastructure = path.resolve("scripts/fixtures/wedding-template-gallery-infrastructure.tsx");
@@ -70,6 +71,7 @@ function buildFixture() {
     })).css;
     fs.writeFileSync(path.join(output, "global.css"), css);
   })();
+  return building;
 }
 
 async function serve(context, unexpected) {
@@ -272,7 +274,8 @@ test("bridal-shower gallery hero and controls fit desktop, tablet and narrow pho
       const authored = await authoredAppearance(page), themes = {};
       for (const theme of ["light", "dark"]) {
         await page.evaluate((value) => window.__setBridalShowerGalleryAppearance(value), theme);
-        const state = themes[theme] = await appearance(page);
+        const state = await appearance(page);
+        themes[theme] = state;
         assert.equal(state.preference, theme, "real appearance setter applies selected preference");
         assert.equal(state.dark, theme === "dark");
         const backdrop = await hero.locator(":scope > img").evaluateAll((images) => images.filter((image) => getComputedStyle(image).visibility === "visible").map((image) => image.getAttribute("src")));
@@ -367,7 +370,7 @@ test("bridal-shower gallery hero and controls fit desktop, tablet and narrow pho
   } finally { await browser.close(); }
 });
 
-test("generation border moves around the pill while preserving its theme, content and native controls", { timeout: 240000 }, async () => {
+test("generation border and arrow fill preserve the pill theme, content and native controls", { timeout: 240000 }, async () => {
   await buildFixture();
   const sharp = require("sharp");
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined });
@@ -382,10 +385,65 @@ test("generation border moves around the pill while preserving its theme, conten
       const generate = page.getByRole("button", { name: "Generate with Envitefy", exact: true });
       const border = generate.locator("[data-animated-button-border]");
       const runner = border.locator("[data-animated-button-border-runner]");
+      const surface = generate.locator("[data-arrow-fill-surface]");
+      const label = generate.locator("[data-arrow-fill-label]");
+      const overlay = generate.locator("[data-arrow-fill-label-overlay]");
+      const readButton = () => generate.evaluate((node) => {
+        const style = getComputedStyle(node), bounds = node.getBoundingClientRect();
+        return { width: bounds.width, height: bounds.height, font: style.font, color: style.color, paper: style.backgroundColor };
+      });
+      const waitForFill = (expanded) => page.waitForFunction((active) => {
+        const button = document.querySelector("[data-custom-design-create]");
+        const surface = button.querySelector("[data-arrow-fill-surface]").getBoundingClientRect();
+        const bounds = button.getBoundingClientRect();
+        const scale = (selector) => {
+          const matrix = new DOMMatrixReadOnly(getComputedStyle(button.querySelector(selector)).transform);
+          return Math.hypot(matrix.a, matrix.b);
+        };
+        const surfaceReady = active
+          ? Math.abs(surface.width - bounds.width) < 2.1 && Math.abs(surface.height - bounds.height) < 2.1
+          : Math.abs(surface.width - surface.height) < 0.2 && surface.width < bounds.width / 2;
+        const clip = getComputedStyle(button.querySelector("[data-arrow-fill-label-overlay]")).clipPath.split("round")[0];
+        const overlayReady = !active || clip.match(/[\d.]+/g)?.every((value) => Number(value) < 0.01);
+        return surfaceReady && overlayReady && Math.abs(scale("[data-arrow-fill-arrow-current]") - (active ? 0 : 1)) < 0.01 &&
+          Math.abs(scale("[data-arrow-fill-arrow-next]") - (active ? 1 : 0)) < 0.01;
+      }, expanded);
+      const assertFillPalette = async (message) => {
+        const colors = await generate.evaluate((node) => {
+          const token = (name, fallback) => {
+            const probe = document.createElement("span");
+            probe.style.color = `var(${name}${fallback ? `, ${fallback}` : ""})`;
+            node.append(probe);
+            const result = getComputedStyle(probe).color;
+            probe.remove();
+            return result;
+          };
+          const overlay = getComputedStyle(node.querySelector("[data-arrow-fill-label-overlay]"));
+          return {
+            fill: getComputedStyle(node.querySelector("[data-arrow-fill-surface]")).backgroundColor,
+            label: overlay.color, textFill: overlay.webkitTextFillColor,
+            arrow: getComputedStyle(node.querySelector("[data-arrow-fill-icon]")).color,
+            expectedFill: token("--arrow-fill-color"), expectedLabel: token("--arrow-fill-hover-ink"),
+            expectedArrow: token("--arrow-fill-arrow-ink", "var(--arrow-fill-hover-ink, var(--public-header-paper, #fcf8f3))"),
+          };
+        });
+        assert.equal(colors.fill, colors.expectedFill, `${message}: fill uses the theme token`);
+        assert.equal(colors.label, colors.expectedLabel, `${message}: revealed label uses matching theme ink`);
+        assert.equal(colors.textFill, colors.expectedLabel, `${message}: WebKit label retains matching theme ink`);
+        assert.equal(colors.arrow, colors.expectedArrow, `${message}: arrow uses matching theme ink`);
+      };
       await generate.waitFor();
       await page.evaluate(() => document.fonts.ready);
+      assert.notEqual(await generate.getAttribute("data-arrow-fill-button"), null, "generation remains a native button with the supplied arrow-fill treatment");
+      assert.equal(await label.textContent(), "Generate with Envitefy", "foreground keeps the existing label");
+      assert.equal(await overlay.getAttribute("aria-hidden"), "true", "revealed duplicate is decorative");
+      assert.equal(await surface.getAttribute("aria-hidden"), "true", "expanding surface stays outside the accessible label");
+      assert.equal(await surface.evaluate((node) => getComputedStyle(node).pointerEvents), "none", "expanding surface leaves native pointer access intact");
       for (const theme of ["light", "dark"]) {
         await page.evaluate((value) => window.__setBridalShowerGalleryAppearance(value), theme);
+        await page.mouse.move(0, 0);
+        await generate.evaluate((node) => node.blur());
+        await waitForFill(false);
         const motion = await runner.evaluate((node) => {
           const style = getComputedStyle(node), button = getComputedStyle(node.closest("button"));
           return { name: style.animationName, duration: style.animationDuration, timing: style.animationTimingFunction,
@@ -425,12 +483,48 @@ test("generation border moves around the pill while preserving its theme, conten
         assert.ok(changed >= 4, `${theme} animated border produces visible pixels at ${width}px`);
         await page.screenshot({ path: path.join(output, `bridal-shower-animated-border-${theme}-${width}.png`) });
         await runner.evaluate((node) => node.getAnimations()[0].play());
+        const originalButton = await readButton();
+        const originalLabel = await label.boundingBox();
+        assert.ok((await surface.evaluate((node) => getComputedStyle(node).transitionDuration)).split(",").every((duration) => duration.trim() === "0.45s"), "fill uses the supplied 450ms transition");
+        await generate.hover();
+        await waitForFill(true);
+        const hoveredButton = await readButton();
+        assert.deepEqual({ ...hoveredButton, paper: originalButton.paper }, originalButton, `${theme} hover preserves button dimensions, font and paired base ink at ${width}px`);
+        assert.deepEqual(await label.boundingBox(), originalLabel, `${theme} foreground label stays in place while the fill expands at ${width}px`);
+        await assertFillPalette(`${theme} hover at ${width}px`);
+        assert.ok((await overlay.evaluate((node) => getComputedStyle(node).clipPath)).split("round")[0].match(/[\d.]+/g)?.every((value) => Number(value) < 0.01), "expanded fill reveals the complete matching label");
+        const hoverDistance = await runner.evaluate((node) => getComputedStyle(node).offsetDistance);
+        await page.waitForFunction((first) => getComputedStyle(document.querySelector("[data-animated-button-border-runner]")).offsetDistance !== first, hoverDistance);
+        await generate.screenshot({ path: path.join(output, `generate-hover-fill-${theme}-${width}.png`) });
+        await page.mouse.move(0, 0);
+        await waitForFill(false);
+        await generate.focus();
+        await page.keyboard.press("Shift+Tab");
+        await page.keyboard.press("Tab");
+        assert.equal(await generate.evaluate((node) => node.matches(":focus-visible")), true, "keyboard navigation focuses generation visibly");
+        await waitForFill(true);
+        await assertFillPalette(`${theme} keyboard focus at ${width}px`);
+        assert.deepEqual(await readButton(), originalButton, `${theme} keyboard fill preserves button dimensions and typography at ${width}px`);
+        await generate.evaluate((node) => node.blur());
+        await waitForFill(false);
       }
       await generate.evaluate((node) => { node.disabled = true; });
       assert.equal(await runner.evaluate((node) => getComputedStyle(node).animationPlayState), "paused", "disabled generation pauses its border");
       await generate.evaluate((node) => { node.disabled = false; });
       await page.emulateMedia({ reducedMotion: "reduce" });
       assert.equal(await runner.evaluate((node) => getComputedStyle(node).animationName), "none", "live reduced motion stops the border");
+      await generate.hover();
+      await waitForFill(true);
+      assert.ok((await surface.evaluate((node) => getComputedStyle(node).transitionDuration)).split(",").every((duration) => parseFloat(duration) === 0), "reduced motion makes the fill immediate");
+      await page.mouse.move(0, 0);
+      await waitForFill(false);
+      await generate.focus();
+      await page.keyboard.press("Shift+Tab");
+      await page.keyboard.press("Tab");
+      await waitForFill(true);
+      assert.equal(await generate.evaluate((node) => node.matches(":focus-visible")), true, "reduced motion retains visible keyboard focus");
+      await generate.evaluate((node) => node.blur());
+      await waitForFill(false);
       const staticDistance = await runner.evaluate((node) => getComputedStyle(node).offsetDistance);
       await page.waitForTimeout(100);
       assert.equal(await runner.evaluate((node) => getComputedStyle(node).offsetDistance), staticDistance, "reduced accent stays stationary");

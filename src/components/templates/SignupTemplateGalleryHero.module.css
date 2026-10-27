@@ -136,6 +136,8 @@
 }
 
 .actions [data-custom-design-create] {
+  --arrow-fill-color: var(--signup-on-primary);
+  --arrow-fill-hover-ink: var(--signup-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -521,6 +523,10 @@
 .catalog [data-public-gallery-controls] > label:first-child {
   position: relative;
   flex: 2.5 1 16rem;
+}
+
+.catalog [data-public-gallery-controls] > label:has(select[aria-label="Holiday or occasion"]) {
+  min-width: min(100%, 14rem);
 }
 
 .gallery.gallery.gallery .catalog.catalog [data-public-gallery-controls] :is(input, select),

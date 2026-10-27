@@ -165,6 +165,8 @@
 }
 
 .actions [data-custom-design-create] {
+  --arrow-fill-color: var(--bridal-on-primary);
+  --arrow-fill-hover-ink: var(--bridal-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;

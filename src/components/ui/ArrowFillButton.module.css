@@ -1,0 +1,137 @@
+.button {
+  --arrow-fill-rest-inset: calc((100% - var(--arrow-fill-circle, 28px)) / 2)
+    var(--arrow-fill-right, 6px) calc((100% - var(--arrow-fill-circle, 28px)) / 2)
+    calc(100% - var(--arrow-fill-right, 6px) - var(--arrow-fill-circle, 28px));
+  --arrow-fill-active-inset: var(--arrow-fill-rest-inset);
+  --arrow-fill-current-x: 0%;
+  --arrow-fill-current-scale: 1;
+  --arrow-fill-next-x: -150%;
+  --arrow-fill-next-scale: 0;
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.button.button.button::after {
+  content: none;
+}
+
+.label {
+  position: relative;
+  z-index: 1;
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+}
+
+.surface,
+.overlay,
+.icon {
+  position: absolute;
+  pointer-events: none;
+}
+
+.surface {
+  z-index: 2;
+  inset: var(--arrow-fill-active-inset);
+  border-radius: inherit;
+  background: var(--arrow-fill-color, var(--public-header-accent, #853652));
+  transition: inset 450ms cubic-bezier(0.785, 0.135, 0.15, 0.86);
+}
+
+.overlay {
+  z-index: 3;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: inherit;
+  border: inherit;
+  border-color: transparent;
+  border-radius: inherit;
+  color: var(--arrow-fill-hover-ink, var(--public-header-paper, #fcf8f3));
+  -webkit-text-fill-color: currentColor;
+  clip-path: inset(var(--arrow-fill-active-inset) round 999px);
+  transition: clip-path 450ms cubic-bezier(0.785, 0.135, 0.15, 0.86);
+}
+
+.icon {
+  z-index: 4;
+  top: 50%;
+  right: var(--arrow-fill-right, 6px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--arrow-fill-circle, 28px);
+  height: var(--arrow-fill-circle, 28px);
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--arrow-fill-color, var(--public-header-accent, #853652));
+  color: var(
+    --arrow-fill-arrow-ink,
+    var(--arrow-fill-hover-ink, var(--public-header-paper, #fcf8f3))
+  );
+  transform: translateY(-50%);
+}
+
+.currentArrow,
+.nextArrow {
+  position: absolute;
+  width: var(--arrow-fill-arrow-size, 60%);
+  height: var(--arrow-fill-arrow-size, 60%);
+  transition: transform 450ms cubic-bezier(0.785, 0.135, 0.15, 0.86);
+}
+
+.currentArrow {
+  transform: translateX(var(--arrow-fill-current-x)) scale(var(--arrow-fill-current-scale));
+}
+
+.nextArrow {
+  transform: translateX(var(--arrow-fill-next-x)) scale(var(--arrow-fill-next-scale));
+}
+
+.button > [data-animated-button-border] {
+  z-index: 5;
+}
+
+.button:enabled:is(:focus-visible, :active) {
+  --arrow-fill-active-inset: 0px 0px 0px 0px;
+  --arrow-fill-current-x: 150%;
+  --arrow-fill-current-scale: 0;
+  --arrow-fill-next-x: 0%;
+  --arrow-fill-next-scale: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .button:enabled:hover {
+    --arrow-fill-active-inset: 0px 0px 0px 0px;
+    --arrow-fill-current-x: 150%;
+    --arrow-fill-current-scale: 0;
+    --arrow-fill-next-x: 0%;
+    --arrow-fill-next-scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .surface,
+  .overlay,
+  .currentArrow,
+  .nextArrow {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .surface,
+  .overlay {
+    display: none;
+  }
+
+  .icon {
+    color: ButtonText;
+    background: ButtonFace;
+  }
+}

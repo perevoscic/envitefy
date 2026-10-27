@@ -12,10 +12,11 @@ import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import type { MarketingTone } from "@/components/marketing/MarketingPage";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
+import ArrowFillButton from "@/components/ui/ArrowFillButton";
 import LiquidMetalButton from "@/components/ui/LiquidMetalButton";
 import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
-import appearanceStyles from "./navigation-appearance.module.css";
 import editorialStyles from "./editorial-navigation.module.css";
+import appearanceStyles from "./navigation-appearance.module.css";
 import landingHeaderStyles from "./public-landing-header.module.css";
 import scrollStyles from "./scroll-aware-header.module.css";
 import useScrollAwareHeader from "./useScrollAwareHeader";
@@ -511,14 +512,21 @@ export default function HeroTopNav({
                 <Link href={dashboardHref} className={landingHeaderStyles.join} data-header-join>
                   Dashboard
                 </Link>
+              ) : editorialAccountAction === "login" ? (
+                <ArrowFillButton
+                  label="Sign in"
+                  onClick={onGuestLoginAction}
+                  className={cx(landingHeaderStyles.join, landingHeaderStyles.signIn)}
+                  data-header-join
+                />
               ) : (
                 <button
                   type="button"
-                  onClick={editorialAccountAction === "login" ? onGuestLoginAction : onGuestSignupAction}
+                  onClick={onGuestSignupAction}
                   className={landingHeaderStyles.join}
                   data-header-join
                 >
-                  {editorialAccountAction === "login" ? "Sign in" : "Let's create"}
+                  Let's create
                 </button>
               )}
               {status !== "authenticated" && editorialAccountAction === "login" && (
@@ -698,20 +706,23 @@ export default function HeroTopNav({
                     Dashboard
                   </Link>
                 ) : (
-                  <button
+                  <ArrowFillButton
                     type="button"
+                    label="Login"
                     onClick={onGuestLoginAction}
                     className={cx(
+                      landingHeaderStyles.legacyLogin,
                       isTransparentOverHero && isTransparentLight
-                        ? "cta-shell nav-chrome-motion h-11 shrink-0 rounded-full border border-[#25172d]/10 bg-[#25172d]/8 px-6 text-sm font-bold text-[#25172d] transition-all hover:bg-[#25172d]/12"
+                        ? cx(
+                            landingHeaderStyles.legacyLoginLightHero,
+                            "cta-shell nav-chrome-motion h-11 shrink-0 rounded-full border border-[#25172d]/10 bg-[#25172d]/8 px-6 text-sm font-bold text-[#25172d] transition-all hover:bg-[#25172d]/12",
+                          )
                         : isDarkGlass
-                          ? glassGhostLoginClass
+                          ? cx(landingHeaderStyles.legacyLoginGlass, glassGhostLoginClass)
                           : "cta-shell nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
                       !isTransparentOverHero && !isDarkGlass && lightNavPillClass,
                     )}
-                  >
-                    <AnimatedButtonLabel label="Login" />
-                  </button>
+                  />
                 )}
 
                 {status === "authenticated" ? (
@@ -924,8 +935,9 @@ export default function HeroTopNav({
                         ) : (
                           <>
                             {showMobileGuestActions ? (
-                              <button
+                              <ArrowFillButton
                                 type="button"
+                                label="Login"
                                 aria-expanded={mobileLoginExpanded}
                                 aria-controls="hero-top-nav-mobile-login"
                                 onClick={() => {
@@ -936,14 +948,16 @@ export default function HeroTopNav({
                                 }}
                                 className={cx(
                                   "cta-shell mt-1.5 self-end nav-chrome-motion rounded-2xl px-6 py-3 text-center text-base font-semibold transition",
-                                  editorialTone && editorialStyles.navLink,
+                                  landingHeaderStyles.legacyLogin,
+                                  editorialTone && landingHeaderStyles.editorialMenuLogin,
                                   useDarkMobileMenu
-                                    ? "border border-white/16 bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-white/[0.12]"
+                                    ? cx(
+                                        landingHeaderStyles.legacyLoginGlass,
+                                        "border border-white/16 bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-white/[0.12]",
+                                      )
                                     : lightNavPillClass,
                                 )}
-                              >
-                                <AnimatedButtonLabel label="Login" />
-                              </button>
+                              />
                             ) : null}
 
                             <div

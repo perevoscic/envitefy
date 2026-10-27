@@ -138,6 +138,8 @@
   align-items: flex-start;
 }
 .actions [data-custom-design-create] {
+  --arrow-fill-color: var(--birthday-on-primary);
+  --arrow-fill-hover-ink: var(--birthday-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;

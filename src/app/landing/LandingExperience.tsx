@@ -11,6 +11,7 @@ import MarketingPage from "@/components/marketing/MarketingPage";
 import ConciergeLauncher from "@/components/navigation/ConciergeLauncher";
 import scrollStyles from "@/components/navigation/scroll-aware-header.module.css";
 import useScrollAwareHeader from "@/components/navigation/useScrollAwareHeader";
+import ArrowFillButton from "@/components/ui/ArrowFillButton";
 import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
 import styles from "./LandingExperience.module.css";
 import LandingArtCollage from "./sections/LandingArtCollage";
@@ -145,9 +146,11 @@ export default function LandingExperience() {
           ))}
         </nav>
         <div className={styles.headerActions}>
-          <button type="button" onClick={() => openAuth("login")} className={styles.login}>
-            Login
-          </button>
+          <ArrowFillButton
+            label="Login"
+            onClick={() => openAuth("login")}
+            className={`${styles.login} ${styles.publicSignIn}`}
+          />
           <button type="button" onClick={onCreateEvent} className={styles.headerCreate}>
             Let&apos;s create <ArrowRight size={15} aria-hidden="true" />
           </button>

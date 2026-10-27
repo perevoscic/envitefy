@@ -112,6 +112,64 @@
   color: var(--public-header-accent);
 }
 
+.signIn {
+  --arrow-fill-base: var(--public-header-soft);
+  --arrow-fill-ink: var(--public-header-ink);
+  --arrow-fill-color: var(--public-header-accent);
+  --arrow-fill-hover-ink: var(--public-header-paper);
+  --arrow-fill-arrow-ink: var(--public-header-paper);
+  padding-inline-end: calc(
+    var(--arrow-fill-circle, 28px) +
+    var(--arrow-fill-right, 6px) +
+    var(--arrow-fill-label-gap, 10px)
+  );
+}
+
+.signIn:hover {
+  background: var(--arrow-fill-base);
+}
+
+.legacyLogin {
+  --arrow-fill-base: transparent;
+  --arrow-fill-ink: var(--nav-chrome-ink);
+  --arrow-fill-color: var(--nav-chrome-active-start);
+  --arrow-fill-hover-ink: var(--app-primary-foreground, var(--primary-foreground));
+  --arrow-fill-arrow-ink: var(--app-primary-foreground, var(--primary-foreground));
+  min-height: 44px;
+  padding-inline-end: calc(
+    var(--arrow-fill-circle, 28px) +
+    var(--arrow-fill-right, 6px) +
+    var(--arrow-fill-label-gap, 10px)
+  );
+}
+
+.legacyLoginGlass {
+  --arrow-fill-ink: var(--color-white);
+  --arrow-fill-base: color-mix(in srgb, var(--arrow-fill-ink) 12%, transparent);
+}
+
+.legacyLoginLightHero {
+  --arrow-fill-base: color-mix(in srgb, var(--nav-chrome-ink) 8%, transparent);
+}
+
+:global(html.dark) .legacyLoginGlass {
+  --arrow-fill-ink: var(--nav-chrome-ink);
+}
+
+.editorialMenuLogin {
+  --arrow-fill-base: var(--editorial-soft);
+  --arrow-fill-ink: var(--editorial-ink);
+  --arrow-fill-color: var(--editorial-accent);
+  --arrow-fill-hover-ink: var(--editorial-paper);
+  --arrow-fill-arrow-ink: var(--editorial-paper);
+  border: 1px solid var(--editorial-line);
+}
+
+.editorialMenuLogin.editorialMenuLogin {
+  background: var(--editorial-soft);
+  color: var(--editorial-ink);
+}
+
 .create {
   flex-shrink: 0;
 }
@@ -216,12 +274,24 @@
   }
 
   .header[data-create-account-actions] .brand img {
-    width: clamp(72px, calc(100vw - 270px), 125px);
+    width: clamp(60px, calc(100vw - 280px), 125px);
   }
 
   .header[data-create-account-actions] .join {
     min-width: 56px;
     padding-inline: 0.625rem;
+  }
+
+  .header[data-create-account-actions] .signIn {
+    --arrow-fill-circle: 16px;
+    --arrow-fill-right: 4px;
+    --arrow-fill-label-gap: 5px;
+    padding-inline-start: 0.5rem;
+    padding-inline-end: calc(
+      var(--arrow-fill-circle) +
+      var(--arrow-fill-right) +
+      var(--arrow-fill-label-gap)
+    );
   }
 
   .create {
@@ -234,6 +304,10 @@
 @media (max-width: 360px) {
   .header[data-create-account-actions] {
     padding-inline: 0.75rem;
+  }
+
+  .header[data-create-account-actions] .actions {
+    gap: 0.375rem;
   }
 
   .create {

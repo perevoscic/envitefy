@@ -311,6 +311,59 @@ async function assertBoundedHeader(page, header, label) {
   }
 }
 
+async function waitForArrowFill(page, selector, expanded) {
+  await page.waitForFunction(({ selector, expanded }) => {
+    const button = document.querySelector(selector);
+    const surface = button?.querySelector("[data-arrow-fill-surface]");
+    if (!surface) return false;
+    const fill = surface.getBoundingClientRect(), bounds = button.getBoundingClientRect();
+    const scale = (selector) => {
+      const matrix = new DOMMatrixReadOnly(getComputedStyle(button.querySelector(selector)).transform);
+      return Math.hypot(matrix.a, matrix.b);
+    };
+    const surfaceReady = expanded
+      ? Math.abs(fill.width - bounds.width) < 2.1 && Math.abs(fill.height - bounds.height) < 2.1
+      : Math.abs(fill.width - fill.height) < 0.2 && fill.width < bounds.width / 2;
+    const clip = getComputedStyle(button.querySelector("[data-arrow-fill-label-overlay]")).clipPath.split("round")[0];
+    const overlayReady = !expanded || clip.match(/[\d.]+/g)?.every((value) => Number(value) < 0.01);
+    return surfaceReady && overlayReady && Math.abs(scale("[data-arrow-fill-arrow-current]") - (expanded ? 0 : 1)) < 0.01 &&
+      Math.abs(scale("[data-arrow-fill-arrow-next]") - (expanded ? 1 : 0)) < 0.01;
+  }, { selector, expanded });
+}
+
+async function arrowFillAppearance(button) {
+  return button.evaluate((node) => {
+    const token = (name, fallback) => {
+      const probe = document.createElement("span");
+      probe.style.color = `var(${name}${fallback ? `, ${fallback}` : ""})`;
+      node.append(probe);
+      const value = getComputedStyle(probe).color;
+      probe.remove();
+      return value;
+    };
+    const style = getComputedStyle(node);
+    const overlay = getComputedStyle(node.querySelector("[data-arrow-fill-label-overlay]"));
+    const surface = getComputedStyle(node.querySelector("[data-arrow-fill-surface]"));
+    const { x, y, width, height } = node.getBoundingClientRect();
+    return {
+      geometry: { x, y, width, height }, font: style.font, base: style.backgroundColor, ink: style.color,
+      fill: surface.backgroundColor, transition: surface.transitionDuration,
+      overlay: overlay.color, textFill: overlay.webkitTextFillColor, clip: overlay.clipPath,
+      arrow: getComputedStyle(node.querySelector("[data-arrow-fill-icon]")).color,
+      tokens: { base: token("--arrow-fill-base"), ink: token("--arrow-fill-ink"),
+        fill: token("--arrow-fill-color"), overlay: token("--arrow-fill-hover-ink"),
+        arrow: token("--arrow-fill-arrow-ink", "var(--arrow-fill-hover-ink, var(--public-header-paper, #fcf8f3))") },
+    };
+  });
+}
+
+function assertArrowFillPalette(state, label, resting = false) {
+  for (const part of [...(resting ? ["base", "ink"] : []), "fill", "overlay", "arrow"]) {
+    assert.equal(state[part], state.tokens[part], `${label}: ${part} follows its existing theme token`);
+  }
+  assert.equal(state.textFill, state.tokens.overlay, `${label}: revealed WebKit text keeps matching theme ink`);
+}
+
 test("public headers follow scroll direction while the homepage avoids duplicate wordmarks", {
   timeout: 120000,
 }, async () => {
@@ -591,6 +644,9 @@ test("public headers follow scroll direction while the homepage avoids duplicate
               await menu.click();
               const dialog = page.getByRole("dialog", { name: "Hero navigation", exact: true });
               await dialog.waitFor();
+              const menuLogin = dialog.getByRole("button", { name: "Login", exact: true });
+              await menuLogin.waitFor();
+              assertArrowFillPalette(await arrowFillAppearance(menuLogin), `${label} mobile menu Login`, true);
               assert.equal(await header.getAttribute("data-scroll-hidden"), "false", `${label}: open navigation keeps the header visible`);
               await page.keyboard.press("Escape");
               await dialog.waitFor({ state: "hidden" });
@@ -745,6 +801,24 @@ test("gallery liquid-metal create action stays beside Sign in on desktop and pho
           assert.notEqual(await create.getAttribute("data-header-create"), null, `${label}: the gallery owns the creation action`);
           assert.equal(await header.locator("[data-header-primary]").count(), 0, `${label}: the former hidden primary action stays absent`);
           await page.mouse.move(0, 300);
+          assert.notEqual(await signIn.getAttribute("data-arrow-fill-button"), null, `${label}: Sign in has the supplied arrow-fill treatment`);
+          assert.equal(await signIn.locator("[data-arrow-fill-label]").textContent(), "Sign in", `${label}: Sign in keeps its original label`);
+          for (const selector of ["[data-arrow-fill-surface]", "[data-arrow-fill-label-overlay]", "[data-arrow-fill-icon]"]) {
+            assert.equal(await signIn.locator(selector).getAttribute("aria-hidden"), "true", `${label}: ${selector} is decorative`);
+            assert.equal(await signIn.locator(selector).evaluate((node) => getComputedStyle(node).pointerEvents), "none", `${label}: ${selector} leaves native pointer access intact`);
+          }
+          await waitForArrowFill(page, "[data-header-join]", false);
+          const signInRest = await arrowFillAppearance(signIn);
+          assertArrowFillPalette(signInRest, label, true);
+          await signIn.hover();
+          await waitForArrowFill(page, "[data-header-join]", true);
+          const signInHover = await arrowFillAppearance(signIn);
+          assertArrowFillPalette(signInHover, `${label} hover`);
+          assert.deepEqual(signInHover.geometry, signInRest.geometry, `${label}: the expanding fill keeps Sign in geometry`);
+          assert.equal(signInHover.font, signInRest.font, `${label}: the expanding fill keeps Sign in typography`);
+          assert.ok(signInHover.transition.split(",").every((duration) => parseFloat(duration) === 0), `${label}: reduced motion makes the fill immediate`);
+          await page.mouse.move(0, 300);
+          await waitForArrowFill(page, "[data-header-join]", false);
           const palette = await readCreatePalette(create);
           assert.equal(palette.fill, palette.accent, `${label}: creation uses the native primary fill`);
           assert.equal(palette.label, palette.paper, `${label}: creation uses matching theme text`);
@@ -792,6 +866,7 @@ test("gallery liquid-metal create action stays beside Sign in on desktop and pho
               return { visible: node.matches(":focus-visible"), outline: style.outlineStyle, width: parseFloat(style.outlineWidth), active: node === document.activeElement };
             });
             assert.ok(focus.active && focus.visible && focus.outline !== "none" && focus.width >= 2, `${label}: both actions expose keyboard focus`);
+            await waitForArrowFill(page, "[data-header-join]", control === signIn);
           }
           await create.click();
           await signIn.click();
@@ -904,4 +979,74 @@ test("gallery liquid-metal create action stays beside Sign in on desktop and pho
     await browser.close();
   }
   fs.writeFileSync(path.join(output, "gallery-create-results.json"), JSON.stringify(results, null, 2));
+});
+
+test("public Sign in and Login actions expand their arrow fill on hover and keyboard focus", { timeout: 180000 }, async () => {
+  const css = await buildFixture();
+  const chrome = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ||
+    (fs.existsSync(chromium.executablePath()) ? chromium.executablePath()
+      : path.join(process.env.PROGRAMFILES || "C:\\Program Files", "Google/Chrome/Application/chrome.exe"));
+  const browser = await chromium.launch({ headless: true, executablePath: chrome });
+  try {
+    for (const scheme of ["light", "dark"]) {
+      for (const entry of [
+        { query: "editorial&gallery", width: 1440, name: "Sign in" },
+        { query: "editorial&gallery", width: 390, name: "Sign in" },
+        { query: "hero", width: 1440, name: "Login" },
+      ]) {
+        const label = `${entry.name} ${scheme} ${entry.width}px`;
+        const context = await browser.newContext({ viewport: { width: entry.width, height: 900 }, colorScheme: scheme, reducedMotion: "no-preference" });
+        const errors = [], unexpected = [];
+        await serve(context, css, unexpected);
+        const page = await context.newPage();
+        page.setDefaultTimeout(10000);
+        page.on("pageerror", (error) => errors.push(error.message));
+        try {
+          await page.goto(`${base}/?${entry.query}`);
+          const header = page.locator("header[data-scroll-hidden]").first();
+          const action = header.getByRole("button", { name: entry.name, exact: true });
+          await action.waitFor();
+          await page.waitForFunction((dark) => document.documentElement.classList.contains("dark") === dark, scheme === "dark");
+          await page.evaluate(() => document.fonts.ready);
+          await action.evaluate((node) => Promise.all(node.getAnimations()
+            .filter((animation) => animation.constructor.name === "CSSTransition")
+            .map((animation) => animation.finished.catch(() => {}))));
+          await page.mouse.move(0, 300);
+          assert.notEqual(await action.getAttribute("data-arrow-fill-button"), null, `${label}: native account button uses the supplied treatment`);
+          await waitForArrowFill(page, "[data-arrow-fill-button]", false);
+          const rest = await arrowFillAppearance(action);
+          assertArrowFillPalette(rest, label, entry.name === "Sign in");
+          assert.ok(rest.transition.split(",").every((duration) => duration.trim() === "0.45s"), `${label}: fill uses the supplied 450ms transition`);
+          const foreground = await action.locator("[data-arrow-fill-label]").boundingBox();
+          await action.hover();
+          await waitForArrowFill(page, "[data-arrow-fill-button]", true);
+          const hover = await arrowFillAppearance(action);
+          assertArrowFillPalette(hover, `${label} hover`);
+          assert.deepEqual(hover.geometry, rest.geometry, `${label}: hover preserves the native target`);
+          assert.equal(hover.font, rest.font, `${label}: hover preserves native typography`);
+          assert.deepEqual(await action.locator("[data-arrow-fill-label]").boundingBox(), foreground, `${label}: foreground label remains stationary`);
+          assert.ok(hover.clip.split("round")[0].match(/[\d.]+/g)?.every((value) => Number(value) < 0.01), `${label}: the full fill reveals its matching label`);
+          await action.screenshot({ path: path.join(output, `account-arrow-fill-${entry.name.toLowerCase().replaceAll(" ", "-")}-${scheme}-${entry.width}.png`) });
+          await page.mouse.move(0, 300);
+          await waitForArrowFill(page, "[data-arrow-fill-button]", false);
+          await page.keyboard.press("Tab");
+          await action.focus();
+          assert.equal(await action.evaluate((node) => node.matches(":focus-visible")), true, `${label}: keyboard access exposes visible focus`);
+          await waitForArrowFill(page, "[data-arrow-fill-button]", true);
+          await action.evaluate((node) => node.blur());
+          await waitForArrowFill(page, "[data-arrow-fill-button]", false);
+          await action.hover();
+          await waitForArrowFill(page, "[data-arrow-fill-button]", true);
+          await page.emulateMedia({ reducedMotion: "reduce" });
+          const reduced = await arrowFillAppearance(action);
+          assert.ok(reduced.transition.split(",").every((duration) => parseFloat(duration) === 0), `${label}: live reduced motion removes fill transitions`);
+          await page.mouse.move(0, 300);
+          await waitForArrowFill(page, "[data-arrow-fill-button]", false);
+          await assertBoundedHeader(page, header, label);
+          assert.deepEqual(errors, [], `${label}: no browser runtime errors`);
+          assert.deepEqual(unexpected, [], `${label}: animation makes no network writes`);
+        } finally { await context.close(); }
+      }
+    }
+  } finally { await browser.close(); }
 });
