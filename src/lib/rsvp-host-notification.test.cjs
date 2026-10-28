@@ -78,6 +78,26 @@ test("host receives Yes, Maybe and No; declined guest receives no email", async 
   }
 });
 
+test("closed RSVPs reject responses without saving or sending notifications", async () => {
+  for (const eventData of [{ rsvpEnabled: false }, { rsvp: { isEnabled: false } }, { rsvp: { enabled: "off" } }]) {
+    const fixture = setup({ eventData });
+    assert.equal((await fixture.submit("yes")).status, 403);
+    assert.equal(fixture.statements.some(sql => sql.includes("INSERT INTO rsvp_responses")), false);
+    assert.equal(fixture.host.length + fixture.guest.length, 0);
+  }
+});
+
+test("RSVP-enabled event categories save all response choices and notify the host", async () => {
+  for (const category of ["Birthday", "Wedding", "Anniversary", "Baby Shower", "Bridal Shower", "Gender Reveal", "General", "Special Event", "Workshop", "Soccer", "Gymnastics", "Football", "Cheerleading", "Dance Ballet", "Sport Event"]) {
+    for (const response of ["yes", "no", "maybe"]) {
+      const fixture = setup({ eventData: { category, rsvpEnabled: true, ...(category === "Gender Reveal" ? { genderReveal: { guessesEnabled: false } } : {}) } });
+      assert.equal((await fixture.submit(response)).status, 200, `${category}: ${response}`);
+      assert.equal(fixture.host[0].response, response);
+      assert.equal(fixture.guest.length, response === "no" ? 0 : 1);
+    }
+  }
+});
+
 test("host notifications use owner account fallback only when no valid saved host email exists", async () => {
   for (const hostEmail of ["", "invalid"]) {
     const fixture = setup({ hostEmail });

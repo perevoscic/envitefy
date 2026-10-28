@@ -1,5 +1,6 @@
 import { buildEventPath } from "@/utils/event-url";
 import { isGenderRevealEventData, parseGenderRevealConfig } from "@/lib/gender-reveal";
+import { isRsvpExplicitlyDisabled } from "@/lib/event-rsvp-settings";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -21,6 +22,25 @@ export function withDirectRsvpInvitationData(args: {
   if (!args.row) return args.invitationData;
   const data = isRecord(args.row.data) ? args.row.data : {};
   const rsvp = isRecord(data.rsvp) ? data.rsvp : null;
+  // Classic invitations carry printed contacts while online collection stays disabled.
+  if (data.rsvpMode === "external" && data.primaryOutput === "digital_flyer") return args.invitationData;
+  if (isRsvpExplicitlyDisabled(data)) {
+    return {
+      ...args.invitationData,
+      eventDetails: {
+        ...(isRecord(args.invitationData.eventDetails) ? args.invitationData.eventDetails : {}),
+        rsvpEnabled: false,
+        rsvpMode: "none",
+        rsvpUrl: "",
+        rsvpContact: "",
+        actionVisibility: {
+          ...(isRecord(args.invitationData.eventDetails) && isRecord(args.invitationData.eventDetails.actionVisibility)
+            ? args.invitationData.eventDetails.actionVisibility : {}),
+          rsvp: false,
+        },
+      },
+    };
+  }
   const rsvpEnabled =
     data.rsvpEnabled === true ||
     rsvp?.isEnabled === true ||
@@ -45,8 +65,11 @@ export function withDirectRsvpInvitationData(args: {
       } : {}),
       eventId: args.row.id,
       rsvpEnabled: true,
+      actionVisibility: { ...(isRecord(eventDetails.actionVisibility) ? eventDetails.actionVisibility : {}), rsvp: true },
       rsvpMode: readFirstString(eventDetails.rsvpMode, "envitefy"),
-      rsvpName: readFirstString(eventDetails.rsvpName, data.rsvpName, data.hostName, "Host"),
+      rsvpName: typeof data.rsvpName === "string" ? data.rsvpName : readFirstString(eventDetails.rsvpName, data.hostName, "Host"),
+      rsvpContact: typeof data.rsvpContact === "string" ? data.rsvpContact : eventDetails.rsvpContact,
+      rsvpDeadline: typeof data.rsvpDeadline === "string" ? data.rsvpDeadline : readFirstString(rsvp?.deadline, eventDetails.rsvpDeadline),
       rsvpUrl: `${buildEventPath(
         args.row.id,
         args.title,

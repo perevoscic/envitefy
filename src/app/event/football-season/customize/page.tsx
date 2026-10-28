@@ -1,7 +1,11 @@
 // @ts-nocheck
 "use client";
 import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
+import EventEditorFontStyle from "@/components/events/EventEditorFontStyle";
 import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
+import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
+import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useCreationEditorHydration } from "@/components/events/useCreationEditorHydration";
 import { useEventHistoryClient } from "@/lib/event-history-client";
@@ -411,6 +415,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           setData((prev) => ({
             ...prev,
+          ...readEventRsvpContact(existing),
             title: json?.title || existing.title || prev.title,
             publicSlugInput: json?.public_slug || existing.publicSlug || "",
             guestPlanning: normalizeEventGuestPlanning(existing.guestPlanning),
@@ -709,9 +714,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           location: locationParts || undefined,
           venue: data.venue || undefined,
           description: data.details || undefined,
-          rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
+          rsvp: data.rsvpEnabled ? data.rsvpDeadline || "" : "",
           rsvpEnabled: data.rsvpEnabled,
-          rsvpDeadline: data.rsvpDeadline || undefined,
+          rsvpDeadline: data.rsvpDeadline,
           numberOfGuests: 0,
           templateId: config.slug,
           templateConfig: templateConfigForSave,
@@ -887,6 +892,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <MenuCard title="Design" desc="Page style, typography, and colors." icon={<Type size={18} />} onClick={() => setActiveView("design")} />
           {editor.urlEditor && <MenuCard title="Custom URL" desc="Choose your page's shareable web address." icon={<LinkIcon size={18} />} onClick={() => setActiveView("url")} />}
 
+          <MenuCard title="RSVP / Attendance" desc={data.rsvpEnabled ? "Enabled" : "Off"} icon={<Type size={18} />} onClick={() => setActiveView("rsvp")} />
           <MenuCard
             title="Passcode"
             desc="Require access code to view event."
@@ -975,6 +981,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderDesignEditor = () => (
       <EditorLayout title="Design" onBack={() => setActiveView("main")} showBack>
+        <EventEditorFontStyle />
         <div className="space-y-4">
           <ImportedThemeControls eventId={editEventId || editor.eventId} value={data.importedTheme} context={{ title: resolvedTitle, sport: "football", city: data.city, seed: editEventId || resolvedTitle }} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} />
           <TemplateSelector value={pageTemplateId} onChange={(id) => { setPageTemplateId(id); setData(prev => ({ ...prev, importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: false } : null })); }} />
@@ -1160,23 +1167,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderRsvpEditor = () => (
-      <EditorLayout title={rsvpCopy.editorTitle} onBack={() => setActiveView("main")} showBack>
+      <EventEditorRsvpSection title={rsvpCopy.editorTitle} toggleLabel={rsvpCopy.toggleLabel} enabled={data.rsvpEnabled} onEnabledChange={enabled => setData(previous => ({ ...previous, rsvpEnabled: enabled }))} onBack={() => setActiveView("main")}>
         <div className="space-y-6">
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <span className="font-medium text-slate-700 text-sm">{rsvpCopy.toggleLabel}</span>
-            <button
-              onClick={() => setData((p) => ({ ...p, rsvpEnabled: !p.rsvpEnabled }))}
-              className={`w-11 h-6 rounded-full transition-colors relative ${
-                data.rsvpEnabled ? "bg-indigo-600" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${
-                  data.rsvpEnabled ? "translate-x-5" : "translate-x-0"
-                }`}
-              ></span>
-            </button>
-          </div>
+
+
 
           <InputGroup
             label={rsvpCopy.deadlineLabel}
@@ -1186,11 +1180,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             placeholder="Set a deadline"
           />
 
+          <EventRsvpContactEditor value={data} onChange={(patch) => setData(previous => ({ ...previous, ...patch }))} />
+
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
             <strong>Preview:</strong> {rsvpCopy.helperText}
           </div>
         </div>
-      </EditorLayout>
+      </EventEditorRsvpSection>
     );
 
     const renderPasscodeEditor = () => (
@@ -1366,8 +1362,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (activeView === "main" || activeView === "images") return false;
         setActiveView("main");
         return true;
-      }} notices={creationError ? <p role="alert">{creationError}</p> : undefined} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, "section": renderSectionEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/football-season"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
- customUrlMenu={false}
+      }} customUrlMenu={false} notices={creationError ? <p role="alert">{creationError}</p> : undefined} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, "section": renderSectionEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/football-season"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
+
  preview={<EventCanvas
             className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
             style={{

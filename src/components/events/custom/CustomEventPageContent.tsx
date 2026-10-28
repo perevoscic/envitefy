@@ -191,6 +191,8 @@ export default function CustomEventPageContent({
           eventId={eventId}
           eventTitle={d.title}
           eventCategory={CUSTOM_EVENT_CATEGORIES[page.category]}
+          rsvpDeadline={d.rsvpDeadline}
+          rsvpName={d.rsvpName}
           rsvpEmail={d.rsvpEmail}
           rsvpPhone={d.rsvpPhone}
           shareUrl={shareUrl}

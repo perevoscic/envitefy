@@ -2482,6 +2482,16 @@ h5 {
   }
 }
 
+.owner-edit-disabled:disabled,
+html.dark button.owner-edit-disabled:disabled,
+.owner-workspace-glass fieldset:disabled button:disabled {
+  color: #94a3b8;
+  background: #334155;
+  border-color: #475569;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 /* In-page #anchors: scroll target clears fixed HeroTopNav (shared by /landing, /snap, /gymnastics) */
 .hash-anchor-below-fixed-nav {
   scroll-margin-top: max(6.5rem, calc(env(safe-area-inset-top) + 5.5rem));

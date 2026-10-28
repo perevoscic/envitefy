@@ -13,6 +13,8 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import OwnerRsvpEditor from "@/components/OwnerRsvpEditor";
+import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import { useEffect, useMemo, useState } from "react";
 import appearance from "./event-manage-appearance.module.css";
 import type {
@@ -658,6 +660,8 @@ export default function EventManageClient({
                     </div>
                   ))}
                 </dl>
+
+                {canShowOwnerRsvpDashboard(eventData) && <OwnerRsvpEditor eventId={eventId} eventData={eventData} />}
 
                 {missingDetails.length ? (
                   <div className="rounded-[1.2rem] border border-amber-100 bg-amber-50 p-4 text-sm text-amber-900">

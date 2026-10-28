@@ -64,6 +64,8 @@ test("guests use the native workspace without marketing navigation and retain ed
           const url = new URL(request.url());
           if (url.origin !== base) return route.abort();
           if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: script });
+          const chunkFile = path.join(output, path.basename(url.pathname));
+          if (url.pathname.endsWith(".js") && fs.existsSync(chunkFile)) return route.fulfill({ contentType: "text/javascript", body: fs.readFileSync(chunkFile) });
           if (url.pathname.startsWith("/api/")) {
             if (request.method() !== "GET") {
               const payload = request.postDataJSON();
@@ -186,6 +188,8 @@ test("guest Cancel sits before Preview and returns to its template gallery with 
             const url = new URL(request.url());
             if (url.origin !== base) return route.abort();
             if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: script });
+            const chunkFile = path.join(output, path.basename(url.pathname));
+            if (url.pathname.endsWith(".js") && fs.existsSync(chunkFile)) return route.fulfill({ contentType: "text/javascript", body: fs.readFileSync(chunkFile) });
             if (url.pathname.startsWith("/api/")) {
               if (request.method() !== "GET") writes.push({ pathname: url.pathname, method: request.method() });
               return route.fulfill({ json: { people: [], recipients: [], events: [] } });
@@ -265,6 +269,7 @@ test("guest Cancel sits before Preview and returns to its template gallery with 
             await progress.getByRole("button", { name: "Keep editing", exact: true }).click();
             await progress.waitFor({ state: "hidden" });
             assert.equal(await titleField.inputValue(), title, "Keep editing retains the edited title");
+            await page.waitForFunction(() => document.activeElement?.textContent?.trim() === "Cancel");
             assert.equal(await cancel.evaluate((element) => document.activeElement === element), true, "Keep editing restores focus to Cancel");
 
             await page.getByRole("button", { name: "Preview", exact: true }).click();
@@ -321,6 +326,8 @@ test("guest account and sign-in publishing resumes the native editor action exac
           const url = new URL(request.url());
           if (url.origin !== base) return route.abort();
           if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: script });
+          const chunkFile = path.join(output, path.basename(url.pathname));
+          if (url.pathname.endsWith(".js") && fs.existsSync(chunkFile)) return route.fulfill({ contentType: "text/javascript", body: fs.readFileSync(chunkFile) });
           if (url.pathname.startsWith("/api/")) {
             if (request.method() !== "GET") {
               const payload = request.postDataJSON();

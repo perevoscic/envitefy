@@ -307,3 +307,31 @@ test("signature wedding bodies retain the hero and expose native sections with s
     );
   }
 });
+
+test("title font choices validate, persist separately from native settings and never replace the body", () => {
+  const { hasEventPageBodyComposition } = require("./event-page-composition.ts");
+  const { EVENT_TITLE_FONTS } = require("./event-title-font.ts");
+  const Typography = require("../components/events/EventPageTypography.tsx").default;
+  for (const font of EVENT_TITLE_FONTS) {
+    const value = normalizeEventPageComposition({ version: 1, sections: [], titleFont: font.id });
+    assert.equal(value.titleFont, font.id);
+    assert.equal(hasEventPageBodyComposition(value), false, "a title choice cannot opt an old event into a different body");
+    const snapshot = { data: { childName: "Original name", theme: { font: "original-font" }, rsvp: { isEnabled: false, deadline: "" } }, pageComposition: value };
+    const draft = buildTemplateDraftPayload(snapshot, "birthdays", "America/Chicago");
+    assert.equal(draft.data.eventPageComposition.titleFont, font.id);
+    assert.equal(draft.data.theme.font, "original-font", "existing font preferences survive the shared override");
+    const html = renderToStaticMarkup(h(EventPageCompositionProvider, { value }, h(Typography, {}, h("h1", {}, "Host’s title"), h("p", {}, "Original body"))));
+    assert.ok(html.includes(`data-event-title-font="${font.id}"`));
+    assert.ok(html.includes("Host’s title") && html.includes("Original body"));
+  }
+  for (const invalid of ["", "unknown", "url(https://bad.test/font)", null, {}]) {
+    assert.equal(normalizeEventPageComposition({ version: 1, sections: [], titleFont: invalid }), undefined);
+  }
+  const retained = normalizeEventPageComposition({ ...composition, titleFont: undefined });
+  assert.deepEqual(retained, composition, "clearing typography preserves layout, sections and hidden content");
+});
+
+test("explicit composition reset clears stale saved font and layout preferences", () => {
+  const draft = buildTemplateDraftPayload({ data: { childName: "Original name" }, pageComposition: null }, "birthdays", "America/Chicago");
+  assert.equal(draft.data.eventPageComposition, null);
+});

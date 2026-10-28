@@ -18,7 +18,7 @@ import { buildGymnasticsEventDateTimes } from "../gymnastics-event-dates";
 export function creationNativePayload(payload: EventEditorPayload, snapshot: object): EventEditorPayload {
   const data = object(object(snapshot).data);
   const facts: Record<string, DraftValue | undefined> = {};
-  for (const key of ["rsvpPhone", "rsvpEmail", "hostName"]) if (typeof data[key] === "string") facts[key] = data[key];
+  for (const key of ["rsvpName", "rsvpPhone", "rsvpEmail", "hostName"]) if (typeof data[key] === "string") facts[key] = data[key];
   if (typeof data.timezone === "string" && data.timezone && typeof data.date === "string" && data.date) {
     const gymnastics = String(payload.data.category || "").toLowerCase() === "gymnastics";
     const dates = gymnastics ? buildGymnasticsEventDateTimes(data) : null;

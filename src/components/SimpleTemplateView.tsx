@@ -1,5 +1,7 @@
 // @ts-nocheck
 "use client";
+import EventRsvpContactDetails from "@/components/events/EventRsvpContactDetails";
+import { readEventRsvpSettings } from "@/lib/event-rsvp-settings";
 import SchoolMemoIssueDate from "@/components/SchoolMemoIssueDate";
 
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
@@ -647,7 +649,7 @@ export default function SimpleTemplateView({
   const description = currentData?.description || currentData?.eventDetails?.notes || "";
   const customFields = currentData?.customFields || {};
   const advancedSections = currentData?.advancedSections || customFields?.advancedSections || {};
-  const rsvpEnabled = currentData?.rsvpEnabled ?? Boolean(currentData?.rsvp);
+  const rsvpEnabled = readEventRsvpSettings(currentData, Boolean(currentData?.rsvp)).isEnabled;
   const rsvpDeadline =
     currentData?.rsvpDeadline ||
     (typeof currentData?.rsvp === "string" ? currentData.rsvp : "") ||
@@ -5058,6 +5060,7 @@ export default function SimpleTemplateView({
                   <h2 className={`text-2xl mb-6 ${accentClass}`} style={headingStyle}>
                     {rsvpCopy.editorTitle || "RSVP"}
                   </h2>
+                  <EventRsvpContactDetails value={currentData} />
                   <div className="bg-white/5 border border-white/10 p-8 md:p-10 rounded-xl text-left">
                     {!rsvpSubmitted ? (
                       <div className="space-y-6">

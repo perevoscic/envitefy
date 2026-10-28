@@ -328,6 +328,17 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(await page.getByText(/Optional wording corrections are available|Your design is ready/).count(), 0, `${context}: no optional correction or design-ready copy remains`);
   };
   try {
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${origin}/live-cards?publishComplete=1`);
+      const complete = page.locator('[data-publish-progress="opening"]');
+      await complete.waitFor();
+      assert.equal(await complete.getByRole("progressbar").count(), 0, "published cards show no ongoing save or generation");
+      assert.equal(await complete.getByRole("button").count(), 0, "completed publication cannot be canceled");
+      assert.match(await complete.innerText(), /Your Live Card is published\./);
+      assert.doesNotMatch(await complete.innerText(), /We’re updating|Keep this page open/);
+    }
+    await page.setViewportSize({ width: 1440, height: 1080 });
     await page.goto(`${origin}/live-cards`);
     assert.equal(await page.getByRole("group", { name: "Invitation format" }).count(), 0);
     assert.equal(await page.getByText(/LIVE CARDS & INVITES|both versions|Two beautiful ways/).count(), 0);
@@ -350,13 +361,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(await page.getByLabel("Occasion (optional)", { exact: true }).getAttribute("required"), null);
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     await page.getByLabel("Event date", { exact: true }).waitFor();
-    const customUrlButton = page.getByRole("button", { name: "Custom URL", exact: true });
-    assert.equal(await page.locator("header").getByRole("button", { name: "Custom URL", exact: true }).count(), 0, "the header does not contain URL settings");
-    assert.equal(await page.locator("form").getByRole("button", { name: "Custom URL", exact: true }).isVisible(), true, "URL settings belong to Event details");
-    await customUrlButton.click();
-    await page.getByText("Save a draft to create your URL, then customize it here before sharing.", { exact: true }).waitFor();
-    await page.getByRole("button", { name: "Close custom URL", exact: true }).click();
-    assert.equal(await customUrlButton.evaluate((button) => document.activeElement === button), true, "closing URL settings returns focus to its details trigger");
+    assert.equal(await page.getByRole("button", { name: "Custom URL", exact: true }).count(), 0, "Custom URL is hidden in Event details");
     assert.equal(await page.getByRole("tab", { name: "When & Where", exact: true }).getAttribute("aria-selected"), "true", "logistics remain reachable before choosing title or style");
     await page.getByLabel("Event date", { exact: true }).fill("2027-03-14");
     assert.equal(generations.length, 0);
@@ -534,7 +539,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     }
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.setViewportSize({ width: 1440, height: 1080 });
-    assert.equal(await page.getByRole("button", { name: "Review invitation", exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "Publish invitation", exact: true }).isDisabled(), true);
     assert.equal(await page.getByRole("button", { name: "3 Review", exact: true }).isDisabled(), true);
     // Returning to Your card while the request runs must not start a duplicate job.
     await page.getByRole("button", { name: "1 Your card", exact: true }).click();
@@ -591,7 +596,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
       await page.getByRole("tab", { name: "When & Where", exact: true }).getAttribute("aria-selected"),
       "true",
     );
-    await page.getByLabel("Event date", { exact: true }).fill("2026-10-04");
+    await page.getByLabel("Event date", { exact: true }).fill("2099-10-04");
     await page.getByLabel("Start time", { exact: true }).fill("18:00");
     await page.getByLabel("End time (optional)", { exact: true }).fill("21:00");
     assert.equal(await page.getByRole("button", { name: "Find", exact: true }).count(), 0);
@@ -616,7 +621,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
       phone.compareDocumentPosition(document.getElementById("livecard-hostEmail")) & Node.DOCUMENT_POSITION_FOLLOWING
     )), "host phone appears before optional email");
     await page.getByLabel("Host email (optional)").fill("mia@example.com");
-    await page.getByLabel("Reply by (optional)", { exact: true }).fill("2026-10-01");
+    await page.getByLabel("Reply by (optional)", { exact: true }).fill("2099-10-01");
     await openSection("Registry");
     await page.getByRole("switch", { name: /registry or gift list/ }).click();
     await page.getByLabel("Registry or gift-list link").fill("https://example.com/gifts");
@@ -641,8 +646,8 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.ok(eyeBounds.x + eyeBounds.width <= cardBounds.x + cardBounds.width && eyeBounds.x > cardBounds.x + cardBounds.width / 2 && eyeBounds.y < cardBounds.y + 24, "the eye button sits inside the top-right corner");
     await openSection("Message");
     assert.equal((await readCardText()).title, "Livia's Movie Night");
-    assert.equal(await page.getByRole("button", { name: "Review invitation", exact: true }).isEnabled(), true, "entering event details during generation does not invalidate artwork");
-    assert.equal(await page.getByRole("button", { name: "Publish invitation", exact: true }).count(), 0, "publication is offered only in Review");
+    assert.equal(await page.getByRole("button", { name: "Publish invitation", exact: true }).isEnabled(), true, "entering event details during generation does not invalidate artwork");
+    assert.equal(await page.getByRole("button", { name: "Publish invitation", exact: true }).count(), 1, "publication is offered directly from Event details");
     await checkSaveActionGeometry(page.getByRole("complementary", { name: "Artwork preview" }), "Save and publish", "desktop Event details");
     assert.equal(
       await page.getByLabel("Message to guests (optional)").inputValue(),
@@ -680,7 +685,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
       await earlyPreview.evaluate((surface) => Promise.allSettled(surface.getAnimations().map((animation) => animation.finished)));
       const bounds = await earlyPreview.locator("[data-live-card-artwork]").boundingBox();
       assert.ok(bounds && bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= viewport.width && bounds.y + bounds.height <= viewport.height, "completed artwork fits phone previews");
-      for (const name of ["Save draft", "Review invitation", "Close preview"]) {
+      for (const name of ["Save draft", "Publish invitation", "Close preview"]) {
         const control = await earlyPreview.getByRole("button", { name, exact: true }).boundingBox();
         assert.ok(control && control.y >= 0 && control.y + control.height <= viewport.height, `${name} stays visible with the temporary lettering notice`);
       }
@@ -762,7 +767,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     await openSection("When & Where");
     await page.getByLabel("Venue name", { exact: true }).fill("Unavailable venue");
     const savesBeforeLocationFailure = saves.length;
-    await page.getByRole("button", { name: "Review invitation", exact: true }).click();
+    await page.getByRole("button", { name: "Publish invitation", exact: true }).click();
     await page.getByText("Confirm the highlighted location before publishing. Your other details are still here.", { exact: true }).waitFor();
     assert.equal(await page.locator("[data-publish-progress]").count(), 0, "location failures close progress and return to the relevant form");
     assert.equal(saves.length, savesBeforeLocationFailure, "location failure cannot publish");
@@ -855,7 +860,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(saves.length, savedBeforeProofreading, "automatic proofreading never saves or publishes");
     const reviewDetails = page.getByRole("region", { name: "Review details", exact: true });
     const allEnteredDetails = await reviewDetails.innerText();
-    for (const value of ["Oct 4, 2026", "6:00 PM", "9:00 PM", "America/Chicago"]) {
+    for (const value of ["Oct 4, 2099", "6:00 PM", "9:00 PM", "America/Chicago"]) {
       assert.ok(allEnteredDetails.includes(value), `Review shows the event-local schedule despite a Tokyo browser: ${value}`);
     }
     for (const value of [
@@ -871,7 +876,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(await reviewDetails.getByRole("region", { name: "Published card address", exact: true }).count(), 0, "Review omits the public card address");
     assert.doesNotMatch(allEnteredDetails, /Pink movie night with popcorn and stars|Describe the look|Card address/, "Review keeps design configuration and card address out of its summary");
     assert.match(allEnteredDetails, /8:15 PM/, "Review includes each additional location's entered local time");
-    assert.match(allEnteredDetails, /Oct 1, 2026|October 1, 2026/, "Review includes the RSVP reply deadline");
+    assert.match(allEnteredDetails, /Oct 1, 2099|October 1, 2099/, "Review includes the RSVP reply deadline");
     assert.equal(await page.getByText("Card text needs updating", { exact: true }).count(), 0, "finished lettering has no temporary-font notice");
     assert.equal(await page.getByLabel("Live card share link").count(), 0);
     await page.waitForFunction(() => document.activeElement?.textContent === "Review your invitation");
@@ -937,16 +942,14 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(await page.locator("[data-publish-progress]").count(), 0, "failed saves close progress");
     assert.equal(stored.data.status, "draft");
     failSave = false;
-    await draftReviewActions.getByRole("button", { name: "Publish invitation", exact: true }).click();
-    await page.getByText("Your Live Card is published. It's ready to share.", { exact: true }).waitFor();
-    assert.equal(await draftMobileReview.count(), 0, "publishing from the summary does not open the card preview");
-    assert.equal(await page.getByRole("region", { name: "Published card address", exact: true }).count(), 0, "publishing does not add a Card address section to Review");
-    assert.equal(await page.getByRole("status").filter({ hasText: "No changes to save." }).isVisible(), true, "successful publication explains why Save changes is disabled");
-    assert.equal(await page.getByRole("button", { name: /^(Invite co-host|Manage access)$/ }).count(), 0, "publication keeps co-host access in the owner workspace rather than the builder");
-    assert.equal(await page.getByRole("button", { name: "Custom URL", exact: true }).count(), 0, "Review keeps URL settings in Event details");
-    assert.equal(await page.getByRole("button", { name: "Copy guest link", exact: true }).count(), 0, "published cards keep link access in Share");
+    await page.setViewportSize({ width: 1440, height: 1080 });
+    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
+    await page.getByRole("button", { name: "Publish invitation", exact: true }).click();
+    await page.getByRole("heading", { name: "Owner dashboard", exact: true }).waitFor();
+    assert.equal(new URL(page.url()).searchParams.get("tab"), "dashboard");
+    assert.equal(new URL(page.url()).searchParams.get("published"), "1");
     assert.equal(stored.data.description, "A movie and dinner with freinds.\n\nBring a jacket.", "publishing retains confirmed wording and collapsed instructions");
-    assert.equal(stored.data.startISO, "2026-10-04T23:00:00.000Z");
+    assert.equal(stored.data.startISO, "2099-10-04T23:00:00.000Z");
     assert.equal(stored.data.additionalLocations[0].label, "Dinner");
     assert.equal(stored.data.studioCard.invitationData.eventDetails.actionVisibility.rsvp, true);
     assert.equal(generations.length, 1, "editing guest details and publishing reuse the artwork");
@@ -961,7 +964,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(await page.getByRole("button", { name: /^(Invite co-host|Manage access)$/ }).count(), 0, "reopening a published card does not restore co-host controls to the builder");
     assert.equal(await page.getByRole("button", { name: "Cancel", exact: true }).count(), 0, "published cards omit the footer Cancel action");
     assert.equal(await page.getByRole("button", { name: "Close editor", exact: true }).isEnabled(), true, "the card has a close action instead");
-    assert.equal(await page.getByRole("group", { name: "Save changes", exact: true }).getByRole("button").count(), 1, "published cards have one footer action");
+    assert.equal(await page.getByRole("group", { name: "Save changes", exact: true }).getByRole("button").count(), 2, "published cards pair Cancel with Save changes");
     assert.equal(await page.getByRole("status").filter({ hasText: "No changes to save." }).isVisible(), true, "reopening a clean published card explains its disabled Save changes action");
 
     await shareButton.click();
@@ -970,7 +973,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(new URL(shared.url).origin, "https://envitefy.com");
     assert.ok(shared.url.includes("movie-night"), "share uses the saved public slug");
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();
-    assert.equal(await page.locator("form").getByRole("button", { name: "Custom URL", exact: true }).isVisible(), true, "saved cards customize their URL in Event details");
+    assert.equal(await page.getByRole("button", { name: "Custom URL", exact: true }).count(), 0, "Custom URL stays hidden for saved cards");
     await openSection("Message");
     await page.getByRole("button", { name: "Message to guests (optional)", exact: true }).click();
     await page.getByLabel("Message to guests (optional)").waitFor();
@@ -1068,6 +1071,9 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     for (const viewport of [{ width: 1440, height: 1080 }, { width: 390, height: 844 }, { width: 320, height: 740 }, { width: 844, height: 390 }]) {
       await page.setViewportSize(viewport);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "generation and recovery controls fit portrait and landscape");
+      assert.equal(await page.getByRole("button", { name: "Cancel generation", exact: true }).count(), 1, "one generation cancel action at every viewport");
+      assert.equal(await preparingRegion.getByRole("button", { name: "Cancel", exact: true }).count(), 0, "no duplicate preparation cancel");
+      assert.doesNotMatch(await page.locator("body").innerText(), /· attempt \d|seconds elapsed|· started/);
     }
     await page.getByRole("button", { name: "Cancel generation", exact: true }).click();
     await page.getByText("Cancellation requested. Provider execution status unknown.", { exact: true }).waitFor();
@@ -1110,7 +1116,8 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(await page.getByLabel("Message to guests (optional)").inputValue(), "Updated welcome");
     failGeneration = false;
     await page.getByRole("button", { name: "Retry design", exact: true }).click();
-    await page.getByRole("region", { name: "Artwork job status", exact: true }).getByRole("status").filter({ hasText: /^Ready to review/ }).waitFor();
+    await page.getByRole("button", { name: "Cancel generation", exact: true }).waitFor({ state: "hidden" });
+    assert.equal(await page.getByRole("region", { name: "Artwork job status", exact: true }).count(), 0, "completed artwork hides progress controls");
     await page.getByRole("button", { name: "2 Event details", exact: true }).click();
     // Live Card creation reuses the background; only download composes the invitation text.
     const generationCount = generations.length;
@@ -1434,12 +1441,18 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(wordingRequests.length, checksBeforeDownload, "unchanged wording reuses the completed check for the other output");
     assert.equal(saves.length, savesBeforeAutomaticCleanup, "cleanup and downloads remain in memory");
     assert.equal(generations.length, generationsBeforeAutomaticCleanup, "cleanup never regenerates artwork");
+    const cancelEditingButton = page.getByRole("button", { name: "Cancel editing", exact: true });
+    for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1080 }]) {
+      await page.setViewportSize(viewport);
+      const cancelBounds = await cancelEditingButton.boundingBox();
+      assert.ok(cancelBounds && cancelBounds.x >= 0 && cancelBounds.x + cancelBounds.width <= viewport.width && cancelBounds.width >= 44 && cancelBounds.height >= 44, "Cancel stays reachable beside Save changes on phone and desktop");
+    }
     const savedBeforeCancel = JSON.stringify(stored);
     await page.getByRole("button", { name: "Close review", exact: true }).click();
     assert.equal(await page.getByRole("button", { name: "2 Event details", exact: true }).getAttribute("aria-current"), "step", "the inline Review X returns to Event details");
-    await page.getByRole("button", { name: "Close editor", exact: true }).click();
+    await page.getByRole("button", { name: "Cancel editing", exact: true }).click();
     await page.getByRole("button", { name: "Keep editing", exact: true }).click();
-    await page.getByRole("button", { name: "Close editor", exact: true }).click();
+    await page.getByRole("button", { name: "Cancel editing", exact: true }).click();
     await page.getByRole("button", { name: "Discard and leave", exact: true }).click();
     await page.getByRole("heading", { name: "Owner dashboard", exact: true }).waitFor();
     assert.equal(new URL(page.url()).searchParams.get("tab"), "dashboard");
@@ -1447,7 +1460,7 @@ test("Live Card: location retries, explicit saves, invitation download and respo
     assert.equal(saves.length, savesBeforeAutomaticCleanup);
     await page.setViewportSize({ width: 1440, height: 1080 });
     await page.goto(`${origin}/live-cards?edit=${stored.id}`);
-    await page.getByRole("button", { name: "Close editor", exact: true }).click();
+    await page.getByRole("button", { name: "Cancel editing", exact: true }).click();
     await page.getByRole("heading", { name: "Owner dashboard", exact: true }).waitFor();
     assert.equal(saves.length, savesBeforeAutomaticCleanup, "closing a clean editor does not save");
     await page.setViewportSize({ width: 320, height: 740 });

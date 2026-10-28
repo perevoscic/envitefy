@@ -4,7 +4,13 @@ import * as Dialog from "@radix-ui/react-dialog";
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowUpRight,
+  CalendarDays,
+  Clock3,
+  MapPin,
+  Send,
   CheckCircle2,
+  Copy,
   Eye,
   LayoutDashboard,
   Link2,
@@ -20,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { isPastEvent } from "@/lib/event-edit-lock";
 import { useRouter } from "next/navigation";
 import { type CSSProperties, type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
@@ -104,18 +111,22 @@ type OwnerWorkspaceTabConfig = {
   key: EventContextTab;
   label: string;
   icon: LucideIcon;
-  labelWidth: number;
-  tabWidth: number;
 };
 
 const OWNER_WORKSPACE_TABS: OwnerWorkspaceTabConfig[] = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, labelWidth: 78, tabWidth: 122 },
-  { key: "rsvps", label: "RSVPs", icon: Users, labelWidth: 50, tabWidth: 94 },
-  { key: "messages", label: "Messages", icon: MessageSquare, labelWidth: 76, tabWidth: 120 },
-  { key: "design", label: "Design", icon: Palette, labelWidth: 54, tabWidth: 98 },
+  { key: "dashboard", label: "Overview", icon: LayoutDashboard },
+  { key: "rsvps", label: "Guests", icon: Users },
+  { key: "messages", label: "Messages", icon: MessageSquare },
+  { key: "design", label: "Invitation", icon: Palette },
 ];
 
-const OWNER_TAB_COMPACT_WIDTH = 44;
+function OwnerEditLink({ href, disabled, className, children, ...props }: {
+  href: string; disabled: boolean; className?: string; children: ReactNode;
+  "aria-label"?: string; title?: string;
+}) {
+  return disabled ? <button type="button" disabled className={`${className || ""} owner-edit-disabled`} {...props} title="Past event">{children}</button>
+    : <Link href={href} className={className} {...props}>{children}</Link>;
+}
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -407,7 +418,7 @@ function buildFallbackInvitationData(
       detailsDescription: description,
       rsvpEnabled: data.rsvpEnabled === true || rsvp?.isEnabled === true || rsvp?.enabled === true,
       rsvpMode: firstString(rsvp?.mode) || "envitefy",
-      rsvpName: firstString(data.rsvpName, rsvp?.name),
+      rsvpName: typeof data.rsvpName === "string" ? data.rsvpName.trim() : firstString(rsvp?.name),
       rsvpContact: firstString(data.rsvpContact, rsvp?.contact),
       rsvpDeadline: firstString(data.rsvpDeadline, rsvp?.deadline),
       registryLink:
@@ -727,6 +738,7 @@ export default function EventOwnerTools({
     setSelectedEventEditHref,
     setActiveEventTab,
   } = useSidebar();
+  const editLocked = isPastEvent(eventData);
   const ownerHref = eventOwnerHref || `/event/${encodeURIComponent(eventId)}`;
   const resolvedEditHref = useMemo(
     () => resolveOwnerEditHref(eventId, eventData, eventTitle, ownerHref),
@@ -758,8 +770,8 @@ export default function EventOwnerTools({
   const measuredArtworkRatio = useArtworkAspectRatio(effectivePreview.imageUrl, 2 / 3);
   const artworkRatio = effectivePreview.invitationData?.sharedDesign ? 2 / 3 : measuredArtworkRatio;
   const rsvpEnabled = hasActionableRsvp(eventData, numberOfGuests);
-  const isGuidedCard = eventData?.createdVia === "livecard-builder";
   const [justPublished, setJustPublished] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("published") !== "1") return;
     setJustPublished(true);
@@ -786,18 +798,11 @@ export default function EventOwnerTools({
     publicUrlOverride,
   ]);
   const publicSlug = useMemo(
-    () => firstString(eventData?.publicSlug, eventData?.public_slug, readSlugFromHref(publicUrl)),
-    [eventData, publicUrl],
+    () => publicUrlOverride ? readSlugFromHref(publicUrlOverride) : firstString(eventData?.publicSlug, eventData?.public_slug, readSlugFromHref(publicUrl)),
+    [eventData, publicUrl, publicUrlOverride],
   );
-  const activeOwnerTab: EventContextTab =
-    rsvpEnabled || initialTab === "design" || (isGuidedCard && initialTab === "dashboard") ? initialTab : "design";
-  const ownerWorkspaceTabs = useMemo(
-    () =>
-      rsvpEnabled
-        ? OWNER_WORKSPACE_TABS
-        : OWNER_WORKSPACE_TABS.filter((tab) => tab.key === "design" || (isGuidedCard && tab.key === "dashboard")),
-    [rsvpEnabled, isGuidedCard],
-  );
+  const activeOwnerTab: EventContextTab = initialTab;
+  const ownerWorkspaceTabs = OWNER_WORKSPACE_TABS;
   const ownerReturnHref = buildOwnerTabHref(ownerHref, eventId, activeOwnerTab);
   const embeddedPreviewHref = buildOwnerEmbeddedPreviewHref(publicUrl, ownerReturnHref);
   const currentProduct = savedProductOverride?.preview
@@ -829,7 +834,7 @@ export default function EventOwnerTools({
     setSelectedEventTitle(currentEventTitle || "Untitled event");
     setSelectedEventHref(publicUrl);
     setSelectedEventOwnerHref(ownerHref);
-    setSelectedEventEditHref(primaryEditHref);
+    setSelectedEventEditHref(editLocked ? null : primaryEditHref);
     setActiveEventTab(activeOwnerTab);
   }, [
     activeOwnerTab,
@@ -844,12 +849,14 @@ export default function EventOwnerTools({
     setSelectedEventId,
     setSelectedEventOwnerHref,
     setSelectedEventTitle,
+    editLocked,
   ]);
 
   async function copyPublicLink() {
     const url = absoluteBrowserUrl(publicUrl);
     try {
       await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
     } catch {
       window.prompt("Copy your event link:", url);
     }
@@ -882,19 +889,17 @@ export default function EventOwnerTools({
     <main
       {...previewSwipe}
       data-owner-card-swipe={hasCardPreview ? "true" : undefined}
-      className={`${ownerStyles.swipeSurface} min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5`}
+      className={`${ownerStyles.workspace} ${ownerStyles.swipeSurface} min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 dark:text-slate-100 sm:px-6 lg:px-8 lg:py-5`}
     >
       <div
         className={`${effectivePreview.surface === "studio-card" ? ownerStyles.cardWorkspace : ""} mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]`}
         style={{ "--owner-artwork-ratio": artworkRatio } as CSSProperties}
       >
-        <section className="min-w-0 space-y-3 sm:space-y-4">
+        <section className={`${ownerStyles.content} min-w-0 space-y-3 sm:space-y-4`}>
           {justPublished && (
             <div className="rounded-xl bg-emerald-50 px-4 py-3 text-emerald-900">
               <p role="status" className="text-sm font-semibold">Published. Your invitation is ready to share.</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => void copyPublicLink()} className="min-h-11 rounded-lg bg-white px-3 text-sm font-semibold">Copy guest link</button>
-                <button type="button" onClick={() => void sharePublicLink()} className="min-h-11 rounded-lg bg-white px-3 text-sm font-semibold">Share invitation</button>
                 <button type="button" onClick={() => {
                   setJustPublished(false);
                   const url = new URL(window.location.href);
@@ -905,6 +910,7 @@ export default function EventOwnerTools({
             </div>
           )}
           <OwnerWorkspaceHeader
+            editLocked={editLocked}
             eventId={eventId}
             isOwner={isOwner}
             canManageAccess={canManageAccess}
@@ -930,8 +936,13 @@ export default function EventOwnerTools({
               tabs={ownerWorkspaceTabs}
             />
           ) : null}
-          {isOwner && (activeOwnerTab === "design" || (isGuidedCard && activeOwnerTab === "dashboard")) ? (
+          {activeOwnerTab === "design" ? (
             <OwnerPublicLinkPanel
+              key={eventId}
+              linkCopied={linkCopied}
+              onCopy={copyPublicLink}
+              onCopiedChange={setLinkCopied}
+              editLocked={editLocked || !isOwner}
               eventId={eventId}
               activeTab={activeOwnerTab}
               publicSlug={publicSlug}
@@ -940,6 +951,7 @@ export default function EventOwnerTools({
             />
           ) : null}
           <OwnerTabContent
+            ownerHref={ownerHref}
             activeTab={activeOwnerTab}
             eventId={eventId}
             eventTitle={currentEventTitle}
@@ -983,7 +995,7 @@ export default function EventOwnerTools({
             ? "Review your changes before saving."
             : "The saved version your guests can open."
         }
-        returnLabel={activeOwnerTab === "design" ? "Back to editing" : "Back to dashboard"}
+        returnLabel={activeOwnerTab === "design" ? "Back to invitation" : "Back to overview"}
         eventId={eventId}
         eventTitle={
           productViewerMode === "changes"
@@ -1018,71 +1030,23 @@ function OwnerWorkspaceTabs({
   tabs: OwnerWorkspaceTabConfig[];
 }) {
   return (
-    <nav
-      className="owner-workspace-glass relative w-full overflow-hidden rounded-[22px] border border-white/75 bg-white/92 p-1.5 shadow-[0_16px_42px_rgba(79,70,128,0.10)] backdrop-blur-xl"
-      aria-label="Owner workspace sections"
-    >
-      <div
-        className="flex w-full items-center justify-between gap-1 sm:hidden"
-        role="tablist"
-        aria-label="Owner workspace sections"
-      >
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          return (
-            <Link
-              key={tab.key}
-              href={buildOwnerTabHref(ownerHref, eventId, tab.key)}
-              role="tab"
-              aria-label={tab.label}
-              aria-selected={isActive}
-              className={`inline-flex min-h-11 shrink-0 items-center justify-center overflow-hidden rounded-[16px] px-3 text-[0.72rem] font-black uppercase tracking-[0.12em] transition-[width,background-color,color,box-shadow] duration-300 ease-out ${
-                isActive
-                  ? "bg-slate-950 text-white shadow-[0_12px_24px_rgba(15,23,42,0.18)]"
-                  : "text-slate-400 hover:bg-slate-50 hover:text-slate-700"
-              }`}
-              style={{ width: `${isActive ? tab.tabWidth : OWNER_TAB_COMPACT_WIDTH}px` }}
-            >
-              <Icon size={16} strokeWidth={2} aria-hidden="true" />
-              <span
-                className={`overflow-hidden whitespace-nowrap transition-[width,opacity,margin-left] duration-300 ease-out ${
-                  isActive ? "ml-2 opacity-100" : "ml-0 opacity-0"
-                }`}
-                style={{ width: `${isActive ? tab.labelWidth : 0}px` }}
-              >
-                {tab.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-      <div
-        className="hidden w-full grid-cols-4 gap-1 sm:grid"
-        role="tablist"
-        aria-label="Owner workspace sections"
-      >
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          return (
-            <Link
-              key={tab.key}
-              href={buildOwnerTabHref(ownerHref, eventId, tab.key)}
-              role="tab"
-              aria-selected={isActive}
-              className={`inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-[16px] px-3 text-[0.72rem] font-black uppercase tracking-[0.12em] transition ${
-                isActive
-                  ? "bg-slate-950 text-white shadow-[0_12px_24px_rgba(15,23,42,0.18)]"
-                  : "text-slate-400 hover:bg-slate-50 hover:text-slate-700"
-              }`}
-            >
-              <Icon size={16} strokeWidth={2} aria-hidden="true" />
-              <span className="truncate">{tab.label}</span>
-            </Link>
-          );
-        })}
-      </div>
+    <nav className={ownerStyles.tabs} aria-label="Owner workspace sections">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = activeTab === tab.key;
+        return (
+          <Link
+            key={tab.key}
+            href={buildOwnerTabHref(ownerHref, eventId, tab.key)}
+            aria-label={tab.label}
+            aria-current={isActive ? "page" : undefined}
+            className={ownerStyles.tab}
+          >
+            <Icon size={17} strokeWidth={1.8} aria-hidden="true" />
+            <span>{tab.label}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }
@@ -1160,7 +1124,7 @@ function EventProductPreview({
             />
           </div>
         ) : (
-          <div className="flex h-full w-auto max-w-full flex-col justify-between rounded-[28px] border border-slate-200 bg-gradient-to-b from-white via-violet-50 to-slate-100 p-5 text-slate-950 shadow-2xl">
+          <div className="flex h-full w-auto max-w-full flex-col justify-between rounded-[28px] border border-slate-200 bg-gradient-to-b from-white via-violet-50 to-slate-100 p-5 text-slate-950 dark:text-slate-100 shadow-2xl">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-600">
                 Event page
@@ -1168,7 +1132,7 @@ function EventProductPreview({
               <h2 className="mt-3 text-3xl font-semibold leading-tight">{eventTitle}</h2>
             </div>
             <div className="space-y-3 rounded-3xl border border-white/80 bg-white/75 p-4 shadow-sm">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-300">
                 Live details
               </p>
               <p className="text-sm font-semibold text-slate-700">
@@ -1176,7 +1140,7 @@ function EventProductPreview({
                   "Date pending"}
               </p>
               {preview.locationLine ? (
-                <p className="text-sm text-slate-500">{preview.locationLine}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-300">{preview.locationLine}</p>
               ) : null}
             </div>
           </div>
@@ -1187,6 +1151,7 @@ function EventProductPreview({
 }
 
 function OwnerWorkspaceHeader({
+  editLocked,
   isOwner = true,
   canManageAccess = false,
   eventId,
@@ -1206,34 +1171,33 @@ function OwnerWorkspaceHeader({
   onViewCurrent: () => void;
   onShare: () => void;
   mobileCardPreview?: ReactNode;
+  editLocked: boolean;
 }) {
   const deleteButtonClassName =
     "inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 sm:w-auto sm:gap-1.5 sm:px-3";
 
   return (
-    <header className="owner-workspace-glass owner-workspace-summary-card relative overflow-hidden rounded-[24px] border border-white/75 bg-white/92 p-4 shadow-[0_16px_46px_rgba(79,70,128,0.10)] backdrop-blur-xl sm:p-5 lg:rounded-[28px]">
-      <div className="space-y-3 sm:space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
+    <header className={ownerStyles.header}>
+      <div className={ownerStyles.headerLayout}>
+        <div className={ownerStyles.headerMeta}>
+          <p className={ownerStyles.eyebrow}>
             {isOwner ? "Owner workspace" : "Co-host workspace"}
           </p>
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-            {!detailsEditHref ? (
-              <Link
-                href={editHref}
-                aria-label="Edit"
-                title="Edit"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full text-violet-700 transition hover:text-violet-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
+          <div className={`flex shrink-0 flex-wrap items-center justify-end gap-2 ${ownerStyles.headerActions}`}>
+            <OwnerEditLink disabled={editLocked}
+                href={detailsEditHref || editHref}
+                aria-label="Edit invitation"
+                title="Edit invitation"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full text-violet-700 dark:text-violet-300 transition hover:text-violet-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
               >
                 <Pencil size={20} strokeWidth={2.2} aria-hidden="true" />
-              </Link>
-            ) : null}
+            </OwnerEditLink>
             <button
               type="button"
               onClick={onViewCurrent}
               aria-label="Preview"
               aria-haspopup="dialog"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-semibold text-slate-950 transition hover:bg-violet-50 hover:text-[#786bd6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-semibold text-slate-950 dark:text-slate-100 transition hover:bg-violet-50 hover:text-[#786bd6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
             >
               <Eye size={20} strokeWidth={2.2} aria-hidden="true" />
               <span>Preview</span>
@@ -1250,15 +1214,15 @@ function OwnerWorkspaceHeader({
               onClick={onShare}
               aria-label="Share"
               title="Share"
-              className="inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-slate-950 transition hover:bg-violet-50 hover:text-[#786bd6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 sm:w-auto sm:gap-1.5 sm:px-3"
+              className="inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-slate-950 dark:text-slate-100 transition hover:bg-violet-50 hover:text-[#786bd6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 sm:w-auto sm:gap-1.5 sm:px-3"
             >
               <Share2 size={21} strokeWidth={2.3} aria-hidden="true" />
               <span className="hidden sm:inline">Share</span>
             </button>
           </div>
         </div>
-        <div className="min-w-0">
-          <h2 className="line-clamp-2 text-[1.65rem] font-semibold leading-tight text-slate-950 sm:text-3xl">
+        <div className={ownerStyles.headerTitle}>
+          <h2 className={ownerStyles.eventTitle}>
             {title || "Untitled event"}
           </h2>
           {mobileCardPreview}
@@ -1269,28 +1233,37 @@ function OwnerWorkspaceHeader({
 }
 
 function OwnerPublicLinkPanel({
+  linkCopied,
+  onCopy,
+  onCopiedChange: setLinkCopied,
+  editLocked,
   eventId,
   activeTab,
   publicSlug,
   publicUrl,
   onUpdated,
 }: {
+  editLocked: boolean;
   eventId: string;
   activeTab: EventContextTab;
   publicSlug: string;
   publicUrl: string;
   onUpdated: (nextPath: string) => void;
+  linkCopied: boolean;
+  onCopy: () => Promise<void>;
+  onCopiedChange: (copied: boolean) => void;
 }) {
   const router = useRouter();
   const [slug, setSlug] = useState(publicSlug);
   const [origin, setOrigin] = useState("");
+  const changeLinkTrigger = useRef<HTMLButtonElement | null>(null);
+  const [editing, setEditing] = useState(false);
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState("");
 
   useEffect(() => {
     setSlug(publicSlug);
     setError("");
-    setStatus("idle");
   }, [publicSlug]);
 
   useEffect(() => {
@@ -1319,7 +1292,7 @@ function OwnerPublicLinkPanel({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!normalizedSlug || normalizedSlug === "event" || !hasChanges) return;
+    if (editLocked || !normalizedSlug || normalizedSlug === "event" || !hasChanges) return;
     setStatus("saving");
     setError("");
     try {
@@ -1344,6 +1317,9 @@ function OwnerPublicLinkPanel({
       onUpdated(nextPath || `/event/${normalizedSlug}`);
       window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: eventId } }));
       setStatus("saved");
+      setEditing(false);
+      changeLinkTrigger.current?.focus();
+      setLinkCopied(false);
       if (data.eventPath) {
         router.replace(`${data.eventPath}?tab=${activeTab}`);
         router.refresh();
@@ -1355,47 +1331,48 @@ function OwnerPublicLinkPanel({
   }
 
   return (
-    <section className="owner-workspace-glass relative overflow-hidden rounded-[22px] border border-white/75 bg-white/92 p-3 shadow-[0_14px_38px_rgba(79,70,128,0.09)] backdrop-blur-xl sm:p-4">
-      <form className="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]" onSubmit={handleSubmit}>
-        <div className="flex items-center gap-2 text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
-          <Link2 size={16} aria-hidden="true" />
-          Public link
+    <section className={ownerStyles.utilityPanel} aria-label="Share invitation">
+      <div className={ownerStyles.linkRow}>
+        <div className={ownerStyles.linkLabel}><Link2 size={16} aria-hidden="true" />Guest link</div>
+        <a className={ownerStyles.guestLink} href={publicUrl}>{origin || "https://envitefy.com"}{currentPath}</a>
+        <div className={ownerStyles.linkActions}>
+          <button type="button" className={ownerStyles.linkAction} onClick={() => void onCopy()}><Copy size={16} aria-hidden="true" />Copy link</button>
+          <button ref={changeLinkTrigger} type="button" className={ownerStyles.linkAction} disabled={editLocked}
+            aria-expanded={editing} onClick={() => { setEditing(true); setStatus("idle"); setLinkCopied(false); }}>
+            Change link
+          </button>
         </div>
+      </div>
+      {linkCopied && <p role="status" className="mt-2 text-sm">Link copied</p>}
+      {editing && <form aria-label="Change guest link" className={ownerStyles.linkEditor} onSubmit={handleSubmit}>
         <label className="min-w-0">
           <span className="sr-only">Public link slug</span>
-          <div className="flex min-h-11 min-w-0 items-center overflow-hidden rounded-2xl border border-violet-900/20 bg-white/68 text-sm font-semibold text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.16)]">
-            <span className="hidden shrink-0 pl-3 pr-1 text-slate-400 sm:inline">
+          <div className={ownerStyles.linkField}>
+            <span className="hidden shrink-0 pl-3 pr-1 text-slate-400 dark:text-slate-300 sm:inline">
               {origin || "https://envitefy.com"}/{publicPathPrefix}/
             </span>
-            <input
-              value={slug}
+            <input autoFocus disabled={editLocked || status === "saving"} value={slug}
               onChange={(event) => setSlug(event.target.value)}
               className="min-w-0 flex-1 bg-transparent px-3 py-2 outline-none sm:px-1"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-            />
+              autoCapitalize="none" autoCorrect="off" spellCheck={false} />
           </div>
         </label>
-        <button
-          type="submit"
-          disabled={!hasChanges || status === "saving" || !normalizedSlug}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-bold text-white shadow-[0_12px_24px_rgba(15,23,42,0.14)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          {status === "saving" ? (
-            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-          ) : (
-            <Save size={16} aria-hidden="true" />
-          )}
-          {status === "saving" ? "Saving" : "Save link"}
-        </button>
-      </form>
+        <div className={ownerStyles.linkActions}>
+          <button type="button" className={ownerStyles.linkAction} disabled={status === "saving"}
+            onClick={() => { setSlug(publicSlug); setError(""); setStatus("idle"); setEditing(false); changeLinkTrigger.current?.focus(); }}>Cancel</button>
+          <button type="submit" disabled={editLocked || !hasChanges || status === "saving" || !normalizedSlug || normalizedSlug === "event"}
+            className={ownerStyles.saveLink}>
+            {status === "saving" ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Save size={16} aria-hidden="true" />}
+            {status === "saving" ? "Saving" : "Save link"}
+          </button>
+        </div>
+      </form>}
       {status === "saved" || error ? (
         <p
           className={`mt-2 inline-flex items-start gap-2 text-sm font-semibold ${
-            error ? "text-rose-700" : "text-emerald-700"
+            error ? "text-rose-700 dark:text-rose-300" : "text-emerald-700 dark:text-emerald-300"
           }`}
-          role={error ? "alert" : undefined}
+          role={error ? "alert" : "status"}
         >
           {error ? (
             <AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
@@ -1409,7 +1386,33 @@ function OwnerPublicLinkPanel({
   );
 }
 
+function OwnerEventBrief({ eventTitle, eventData, preview, editHref, invitation }: {
+  eventTitle: string; eventData: Record<string, unknown> | null; preview: ProductPreviewModel; editHref: string; invitation: boolean;
+}) {
+  const savedForm = asRecord(asRecord(eventData?.liveCardBuilder)?.form);
+  const details = asRecord(preview.invitationData?.eventDetails);
+  const message = firstString(savedForm?.overview, eventData?.overview, details?.description, eventData?.description);
+  const published = eventData?.status === "published";
+  return <section className={ownerStyles.eventBrief} aria-label={invitation ? "Invitation details" : "Event overview"}>
+    <div className={ownerStyles.briefHero}>
+      {preview.imageUrl && <img className={ownerStyles.briefThumbnail} src={preview.imageUrl} alt="" />}
+      <div className={ownerStyles.briefHeading}>
+        <span className={ownerStyles.publicationState} data-published={published}><span aria-hidden="true" />{published ? "Published" : eventData?.status === "draft" ? "Draft" : "Saved invitation"}</span>
+        <h2>{invitation ? "Your invitation" : "Your event at a glance"}</h2>
+        <p>{eventTitle}</p>
+      </div>
+      <OwnerEditLink disabled={isPastEvent(eventData)} href={editHref} className={ownerStyles.briefEdit}><Pencil size={16} aria-hidden="true" /><span>Edit details</span></OwnerEditLink>
+    </div>
+    <dl className={ownerStyles.eventFacts}>
+      <div className={ownerStyles.eventFact}><dt><span className={ownerStyles.factIcon}><CalendarDays size={23} aria-hidden="true" /></span><span>Date & time</span></dt><dd>{preview.dateLine || "Date to be added"}<p><Clock3 size={14} aria-hidden="true" />{preview.timeLine || "Time to be added"}</p></dd></div>
+      <div className={ownerStyles.eventFact}><dt><span className={ownerStyles.factIcon}><MapPin size={23} aria-hidden="true" /></span><span>Location</span></dt><dd>{preview.locationLine || "Location to be added"}{firstString(savedForm?.address, details?.address) && <p>{firstString(savedForm?.address, details?.address)}</p>}</dd></div>
+    </dl>
+    {message && <div className={ownerStyles.guestNote}><MessageSquare size={19} aria-hidden="true" /><div><h3>Message to guests</h3><p>{message}</p></div></div>}
+  </section>;
+}
+
 function OwnerTabContent({
+  ownerHref,
   activeTab,
   eventId,
   eventTitle,
@@ -1421,6 +1424,7 @@ function OwnerTabContent({
   onViewChanges,
   onDesignUpdated,
 }: {
+  ownerHref: string;
   activeTab: EventContextTab;
   eventId: string;
   eventTitle: string;
@@ -1436,24 +1440,22 @@ function OwnerTabContent({
     persisted?: boolean;
   }) => void;
 }) {
-  if (!rsvpEnabled && activeTab === "dashboard" && eventData?.createdVia === "livecard-builder") {
-    return <section className="owner-workspace-glass space-y-4 rounded-[22px] border border-white/75 bg-white/90 p-5">
-      <h2 className="text-lg font-semibold text-slate-950">Your event at a glance</h2>
-      <p className="text-sm text-slate-600">Customize your link above, preview your invitation, or continue editing your event.</p>
-      <dl className="grid gap-4 text-sm sm:grid-cols-2">
-        <div><dt className="font-semibold text-slate-500">When</dt><dd className="mt-1 text-slate-950">{[preview.dateLine, preview.timeLine].filter(Boolean).join(" · ") || "Add your event date"}</dd></div>
-        <div><dt className="font-semibold text-slate-500">Where</dt><dd className="mt-1 text-slate-950">{preview.locationLine || "Add your location"}</dd></div>
-      </dl>
-      <Link href={editHref} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-violet-700 px-4 py-2 font-semibold text-white"><Pencil size={16} /> Edit event details</Link>
-    </section>;
-  }
-  if (!rsvpEnabled || activeTab === "design") {
+  if (activeTab === "dashboard") return <div className={ownerStyles.overviewLayout}>
+    <OwnerEventBrief eventTitle={eventTitle} eventData={eventData} preview={preview} editHref={editHref} invitation={false} />
+    {rsvpEnabled && <EventResponseDashboard activeTab={activeTab} eventId={eventId} eventTitle={eventTitle} eventData={eventData} numberOfGuests={numberOfGuests} rsvpEnabled={rsvpEnabled} editHref={editHref} />}
+    <nav className={ownerStyles.hostActions} aria-label="Hosting shortcuts">
+      {[
+        { tab: "design" as const, title: "Review invitation", detail: "Design & guest link", Icon: Palette },
+        { tab: "rsvps" as const, title: "Manage guests", detail: rsvpEnabled ? "Responses & RSVP settings" : "RSVP is off · manage settings", Icon: Users },
+        { tab: "messages" as const, title: "Message guests", detail: "Updates & announcements", Icon: Send },
+      ].map(({ tab, title, detail, Icon }) => <Link key={tab} href={buildOwnerTabHref(ownerHref, eventId, tab)} className={ownerStyles.hostAction}>
+        <Icon size={21} aria-hidden="true" /><span><strong>{title}</strong><small>{detail}</small></span><ArrowUpRight size={17} aria-hidden="true" />
+      </Link>)}
+    </nav>
+  </div>;
+  if (activeTab === "design") {
     if (preview.invitationData?.sharedDesign) {
-      return <section className="owner-workspace-glass space-y-4 rounded-[22px] border border-white/75 bg-white/90 p-5">
-        <h2 className="text-lg font-semibold text-slate-950">Your shared design</h2>
-        <p className="text-sm text-slate-600">Your Live Card and invitation share one artwork. Edit the headline or event details, preview either version, and download the latest invitation.</p>
-        <Link href={editHref} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-violet-700 px-4 py-2 font-semibold text-white"><Pencil size={16} /> Edit card & invitation</Link>
-      </section>;
+      return <OwnerEventBrief eventTitle={eventTitle} eventData={eventData} preview={preview} editHref={editHref} invitation />;
     }
     return (
       <OwnerDesignPanel
@@ -1558,16 +1560,16 @@ function OwnerProductViewer({
             <Dialog.Close asChild>
               <button
                 type="button"
-                className="-ml-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-bold text-violet-700 transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                className="-ml-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-bold text-violet-700 dark:text-violet-300 transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
               >
                 <ArrowLeft size={20} strokeWidth={2.4} aria-hidden="true" />
                 <span>{returnLabel}</span>
               </button>
             </Dialog.Close>
-            <Dialog.Title className="mt-1 text-xl font-semibold text-slate-950">
+            <Dialog.Title className="mt-1 text-xl font-semibold text-slate-950 dark:text-slate-100">
               {heading}
             </Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-slate-600">
+            <Dialog.Description className="mt-1 text-sm text-slate-600 dark:text-slate-300">
               {description}
             </Dialog.Description>
           </div>
@@ -1626,6 +1628,7 @@ function OwnerDesignPanel({
     "idle",
   );
   const [error, setError] = useState("");
+  const editLocked = isPastEvent(eventData);
   const isBusy = status === "previewing" || status === "saving";
   const hasDesignChanges = !designFormsMatch(form, baselineForm);
   const canCancelDesignChanges =
@@ -1676,7 +1679,7 @@ function OwnerDesignPanel({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!currentImageUrl || isBusy) return;
+    if (editLocked || !currentImageUrl || isBusy) return;
 
     if (!hasDesignChanges) {
       setError("No design changes requested.");
@@ -1763,7 +1766,7 @@ function OwnerDesignPanel({
   }
 
   async function handleSaveChanges() {
-    if (!candidate || isBusy) return;
+    if (editLocked || !candidate || isBusy) return;
 
     setStatus("saving");
     setError("");
@@ -1831,20 +1834,10 @@ function OwnerDesignPanel({
   }
 
   return (
-    <section className="owner-workspace-glass relative overflow-hidden rounded-[28px] border border-white/75 bg-white/92 p-4 shadow-[0_20px_58px_rgba(79,70,128,0.10)] backdrop-blur-xl sm:p-5">
+    <section className={ownerStyles.invitationEditor}>
       <div className="grid gap-5">
-        <form className="min-w-0 space-y-4" onSubmit={handleSubmit}>
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
-              <Palette size={20} aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
-                Design
-              </p>
-              <h3 className="text-2xl font-semibold text-slate-950">Edit card</h3>
-            </div>
-          </div>
+        <form className="min-w-0" onSubmit={handleSubmit}><fieldset disabled={editLocked} className="space-y-4">
+          <h3 className={ownerStyles.sectionTitle}>Invitation details</h3>
 
           {!currentImageUrl ? (
             <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm font-semibold text-amber-900 sm:flex-row sm:items-center sm:justify-between">
@@ -1862,70 +1855,70 @@ function OwnerDesignPanel({
           ) : null}
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 md:col-span-3">
+            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 dark:text-slate-400 dark:text-slate-300 md:col-span-3">
               Title
               <input
                 value={form.title}
                 onChange={(event) => updateField("title", event.target.value)}
-                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
+                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 dark:text-slate-100 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
               />
             </label>
 
-            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 md:col-span-1">
+            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 dark:text-slate-400 dark:text-slate-300 md:col-span-1">
               Date
               <input
                 type="date"
                 value={form.eventDate}
                 onChange={(event) => updateField("eventDate", event.target.value)}
-                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
+                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 dark:text-slate-100 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
               />
             </label>
 
-            <label className="block min-w-0 text-xs font-black uppercase tracking-[0.13em] text-slate-500">
+            <label className="block min-w-0 text-xs font-black uppercase tracking-[0.13em] text-slate-500 dark:text-slate-400 dark:text-slate-300">
               Start time
               <input
                 type="time"
                 value={form.startTime}
                 onChange={(event) => updateField("startTime", event.target.value)}
-                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
+                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 dark:text-slate-100 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
               />
             </label>
 
-            <label className="block min-w-0 text-xs font-black uppercase tracking-[0.13em] text-slate-500">
+            <label className="block min-w-0 text-xs font-black uppercase tracking-[0.13em] text-slate-500 dark:text-slate-400 dark:text-slate-300">
               End time
               <input
                 type="time"
                 value={form.endTime}
                 onChange={(event) => updateField("endTime", event.target.value)}
-                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
+                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 dark:text-slate-100 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
               />
             </label>
 
-            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 md:col-span-1">
+            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 dark:text-slate-400 dark:text-slate-300 md:col-span-1">
               Venue
               <input
                 value={form.venueName}
                 onChange={(event) => updateField("venueName", event.target.value)}
-                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
+                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 dark:text-slate-100 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
               />
             </label>
 
-            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 md:col-span-2">
+            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 dark:text-slate-400 dark:text-slate-300 md:col-span-2">
               Address
               <input
                 value={form.location}
                 onChange={(event) => updateField("location", event.target.value)}
-                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
+                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 dark:text-slate-100 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
               />
             </label>
 
-            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 md:col-span-3">
+            <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 dark:text-slate-400 dark:text-slate-300 md:col-span-3">
               Enter your change
               <input
                 value={form.designIdea}
                 onChange={(event) => updateField("designIdea", event.target.value)}
                 placeholder='e.g. Change the bottom sentence to "Join us to celebrate Lara turning 7."'
-                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
+                className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 dark:text-slate-100 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
               />
             </label>
           </div>
@@ -1936,7 +1929,7 @@ function OwnerDesignPanel({
                 type="button"
                 onClick={onViewChanges}
                 aria-haspopup="dialog"
-                className="col-span-full inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-700 transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                className="col-span-full inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-700 dark:text-violet-300 transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
               >
                 <Eye size={18} aria-hidden="true" />
                 View changes
@@ -1985,7 +1978,7 @@ function OwnerDesignPanel({
           </div>
 
           {status === "previewing" ? (
-            <p role="status" className="text-sm font-medium text-slate-600">
+            <p role="status" className="text-sm font-medium text-slate-600 dark:text-slate-300">
               Updating your card artwork. This can take a few minutes. Keep this page open.
             </p>
           ) : null}
@@ -1998,7 +1991,7 @@ function OwnerDesignPanel({
               <span>{error}</span>
             </p>
           ) : null}
-        </form>
+        </fieldset></form>
       </div>
     </section>
   );

@@ -12,9 +12,10 @@ await fs.writeFile(
   `import React from "react";
 import { createRoot } from "react-dom/client";
 import LiveCardBuilder from "../../src/app/live-cards/LiveCardBuilder";
+import PublishProgress from "../../src/app/live-cards/PublishProgress";
 import UnsavedProgressProvider from "../../src/components/UnsavedProgressProvider";
 import SharedStudioCardPage from "../../src/components/studio/SharedStudioCardPage";
-createRoot(document.getElementById("root")!).render(window.__publishedCard ? <SharedStudioCardPage {...window.__publishedCard} /> : <UnsavedProgressProvider><a href="/leave" id="leave">Leave editor</a><LiveCardBuilder initialEventId={new URLSearchParams(location.search).get("edit")} /></UnsavedProgressProvider>);`,
+createRoot(document.getElementById("root")!).render(new URLSearchParams(location.search).has("publishComplete") ? <PublishProgress open stage="opening" updating onCancel={() => {}} /> : window.__publishedCard ? <SharedStudioCardPage {...window.__publishedCard} /> : <UnsavedProgressProvider><a href="/leave" id="leave">Leave editor</a><LiveCardBuilder initialEventId={new URLSearchParams(location.search).get("edit")} /></UnsavedProgressProvider>);`,
 );
 const moduleStyles = new Map();
 const build = await Bun.build({
@@ -56,7 +57,7 @@ const build = await Bun.build({
           loader: "tsx",
           contents:
             name === "image"
-              ? 'import React from "react"; export default function Image({fill,fetchPriority,...props}) { return <img {...props} />; }'
+              ? 'import React from "react"; export default function Image({fill,fetchPriority,style,...props}) { return <img {...props} style={fill ? {...style,position:"absolute",inset:0,width:"100%",height:"100%"} : style} />; }'
               : name === "router"
                 ? 'import {createContext} from "react"; export const AppRouterContext = createContext(null);'
                 : 'export function useCalendarAction({links}) { return { links, label: "Add to calendar", hasDefault: false, dialog: null, open() {} }; }',

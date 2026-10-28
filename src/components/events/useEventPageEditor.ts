@@ -146,8 +146,8 @@ export function useEventPageEditor({
   const normalizedComposition = normalizeEventPageComposition(composition);
   const editorReady = ready && intakeCompositionReady && (Boolean(savePage) || compositionReady);
   const composedSnapshot =
-    !savePage && normalizedComposition
-      ? { ...snapshot, pageComposition: normalizedComposition }
+    !savePage
+      ? { ...snapshot, pageComposition: normalizedComposition ?? null }
       : snapshot;
   const content = eventEditorContent(composedSnapshot);
   const latest = useRef({ snapshot, content, buildPayload });

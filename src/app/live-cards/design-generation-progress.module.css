@@ -217,15 +217,23 @@
   }
 }
 .mockWording {
-  max-width: 100%;
+  position: absolute;
+  inset: 12% 9% auto;
   text-align: center;
   overflow-wrap: anywhere;
+  color: #42324f;
 }
-.mockWording small {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 11px;
-  opacity: 0.7;
-}
-.mockWording p { font-size: 13px; }
-.mockWording strong { display: block; font-family: Georgia, serif; font-size: 20px; }
+.mockWording p { margin: 0 0 10px; font-family: Georgia, serif; font-style: italic; font-size: clamp(12px, 4cqi, 18px); line-height: 1.5; }
+.mockWording strong { display: block; font-family: var(--font-playfair, Georgia), serif; font-size: clamp(20px, 8cqi, 34px); font-weight: 500; line-height: 1.18; letter-spacing: -.035em; }
+.mockWording > span { display: block; margin-top: 18px; color: #987e50; }
+.panel:has(.mockWording) { position: relative; padding: 0; isolation: isolate; width: 100%; max-width: none; }
+.panel:has(.mockWording) .cardStack { position: absolute; inset: 0; height: 100%; width: 100%; margin: 0; animation: none; z-index: -1; }
+.panel:has(.mockWording) .backCard { display: none; }
+.panel:has(.mockWording) .frontCard { border: 0; border-radius: 0; transform: none; box-shadow: none; }
+.panel:has(.mockWording) .cardArt { inset: 0; border-radius: 0; background: radial-gradient(ellipse at 85% 80%, #b4bea0 0, transparent 55%), linear-gradient(150deg, #eee3d4, #e4d8e9 55%, #e4e6da); }
+.panel:has(.mockWording) .cardCurve { bottom: -35%; height: 65%; background: #7e956633; border-color: #91a08033; }
+.panel:has(.mockWording) .copy { margin: auto 20px 0; padding-top: 70%; }
+.panel:has(.mockWording) .copy h3 { color: #42324f; font-family: inherit; font-size: 14px; font-weight: 600; letter-spacing: 0; }
+.panel:has(.mockWording) .copy p { display: block; margin: 6px auto 0; max-width: 250px; color: #5c4b65; font-size: 12px; line-height: 1.4; }
+.panel:has(.mockWording) .progress { margin: 0 20px 24px; }
+.panel:has(.mockWording) .stage { color: #61556b; }

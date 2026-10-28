@@ -19,6 +19,20 @@ import {
 import { useEventPageEditor } from "../../src/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "../../src/lib/event-history-client";
 import EventCustomEditor from "../../src/components/events/custom/EventCustomEditor";
+import SignupTemplatesPage from "../../src/app/templates/signup/page";
+import BabyShowers from "../../src/app/event/baby-showers/customize/page";
+import GenderReveal from "../../src/app/event/gender-reveal/customize/page";
+import Cheerleading from "../../src/app/event/cheerleading/customize/page";
+import Appointments from "../../src/app/event/appointments/customize/page";
+import Workshops from "../../src/app/event/workshops/customize/page";
+import SpecialEvents from "../../src/app/event/special-events/customize/page";
+import EventPageTypography from "../../src/components/events/EventPageTypography";
+import EventEditorRsvpSection from "../../src/components/events/EventEditorRsvpSection";
+import { getTemplateCategory } from "../../src/lib/template-categories";
+import Football from "../../src/app/event/football-season/customize/page";
+import Soccer from "../../src/app/event/soccer/customize/page";
+import SportEvents from "../../src/app/event/sport-events/customize/page";
+import DanceBallet from "../../src/app/event/dance-ballet/customize/page";
 import Birthdays from "../../src/app/event/birthdays/customize/page";
 import General from "../../src/app/event/general/customize/page";
 import Weddings from "../../src/app/event/weddings/customize/page";
@@ -213,11 +227,42 @@ function SavedSchoolMemo() {
 function SchoolCalendarSession({ children }: { children: React.ReactNode }) {
   return <SessionContext.Provider value={{ data: { user: { id: "qa-host", email: "host@test.com" } }, status: "authenticated" } as any}>{children}</SessionContext.Provider>;
 }
+const editorComponents = {
+  "signup-forms": SignupTemplatesPage,
+  "weddings": Weddings, "birthdays": Birthdays, "anniversaries": Birthdays,
+  "baby-showers": BabyShowers, "bridal-showers": BabyShowers, "gender-reveal": GenderReveal,
+  "soccer": Soccer, "sport-events": SportEvents, "dance-ballet": DanceBallet,
+  "cheerleading": Cheerleading, "appointments": Appointments, "workshops": Workshops,
+  "special-events": SpecialEvents, "general": General, "football-season": Football,
+};
+function SavedTypographyPreview() {
+  const search = useSearchParams();
+  const [row, setRow] = useState<any>(null);
+  useEffect(() => { void fetch(`/api/history/${search.get("edit")}`).then(r => r.json()).then(setRow); }, [search]);
+  return row ? <EventPageCompositionProvider value={row.data.eventPageComposition}>
+    <EventPageTypography><h1 style={{ fontFamily: "Georgia" }}>Saved event title</h1><p>Original body typography</p><div data-appearance-scope="app"><h1 style={{ fontFamily: "Arial" }}>Application heading</h1></div></EventPageTypography>
+  </EventPageCompositionProvider> : null;
+}
+function RecoveredRsvpSwitch() {
+  const [enabled, setEnabled] = useState<boolean>();
+  return <EventEditorRsvpSection enabled={enabled as boolean} onEnabledChange={setEnabled}>
+    <p>Recovered RSVP settings</p>
+  </EventEditorRsvpSection>;
+}
 function App() {
   const pathname = usePathname();
   const search = useSearchParams();
   if (!pathname.includes("customize")) return <div data-destination>{pathname}</div>;
-  const mode = search.get("mode") || (pathname.includes("/gymnastics/templates/") ? "gymnastics-template" : pathname.includes("gymnastics") ? "gymnastics" : null);
+  const mode = search.get("mode") || (pathname.startsWith("/sport-events/") ? "sport-events" : pathname.includes("/gymnastics/templates/") ? "gymnastics-template" : pathname.includes("gymnastics") ? "gymnastics" : null);
+  if (search.get("toolsAudit") === "saved") return <SavedTypographyPreview />;
+  if (search.get("toolsAudit") === "recovered-rsvp") return <RecoveredRsvpSwitch />;
+  const routeParts = pathname.split("/").filter(Boolean);
+  const templateCategory = routeParts[1] === "templates" && routeParts[3] === "customize" ? getTemplateCategory(routeParts[0]) : undefined;
+  const auditCategory = search.get("toolsAudit") || (!search.has("mode") ? templateCategory?.slug : undefined);
+  const AuditEditor = editorComponents[auditCategory as keyof typeof editorComponents];
+  if (AuditEditor) return <UnsavedProgressProvider><LeaveButton />{templateCategory
+    ? <TemplateEditorProvider category={templateCategory.slug} templateId={routeParts[2]}><AuditEditor /></TemplateEditorProvider>
+    : <AuditEditor />}</UnsavedProgressProvider>;
   if (mode === "guest-actions") return <GuestActionsFixture />;
   return (
     <UnsavedProgressProvider>
@@ -232,7 +277,7 @@ function App() {
         </TemplateEditorProvider>
       ) : mode === "gymnastics-guest" ? (
         <SavedGymnasticsPreview />
-      ) : mode === "gymnastics" ? (
+      ) : mode === "football" ? <Football /> : mode === "soccer" ? <Soccer /> : mode === "sport-events" ? <SportEvents /> : mode === "dance-ballet" ? <DanceBallet /> : mode === "gymnastics" ? (
         <Gymnastics />
       ) : mode === "school-saved" ? (
         <SchoolCalendarSession><SavedSchoolMemo /></SchoolCalendarSession>

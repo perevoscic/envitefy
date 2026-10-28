@@ -5,7 +5,7 @@ export default function DesignGenerationProgress({
   stage,
   compact = false,
   title = "Creating your design",
-  description = "Keep adding your event details.",
+  description = "Finish RSVP, registry and messages while your design generates.",
   statusText,
   mockTitle,
   mockOpeningLine,
@@ -21,25 +21,24 @@ export default function DesignGenerationProgress({
   const stageLabel = statusText || GENERATION_STAGE_LABELS[stage];
   return (
     <section className={compact ? styles.compact : styles.panel} aria-label="Design generation">
-      {mockTitle && <div className={styles.mockWording} role="group" aria-label="Temporary wording preview">
-        <small>Temporary wording preview</small>
-        {mockOpeningLine?.trim() && <p>{mockOpeningLine}</p>}
-        <strong>{mockTitle}</strong>
-      </div>}
       {!compact && (
         <>
-          <div className={styles.cardStack} aria-hidden="true">
+          <div className={styles.cardStack} aria-hidden={!mockTitle || undefined}>
             <div className={styles.backCard} />
             <div className={styles.frontCard}>
               <div className={styles.cardArt}>
                 <span className={styles.cardSun} />
                 <span className={styles.cardCurve} />
               </div>
-              <div className={styles.cardLines}>
+              {mockTitle ? <div className={styles.mockWording} role="group" aria-label="Card wording preview">
+                {mockOpeningLine?.trim() && <p>{mockOpeningLine}</p>}
+                <strong>{mockTitle}</strong>
+                <span aria-hidden="true">✦</span>
+              </div> : <div className={styles.cardLines}>
                 <span />
                 <span />
                 <span />
-              </div>
+              </div>}
             </div>
           </div>
           <div className={styles.copy}>

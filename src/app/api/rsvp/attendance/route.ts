@@ -1,4 +1,5 @@
 import { isEventDraft } from "@/lib/event-draft-access";
+import { isRsvpExplicitlyDisabled } from "@/lib/event-rsvp-settings";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
@@ -82,6 +83,9 @@ export async function POST(req: Request) {
     if (existing && isEventDraft(existing.data)) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (isRsvpExplicitlyDisabled(existing.data)) {
+      return NextResponse.json({ error: "RSVP is closed for this event." }, { status: 403 });
     }
 
     const isOwner = existing.user_id && existing.user_id === userId;

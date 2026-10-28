@@ -1,4 +1,5 @@
 "use client";
+import { readEventRsvpSettings } from "@/lib/event-rsvp-settings";
 
 import React, { useMemo } from "react";
 import { eventLocalDateParts, normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
@@ -910,7 +911,7 @@ export default function WeddingTemplateView({
       travel,
       thingsToDo,
       gallery,
-      rsvpEnabled: Boolean(weddingData.rsvp?.isEnabled !== false && weddingData.rsvp),
+      rsvpEnabled: readEventRsvpSettings(weddingData, Boolean(weddingData.rsvp)).isEnabled,
       rsvpLink: normalizeUrlValue(weddingData.rsvp?.url || weddingData.rsvp?.link || "") || "",
       rsvp: {
         url: normalizeUrlValue(weddingData.rsvp?.url || weddingData.rsvp?.link || "") || "#rsvp",

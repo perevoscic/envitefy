@@ -7,7 +7,7 @@ const { generateSharedCard, sharedCardGenerationDeps } = loadTs("src/lib/shared-
 const { createLiveCardForm } = loadTs("src/lib/livecard-builder.ts", {}, cache);
 const { liveCardGenerationErrorResponse } = loadTs("src/lib/livecard-generation-failure.ts", {}, cache);
 
-test("background generation finishes through non-safety findings and only content safety rejects usable artwork", async (t) => {
+test("background generation retains usable artwork through all checker findings", async (t) => {
   const original = { ...sharedCardGenerationDeps };
   t.after(() => Object.assign(sharedCardGenerationDeps, original));
   const image = await sharp({ create: { width: 100, height: 150, channels: 3, background: "#aabbcc" } }).png().toBuffer();
@@ -41,13 +41,8 @@ test("background generation finishes through non-safety findings and only conten
   assert.doesNotMatch(JSON.stringify(logs), /private@example|Private title|woodland party/);
   assert.ok(logs.every(([, entry]) => entry.outcome === "success"), "advisory findings are completed generation");
   sharedCardGenerationDeps.verify = async () => ({ status: "failed", issues: ["safety_mismatch", "private@example.com"] });
-  await assert.rejects(generateSharedCard(form), (error) => {
-    assert.equal(error.code, "safety_refused");
-    assert.match(error.message, /sexual content, nudity, violence or profanity/);
-    assert.deepEqual(liveCardGenerationErrorResponse(error, "design").issues, ["safety_mismatch"]);
-    return true;
-  });
-  assert.equal(generations, advisoryIssues.length + 1, "a safety rejection never automatically retries");
+  assert.match((await generateSharedCard(form)).backgroundUrl, /^data:image\/webp;base64,/);
+  assert.equal(generations, advisoryIssues.length + 1, "checker findings do not reject artwork or request another image");
   sharedCardGenerationDeps.verify = async () => ({ status: "unavailable", issues: [], unavailableReason: "checker_error" });
   assert.match((await generateSharedCard(form)).backgroundUrl, /^data:image\/webp;base64,/);
   assert.equal(logs.at(-1)[1].outcome, "verification_unavailable");
@@ -56,6 +51,8 @@ test("background generation finishes through non-safety findings and only conten
   sharedCardGenerationDeps.generateImage = async () => ({ ok: true, imageDataUrl: "data:image/png;base64,bm90YW5pbWFnZQ==" });
   await assert.rejects(generateSharedCard(form), (error) => error.code === "invalid_artwork");
   assert.equal(logs.filter(([name]) => name === "livecard_generation").at(-1)[1].outcome, "invalid_artwork");
+  sharedCardGenerationDeps.generateImage = async () => ({ ok: false, error: { code: "safety_refused", message: "Provider declined the request" } });
+  await assert.rejects(generateSharedCard(form), (error) => error.code === "safety_refused");
   sharedCardGenerationDeps.generateImage = async () => ({ ok: false, error: { message: "Provider temporarily unavailable" } });
   await assert.rejects(generateSharedCard(form), (error) => error.code === "generation_failed");
 });

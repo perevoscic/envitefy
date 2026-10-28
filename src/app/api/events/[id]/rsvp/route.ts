@@ -11,6 +11,7 @@ import { supportsEventCollaboration } from "@/lib/event-collaboration-types";
 import { sendHostRsvpNotificationEmail, sendRsvpConfirmationEmail } from "@/lib/email";
 import { validGuestEmail } from "@/lib/event-message-types";
 import { readOwnerRsvpSettings } from "@/lib/owner-rsvp-settings";
+import { isRsvpExplicitlyDisabled } from "@/lib/event-rsvp-settings";
 import { buildPublicAssetUrl } from "@/lib/public-asset-url";
 import { buildEventProductPath } from "@/utils/event-product-route";
 import {
@@ -453,6 +454,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const eventRow = eventRes.rows[0] || null;
     if (!eventRow) {
       return jsonWithTiming(timing, { error: "Event not found" }, { status: 404 });
+    }
+    if (isRsvpExplicitlyDisabled(eventRow.data)) {
+      return jsonWithTiming(timing, { error: "RSVP is closed for this event." }, { status: 403 });
     }
 
     const rawBody = await timing.time("body_parse", () => req.json());

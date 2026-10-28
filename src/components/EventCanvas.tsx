@@ -11,6 +11,7 @@ import {
 import { readEventCanvasColor } from "@/lib/event-canvas";
 import { normalizeEventPageColor, registerEventPageColor } from "@/lib/event-page-chrome";
 import styles from "./EventCanvas.module.css";
+import EventPageTypography from "./events/EventPageTypography";
 
 /** The event's own paper fills the preview gutter, navigation and safe areas. */
 const EventCanvas = forwardRef<
@@ -71,7 +72,7 @@ const EventCanvas = forwardRef<
         } as CSSProperties
       }
     >
-      {children}
+      {appearanceScope === "authored" ? <EventPageTypography>{children}</EventPageTypography> : children}
     </div>
   );
 });

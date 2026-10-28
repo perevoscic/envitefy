@@ -1,3 +1,4 @@
+import { normalizeEventTitleFont, type EventTitleFont } from "./event-title-font";
 import { organizeLegacySchoolMemo } from "./school-memo-content";
 import { normalizeEventSectionLayout, type EventSectionLayout } from "./event-section-layout";
 import { EVENT_DESIGN_LAYOUTS, type EventCustomDesign } from "./event-custom-design";
@@ -10,6 +11,7 @@ export type EventPageComposition = {
   version: 1;
   layout?: EventCustomDesign["layout"];
   hero?: EventHeroLayout;
+  titleFont?: EventTitleFont;
   sections: EventInformationSection[];
   sectionLayout?: EventSectionLayout;
 };
@@ -48,12 +50,14 @@ export function normalizeEventPageComposition(value: unknown): EventPageComposit
     : undefined;
   const sectionLayout = normalizeEventSectionLayout(raw.sectionLayout);
   const hero = normalizeEventHeroLayout(raw.hero);
-  return layout || hero || sections.length || sectionLayout
+  const titleFont = normalizeEventTitleFont(raw.titleFont);
+  return layout || hero || titleFont || sections.length || sectionLayout
     ? organizeLegacySchoolMemo({
         version: 1,
         sections,
         ...(layout ? { layout } : {}),
         ...(hero ? { hero } : {}),
+        ...(titleFont ? { titleFont } : {}),
         ...(sectionLayout ? { sectionLayout } : {}),
       })
     : undefined;

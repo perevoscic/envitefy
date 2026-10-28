@@ -1,25 +1,35 @@
+import { applyAppearance } from "../../../src/lib/appearance";
+import UnsavedProgressProvider from "../../../src/components/UnsavedProgressProvider";
 import { createRoot } from "react-dom/client";
 import { SharedStudioCardFrame } from "../../../src/components/studio/SharedStudioCardPage";
 import EventOwnerTools from "../../../src/components/EventOwnerTools";
 
 const params = new URLSearchParams(window.location.search);
+Object.assign(window, { setOwnerAppearance: (dark: boolean) => applyAppearance(dark ? "dark" : "light", dark) });
+if (params.has("dark")) applyAppearance("dark", true);
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing fixture root");
 createRoot(root).render(
-  params.get("mode") === "workspace" ? <EventOwnerTools
+  <UnsavedProgressProvider>{  params.get("mode") === "workspace" ? <EventOwnerTools
     eventId="qa-card"
     eventTitle="Home Sweet Home"
     eventHref="/card/home-sweet-home"
-    initialTab={params.get("tab") === "dashboard" ? "dashboard" : "rsvps"}
-    numberOfGuests={8}
+    initialTab={params.get("tab") === "messages" ? "messages" : params.get("tab") === "design" ? "design" : params.get("tab") === "dashboard" ? "dashboard" : "rsvps"}
+    numberOfGuests={params.has("unknownTarget") ? 0 : 8}
     eventData={{
+      status: "published",
+      eventDate: params.has("past") ? "2020-01-01" : "2099-01-01",
+      date: params.has("past") ? "2020-01-01" : "2099-01-01",
+      startTime: "18:30", venue: "The Garden Terrace", location: "123 Garden Lane",
+      overview: "An evening of good food, warm conversation and a little celebration. We can’t wait to see you.",
       createdVia: "livecard-builder",
-      rsvpEnabled: true,
-      rsvp: { enabled: true },
+      rsvpEnabled: !params.has("rsvpOff"),
+      rsvp: { enabled: !params.has("rsvpOff") },
       publicEvent: { ownerDefaultSurface: params.has("eventPage") ? "event" : "card" },
       studioCard: {
         imageUrl: "/card.webp",
         invitationData: {
+          ...(params.has("shared") ? { sharedDesign: { backgroundUrl: "/card.webp", version: 1, font: "classic", ink: "#ffffff", accent: "#e9d5ff", surface: "#201a30" } } : {}),
           title: "Home Sweet Home",
           heroTextMode: "image",
           eventDetails: { product: "live_card", rsvpEnabled: true, rsvpName: "Host", rsvpContact: "+15555550123" },
@@ -45,7 +55,8 @@ createRoot(root).render(
         rsvpName: "Host",
         rsvpContact: params.get("contact") === "email" ? "host@example.test" : "+15555550123",
         ...(params.has("published") ? { eventId: "qa-card", rsvpEnabled: true } : {}),
+        ...(params.has("rsvpDisabled") ? { rsvpEnabled: false, actionVisibility: { rsvp: true }, rsvpUrl: "/event/qa-card#event-rsvp" } : {}),
       },
     }}
-  />,
+  />}</UnsavedProgressProvider>,
 );

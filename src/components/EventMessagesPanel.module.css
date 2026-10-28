@@ -1,0 +1,26 @@
+.messages {
+  --message-accent: var(--owner-accent, #800020);
+  --message-line: color-mix(in srgb, var(--foreground) 13%, transparent);
+  display: grid;
+  gap: 24px;
+  padding-top: 14px;
+  color: var(--foreground);
+}
+:global(html.dark) .messages { --message-accent: var(--owner-accent, #e5b1c1); }
+.panel { min-width: 0; padding: 0; background: transparent; }
+.heading { margin: 0; font-family: inherit; font-size: clamp(1.6rem, 4cqi, 2rem); font-weight: 600; line-height: 1.25; letter-spacing: -.03em; color: var(--foreground); }
+.audience { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 20px 0; padding-bottom: 16px; border-bottom: 1px solid var(--message-line); color: var(--muted-foreground); font-size: 13px; }
+.audience p { margin: 0; }
+.button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--message-line); border-radius: 8px; background: var(--surface-raised); color: var(--foreground); font-size: 13px; font-weight: 600; }
+.button:disabled { opacity: .45; cursor: not-allowed; }
+.button:focus-visible { outline: 2px solid var(--message-accent); outline-offset: 3px; }
+.primary { border-color: var(--message-accent); background: var(--message-accent); color: #fff; }
+:global(html.dark) .primary { color: #321a25; }
+.field { display: block; width: 100%; min-width: 0; min-height: 44px; margin-top: 8px; padding: 12px; border: 1px solid var(--message-line); border-radius: 8px; background: var(--field-background, var(--surface-raised)); color: var(--foreground); font: inherit; font-size: 16px; font-weight: 400; }
+.field::placeholder { color: var(--muted-foreground); }
+.field:focus-visible { outline: 2px solid var(--message-accent); outline-offset: 2px; }
+.messages label { color: var(--foreground); font-size: 13px; font-weight: 600; }
+.panel[aria-label="Message history"] { padding-top: 20px; border-top: 1px solid var(--message-line); }
+.panel[aria-label="Message history"] h3 { font-family: inherit; color: var(--foreground); font-size: 16px; }
+.panel[aria-label="Message history"] details { border-color: var(--message-line); border-radius: 8px; }
+.panel[aria-label="Message history"] summary { color: var(--foreground); }

@@ -29,18 +29,18 @@ test("owner workspace keeps public actions in the header and not duplicated unde
 
   assert.match(source, /function OwnerWorkspaceHeader/);
   assert.match(source, /owner-workspace-glass/);
-  assert.match(source, /owner-workspace-summary-card/);
+  assert.match(source, /className=\{ownerStyles.header\}/);
   assert.match(source, /pt-\[calc\(var\(--app-mobile-topbar-offset,4rem\)\+1\.35rem\)\]/);
   assert.match(globals, /owner-workspace-glass-panel/);
   assert.match(globals, /\.owner-workspace-summary-card/);
   assert.match(globals, /0 -10px 30px rgba\(15, 23, 42, 0\.08\)/);
-  assert.match(source, /flex flex-wrap items-center justify-between gap-3/);
+  assert.match(source, /className=\{ownerStyles.headerMeta\}/);
   assert.match(source, /flex shrink-0 flex-wrap items-center justify-end gap-2/);
   assert.match(source, /aria-label="Share"/);
   assert.match(source, /aria-label="Preview"/);
   assert.doesNotMatch(source, /viewCurrentLabel|View current/);
   assert.match(source, /isOwner \? "Owner workspace" : "Co-host workspace"/);
-  assert.match(source, /aria-label="Edit"/);
+  assert.match(source, /aria-label="Edit invitation"/);
   assert.match(
     source,
     /className="inline-flex h-10 w-10 items-center justify-center rounded-full text-violet-700/,
@@ -73,7 +73,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.equal([...route.matchAll(/canManageAccess=\{showOwnerAccessControls\}/g)].length, 2, "both owner surfaces hide Live Card draft invitations and retain published owner access");
   assert.match(
     headerBlock[0],
-    /href=\{editHref\}[\s\S]*onClick=\{onViewCurrent\}[\s\S]*<EventDeleteModal[\s\S]*onClick=\{onShare\}/,
+    /href=\{detailsEditHref \|\| editHref\}[\s\S]*onClick=\{onViewCurrent\}[\s\S]*<EventDeleteModal[\s\S]*onClick=\{onShare\}/,
   );
   assert.doesNotMatch(headerBlock[0], /rounded-2xl border border-slate-200 bg-white/);
   assert.doesNotMatch(headerBlock[0], /rounded-2xl bg-slate-950 text-white/);
@@ -118,36 +118,30 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   );
 });
 
-test("owner workspace exposes Dashboard RSVPs Messages and Design tabs", () => {
+test("owner workspace exposes Overview Guests Messages and Invitation tabs", () => {
   const source = readSource("src/components/EventOwnerTools.tsx");
   const sidebarSource = readSource("src/components/navigation/EventSidebar.tsx");
   const responseSource = readSource("src/components/EventResponseDashboard.tsx");
 
   assert.match(source, /const OWNER_WORKSPACE_TABS/);
   assert.match(source, /function OwnerWorkspaceTabs/);
-  assert.match(source, /label: "Dashboard"/);
-  assert.match(source, /label: "RSVPs"/);
+  assert.match(source, /label: "Overview"/);
+  assert.match(source, /label: "Guests"/);
   assert.match(source, /label: "Messages"/);
-  assert.match(source, /label: "Design"/);
-  assert.match(source, /const OWNER_TAB_COMPACT_WIDTH = 44;/);
+  assert.match(source, /label: "Invitation"/);
+  assert.match(source, /className=\{ownerStyles.tabs\}/);
   assert.doesNotMatch(source, /OWNER_TAB_HINT|hintTab|isHinted|isRevealed/);
   assert.match(source, /aria-label=\{tab.label\}/);
-  assert.match(source, /aria-selected=\{isActive\}/);
-  assert.match(source, /flex w-full items-center justify-between gap-1 sm:hidden/);
-  assert.match(source, /hidden w-full grid-cols-4 gap-1 sm:grid/);
-  assert.match(source, /inline-flex min-h-11 min-w-0 items-center justify-center gap-2/);
-  assert.match(source, /<span className="truncate">\{tab\.label\}<\/span>/);
-  assert.doesNotMatch(source, /Copy link/);
+  assert.match(source, /aria-current=\{isActive \? "page" : undefined\}/);
+  assert.match(source, /<span>\{tab\.label\}<\/span>/);
+  const tabs = source.slice(source.indexOf("function OwnerWorkspaceTabs("), source.indexOf("function EventProductPreview("));
+  assert.doesNotMatch(tabs, /Copy link/);
   assert.doesNotMatch(source, /Event settings/);
-  assert.match(
-    source,
-    /const activeOwnerTab: EventContextTab =\s*rsvpEnabled \|\| initialTab === "design" \|\| \(isGuidedCard && initialTab === "dashboard"\) \? initialTab : "design";/,
-  );
-  assert.match(source, /OWNER_WORKSPACE_TABS\.filter\(\(tab\) => tab\.key === "design" \|\| \(isGuidedCard && tab\.key === "dashboard"\)\)/);
+  assert.match(source, /const activeOwnerTab: EventContextTab = initialTab;/);
   assert.match(source, /<OwnerWorkspaceTabs/);
   assert.match(source, /activeTab=\{activeOwnerTab\}/);
   assert.match(source, /tabs=\{ownerWorkspaceTabs\}/);
-  assert.match(source, /if \(!rsvpEnabled \|\| activeTab === "design"\)/);
+  assert.match(source, /if \(activeTab === "design"\)/);
   assert.doesNotMatch(source, /RsvpDisabledPanel/);
   assert.match(source, /function buildOwnerPreviewHref/);
   assert.match(source, /function buildOwnerEmbeddedPreviewHref/);
@@ -166,7 +160,7 @@ test("owner workspace exposes Dashboard RSVPs Messages and Design tabs", () => {
   );
   assert.match(source, /<OwnerPublicLinkPanel/);
   assert.match(source, /\/api\/events\/\$\{encodeURIComponent\(eventId\)\}\/public-slug/);
-  assert.match(responseSource, /Response overview/);
+  assert.match(responseSource, /GuestBreakdownCard/);
   assert.match(
     responseSource,
     /type EventResponseDashboardTab = "dashboard" \| "rsvps" \| "messages";/,
@@ -174,9 +168,9 @@ test("owner workspace exposes Dashboard RSVPs Messages and Design tabs", () => {
   assert.match(responseSource, /activeTab === "dashboard"/);
   assert.match(responseSource, /function RsvpResponsesPanel/);
   assert.match(responseSource, /<EventMessagesPanel/);
-  assert.match(sidebarSource, /label: "RSVPs"/);
+  assert.match(sidebarSource, /label: "Guests"/);
   assert.match(sidebarSource, /label: "Messages"/);
-  assert.match(sidebarSource, /label: "Design"/);
+  assert.match(sidebarSource, /label: "Invitation"/);
   assert.doesNotMatch(responseSource, /Copy link/);
   assert.doesNotMatch(responseSource, /Public page/);
   assert.doesNotMatch(responseSource, /RSVP deadline/);
@@ -241,9 +235,9 @@ test("generated card artwork opens the dashboard Design tab without losing detai
   );
   assert.match(ownerTools, /detailsEditHref=\{editHref\}/);
   assert.match(ownerTools, /href=\{detailsEditHref\}/);
-  assert.match(ownerTools, /className="flex shrink-0 flex-wrap items-center justify-end gap-2"/);
-  assert.match(ownerTools, /!detailsEditHref \? \(/);
-  assert.match(ownerTools, /if \(!rsvpEnabled \|\| activeTab === "design"\)/);
+  assert.match(ownerTools, /ownerStyles.headerActions/);
+  assert.match(ownerTools, /href=\{detailsEditHref \|\| editHref\}/);
+  assert.match(ownerTools, /if \(activeTab === "design"\)/);
   assert.match(ownerTools, /function OwnerDesignPanel/);
   assert.match(sanitizeSource, /rawEventDetails\?\.eventTitle,\s*rawInvitationData\?\.title,/s);
   assert.match(sanitizeSource, /liveCard\?\.headline,\s*publicEvent\?\.headline,/s);
@@ -284,11 +278,11 @@ test("owner Design tab previews card edits before saving them", () => {
   assert.match(source, /import OwnerPreviewMobileTopbarSuppressor/);
   assert.match(source, /productViewerMode !== null && !hasCardPreview \? <OwnerPreviewMobileTopbarSuppressor \/> : null/);
   assert.match(source, /fixed inset-0 z-\[7001\]/);
-  assert.match(source, /"Back to editing" : "Back to dashboard"/);
+  assert.match(source, /"Back to invitation" : "Back to overview"/);
   assert.match(source, /<ArrowLeft size=\{20\}/);
   assert.match(source, /grid grid-cols-2 gap-3 md:grid-cols-3/);
-  assert.match(source, /text-slate-500 md:col-span-3/);
-  assert.match(source, /text-slate-500 md:col-span-2/);
+  assert.match(source, /text-slate-500(?: dark:text-slate-\d+)* md:col-span-3/);
+  assert.match(source, /text-slate-500(?: dark:text-slate-\d+)* md:col-span-2/);
   assert.match(source, /block min-w-0 text-xs font-black uppercase/);
   assert.match(source, /\{status === "previewing" \? "Previewing" : "Preview changes"\}/);
   assert.match(source, /onViewChanges=\{\(\) => openProductViewer\("changes"\)\}/);

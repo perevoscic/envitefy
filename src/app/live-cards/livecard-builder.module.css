@@ -1188,6 +1188,9 @@
   place-items: center;
   color: #9472ba;
 }
+.previewEmpty > [role="group"] { display: grid; gap: 12px; width: 100%; overflow-wrap: anywhere; }
+.previewEmpty > [role="group"] small { color: var(--muted-foreground); }
+
 .previewEmpty p {
   font-family: var(--font-playfair), Georgia, serif;
   font-size: 29px;
@@ -1576,3 +1579,10 @@
     gap: 7px;
   }
 }
+
+.cancelEditing { display: inline-flex; min-height: 44px; flex: none; align-items: center; justify-content: center; gap: 7px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: transparent; font-size: 14px; font-weight: 600; }
+.cancelEditing:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.cancelEditing:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.cancelEditing:disabled { opacity: .45; cursor: not-allowed; }
+
+.saveActions .cancelEditing { flex: 1; min-width: 0; }

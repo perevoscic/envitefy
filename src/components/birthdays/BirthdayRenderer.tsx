@@ -2194,7 +2194,7 @@ function EditorialFeatureLayout({
               />
             </div>
 
-            {chrome?.userRsvpResponse ? (
+            {event.rsvpEnabled && (chrome?.userRsvpResponse ? (
               <div className="relative overflow-hidden rounded-[2rem] bg-white p-8 shadow-[0_18px_48px_rgba(120,110,160,0.1)] md:p-10">
                 <div
                   className="absolute -right-12 -top-12 h-32 w-32 rounded-full blur-3xl"
@@ -2290,7 +2290,7 @@ function EditorialFeatureLayout({
                   </div>
                 </div>
               </div>
-            )}
+            ))}
 
             {chrome?.calendarLinks ? (
               <div className="rounded-[2rem] bg-[#eef3f8] p-8 shadow-[0_14px_36px_rgba(120,110,160,0.08)]">

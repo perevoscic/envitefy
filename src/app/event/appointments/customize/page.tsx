@@ -3,7 +3,11 @@
 import EventPageSections from "@/components/events/EventPageSections";
 
 import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
+import EventEditorFontStyle from "@/components/events/EventEditorFontStyle";
 import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
+import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
+import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
@@ -250,7 +254,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         const existing = row.data || {};
           if (existing.manualEditor?.snapshot) {
             const saved = existing.manualEditor.snapshot;
-            if (saved.data !== undefined) setData(saved.data);
+            if (saved.data !== undefined) setData({ ...readEventRsvpContact(existing), ...saved.data });
             if (saved.advancedState !== undefined) setAdvancedState(saved.advancedState);
             if (saved.themeId !== undefined) setThemeId(saved.themeId);
             setLoadingExisting(false);
@@ -262,6 +266,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         setSavedEventData(existing);
         setData((prev) => ({
           ...prev,
+          ...readEventRsvpContact(existing),
           title: row.title ?? existing.title ?? prev.title,
           date: existing.date ?? start.date,
           time: existing.time ?? start.time,
@@ -613,6 +618,7 @@ const rawTextClass = currentTheme?.text || "";
         onBack={() => setActiveView("main")}
         showBack
       >
+        <EventEditorFontStyle />
         <div className="space-y-3">
           <button
             onClick={() => setThemesExpanded(!themesExpanded)}
@@ -728,31 +734,10 @@ const rawTextClass = currentTheme?.text || "";
     );
 
     const renderRsvpEditor = () => (
-      <EditorLayout
-        title={rsvpCopy.editorTitle}
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EventEditorRsvpSection title={rsvpCopy.editorTitle} toggleLabel={rsvpCopy.toggleLabel} enabled={data.rsvpEnabled} onEnabledChange={enabled => setData(previous => ({ ...previous, rsvpEnabled: enabled }))} onBack={() => setActiveView("main")}>
         <div className="space-y-6">
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <span className="font-medium text-slate-700 text-sm">
-              {rsvpCopy.toggleLabel}
-            </span>
-            <button
-              onClick={() =>
-                setData((p) => ({ ...p, rsvpEnabled: !p.rsvpEnabled }))
-              }
-              className={`w-11 h-6 rounded-full transition-colors relative ${
-                data.rsvpEnabled ? "bg-indigo-600" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${
-                  data.rsvpEnabled ? "translate-x-5" : "translate-x-0"
-                }`}
-              ></span>
-            </button>
-          </div>
+
+
 
           <InputGroup
             label={rsvpCopy.deadlineLabel}
@@ -762,11 +747,13 @@ const rawTextClass = currentTheme?.text || "";
             placeholder="Set a deadline"
           />
 
+          <EventRsvpContactEditor value={data} onChange={(patch) => setData(previous => ({ ...previous, ...patch }))} />
+
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
             <strong>Preview:</strong> {rsvpCopy.helperText}
           </div>
         </div>
-      </EditorLayout>
+      </EventEditorRsvpSection>
     );
 
     const renderAdvancedEditor = (section: AdvancedSectionSpec) => (

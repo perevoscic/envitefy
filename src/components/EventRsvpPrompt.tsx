@@ -1,4 +1,5 @@
 "use client";
+import EventRsvpContactDetails from "@/components/events/EventRsvpContactDetails";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -394,6 +395,7 @@ export default function EventRsvpPrompt({
               className="mt-5 space-y-3"
               onSubmit={handleSubmit}
             >
+              <EventRsvpContactDetails value={{ rsvpName, rsvpEmail, rsvpPhone }} />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="text-sm">
                   <span className="text-foreground/70">First name</span>
@@ -516,6 +518,7 @@ export default function EventRsvpPrompt({
                 : "We’ll open your message after you share who is reaching out."}
             </p>
             <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
+              <EventRsvpContactDetails value={{ rsvpName, rsvpEmail, rsvpPhone }} />
               {guessRules.collect ? <label className="block text-sm">
                 <span>Team guess{guessRules.required ? " (required)" : " (optional)"}</span>
                 <select value={genderGuess} onChange={(event) => setGenderGuess(event.target.value)} required={guessRules.required} className="app-appearance-field mt-1 min-h-11 w-full rounded-md border border-input bg-[var(--field-background)] px-3 py-2 text-foreground">

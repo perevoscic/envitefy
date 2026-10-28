@@ -14,7 +14,20 @@ test("Messages requires preview and explicit Send, retains drafts, recovers inte
       entry: path.resolve("scripts/fixtures/event-messages/entry.tsx"),
       output: { path: output, filename: "fixture.js" },
       resolve: { extensions: [".tsx", ".ts", ".js"], alias: { "@": path.resolve("src") } },
-      module: { rules: [{ test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") }] },
+      plugins: [{ apply(compiler) {
+        compiler.hooks.compilation.tap("FixtureCss", compilation => {
+          compiled.webpack.NormalModule.getCompilationHooks(compilation).loader.tap("FixtureCss", context => {
+            context.currentTraceSpan = require("next/dist/trace").trace("fixture-css");
+          });
+        });
+      } }],
+      module: { rules: [
+        { test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") },
+        { test: /\.css$/, use: [require.resolve("next/dist/build/webpack/loaders/next-style-loader"), { loader: require.resolve("next/dist/build/webpack/loaders/css-loader/src"), options: {
+          modules: { getLocalIdent: (context, _template, name) => `${path.basename(context.resourcePath, ".module.css")}_${name}` },
+          postcss: async () => ({ postcss: require("postcss") }),
+        } }] },
+      ] },
     });
     compiler.run((error, stats) => compiler.close(() => error || stats?.hasErrors() ? reject(error || new Error(stats.toString({ all: false, errors: true }))) : resolve()));
   });

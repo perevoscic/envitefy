@@ -24,10 +24,6 @@ export default function ImportedThemeControls({
     return context ? (
       <section className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900">
         <h3 className="text-sm font-semibold">Your event theme</h3>
-        <p className="mt-1 text-sm text-slate-600">
-          Create a design for this {context.sport.replace(/[_-]/g, " ")} event
-          {context.city ? ` in ${context.city}` : ""}.
-        </p>
         <button
           type="button"
           className="mt-3 min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
@@ -58,12 +54,6 @@ export default function ImportedThemeControls({
           ))}
         </div>
       </div>
-      <p className="mt-2 text-xs leading-relaxed text-slate-600">
-        {theme.branding?.colors.length
-          ? `Colors from your ${theme.branding.origin === "website" ? "source website" : "document"}, styled for ${theme.context.sport.replace(/[_-]/g, " ")}.`
-          : `Styled for ${theme.context.sport.replace(/[_-]/g, " ")}${theme.context.city ? ` in ${theme.context.city}` : ""}.`}{" "}
-        Design changes are saved when you save the event.
-      </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"

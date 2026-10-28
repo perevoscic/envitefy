@@ -83,8 +83,10 @@ export const EVENT_DETAIL_FIELDS = [
   "venue",
   "location",
   "host",
+  "rsvpName",
   "rsvpEmail",
   "rsvpPhone",
+  "rsvpDeadline",
 ] as const;
 export type CustomEventDetails = Record<(typeof EVENT_DETAIL_FIELDS)[number], string> & {
   schoolTemplate?: SchoolTemplateKind;
@@ -257,7 +259,7 @@ export function normalizeCustomEventDetails(value: unknown): CustomEventDetails 
       return null;
     details[field] = text;
   }
-  for (const field of ["date", "endDate"] as const) {
+  for (const field of ["date", "endDate", "rsvpDeadline"] as const) {
     if (
       details[field] &&
       (!/^\d{4}-\d{2}-\d{2}$/.test(details[field]) ||
@@ -392,8 +394,10 @@ export function customEventPageData(page: CustomEventPage) {
     location: d.location || d.venue,
     hostName: d.host,
     rsvpEnabled: d.rsvpEnabled,
+    rsvpName: d.rsvpName,
     rsvpEmail: d.rsvpEmail,
     rsvpPhone: d.rsvpPhone,
+    rsvpDeadline: d.rsvpDeadline,
     registryLinks: d.registryLinks,
     ...(d.scanSchedule?.kind === "school-memo" ? { scanSchedule: d.scanSchedule, ...scanScheduleHistoryFields(d.scanSchedule), visibility: "private", noindex: true } : {}),
   };

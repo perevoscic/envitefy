@@ -1,3 +1,4 @@
+import { isPastEvent } from "@/lib/event-edit-lock";
 import { readableSchoolMemoData } from "@/lib/school-memo-typography.server";
 import { checkDiscoveryCreationSaveAccess, checkEventCreationAccess, markDiscoveryCreationSaved } from "@/lib/creation-access-server";
 import { normalizeScanSchedule, scanScheduleHistoryFields } from "@/lib/scan-schedule";
@@ -192,6 +193,9 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   const permissions = await getEventPermissions(existing, userId);
   if (!permissions.canEdit && !(existing.user_id === null && body?.claim === true)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (isPastEvent(existing.data)) {
+    return NextResponse.json({ error: "Past events cannot be edited." }, { status: 403 });
   }
   const discoveryImport = Boolean(existing.data?.pipelineSummary?.workflow || existing.data?.discoverySource?.workflow || /^(meet-discovery|football-discovery|sports-discovery)/.test(String(existing.data?.createdVia || "")));
   if (discoveryImport && permissions.canEdit) {

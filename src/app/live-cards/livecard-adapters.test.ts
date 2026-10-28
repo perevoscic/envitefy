@@ -106,3 +106,11 @@ test("reopening a card retains owner contact edits and deliberately cleared cont
     "old@example.com",
   );
 });
+
+test("reopening live cards follows saved RSVP enablement and cleared deadlines", () => {
+  const form = { ...createLiveCardForm(), rsvpEnabled: true, rsvpDeadline: "2027-04-10" };
+  assert.equal(restoreLiveCardForm(form, { rsvpEnabled: false })?.rsvpEnabled, false);
+  const restored = restoreLiveCardForm({ ...form, rsvpEnabled: false }, { rsvpEnabled: true, rsvpDeadline: "" });
+  assert.equal(restored?.rsvpEnabled, true);
+  assert.equal(restored?.rsvpDeadline, "");
+});

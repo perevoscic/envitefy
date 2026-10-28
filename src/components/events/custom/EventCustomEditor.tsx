@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   EventEditorInput,
+  EventEditorSwitch,
   EventEditorSections,
   EventEditorToggle,
 } from "@/components/events/EventEditorFields";
@@ -464,8 +465,10 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
       | "time"
       | "endDate"
       | "endTime"
+      | "rsvpName"
       | "rsvpEmail"
       | "rsvpPhone"
+      | "rsvpDeadline"
     >,
     label: string,
     type = "text",
@@ -647,14 +650,8 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                           : "Your selected image is saved when you choose Save draft or Publish."}
                       </p>
                       <fieldset className={styles.field}>
-                        <legend>Typography</legend>
-                        <FontPairingSelect
-                          options={EVENT_DESIGN_FONT_PAIRS}
-                          value={page.design.font}
-                          onChange={(font) =>
-                            setPage({ ...page, design: { ...page.design, font } })
-                          }
-                        />
+                        <legend>Font style</legend>
+                        <FontPairingSelect options={EVENT_DESIGN_FONT_PAIRS} value={page.design.font} onChange={(font) => setPage({ ...page, design: { ...page.design, font } })} />
                       </fieldset>
                       <div className={styles.columns}>
                         {(["page", "surface", "ink", "accent"] as const).map((key) => (
@@ -691,27 +688,15 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                 id: "rsvp",
                 title: "RSVP",
                 description: "Guest response settings and contacts.",
-                content: (
-                  <>
-                    <div className={styles.group}>
-                      <h2>RSVP</h2>
-                      <label className={styles.check}>
-                        <input
-                          type="checkbox"
-                          checked={d.rsvpEnabled}
-                          onChange={(e) => updateDetail("rsvpEnabled", e.target.checked)}
-                        />
-                        Allow guests to RSVP
-                      </label>
-                      {d.rsvpEnabled && (
-                        <>
-                          {field("rsvpEmail", "RSVP email (optional)", "email")}
-                          {field("rsvpPhone", "RSVP phone (optional)", "tel")}
-                        </>
-                      )}
-                    </div>
-                  </>
-                ),
+                action: <EventEditorSwitch label="Enable RSVP" checked={d.rsvpEnabled} onChange={enabled => updateDetail("rsvpEnabled", enabled)} />,
+                content: d.rsvpEnabled ? (
+                  <div className={styles.group}>
+                    {field("rsvpDeadline", "RSVP deadline", "date")}
+                    {field("rsvpName", "RSVP contact name")}
+                    {field("rsvpEmail", "RSVP email (optional)", "email")}
+                    {field("rsvpPhone", "RSVP phone (optional)", "tel")}
+                  </div>
+                ) : null,
               },
               {
                 id: "registry",

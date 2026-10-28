@@ -17,6 +17,12 @@ async function main() {
   const out = path.resolve("output/livecard-provider-evidence", scenario);
   await fs.mkdir(out, { recursive: true });
   const form = { ...createLiveCardForm("America/Chicago"), eventType: "General event", title: "Movie Under the Stars", headlineIntro: scenario === "no-opening" ? "" : "You’re invited", design: "A cinematic outdoor movie night, navy twilight sky with stars, warmly illuminated movie screen, popcorn and lawn chairs, immersive layered scene. Coordinated gold expressive movie marquee lettering." };
+  if (scenario === "birthday") {
+    form.eventType = "Birthday";
+    form.title = "Cheers to 30";
+    form.headlineIntro = "Let's celebrate";
+    form.design = "A joyful birthday garden party with colorful wildflowers, glowing string lights and vibrant coral and purple bespoke lettering.";
+  }
   if (scenario === "reference-photo") {
     const photo = await fs.readFile("public/templates/weddings/rustic-boho/detail-hands.webp");
     form.referenceUrl = `data:image/webp;base64,${photo.toString("base64")}`;

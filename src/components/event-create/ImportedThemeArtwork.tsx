@@ -1,6 +1,10 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { readImportedEventTheme, redesignImportedEventTheme, type ImportedEventTheme } from "@/lib/imported-event-theme";
+import {
+  readImportedEventTheme,
+  redesignImportedEventTheme,
+  type ImportedEventTheme,
+} from "@/lib/imported-event-theme";
 type Artwork = {
   themeId: string;
   status: "generating" | "ready" | "failed";
@@ -79,7 +83,10 @@ export default function ImportedThemeArtwork({
       });
       const result = await response.json().catch(() => null);
       if (!response.ok || !result)
-        throw Error(result?.error || `The image request could not be started (${response.status}). Your current image is kept.`);
+        throw Error(
+          result?.error ||
+            `The image request could not be started (${response.status}). Your current image is kept.`,
+        );
       setRefresh((value) => value + 1);
     } catch (reason) {
       setArtwork(null);
@@ -89,58 +96,44 @@ export default function ImportedThemeArtwork({
   if (syncOnly || !theme?.enabled) return null;
   return (
     <div className="mt-3 border-t border-slate-200 pt-3">
-      {artwork?.status === "ready" && artwork.themeId !== theme.id && artwork.imageUrl !== theme.artworkUrl ? (
-        <div className="mb-3">
-          <p className="text-sm text-slate-600">A previously generated event image is available.</p>
-          <button
-            type="button"
-            className="mt-2 min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold hover:bg-slate-50"
-            onClick={() => onChange({ ...theme, artworkUrl: artwork.imageUrl })}
-          >
-            Use generated image
-          </button>
-        </div>
-      ) : null}
-      {artwork?.status === "generating" ? (
+      {artwork?.status === "ready" &&
+      artwork.themeId !== theme.id &&
+      artwork.imageUrl !== theme.artworkUrl ? (
+        <button
+          type="button"
+          className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold hover:bg-slate-50"
+          onClick={() => onChange({ ...theme, artworkUrl: artwork.imageUrl })}
+        >
+          Use generated image
+        </button>
+      ) : artwork?.status === "generating" ? (
         <p role="status" className="text-sm text-slate-700">
-          Creating and checking your event image… You can keep editing.
+          Creating event image…
         </p>
       ) : theme.artworkUrl && artwork?.status !== "failed" ? (
-        <>
-          <p className="text-sm text-slate-600">Original event image ready.</p>
-          <button
-            type="button"
-            disabled={!eventId}
-            className="mt-2 min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"
-            onClick={() => {
-              const next = redesignImportedEventTheme(theme);
-              const replacement = { ...theme, id: next.id, revision: next.revision };
-              onChange(replacement);
-              void generate(replacement);
-            }}
-          >
-            Replace event image
-          </button>
-          <p className="mt-1 text-xs text-slate-600">
-            Generates and checks one new image. Your current image stays visible until it passes.
-          </p>
-        </>
+        <button
+          type="button"
+          disabled={!eventId}
+          className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"
+          onClick={() => {
+            const next = redesignImportedEventTheme(theme);
+            const replacement = { ...theme, id: next.id, revision: next.revision };
+            onChange(replacement);
+            void generate(replacement);
+          }}
+        >
+          Replace event image
+        </button>
       ) : (
-        <>
-          <button
-            type="button"
-            disabled={!eventId}
-            className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"
-            onClick={() => void generate()}
-          >
-            {artwork?.status === "failed" ? "Retry event image" : "Generate event image"}
-          </button>
-          <p className="mt-1 text-xs text-slate-600">
-            {eventId
-              ? "Uses OpenAI image generation once for this design. Your current image stays visible."
-              : "Save a draft first so generation can be recovered after a reload."}
-          </p>
-        </>
+        <button
+          type="button"
+          disabled={!eventId}
+          title={!eventId ? "Save a draft to generate an image" : undefined}
+          className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"
+          onClick={() => void generate()}
+        >
+          {artwork?.status === "failed" ? "Retry event image" : "Generate event image"}
+        </button>
       )}
       {artwork?.error || error ? (
         <p role="alert" className="mt-2 text-sm text-red-700">

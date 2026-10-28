@@ -4,15 +4,14 @@ import {
   CheckCircle2,
   Clock3,
   Mail,
-  Pencil,
   Phone,
-  Users,
+  Search,
   XCircle,
 } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import EventMessagesPanel from "@/components/EventMessagesPanel";
 import OwnerRsvpEditor from "@/components/OwnerRsvpEditor";
+import styles from "./EventResponseDashboard.module.css";
 
 type RsvpStats = {
   yes: number;
@@ -35,7 +34,6 @@ type RsvpResponse = {
   updatedAt: string | null;
 };
 
-type DashboardVariant = "generic" | "weddings";
 type EventResponseDashboardTab = "dashboard" | "rsvps" | "messages";
 
 type EventResponseDashboardProps = {
@@ -50,27 +48,6 @@ type EventResponseDashboardProps = {
 
 function readString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
-}
-
-function firstString(...values: unknown[]): string {
-  for (const value of values) {
-    const text = readString(value);
-    if (text) return text;
-  }
-  return "";
-}
-
-function normalizeCategory(value: unknown): string {
-  return readString(value).toLowerCase().replace(/[_-]+/g, " ");
-}
-
-function resolveDashboardVariant(eventData: Record<string, unknown> | null): DashboardVariant {
-  const category = normalizeCategory(firstString(eventData?.category, eventData?.eventType));
-  const templateId = normalizeCategory(eventData?.templateId);
-  if (category === "weddings" || category === "wedding" || templateId === "wedding") {
-    return "weddings";
-  }
-  return "generic";
 }
 
 function normalizeResponse(value: unknown): "yes" | "maybe" | "no" {
@@ -139,8 +116,6 @@ export default function EventResponseDashboard({
   eventTitle,
   eventData,
   numberOfGuests,
-  rsvpEnabled,
-  editHref,
 }: EventResponseDashboardProps) {
   const [stats, setStats] = useState<RsvpStats | null>(null);
   const [responses, setResponses] = useState<RsvpResponse[]>([]);
@@ -194,8 +169,6 @@ export default function EventResponseDashboard({
     };
   }, [eventId, refreshRsvpData]);
 
-  const variant = resolveDashboardVariant(eventData);
-
   const displayStats: RsvpStats = stats || {
     yes: 0,
     no: 0,
@@ -205,7 +178,7 @@ export default function EventResponseDashboard({
     numberOfGuests,
   };
   const hasResponses = responses.length > 0;
-  const responseTarget = displayStats.numberOfGuests || numberOfGuests || displayStats.filled;
+  const responseTarget = displayStats.numberOfGuests || numberOfGuests;
   const responseRate =
     responseTarget > 0
       ? Math.min(100, Math.round((displayStats.filled / responseTarget) * 100))
@@ -213,46 +186,9 @@ export default function EventResponseDashboard({
         ? 100
         : 0;
   const recentResponses = responses.slice(0, 3);
-  const hasRsvpSurface = Boolean(rsvpEnabled || responseTarget > 0 || hasResponses);
-  const isWedding = variant === "weddings";
-  const responseSummary = loading
-    ? "Checking guest response activity."
-    : hasResponses
-      ? `${displayStats.filled} ${displayStats.filled === 1 ? "guest has" : "guests have"} responded${
-          responseTarget ? ` out of ${responseTarget}` : ""
-        }.`
-      : "No guest replies yet. Share the event when the page is ready.";
-  const statusLabel = loading
-    ? "Updating"
-    : hasResponses
-      ? responseRate >= 70
-        ? "Healthy response pace"
-        : "Collecting responses"
-      : "Ready for first guests";
+  const shellClass = styles.dashboard;
 
-  const shellClass = "relative bg-transparent";
-  const eyebrowClass = isWedding ? "text-[#9d7d51]" : "text-[#786bd6]";
 
-  if (!hasRsvpSurface && !loading) {
-    return (
-      <section className="owner-workspace-glass relative overflow-hidden rounded-[28px] border border-dashed border-slate-300 bg-white/82 p-6 text-center shadow-[0_20px_58px_rgba(79,70,128,0.10)]">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
-          <Users size={22} />
-        </div>
-        <h3 className="mt-4 text-2xl font-semibold text-slate-950">No RSVP collection yet</h3>
-        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
-          RSVP collection has not been configured for this event.
-        </p>
-        <Link
-          href={editHref}
-          className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-bold text-white transition hover:bg-slate-800"
-        >
-          <Pencil size={15} />
-          Add RSVP
-        </Link>
-      </section>
-    );
-  }
 
   return (
     <section className={shellClass} aria-label={`Event dashboard for ${eventTitle || "event"}`}>
@@ -265,73 +201,32 @@ export default function EventResponseDashboard({
 
         {activeTab === "dashboard" ? (
           <>
-            <section className="owner-workspace-glass-panel relative overflow-hidden rounded-[24px] border border-black/5 bg-white/82 p-4 shadow-sm sm:p-5">
-              <div className="flex flex-col gap-4">
-                <div className="min-w-0">
-                  <p
-                    className={`text-[0.66rem] font-black uppercase tracking-[0.18em] ${eyebrowClass}`}
-                  >
-                    Response overview
-                  </p>
-                  <h3 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl">
-                    {loading
-                      ? "Loading RSVP status"
-                      : hasResponses
-                        ? `${responseRate}% complete`
-                        : "No responses yet"}
-                  </h3>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                    {responseSummary}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-5">
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className={`h-full rounded-full transition-[width] ${
-                      isWedding ? "bg-[#596046]" : "bg-[#6c60db]"
-                    }`}
-                    style={{ width: `${loading ? 0 : responseRate}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-                  {statusLabel}
-                </p>
-              </div>
-            </section>
-
-            <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-              <MetricCard label="Responses" value={loading ? "--" : displayStats.filled} />
-              <MetricCard label="Going" value={loading ? "--" : displayStats.yes} tone="emerald" />
-              <MetricCard label="Maybe" value={loading ? "--" : displayStats.maybe} tone="amber" />
-              <MetricCard label="Pending" value={loading ? "--" : displayStats.remaining} />
-            </section>
-
-            <div className="grid gap-4 2xl:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.35fr)]">
+            <div className={styles.dashboardDetails}>
               <RecentResponsesCard
                 responses={recentResponses}
                 loading={loading}
-                isWedding={isWedding}
               />
-              <GuestBreakdownCard
-                stats={displayStats}
-                responseRate={responseRate}
-                loading={loading}
-                isWedding={isWedding}
-              />
+              <GuestBreakdownCard stats={displayStats} responseRate={responseRate} loading={loading} />
             </div>
           </>
         ) : null}
 
         {activeTab === "rsvps" ? (
-          <RsvpResponsesPanel
-            eventId={eventId}
-            eventData={eventData}
-            responses={responses}
-            stats={displayStats}
-            responseRate={responseRate}
-            loading={loading}
-          />
+          <>
+            <section className={styles.metrics} aria-label="Response summary">
+              <MetricCard label="Responses" value={loading ? "--" : displayStats.filled} />
+              <MetricCard label="Going" value={loading ? "--" : displayStats.yes} tone="emerald" />
+              <MetricCard label="Maybe" value={loading ? "--" : displayStats.maybe} tone="amber" />
+              <MetricCard label={displayStats.numberOfGuests > 0 ? "Pending" : "Not attending"} value={loading ? "--" : displayStats.numberOfGuests > 0 ? displayStats.remaining : displayStats.no} />
+            </section>
+            <RsvpResponsesPanel
+              key={eventId}
+              eventId={eventId}
+              eventData={eventData}
+              responses={responses}
+              loading={loading}
+            />
+          </>
         ) : null}
 
         {activeTab === "messages" ? (
@@ -351,19 +246,10 @@ function MetricCard({
   value: number | string;
   tone?: "slate" | "emerald" | "amber";
 }) {
-  const toneClass =
-    tone === "emerald"
-      ? "border-emerald-100 bg-emerald-50 text-emerald-800"
-      : tone === "amber"
-        ? "border-amber-100 bg-amber-50 text-amber-800"
-        : "border-black/5 bg-white/78 text-slate-950";
-
   return (
-    <article
-      className={`owner-workspace-glass-panel relative overflow-hidden rounded-[20px] border p-3.5 shadow-sm sm:rounded-[22px] sm:p-4 ${toneClass}`}
-    >
-      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] opacity-60">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tracking-normal sm:text-3xl">{value}</p>
+    <article className={styles.metric} data-tone={tone === "emerald" ? "going" : tone === "amber" ? "maybe" : "neutral"}>
+      <p><span aria-hidden="true" />{label}</p>
+      <strong>{value}</strong>
     </article>
   );
 }
@@ -376,13 +262,13 @@ function ContactCell({ row }: { row: RsvpResponse }) {
   return (
     <div className="space-y-1.5">
       {email ? (
-        <span className="flex min-w-0 items-center gap-1.5 text-sm text-slate-600">
+        <span className="flex min-w-0 items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
           <Mail size={13} aria-hidden="true" />
           <span className="truncate">{email}</span>
         </span>
       ) : null}
       {phone ? (
-        <span className="flex min-w-0 items-center gap-1.5 text-sm text-slate-600">
+        <span className="flex min-w-0 items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
           <Phone size={13} aria-hidden="true" />
           <span className="truncate">{phone}</span>
         </span>
@@ -395,248 +281,166 @@ function RsvpResponsesPanel({
   eventId,
   eventData,
   responses,
-  stats,
-  responseRate,
   loading,
 }: {
   eventId: string;
   eventData: Record<string, unknown> | null;
   responses: RsvpResponse[];
-  stats: RsvpStats;
-  responseRate: number;
   loading: boolean;
 }) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const query = search.trim().toLocaleLowerCase();
+  const filtered = responses.filter((row) =>
+    (statusFilter === "all" || normalizeResponse(row.response) === statusFilter) &&
+    (!query || [displayName(row), row.email, row.phone, responseMessage(row)]
+      .some((value) => value?.toLocaleLowerCase().includes(query))),
+  );
   return (
-    <section className="space-y-4" aria-label="RSVP responses">
-      <div className="owner-workspace-glass-panel relative overflow-hidden rounded-[24px] border border-black/5 bg-white/82 p-4 shadow-sm sm:p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-[0.66rem] font-black uppercase tracking-[0.18em] text-[#786bd6]">
-              RSVPs
-            </p>
-            <h3 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl">
-              {loading ? "Loading guest list" : `${stats.filled} responses`}
-            </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Review every guest response, contact detail, and RSVP note in one place.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm sm:text-right">
-            <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-slate-400">
-              Complete
-            </p>
-            <p className="mt-1 text-2xl font-semibold text-slate-950">
-              {loading ? "--" : `${responseRate}%`}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <MetricCard label="Total" value={loading ? "--" : stats.numberOfGuests || stats.filled} />
-        <MetricCard label="Going" value={loading ? "--" : stats.yes} tone="emerald" />
-        <MetricCard label="Maybe" value={loading ? "--" : stats.maybe} tone="amber" />
-        <MetricCard label="Pending" value={loading ? "--" : stats.remaining} />
-      </section>
-
-      <section className="owner-workspace-glass-panel relative overflow-hidden rounded-[28px] border border-black/5 bg-white/86 shadow-sm">
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
+    <section className={styles.rsvps} aria-label="RSVP responses">
+      <section className={styles.guestPanel} aria-label="Guest responses">
+        <div className={styles.panelHeader}>
           <OwnerRsvpEditor key={eventId} eventId={eventId} eventData={eventData} />
         </div>
+        {responses.length > 0 ? (
+          <div className={styles.toolbar}>
+            <label className={styles.search}>
+              <Search size={17} aria-hidden="true" />
+              <span className="sr-only">Search guests</span>
+              <input type="search" placeholder="Search guests…" value={search}
+                onChange={(event) => setSearch(event.target.value)} />
+            </label>
+            <label>
+              <span className="sr-only">Filter RSVP status</span>
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                <option value="all">All statuses</option>
+                <option value="yes">Going</option>
+                <option value="maybe">Maybe</option>
+                <option value="no">Not attending</option>
+              </select>
+            </label>
+          </div>
+        ) : null}
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left">
-            <thead className="bg-slate-50/80">
-              <tr className="text-[0.66rem] font-black uppercase tracking-[0.14em] text-slate-400">
-                <th className="px-4 py-3 sm:px-5">Guest</th>
-                <th className="px-4 py-3">Contact</th>
-                <th className="px-4 py-3">RSVP</th>
-                <th className="px-4 py-3">Message</th>
-                <th className="px-4 py-3">Updated</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                [0, 1, 2].map((item) => (
-                  <tr key={item}>
-                    <td className="px-4 py-4 sm:px-5" colSpan={5}>
-                      <div className="h-12 animate-pulse rounded-2xl bg-slate-100" />
-                    </td>
-                  </tr>
-                ))
-              ) : responses.length ? (
-                responses.map((row, index) => {
-                  const status = statusMeta(row.response);
-                  const StatusIcon = status.icon;
-                  const message = responseMessage(row);
-                  return (
-                    <tr key={responseKey(row, index)} className="text-sm">
-                      <td className="px-4 py-4 font-semibold text-slate-900 sm:px-5">
-                        {displayName(row)}
-                      </td>
-                      <td className="max-w-[220px] px-4 py-4">
-                        <ContactCell row={row} />
-                      </td>
-                      <td className="px-4 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-black ${status.className}`}
-                        >
-                          <StatusIcon size={13} aria-hidden="true" />
-                          {status.label}
-                        </span>
-                      </td>
-                      <td className="max-w-[260px] px-4 py-4 text-slate-500">
-                        {message ? <span className="line-clamp-2">{message}</span> : "-"}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-semibold text-slate-400">
-                        {displayUpdatedAt(row.updatedAt || row.createdAt)}
-                      </td>
+        {loading ? (
+          <div className={styles.loading} role="status" aria-label="Loading guest responses">
+            {[0, 1, 2].map((item) => <div key={item} className="h-12 animate-pulse rounded-lg bg-slate-100 motion-reduce:animate-none" />)}
+          </div>
+        ) : filtered.length ? (
+          <>
+            <div className={styles.desktopTable}>
+              <table>
+                <caption className="sr-only">Guest responses</caption>
+                <thead><tr>
+                  <th scope="col">Guest</th><th scope="col">Contact</th>
+                  <th scope="col">RSVP</th><th scope="col">Message</th><th scope="col">Updated</th>
+                </tr></thead>
+                <tbody>
+                  {filtered.map((row, index) => (
+                    <tr key={responseKey(row, index)}>
+                      <th scope="row">{displayName(row)}</th>
+                      <td><ContactCell row={row} /></td>
+                      <td><ResponseStatus response={row.response} /></td>
+                      <td className={styles.message}>{responseMessage(row) || "—"}</td>
+                      <td className={styles.updated}>{displayUpdatedAt(row.updatedAt || row.createdAt)}</td>
                     </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td className="px-4 py-10 text-center sm:px-5" colSpan={5}>
-                    <div className="mx-auto flex max-w-md flex-col items-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-                        <Users size={22} />
-                      </div>
-                      <p className="mt-3 text-base font-semibold text-slate-950">
-                        No RSVP responses yet
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-slate-500">
-                        Guest details will populate here after the event page is shared.
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className={styles.mobileGuests}>
+              {filtered.map((row, index) => (
+                <article key={responseKey(row, index)} className={styles.guest}>
+                  <div className={styles.guestHeading}>
+                    <h4>{displayName(row)}</h4>
+                    <ResponseStatus response={row.response} />
+                  </div>
+                  <ContactCell row={row} />
+                  {responseMessage(row) ? <p className={styles.message}>{responseMessage(row)}</p> : null}
+                  <p className={styles.updated}>Updated {displayUpdatedAt(row.updatedAt || row.createdAt)}</p>
+                </article>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className={styles.empty} role="status">
+            <div className={styles.emptyIcon}><Mail size={27} strokeWidth={1.4} aria-hidden="true" /></div>
+            <h4>{responses.length ? "No guests match this view" : "Awaiting your first RSVP"}</h4>
+            <p>{responses.length ? "Try another status or search term." : "Guest responses will appear here after you share your invitation."}</p>
+            {responses.length ? <button type="button" className={styles.clearFilters} onClick={() => { setSearch(""); setStatusFilter("all"); }}>Clear filters</button> : null}
+          </div>
+        )}
       </section>
     </section>
   );
 }
 
-function GuestBreakdownCard({
-  stats,
-  responseRate,
-  loading,
-  isWedding,
-}: {
+function ResponseStatus({ response }: { response: string }) {
+  const status = statusMeta(response);
+  const Icon = status.icon;
+  return <span className={`${styles.status} ${status.className}`}>
+    <Icon size={13} aria-hidden="true" />{status.label}
+  </span>;
+}
+
+function GuestBreakdownCard({ stats, responseRate, loading }: {
   stats: RsvpStats;
   responseRate: number;
   loading: boolean;
-  isWedding: boolean;
 }) {
-  const total = Math.max(1, stats.yes + stats.maybe + stats.no + stats.remaining);
-  const yesStop = (stats.yes / total) * 100;
-  const maybeStop = yesStop + (stats.maybe / total) * 100;
-  const noStop = maybeStop + (stats.no / total) * 100;
-  const chartColors = isWedding
-    ? {
-        yes: "#c9975a",
-        maybe: "#e6e9c7",
-        no: "#cf6d6a",
-        pending: "#e8e5dc",
-      }
-    : {
-        yes: "#6c60db",
-        maybe: "#f2c76a",
-        no: "#df6f7c",
-        pending: "#e9e4f5",
-      };
+  const hasTarget = stats.numberOfGuests > 0;
+  const pending = hasTarget ? stats.remaining : 0;
+  const total = Math.max(1, stats.yes + stats.maybe + stats.no + pending);
+  const yesStop = stats.yes / total * 100;
+  const maybeStop = yesStop + stats.maybe / total * 100;
+  const noStop = maybeStop + stats.no / total * 100;
+  const rows = [
+    { label: "Going", value: stats.yes, color: "var(--rsvp-accent)" },
+    { label: "Maybe", value: stats.maybe, color: "#f2c76a" },
+    { label: "Declined", value: stats.no, color: "#df6f7c" },
+    ...(hasTarget ? [{ label: "Pending", value: pending, color: "var(--rsvp-line)" }] : []),
+  ];
   const chartStyle = {
-    background: `conic-gradient(${chartColors.yes} 0 ${yesStop}%, ${chartColors.maybe} ${yesStop}% ${maybeStop}%, ${chartColors.no} ${maybeStop}% ${noStop}%, ${chartColors.pending} ${noStop}% 100%)`,
+    background: `conic-gradient(var(--rsvp-accent) 0 ${yesStop}%, #f2c76a ${yesStop}% ${maybeStop}%, #df6f7c ${maybeStop}% ${noStop}%, var(--rsvp-line) ${noStop}% 100%)`,
   };
-
   return (
-    <article className="owner-workspace-glass-panel relative overflow-hidden rounded-[28px] border border-black/5 bg-white/78 p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-400">
-            Guest breakdown
-          </p>
-          <h4 className="mt-1 text-xl font-semibold text-slate-950">
-            {loading
-              ? "Loading responses"
-              : stats.filled > 0
-                ? `${responseRate}% complete`
-                : "No replies yet"}
-          </h4>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white">
-          <Users size={20} />
-        </div>
-      </div>
-
-      <div className="mt-6 grid gap-6 md:grid-cols-[180px_minmax(0,1fr)] md:items-center">
-        <div className="mx-auto grid h-44 w-44 place-items-center rounded-full" style={chartStyle}>
-          <div className="grid h-28 w-28 place-items-center rounded-full bg-white text-center shadow-inner">
-            <span className="text-3xl font-semibold text-slate-950">{stats.filled}</span>
-            <span className="-mt-5 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-              replies
-            </span>
+    <section className={styles.detailPanel} aria-label="RSVP breakdown">
+      <p className={styles.overviewLabel}>Guest breakdown</p>
+      <h4>{loading ? "Loading responses" : stats.filled ? hasTarget ? `${responseRate}% complete` : `${stats.filled} responses` : "No responses yet"}</h4>
+      <div className={styles.breakdown}>
+        <div className={styles.chart} style={chartStyle} role="img"
+          aria-label={loading ? "Loading RSVP breakdown" : rows.map(row => `${row.label}: ${row.value}`).join(", ")}>
+          <div className={styles.chartCenter}>
+            <strong>{loading ? "—" : stats.filled}</strong>
+            <span>replies</span>
           </div>
         </div>
-
-        <div className="space-y-3">
-          <BreakdownRow label="Going" value={stats.yes} color={chartColors.yes} />
-          <BreakdownRow label="Maybe" value={stats.maybe} color={chartColors.maybe} />
-          <BreakdownRow label="Declined" value={stats.no} color={chartColors.no} />
-          <BreakdownRow label="Pending" value={stats.remaining} color={chartColors.pending} />
-          {isWedding ? (
-            <p className="pt-2 text-sm leading-6 text-slate-500">
-              Use this dashboard to keep guest counts, confirmations, and wedding details aligned.
-            </p>
-          ) : null}
-        </div>
+        <dl className={styles.legend}>
+          {rows.map(row => <div key={row.label}>
+            <dt><span style={{ background: row.color }} />{row.label}</dt>
+            <dd>{loading ? "—" : row.value}</dd>
+          </div>)}
+        </dl>
       </div>
-    </article>
-  );
-}
-
-function BreakdownRow({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
-      <span className="inline-flex items-center gap-2 text-sm font-bold text-slate-600">
-        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-        {label}
-      </span>
-      <span className="text-sm font-bold text-slate-950">{value}</span>
-    </div>
+    </section>
   );
 }
 
 function RecentResponsesCard({
   responses,
   loading,
-  isWedding,
 }: {
   responses: RsvpResponse[];
   loading: boolean;
-  isWedding: boolean;
 }) {
-  const activityShellClass = isWedding
-    ? "border border-[#e7e1d4] bg-[#fffdf8] text-slate-950"
-    : "border border-[#ded8ff] bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(249,247,255,0.94)_100%)] text-slate-950";
-  const livePillClass = isWedding
-    ? "border-[#e2d7c1] bg-[#fbfaf4] text-[#9d7d51]"
-    : "border-[#d9d3ff] bg-[#f5f2ff] text-[#6c60db]";
-  const loadingClass = isWedding ? "bg-[#efe8d9]" : "bg-[#eeeaff]";
-  const emptyClass = isWedding
-    ? "border-[#e7e1d4] bg-[#fbfaf7] text-slate-600"
-    : "border-[#e1dcff] bg-white/78 text-slate-600";
-
   return (
     <article
-      className={`owner-workspace-glass-panel relative overflow-hidden rounded-[28px] p-5 shadow-sm ${activityShellClass}`}
+      className={styles.detailPanel}
     >
       <div className="flex items-center justify-between gap-3">
-        <h4 className="text-xl font-semibold text-slate-950">Recent activity</h4>
+        <h4 className="text-xl font-semibold text-slate-950 dark:text-slate-100">Recent activity</h4>
         <span
-          className={`rounded-full border px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] ${livePillClass}`}
+          className={styles.liveLabel}
         >
           Live
         </span>
@@ -645,7 +449,7 @@ function RecentResponsesCard({
       <div className="mt-5 space-y-1">
         {loading ? (
           [0, 1, 2].map((item) => (
-            <div key={item} className={`h-16 animate-pulse rounded-2xl ${loadingClass}`} />
+            <div key={item} className="h-16 animate-pulse rounded-lg bg-slate-100 motion-reduce:animate-none" />
           ))
         ) : responses.length > 0 ? (
           responses.map((row, index) => {
@@ -672,7 +476,7 @@ function RecentResponsesCard({
             );
           })
         ) : (
-          <div className={`rounded-2xl border p-4 text-sm leading-6 ${emptyClass}`}>
+          <div className={styles.activityEmpty}>
             Responses will appear here as guests reply.
           </div>
         )}

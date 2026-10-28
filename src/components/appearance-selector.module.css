@@ -1,9 +1,18 @@
 .selector {
+  --toggle-border: rgb(91 63 209 / 18%);
+  --toggle-shadow: 0 2px 3px rgb(34 28 53 / 5%), 0 5px 12px -4px rgb(74 47 191 / 18%);
+  --toggle-thumb-shadow: 0 1px 3px rgb(34 28 53 / 18%);
   min-inline-size: 0;
   max-inline-size: 100%;
   margin: 0;
   padding: 0;
   border: 0;
+}
+
+:global(html.dark) .selector {
+  --toggle-border: rgb(221 200 255 / 24%);
+  --toggle-shadow: 0 2px 3px rgb(235 224 255 / 8%), 0 5px 12px -4px rgb(221 200 255 / 24%);
+  --toggle-thumb-shadow: 0 1px 4px rgb(235 224 255 / 20%);
 }
 
 .label {
@@ -46,37 +55,31 @@
   align-items: center;
   inline-size: 56px;
   block-size: 28px;
-  padding: 2px;
+  box-sizing: border-box;
+  padding: 1px;
+  border: 1px solid var(--toggle-border);
   border-radius: 999px;
   background: color-mix(in srgb, var(--foreground) 5%, var(--card));
-  box-shadow:
-    0 -1px 4px color-mix(in srgb, var(--foreground) 7%, transparent),
-    inset 0 1px 2px color-mix(in srgb, var(--foreground) 5%, transparent);
+  box-shadow: var(--toggle-shadow);
   pointer-events: none;
   transition: background-color 180ms ease, box-shadow 180ms ease;
 }
 
 .switch[data-state="checked"] .track {
   background: color-mix(in srgb, var(--focus-ring) 18%, var(--muted));
-  box-shadow:
-    0 -2px 8px color-mix(in srgb, var(--focus-ring) 20%, transparent),
-    0 0 12px color-mix(in srgb, var(--focus-ring) 24%, transparent),
-    inset 0 1px 2px color-mix(in srgb, var(--focus-ring) 18%, transparent);
 }
 
 .thumb {
   position: absolute;
   z-index: 1;
-  inset-block-start: 2px;
-  inset-inline-start: 2px;
+  inset-block-start: 1px;
+  inset-inline-start: 1px;
   inline-size: 24px;
   block-size: 24px;
   border: 1px solid color-mix(in srgb, var(--secondary-foreground) 82%, var(--focus-ring));
   border-radius: 50%;
   background: var(--secondary-foreground);
-  box-shadow:
-    0 -1px 3px color-mix(in srgb, var(--foreground) 5%, transparent),
-    0 2px 4px color-mix(in srgb, var(--foreground) 14%, transparent);
+  box-shadow: var(--toggle-thumb-shadow);
   transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -111,7 +114,7 @@
 }
 
 .switch:active .thumb {
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 18%, transparent);
+  box-shadow: var(--toggle-thumb-shadow);
 }
 
 .switch:focus-visible .track {

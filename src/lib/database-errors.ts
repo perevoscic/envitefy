@@ -27,7 +27,7 @@ const DATABASE_UNAVAILABLE_CODES = new Set([
 const DATABASE_UNAVAILABLE_MESSAGE =
   /authentication failed|circuit breaker open|connection terminated|connection timeout|connect timeout|database connection unavailable|getaddrinfo|invalid auth|invalid password|network is unreachable|not known|password authentication failed|permission denied|refused|terminated unexpectedly|timeout|too many (?:authentication errors|clients|connections)/i;
 const DATABASE_CAPACITY_MESSAGE =
-  /EMAXCONNSESSION|EMAXCLIENTS|max clients reached|max client connections reached|too many (?:clients|connections)/i;
+  /timeout exceeded when trying to connect|EMAXCONNSESSION|EMAXCLIENTS|max clients reached|max client connections reached|too many (?:clients|connections)/i;
 
 function readStringField(value: Record<string, unknown>, field: string): string {
   return typeof value[field] === "string" ? value[field] : "";
