@@ -31,6 +31,7 @@
 /output/
 /qa-artifacts/
 # Files attached to local Codex conversations are reference inputs.
+/.codex-attachments/
 /.codex-remote-attachments/
 /.tools/
 /tmp/
@@ -63,6 +64,8 @@ snap-my-date-406402b828d0.json
 pgssl.key
 
 /src/generated/prisma
+/src/generated/runtime-styles.json
+/public/styles/runtime/
 
 /src/prisma/migrations
 .clawpatch

@@ -63,6 +63,24 @@ test("the main page stays on the dashboard when signed in and shows the landing 
   }
 });
 
+test("stylesheet scope follows the resolved page and overwrites incoming scope headers", async () => {
+  for (const [path, cookie, expected] of [
+    ["/", "", "landing"],
+    ["/landing", "", "landing"],
+    ["/landing/", "", "landing"],
+    ["/", "next-auth.session-token=test-session", "application"],
+    ["/settings", "next-auth.session-token=test-session", "application"],
+    ["/event/football", "", "application"],
+    ["/card/sample-card", "", "application"],
+  ]) {
+    const response = await middleware(new NextRequest(`https://envitefy.test${path}`, {
+      headers: { cookie, "x-envitefy-style-scope": expected === "landing" ? "application" : "landing" },
+    }));
+    assert.equal(response.headers.get("x-middleware-request-x-envitefy-style-scope"), expected, path);
+    assert.ok(response.headers.get("x-middleware-override-headers").includes("x-envitefy-style-scope"), path);
+  }
+});
+
 test("current cards and help APIs do not enter the retirement redirect", async () => {
   for (const path of ["/card/birthday", "/api/guest-chat", "/api/livecard/assist", "/concierge-v20"]) {
     const response = await middleware(new NextRequest(`https://envitefy.test${path}`, {

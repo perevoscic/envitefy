@@ -2,9 +2,9 @@
   "port": 3100,
   "paths": ["/landing", "/gymnastics", "/snap"],
   "numberOfRuns": 3,
+  "profiles": ["mobile", "desktop"],
   "settings": {
     "onlyCategories": ["performance", "accessibility"],
-    "formFactor": "mobile",
     "throttlingMethod": "devtools"
   },
   "chromeFlags": ["--headless=new", "--no-sandbox"],

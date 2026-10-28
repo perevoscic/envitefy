@@ -211,8 +211,15 @@ export async function middleware(req: NextRequest) {
   const normalizedPathname = stripTrailingSlash(pathname);
 
   // helper to return with a marker header
+  const styleHeaders = (scope = normalizedPathname === "/landing" ? "landing" : "application") => {
+    const requestHeaders = new Headers(req.headers);
+    // Always replace a client-supplied value. Only the landing page opts into
+    // the smaller stylesheet; editors, galleries and saved pages keep all CSS.
+    requestHeaders.set("x-envitefy-style-scope", scope);
+    return requestHeaders;
+  };
   const ok = () => {
-    const res = NextResponse.next();
+    const res = NextResponse.next({ request: { headers: styleHeaders() } });
     res.headers.set("x-mw-version", "v2"); // <<< marker
     return res;
   };
@@ -421,7 +428,7 @@ export async function middleware(req: NextRequest) {
       // Render landing content at "/" without changing the URL
       const url = req.nextUrl.clone();
       url.pathname = "/landing";
-      const res = NextResponse.rewrite(url);
+      const res = NextResponse.rewrite(url, { request: { headers: styleHeaders("landing") } });
       res.headers.set("x-mw-version", "v2");
       return res;
     }

@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
+import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_SERVER } from "next/constants";
 import retiredBabyDesigns from "./src/data/baby-shower-retired-designs.json";
 
 const resolveDevDistDir = () => {
@@ -40,6 +40,15 @@ const nextConfig = (phase: string): NextConfig => ({
   // Keep dev artifacts out of `.next` so `next build` doesn't race with `next dev`.
   distDir: phase === PHASE_DEVELOPMENT_SERVER ? resolveDevDistDir() : ".next",
   devIndicators: false,
+  // Preserve CSS dependency order and avoid loose merging of unrelated route
+  // modules into the homepage's render-blocking stylesheets.
+  experimental: { cssChunking: "strict" },
+  async headers() {
+    return [{
+      source: "/styles/runtime/:path*",
+      headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+    }];
+  },
   async redirects() {
     return [
       {
@@ -127,4 +136,12 @@ const nextConfig = (phase: string): NextConfig => ({
   },
 });
 
-export default nextConfig;
+export default async function config(phase: string): Promise<NextConfig> {
+  // Generate before Next resolves the stylesheet manifest. `next start` serves
+  // the assets produced by the build without loading build-time dependencies.
+  if (phase !== PHASE_PRODUCTION_SERVER) {
+    const { generateRuntimeStyles } = await import("./scripts/lib/runtime-styles.mjs");
+    await generateRuntimeStyles();
+  }
+  return nextConfig(phase);
+}

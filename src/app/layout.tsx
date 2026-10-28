@@ -3,7 +3,13 @@ import Script from "next/script";
 import { getServerSession } from "next-auth";
 import Providers from "./providers";
 import AppShell from "./AppShell";
-import "./globals.css";
+import RuntimeStyles from "@/components/RuntimeStyles";
+import RuntimeStyleBoundary from "@/components/RuntimeStyleBoundary";
+// Development keeps Next's normal CSS hot reload. Production serves the same
+// canonical styles through a route-specific, content-hashed stylesheet.
+if (process.env.NODE_ENV !== "production") {
+  require("./globals.css");
+}
 // Shared chrome must be styled before the dynamically loaded sidebar mounts.
 import "@/components/navigation/navigation-appearance.module.css";
 import "@/components/navigation/concierge-sheet.module.css";
@@ -189,6 +195,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className={`${fontVarsClass} antialiased`}>
+        <RuntimeStyles />
         <script id="appearance-bootstrap" dangerouslySetInnerHTML={{ __html: buildAppearanceBootstrap() }} />
         <Script
           id="ld-website"
@@ -231,9 +238,11 @@ export default async function RootLayout({
           })();
         `}</Script>
         <Providers session={serverSession}>
-          <Suspense fallback={null}>
-            <AppShell serverSession={serverSession}>{children}</AppShell>
-          </Suspense>
+          <RuntimeStyleBoundary>
+            <Suspense fallback={null}>
+              <AppShell serverSession={serverSession}>{children}</AppShell>
+            </Suspense>
+          </RuntimeStyleBoundary>
         </Providers>
       </body>
     </html>

@@ -2,17 +2,84 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { evaluateAssertions, stopServer, waitForServer } from "./run-lighthouse.mjs";
+import {
+  evaluateAssertions,
+  resolveRunConfiguration,
+  stopChrome,
+  stopServer,
+  summarizeReports,
+  waitForServer,
+} from "./run-lighthouse.mjs";
 
-const { assertions } = JSON.parse(
+const config = JSON.parse(
   await readFile(new URL("../lighthouse.config.json", import.meta.url), "utf8"),
 );
+const { assertions } = config;
 const report = (accessibility = 0.9, performance = 0.8, lcp = 2500, cls = 0.1) => ({
   categories: { accessibility: { score: accessibility }, performance: { score: performance } },
   audits: {
     "largest-contentful-paint": { numericValue: lcp },
     "cumulative-layout-shift": { numericValue: cls },
   },
+});
+
+test("the default production audit covers mobile and desktop on its owned local server", () => {
+  const resolved = resolveRunConfiguration(config);
+  assert.deepEqual(resolved.profiles, ["mobile", "desktop"]);
+  assert.deepEqual(resolved.paths, config.paths);
+  assert.equal(resolved.origin, `http://localhost:${config.port}`);
+  assert.equal(resolved.startServer, true);
+  assert.equal(resolved.numberOfRuns, 3);
+});
+
+test("explicit targets allow the same profile and run count on live production and local builds", () => {
+  for (const origin of ["https://envitefy.com", "http://localhost:3101"]) {
+    const resolved = resolveRunConfiguration(config, [
+      "--origin",
+      origin,
+      "--path",
+      "/",
+      "--path",
+      "/landing",
+      "--profile",
+      "desktop",
+      "--runs",
+      "2",
+      "--output-dir",
+      "output/css-audit",
+    ]);
+    assert.equal(resolved.origin, origin);
+    assert.equal(resolved.startServer, false);
+    assert.deepEqual(resolved.paths, ["/", "/landing"]);
+    assert.deepEqual(resolved.profiles, ["desktop"]);
+    assert.equal(resolved.numberOfRuns, 2);
+    assert.equal(resolved.outputDir, "output/css-audit");
+  }
+});
+
+test("invalid profiles, origins and paths fail before starting a server or browser", () => {
+  for (const args of [
+    ["--profile", "tablet"],
+    ["--profile", "mobile", "--profile", "mobile"],
+    ["--origin", "file:///tmp/report"],
+    ["--origin", "https://user:password@envitefy.com"],
+    ["--origin", "https://envitefy.com/landing"],
+    ["--path", "//another.example/"],
+    ["--path", "https://envitefy.com/"],
+    ["--runs", "0"],
+    ["--runs", "1.5"],
+    ["--runs", "invalid"],
+  ])
+    assert.throws(() => resolveRunConfiguration(config, args));
+});
+
+test("median metrics preserve every run and do not turn missing metrics into zero", () => {
+  const reports = [report(1, 0.9, 2000), report(0.9, 0.8, 5000), report(0.8, 0.7, 3000)];
+  const metrics = summarizeReports(reports);
+  assert.deepEqual(metrics.largestContentfulPaintMs, { median: 3000, values: [2000, 5000, 3000] });
+  assert.equal(metrics.performance.median, 0.8);
+  assert.deepEqual(metrics.firstContentfulPaintMs, { median: null, values: [null, null, null] });
+  assert.equal(summarizeReports(reports.slice(0, 2)).largestContentfulPaintMs.median, 3500);
 });
 
 test("threshold boundaries pass and use the best value for each metric across three runs", () => {
@@ -109,4 +176,25 @@ test("startup timeout leaves the caller able to clean up the server", async () =
     await stopServer(server);
   }
   assert.ok(server.exitCode !== null || server.signalCode !== null);
+});
+
+test("browser cleanup errors remain failures without leaving a referenced child handle", async () => {
+  const cleanupError = new Error("EPERM: browser temporary directory cleanup failed");
+  let released = false;
+  await assert.rejects(
+    stopChrome({
+      kill() {
+        throw cleanupError;
+      },
+      chromeProcess: {
+        unref() {
+          released = true;
+        },
+      },
+    }),
+    (error) => error === cleanupError,
+  );
+  assert.equal(released, true);
+  await stopChrome(undefined);
+  await stopChrome({ kill() {} });
 });

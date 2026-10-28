@@ -6,9 +6,94 @@ import { createRequire } from "node:module";
 import { createServer } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const require = createRequire(import.meta.url);
+
+// An explicit origin audits an already-running site. Without it, retain the
+// existing behavior of owning a local production server and cleaning it up.
+export function resolveRunConfiguration(config, args = []) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      origin: { type: "string" },
+      path: { type: "string", multiple: true },
+      profile: { type: "string", multiple: true },
+      runs: { type: "string" },
+      "output-dir": { type: "string" },
+    },
+  });
+  const originUrl = new URL(values.origin ?? `http://localhost:${config.port}`);
+  if (
+    !["http:", "https:"].includes(originUrl.protocol) ||
+    originUrl.username ||
+    originUrl.password ||
+    originUrl.pathname !== "/" ||
+    originUrl.search ||
+    originUrl.hash
+  )
+    throw new Error(
+      "Lighthouse origin must be an HTTP(S) origin without credentials, path, query or fragment.",
+    );
+  const origin = originUrl.origin;
+  const paths = values.path ?? config.paths;
+  if (
+    !Array.isArray(paths) ||
+    !paths.length ||
+    paths.some(
+      (route) =>
+        typeof route !== "string" ||
+        !route.startsWith("/") ||
+        new URL(route, origin).origin !== origin,
+    )
+  )
+    throw new Error("Lighthouse paths must target the selected origin.");
+  const profiles = values.profile ?? config.profiles ?? [config.settings?.formFactor ?? "mobile"];
+  if (
+    !Array.isArray(profiles) ||
+    !profiles.length ||
+    profiles.some((profile) => !["mobile", "desktop"].includes(profile)) ||
+    new Set(profiles).size !== profiles.length
+  )
+    throw new Error("Lighthouse profiles must contain mobile and/or desktop without duplicates.");
+  const numberOfRuns = values.runs === undefined ? config.numberOfRuns : Number(values.runs);
+  if (!Number.isInteger(numberOfRuns) || numberOfRuns < 1)
+    throw new Error("numberOfRuns must be a positive integer.");
+  evaluateAssertions([], config.assertions);
+  return {
+    ...config,
+    origin,
+    paths,
+    profiles,
+    numberOfRuns,
+    outputDir: values["output-dir"] ?? config.outputDir,
+    startServer: values.origin === undefined,
+  };
+}
+
+export function summarizeReports(reports) {
+  const median = (values) => {
+    const numbers = values.filter(Number.isFinite).sort((a, b) => a - b);
+    if (!numbers.length) return null;
+    const middle = Math.floor(numbers.length / 2);
+    return numbers.length % 2 ? numbers[middle] : (numbers[middle - 1] + numbers[middle]) / 2;
+  };
+  const metrics = {
+    performance: (report) => report.categories?.performance?.score,
+    accessibility: (report) => report.categories?.accessibility?.score,
+    firstContentfulPaintMs: (report) => report.audits?.["first-contentful-paint"]?.numericValue,
+    largestContentfulPaintMs: (report) => report.audits?.["largest-contentful-paint"]?.numericValue,
+    cumulativeLayoutShift: (report) => report.audits?.["cumulative-layout-shift"]?.numericValue,
+    totalBlockingTimeMs: (report) => report.audits?.["total-blocking-time"]?.numericValue,
+  };
+  return Object.fromEntries(
+    Object.entries(metrics).map(([key, read]) => {
+      const values = reports.map(read).map((value) => (Number.isFinite(value) ? value : null));
+      return [key, { median: median(values), values }];
+    }),
+  );
+}
 
 // LHCI's default is optimistic: the best value for each assertion across runs.
 // Keep that behavior, including inclusive thresholds and non-failing warnings.
@@ -91,6 +176,17 @@ export async function stopServer(server) {
   });
 }
 
+export async function stopChrome(chrome) {
+  try {
+    await chrome?.kill();
+  } finally {
+    // chrome-launcher can throw on Windows temp-directory cleanup after its
+    // process termination attempt. Do not let that child handle keep a failed
+    // audit command alive after its summary has been written.
+    chrome?.chromeProcess?.unref();
+  }
+}
+
 async function ensurePortAvailable(port) {
   const probe = createServer();
   await new Promise((resolve, reject) => {
@@ -101,19 +197,12 @@ async function ensurePortAvailable(port) {
   });
 }
 
-export async function runLighthouse() {
-  const config = JSON.parse(await readFile(path.join(root, "lighthouse.config.json"), "utf8"));
-  const origin = `http://localhost:${config.port}`;
-  if (!Number.isInteger(config.numberOfRuns) || config.numberOfRuns < 1)
-    throw new Error("numberOfRuns must be a positive integer.");
-  if (
-    !Array.isArray(config.paths) ||
-    !config.paths.length ||
-    config.paths.some((route) => new URL(route, origin).origin !== origin)
-  ) {
-    throw new Error("Lighthouse paths must target the local production server.");
-  }
-  evaluateAssertions([], config.assertions);
+export async function runLighthouse(args = process.argv.slice(2)) {
+  const config = resolveRunConfiguration(
+    JSON.parse(await readFile(path.join(root, "lighthouse.config.json"), "utf8")),
+    args,
+  );
+  const { origin } = config;
   const baseDirectory = path.resolve(root, config.outputDir);
   await mkdir(baseDirectory, { recursive: true });
   const outputDirectory = await mkdtemp(
@@ -131,7 +220,7 @@ export async function runLighthouse() {
         // An interrupt can arrive before launch has spawned Chrome. Wait for
         // launch to settle so a detached browser cannot appear after cleanup.
         await chromeLaunch?.catch(() => {});
-        await chrome?.kill();
+        await stopChrome(chrome);
       } finally {
         await stopServer(server);
       }
@@ -158,69 +247,97 @@ export async function runLighthouse() {
   process.once("SIGTERM", onTerminate);
   console.log(`Lighthouse reports: ${outputDirectory}`);
   try {
-    await ensurePortAvailable(config.port);
+    if (config.startServer) await ensurePortAvailable(config.port);
     const { default: lighthouse } = await import("lighthouse");
     const { Launcher } = await import("chrome-launcher");
+    const { default: desktopConfig } = await import("lighthouse/core/config/desktop-config.js");
     checkInterrupted();
-    server = spawn(
-      process.execPath,
-      [
-        require.resolve("next/dist/bin/next"),
-        "start",
-        "--port",
-        String(config.port),
-        "--hostname",
-        "localhost",
-      ],
-      {
-        cwd: root,
-        env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" },
-        stdio: ["ignore", "pipe", "inherit"],
-      },
-    );
-    server.stdout.pipe(process.stdout);
-    await waitForServer(server);
+    if (config.startServer) {
+      server = spawn(
+        process.execPath,
+        [
+          require.resolve("next/dist/bin/next"),
+          "start",
+          "--port",
+          String(config.port),
+          "--hostname",
+          "localhost",
+        ],
+        {
+          cwd: root,
+          env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" },
+          stdio: ["ignore", "pipe", "inherit"],
+        },
+      );
+      server.stdout.pipe(process.stdout);
+      await waitForServer(server);
+    }
     checkInterrupted();
     chrome = new Launcher({ chromeFlags: config.chromeFlags, handleSIGINT: false });
     chromeLaunch = chrome.launch();
     await chromeLaunch;
     checkInterrupted();
-    for (const [index, route] of config.paths.entries()) {
-      const url = new URL(route, origin).href;
-      const page = { url, runs: [] };
-      summary.pages.push(page);
-      const reports = [];
-      for (let run = 1; run <= config.numberOfRuns; run++) {
-        checkInterrupted();
-        console.log(`Auditing ${route}, run ${run}/${config.numberOfRuns}…`);
-        const result = await lighthouse(url, {
-          ...config.settings,
-          port: chrome.port,
-          output: ["html", "json"],
-          logLevel: "error",
-        });
-        if (!result) throw new Error(`Lighthouse returned no result for ${url}`);
-        const name = `${index + 1}-${new URL(url).pathname.replaceAll(/[^a-zA-Z0-9-]/g, "_")}-${run}`;
-        await writeFile(path.join(outputDirectory, `${name}.html`), result.report[0]);
-        await writeFile(path.join(outputDirectory, `${name}.json`), result.report[1]);
-        reports.push(result.lhr);
-        page.runs.push({
-          run,
-          finalUrl: result.lhr.finalDisplayedUrl,
-          html: `${name}.html`,
-          json: `${name}.json`,
-        });
-        page.result = evaluateAssertions(reports, config.assertions);
-        // Save partial progress even if a later audit crashes or is interrupted.
-        await saveSummary();
-        if (result.lhr.runtimeError)
-          throw new Error(`Lighthouse failed for ${url}: ${result.lhr.runtimeError.message}`);
-      }
-      for (const assertion of page.result.assertions) {
-        const status = assertion.passed ? "PASS" : assertion.level.toUpperCase();
-        console.log(
-          `${status} ${route} ${assertion.id}: ${assertion.actual ?? "missing"} (${assertion.metric} ${assertion.expected})`,
-        );
+    for (const profile of config.profiles) {
+      for (const [index, route] of config.paths.entries()) {
+        const url = new URL(route, origin).href;
+        const page = { url, profile, runs: [] };
+        summary.pages.push(page);
+        const reports = [];
+        for (let run = 1; run <= config.numberOfRuns; run++) {
+          checkInterrupted();
+          console.log(`Auditing ${route} (${profile}), run ${run}/${config.numberOfRuns}…`);
+          const result = await lighthouse(
+            url,
+            {
+              ...config.settings,
+              formFactor: profile,
+              port: chrome.port,
+              output: ["html", "json"],
+              logLevel: "error",
+            },
+            profile === "desktop" ? desktopConfig : undefined,
+          );
+          if (!result) throw new Error(`Lighthouse returned no result for ${url}`);
+          const name = `${profile}-${index + 1}-${new URL(url).pathname.replaceAll(/[^a-zA-Z0-9-]/g, "_")}-${run}`;
+          await writeFile(path.join(outputDirectory, `${name}.html`), result.report[0]);
+          await writeFile(path.join(outputDirectory, `${name}.json`), result.report[1]);
+          reports.push(result.lhr);
+          const stylesheets =
+            result.lhr.audits["network-requests"]?.details?.items?.filter(
+              (request) => request.resourceType === "Stylesheet",
+            ) ?? [];
+          page.runs.push({
+            run,
+            finalUrl: result.lhr.finalDisplayedUrl,
+            html: `${name}.html`,
+            json: `${name}.json`,
+            lighthouseVersion: result.lhr.lighthouseVersion,
+            settings: result.lhr.configSettings,
+            stylesheets: {
+              count: stylesheets.length,
+              transferBytes: stylesheets.reduce(
+                (total, request) => total + (request.transferSize ?? 0),
+                0,
+              ),
+              resourceBytes: stylesheets.reduce(
+                (total, request) => total + (request.resourceSize ?? 0),
+                0,
+              ),
+            },
+          });
+          page.result = evaluateAssertions(reports, config.assertions);
+          page.metrics = summarizeReports(reports);
+          // Save partial progress even if a later audit crashes or is interrupted.
+          await saveSummary();
+          if (result.lhr.runtimeError)
+            throw new Error(`Lighthouse failed for ${url}: ${result.lhr.runtimeError.message}`);
+        }
+        for (const assertion of page.result.assertions) {
+          const status = assertion.passed ? "PASS" : assertion.level.toUpperCase();
+          console.log(
+            `${status} ${route} (${profile}) ${assertion.id}: ${assertion.actual ?? "missing"} (${assertion.metric} ${assertion.expected})`,
+          );
+        }
       }
     }
     summary.passed = summary.pages.every((page) => page.result.passed);
