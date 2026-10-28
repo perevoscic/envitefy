@@ -26,6 +26,9 @@ unrelated route styles being merged into public chunks. Shared navigation, Conci
 load through the root layout. Development retains the ordinary global CSS import
 and Next CSS hot reload.
 
+Only the visible hero image is preloaded, with an explicit high fetch priority.
+The separate sample image farther down the page uses native lazy loading.
+
 Generated assets have immutable one-year caching. Local generation retains old
 hashes, but a fresh deployment contains only its own generated assets. Production
 startup does not regenerate CSS or import the build tools. As with other public
@@ -58,3 +61,6 @@ The Lighthouse runner defaults to both mobile and desktop. `--profile mobile`
 or `--profile desktop` selects one. It preserves every run and reports medians.
 Use the same origin, machine, profiles and cache conditions for timing comparisons;
 live-site and local-server timing differences cannot be attributed solely to CSS.
+The ordinary Next local server uses HTTP/1.1. Use an HTTPS HTTP/2 test origin for
+representative production connection behavior, and confirm the request protocols
+in the Lighthouse network audit before comparing timings.

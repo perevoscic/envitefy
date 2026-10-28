@@ -42,7 +42,6 @@ function SampleEventPage() {
             src="/images/landing/hero/garden-brunch-desktop.webp"
             alt="A sunlit garden table with flowers and a place set for brunch"
             fill
-            priority
             sizes="(min-width: 1024px) 392px, (min-width: 600px) 400px, calc(100vw - 56px)"
             className={styles.artworkImage}
           />
@@ -307,6 +306,7 @@ export default function ProductLandingHero({ onCreate }: { onCreate: () => void 
               alt="A flower-filled garden table, ready for everyone to arrive"
               fill
               priority
+              fetchPriority="high"
               sizes="(max-width: 600px) 44vw, 24vw"
             />
             <span className={styles.portraitCaption}>Good things start with an invitation.</span>

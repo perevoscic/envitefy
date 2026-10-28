@@ -356,6 +356,22 @@ test("the guest preview is clearly a sample and never sends responses or saves a
   );
 });
 
+test("the visible hero owns image loading priority while the lower guest sample stays lazy", () => {
+  const source = readSource("src/app/landing/sections/ProductLandingHero.tsx");
+  const images = [...source.matchAll(/<Image\b([\s\S]*?)\/>/g)]
+    .map((match) => match[1])
+    .filter((attributes) => attributes.includes('src="/images/landing/hero/garden-brunch-desktop.webp"'));
+  assert.equal(images.length, 2, "the portrait and guest sample keep their existing artwork");
+  const portrait = images.find((attributes) => attributes.includes('alt="A flower-filled garden table, ready for everyone to arrive"'));
+  const sample = images.find((attributes) => attributes.includes('alt="A sunlit garden table with flowers and a place set for brunch"'));
+  assert.ok(portrait);
+  assert.ok(sample);
+  assert.match(portrait, /\bpriority\s/);
+  assert.match(portrait, /fetchPriority="high"/);
+  assert.doesNotMatch(sample, /\bpriority\b|fetchPriority="high"|loading="eager"/,
+    "the below-fold sample must not preload or compete with the visible portrait");
+});
+
 test("homepage retains canonical invitation metadata and public root routing", () => {
   const page = readSource("src/app/landing/page.tsx");
   const middleware = readSource("src/middleware.ts");
@@ -366,7 +382,7 @@ test("homepage retains canonical invitation metadata and public root routing", (
   assert.match(page, /"@type":\s*"WebPage"/);
   assert.doesNotMatch(page, /FAQPage/);
   assert.match(middleware, /url\.pathname = "\/landing"/);
-  assert.match(middleware, /NextResponse\.rewrite\(url\)/);
+  assert.match(middleware, /NextResponse\.rewrite\(url(?:,|\))/);
 });
 
 test("landing preserves canonical wordmark, prepared assets and public font delivery", () => {
