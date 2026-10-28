@@ -2,7 +2,7 @@ import path from "node:path";
 import { createCanvas, GlobalFonts } from "@napi-rs/canvas";
 import sharp from "sharp";
 import { cardFontRoles, suggestCardTypography, type SharedCardDesign } from "./shared-card-design";
-import { readableCardFont } from "./card-font-coverage";
+import { cardFontFilename, readableCardFont } from "./card-font-coverage";
 import type { LiveCardForm } from "./livecard-builder";
 
 // A 320px phone shows a 288px card after preview margins: 84/56 become 24/16px.
@@ -15,7 +15,7 @@ type Context = ReturnType<ReturnType<typeof createCanvas>["getContext"]>;
 type Line = { text: string; size: number; family: string; weight: number; height: number };
 
 function registerFont(font: { family: string; url: string }) {
-  if (!GlobalFonts.has(font.family) && !GlobalFonts.registerFromPath(path.join(process.cwd(), "public", font.url), font.family))
+  if (!GlobalFonts.has(font.family) && !GlobalFonts.registerFromPath(path.join(process.cwd(), "public", "fonts", "birthday", cardFontFilename(font.url)), font.family))
     throw new Error("The card typeface could not be loaded. Please try again.");
 }
 function luminance(hex: string) {

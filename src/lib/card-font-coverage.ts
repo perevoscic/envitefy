@@ -5,11 +5,19 @@ import { CARD_FONTS } from "./shared-card-design";
 type Font = { family: string; url: string };
 const coverage = new Map<string, (codepoint: number) => boolean>();
 
+export function cardFontFilename(url: string): string {
+  const filename = /^\/fonts\/birthday\/([a-z0-9-]+\.ttf)$/i.exec(url)?.[1];
+  if (!filename) throw new Error("The card typeface is not a bundled birthday font.");
+  return filename;
+}
+
 /** Read bundled TrueType cmap tables; do not rely on host-installed fallback fonts. */
 function fontCoverage(font: Font) {
   const cached = coverage.get(font.url);
   if (cached) return cached;
-  const bytes = fs.readFileSync(path.join(process.cwd(), "public", font.url));
+  // Keep the literal font directory visible to Next's file tracer. A dynamic
+  // path beneath `public` causes every template image to enter the function.
+  const bytes = fs.readFileSync(path.join(process.cwd(), "public", "fonts", "birthday", cardFontFilename(font.url)));
   let cmap = 0;
   for (let i = 0; i < bytes.readUInt16BE(4); i++) {
     const offset = 12 + i * 16;

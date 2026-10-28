@@ -30,9 +30,14 @@ export async function resolveCampaignSourceImage(
       relative.split("/").some((part) => !part || part === "." || part === "..")
     )
       return null;
-    const campaignRoot = await realpath(path.join(process.cwd(), ".qa", "create-campaign"));
     const runtimeRoot = await realpath(configured);
-    if (!inside(campaignRoot, runtimeRoot)) return null;
+    // Validate canonical ownership without constructing an absolute QA asset
+    // directory, which Next would copy into production function traces.
+    const runtimeParts = path.relative(process.cwd(), runtimeRoot).split(path.sep);
+    const prefix = runtimeParts.slice(0, 2).join("/");
+    if (runtimeParts.length < 3 ||
+        (process.platform === "win32" ? prefix.toLowerCase() : prefix) !== ".qa/create-campaign")
+      return null;
     const marker: { kind?: string; runtimeDir?: string } = JSON.parse(
       await readFile(path.join(runtimeRoot, ".campaign-runtime.json"), "utf8"),
     );

@@ -21,11 +21,15 @@ async function captureCampaignEmail(message: TransactionalEmail): Promise<boolea
   }
   const runtimeDir = process.env.ENVITEFY_CAMPAIGN_RUNTIME_DIR;
   if (!runtimeDir) throw new Error("Campaign email capture requires its runtime directory.");
-  const campaignRoot = await realpath(path.join(process.cwd(), ".qa", "create-campaign"));
   const runtimeRoot = await realpath(runtimeDir);
   const resolvedMailDir = await realpath(mailDir);
-  const relativeRuntime = path.relative(campaignRoot, runtimeRoot);
-  if (!relativeRuntime || relativeRuntime.startsWith("..") || path.isAbsolute(relativeRuntime) || resolvedMailDir !== path.join(runtimeRoot, "mail")) {
+  // Keep canonical ownership checks relative so Next cannot infer the local QA
+  // directory as a production asset that needs to be bundled.
+  const runtimeParts = path.relative(process.cwd(), runtimeRoot).split(path.sep);
+  const prefix = runtimeParts.slice(0, 2).join("/");
+  if (runtimeParts.length < 3 ||
+      (process.platform === "win32" ? prefix.toLowerCase() : prefix) !== ".qa/create-campaign" ||
+      resolvedMailDir !== path.join(runtimeRoot, "mail")) {
     throw new Error("Campaign email capture must stay inside its owned runtime directory.");
   }
   const marker: { kind?: string; runtimeDir?: string } = JSON.parse(

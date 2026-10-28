@@ -6,7 +6,7 @@ const { chromium } = require("playwright");
 const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
 
-test("custom URLs work across Event Pages, Live Cards and Sign-up Forms without saving pending content", { timeout: 180000 }, async () => {
+test("Event Page and Sign-up Form URLs save separately; Live Card editor navigation preserves pending content", { timeout: 180000 }, async () => {
   const output = path.resolve(".qa/product-urls");
   await new Promise((resolve, reject) => {
     const compiler = compiled.webpack({ mode: "development", target: "web", devtool: false,
@@ -110,22 +110,22 @@ test("custom URLs work across Event Pages, Live Cards and Sign-up Forms without 
     records.set(id, record("live_card", { status: "draft", createdVia: "livecard-builder", liveCardBuilder: { form: forms.card } }));
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${base}/live-cards?mode=livecard&edit=${id}`);
+    const writesBeforeCardEdit = writes.length;
+    const cardSteps = page.getByRole("navigation", { name: "Card creation steps", exact: true });
+    assert.equal(await page.getByLabel("Event title", { exact: true }).inputValue(), "A family celebration", "the saved card wording hydrates before editing");
     await page.getByLabel("Event title", { exact: true }).fill("Pending card title");
-    await page.getByRole("button", { name: "2 Event details", exact: true }).click();
-    await page.getByRole("button", { name: "Custom URL", exact: true }).click();
-    await input.fill("family-celebration");
-    await page.getByText(`${base}/card/family-celebration`, { exact: true }).waitFor();
-    await page.getByRole("button", { name: "Save link", exact: true }).click();
-    await page.getByRole("status").filter({ hasText: "Link updated" }).waitFor();
-    assert.equal(records.get(id).data.status, "draft", "customizing a card URL never publishes it");
-    assert.equal(records.get(id).data.liveCardBuilder.form.title, "A family celebration", "Save link does not save pending card wording");
-    const dialog = page.getByRole("dialog", { name: "Custom URL", exact: true });
-    const bounds = await dialog.boundingBox();
-    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 391, "mobile URL dialog fits the viewport");
-    await page.screenshot({ path: path.join(output, "livecard-mobile.png") });
-    await page.getByRole("button", { name: "Close custom URL" }).click();
-    await page.getByRole("button", { name: "1 Your card", exact: true }).click();
-    assert.equal(await page.getByLabel("Event title", { exact: true }).inputValue(), "Pending card title", "URL editing preserves mounted card wording");
+    assert.equal(await page.getByRole("button", { name: "Custom URL", exact: true }).count(), 0, "card URL editing belongs in the owner workspace Invitation tab");
+    await cardSteps.getByRole("button", { name: "2 Guest details", exact: true }).click();
+    await page.getByRole("heading", { name: "Finish your guest details", exact: true }).waitFor();
+    assert.equal(await cardSteps.getByRole("button", { name: "2 Guest details", exact: true }).getAttribute("aria-current"), "step");
+    assert.equal(await page.getByRole("button", { name: "Custom URL", exact: true }).count(), 0, "guest details does not restore the obsolete card URL dialog");
+    await page.screenshot({ path: path.join(output, "livecard-mobile-guest-details.png") });
+    await cardSteps.getByRole("button", { name: "1 Event & design", exact: true }).click();
+    assert.equal(await page.getByLabel("Event title", { exact: true }).inputValue(), "Pending card title", "card navigation preserves pending wording");
+    assert.equal(writes.length, writesBeforeCardEdit, "card editing and step navigation never save implicitly");
+    assert.equal(records.get(id).data.liveCardBuilder.form.title, "A family celebration", "pending card wording remains unsaved");
+    assert.equal(records.get(id).data.status, "draft", "card navigation never publishes a draft");
+    assert.equal(records.get(id).public_slug, "original-link", "card navigation preserves its saved URL");
 
     forms.signup.title = "Parent conferences";
     records.set(id, record("signup_form", { category: "Sign-up Forms", status: "draft", signupForm: forms.signup,

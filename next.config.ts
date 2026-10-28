@@ -29,6 +29,12 @@ const pdfProcessingRoutes = [
   "/api/parse/*/enrich",
   "/api/events/*/original",
 ];
+const liveCardRuntimeFiles = [
+  "./public/fonts/birthday/*.ttf",
+  "./node_modules/@napi-rs/canvas/**/*",
+  "./node_modules/@napi-rs/canvas-*/**/*",
+  "./node_modules/ffmpeg-static/ffmpeg*",
+];
 
 const nextConfig = (phase: string): NextConfig => ({
   // Keep dev artifacts out of `.next` so `next build` doesn't race with `next dev`.
@@ -61,14 +67,20 @@ const nextConfig = (phase: string): NextConfig => ({
   // `next dev` is more stable when it runs without standalone packaging artifacts.
   ...(phase === PHASE_DEVELOPMENT_SERVER ? {} : { output: "standalone" }),
   outputFileTracingRoot: process.cwd(),
+  outputFileTracingExcludes: {
+    // Campaign media and mail capture are development-only. Never package local
+    // screenshots, test databases or generated fixtures with production routes.
+    "/*": ["./.qa/**/*"],
+  },
   outputFileTracingIncludes: {
     // Next matches these globs as substrings. Require the route to end here so
     // /api/upload does not add PDF files to /api/uploads/birthday-asset.
     ...Object.fromEntries(
       pdfProcessingRoutes.map((route) => [`${route}(?![\\s\\S])`, [...pdfRuntimeFiles]]),
     ),
-    "/api/livecard-builder/jobs": ["./public/fonts/birthday/*.ttf", "./node_modules/@napi-rs/canvas/**/*", "./node_modules/@napi-rs/canvas-*/**/*"],
-    "/api/livecard-builder/headline": ["./public/fonts/birthday/*.ttf", "./node_modules/@napi-rs/canvas/**/*", "./node_modules/@napi-rs/canvas-*/**/*"],
+    "/api/livecard-builder/design": [...liveCardRuntimeFiles],
+    "/api/livecard-builder/jobs": [...liveCardRuntimeFiles],
+    "/api/livecard-builder/headline": [...liveCardRuntimeFiles],
     "/api/livecard-builder/location": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
     "/api/upload": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/uploads/*": ["./node_modules/ffmpeg-static/ffmpeg*"],
@@ -89,7 +101,8 @@ const nextConfig = (phase: string): NextConfig => ({
     "/*": ["./public/fonts/Josefin_Sans/static/JosefinSans-Regular.ttf"],
   },
 
-  // Keep heavy server deps out of the serverless bundle (stays under Vercel 300MB limit)
+  // Load native/heavy dependencies through Node. Their required files still
+  // enter deployment traces and count toward Vercel's 250 MB standard limit.
   serverExternalPackages: [
     "geo-tz",
     "@google-cloud/vision",

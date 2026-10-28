@@ -93,6 +93,7 @@ const files = [
   "scripts/livecard-job-client.test.cjs",
   "scripts/livecard-job-route.test.cjs",
   "scripts/livecard-generation-backend.test.cjs",
+  "scripts/livecard-font-tracing.test.mjs",
   "scripts/livecard-lettering-direction.test.cjs",
   "scripts/livecard-integrated-lettering.test.cjs",
   "scripts/livecard-info-first.test.cjs",
