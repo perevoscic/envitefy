@@ -17,7 +17,7 @@
 @font-face { font-family:"Reveal orbitron"; src:url(/fonts/birthday/orbitron.ttf) format("truetype"); font-display:swap; font-style:normal; font-weight:400 700; }
 @font-face { font-family:"Reveal pacifico"; src:url(/fonts/birthday/pacifico.ttf) format("truetype"); font-display:swap; font-style:normal; font-weight:400 700; }
 @font-face { font-family:"Reveal pirataone"; src:url(/fonts/birthday/pirataone.ttf) format("truetype"); font-display:swap; font-style:normal; font-weight:400 700; }
-@font-face { font-family:"Reveal playfairdisplay"; src:url(/fonts/birthday/playfairdisplay.ttf) format("truetype"); font-display:swap; font-style:normal; font-weight:400 700; }
+@font-face { font-family:"Reveal playfairdisplay"; src:url(/fonts/birthday/playfairdisplay.woff2) format("woff2"), url(/fonts/birthday/playfairdisplay.ttf) format("truetype"); font-display:swap; font-style:normal; font-weight:400 700; }
 @font-face { font-family:"Reveal quicksand"; src:url(/fonts/birthday/quicksand.ttf) format("truetype"); font-display:swap; font-style:normal; font-weight:400 700; }
 @font-face { font-family:"Reveal satisfy"; src:url(/fonts/birthday/satisfy.ttf) format("truetype"); font-display:swap; font-style:normal; font-weight:400 700; }
 @font-face { font-family:"Reveal spacegrotesk"; src:url(/fonts/birthday/spacegrotesk.ttf) format("truetype"); font-display:swap; font-style:normal; font-weight:400 700; }

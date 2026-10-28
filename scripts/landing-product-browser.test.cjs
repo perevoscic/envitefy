@@ -7,6 +7,7 @@ const {
   assertArrowFillCta,
   assertArrowFillInteraction,
   assertArrowFillReducedMotion,
+  contrast,
 } = require("./lib/landing-arrow-fill-assertions.cjs");
 const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
@@ -346,6 +347,15 @@ async function showHeaderBelowWordmark(page) {
       }));
       throw new Error(`Header pointer action state: ${JSON.stringify(state)}`, { cause: error });
     });
+  await assertVisibleHeaderBrand(page);
+}
+
+async function assertVisibleHeaderBrand(page) {
+  await page.waitForFunction(() => {
+    const selected = [...document.querySelectorAll("header [data-logo-hidden] img")]
+      .filter((image) => getComputedStyle(image).display !== "none");
+    return selected.length === 1 && selected[0].complete && selected[0].naturalWidth > 0;
+  });
 }
 
 async function assertCategoryMotion(page) {
@@ -861,6 +871,8 @@ async function assertPageReady(page, scheme, width) {
   await page.waitForFunction(() =>
     [...document.querySelectorAll("#root img")].every(
       (image) =>
+        getComputedStyle(image).display === "none" ||
+        image.getClientRects().length === 0 ||
         (image.loading === "lazy" && image.getBoundingClientRect().top > innerHeight + 200) ||
         (image.complete && image.naturalWidth > 0),
     ),
@@ -899,8 +911,8 @@ async function assertPageReady(page, scheme, width) {
     })),
   );
   assert.ok(
-    logos.every((logo) => logo.loaded),
-    "Both approved wordmark assets actually decode",
+    logos.filter((logo) => logo.visible).every((logo) => logo.loaded),
+    "The selected wordmark asset actually decodes while the hidden theme stays lazy",
   );
   assert.equal(
     logos.filter((logo) => logo.visible).length,
@@ -957,6 +969,23 @@ async function assertPageReady(page, scheme, width) {
 }
 
 async function assertLandingCtas(page, scheme, width) {
+  const login = page.locator("header").getByRole("button", { name: "Login", exact: true });
+  await assertArrowFillCta(login, { label: "Login", description: `${scheme} ${width}px header Login` });
+  const loginPaint = await login.evaluate((node) => {
+    const label = node.querySelector("[data-arrow-fill-label]");
+    const range = document.createRange();
+    range.selectNodeContents(node.querySelector("[data-arrow-fill-label-overlay]"));
+    return {
+      ink: getComputedStyle(label).webkitTextFillColor.match(/[\d.]+/g).map(Number),
+      paper: getComputedStyle(node).backgroundColor.match(/[\d.]+/g).map(Number),
+      overlayRight: range.getBoundingClientRect().right,
+      fillLeft: node.querySelector("[data-arrow-fill-surface]").getBoundingClientRect().left,
+    };
+  });
+  assert.ok(contrast(loginPaint.ink, loginPaint.paper) >= 4.5,
+    `${scheme} ${width}px Login resting label has readable ink: ${JSON.stringify(loginPaint)}`);
+  assert.ok(loginPaint.overlayRight <= loginPaint.fillLeft,
+    "The duplicate light Login label is outside the resting clip and paints no text on the light button");
   const actions = [
     ["#landing-hero", "button", "Create your event"],
     ["#landing-hero", "link", "See an example", "#showcase"],
@@ -1335,6 +1364,34 @@ async function exerciseFeedback(page, scheme, width) {
       "Reduced motion and the first quote are restored after navigation checks",
     );
   }
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(700);
+  await page.evaluate(() => {
+    window.__feedbackOriginalRect = Element.prototype.getBoundingClientRect;
+    window.__feedbackRectReads = 0;
+    Element.prototype.getBoundingClientRect = function (...args) {
+      if (this.matches("[data-feedback-card]")) window.__feedbackRectReads += 1;
+      return window.__feedbackOriginalRect.apply(this, args);
+    };
+  });
+  try {
+    await track.focus();
+    for (let index = 1; index <= 4; index += 1) {
+      await page.keyboard.press("ArrowRight");
+      await page.waitForFunction((expected) =>
+        document.querySelector("[data-feedback-position]")?.textContent.trim() ===
+          `${String(expected + 1).padStart(2, "0")} / 24`, index);
+    }
+    assert.equal(await page.evaluate(() => window.__feedbackRectReads), 0,
+      "Stable quote navigation uses cached offsets without reading card rectangles");
+  } finally {
+    await page.evaluate(() => {
+      Element.prototype.getBoundingClientRect = window.__feedbackOriginalRect;
+      delete window.__feedbackOriginalRect;
+    });
+    await page.keyboard.press("Home");
+    await waitForFeedback(0, "Rectangle-read verification restores the first quote");
+  }
   await assertNoOverflow(page, `${scheme} ${width}px feedback scroller`);
 }
 
@@ -1414,6 +1471,9 @@ async function exerciseAuthentication(page) {
   );
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
   assert.equal(await page.getByRole("dialog").count(), 0);
+  assert.equal(await page.evaluate(() =>
+    (window.__landingProductDynamicLoads ?? []).filter((name) => name === "AuthModal").length),
+  1, "Closing and reopening account actions imports AuthModal once");
 }
 
 async function exerciseConcierge(page, scheme, width) {
@@ -1496,10 +1556,32 @@ async function exerciseConcierge(page, scheme, width) {
   await dialog.waitFor();
   await page.mouse.click(24, 20);
   await dialog.waitFor({ state: "hidden" });
+  assert.equal(await page.evaluate(() =>
+    (window.__landingProductDynamicLoads ?? []).filter((name) => name === "ConciergeSheet").length),
+  1, "Closing and reopening Concierge imports its dialog once");
 }
 
 async function assertFooterClearance(page, scheme, width) {
   const footer = page.locator('[data-app-footer="marketing"]');
+  const groups = await footer.locator("[data-footer-group]").evaluateAll((nodes) =>
+    nodes.map((group) => ({
+      title: group.getAttribute("data-footer-group"),
+      heading: group.querySelector("h1, h2, h3, h4, h5, h6")?.tagName,
+      links: [...group.querySelectorAll("a")].map((link) => {
+        const rect = link.getBoundingClientRect();
+        return { label: link.textContent.trim(), width: rect.width, height: rect.height };
+      }),
+    })),
+  );
+  assert.deepEqual(groups.map((group) => group.title), ["Create", "Event Pages", "Use Cases", "Resources", "Company"]);
+  for (const group of groups) {
+    assert.equal(group.heading, "H2", `${group.title} is a top-level footer heading`);
+    assert.ok(group.links.length > 0, `${group.title} retains its destinations`);
+    for (const link of group.links) {
+      assert.ok(link.width >= 44 && link.height >= 32,
+        `${scheme} ${width}px footer group link has a 32px row: ${JSON.stringify(link)}`);
+    }
+  }
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.getByRole("button", { name: "Open Envitefy Concierge", exact: true }).waitFor();
   const initialPadding = await footer.evaluate((node) =>
@@ -1555,8 +1637,8 @@ async function assertFooterClearance(page, scheme, width) {
   );
   for (const control of result.controls) {
     assert.ok(
-      control.width > 0 &&
-        control.height > 0 &&
+      control.width >= 44 &&
+        control.height >= 44 &&
         control.top >= 0 &&
         control.bottom <= result.viewportHeight &&
         !control.overlapsLauncher,
@@ -2266,7 +2348,7 @@ test("testimonial motion rotates quotes, travels left and follows the pointer wi
 });
 
 test("product landing delivers light and dark layouts, sample actions and explicit creation across phone and desktop", {
-  timeout: 120000,
+  timeout: 180000,
 }, async () => {
   const css = await buildFixture();
   const browser = await chromium.launch({ headless: true, executablePath: browserExecutable() });
@@ -2288,6 +2370,9 @@ test("product landing delivers light and dark layouts, sample actions and explic
         try {
           await page.goto(base);
           await assertPageReady(page, scheme, width);
+          await page.waitForTimeout(150);
+          assert.deepEqual(await page.evaluate(() => window.__landingProductDynamicLoads ?? []), [],
+            "The initial landing viewport does not import closed dialogs or the distant showcase");
           if (scheme === "light" && width === 1280) {
             await page.waitForTimeout(2200);
             assert.equal(
@@ -2335,8 +2420,24 @@ test("product landing delivers light and dark layouts, sample actions and explic
               await menu.getByRole("switch", { name: "Dark mode", exact: true }).isVisible(),
               true,
             );
+            const appearance = menu.getByRole("switch", { name: "Dark mode", exact: true });
+            await appearance.click();
+            await page.waitForFunction((initialScheme) =>
+              document.documentElement.classList.contains("dark") === (initialScheme === "light"), scheme);
+            await assertVisibleHeaderBrand(page);
+            await appearance.click();
+            await page.waitForFunction((initialScheme) =>
+              document.documentElement.classList.contains("dark") === (initialScheme === "dark"), scheme);
+            await assertVisibleHeaderBrand(page);
             await page.keyboard.press("Escape");
             await menu.waitFor({ state: "hidden" });
+            await menuToggle.click();
+            await menu.waitFor();
+            await page.keyboard.press("Escape");
+            await menu.waitFor({ state: "hidden" });
+            assert.equal(await page.evaluate(() =>
+              (window.__landingProductDynamicLoads ?? []).filter((name) => name === "MenuBottomSheet").length),
+            1, "Closing and reopening the menu imports MenuBottomSheet once");
           } else {
             assert.equal(
               await page

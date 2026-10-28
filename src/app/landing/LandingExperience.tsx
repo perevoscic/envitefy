@@ -75,6 +75,14 @@ function DeferredShowcase({ children }: { children: ReactNode }) {
   );
 }
 
+function LoadOnFirstOpen({ open, children }: { open: boolean; children: ReactNode }) {
+  const [hasOpened, setHasOpened] = useState(open);
+  if (open && !hasOpened) setHasOpened(true);
+  // Keep loaded dialogs mounted so closing animations, reset and focus cleanup
+  // still receive the transition back to open=false.
+  return open || hasOpened ? children : null;
+}
+
 export default function LandingExperience() {
   const router = useRouter();
   const { status } = useSession();
@@ -133,9 +141,11 @@ export default function LandingExperience() {
             src={ENVITEFY_BRAND_ASSETS.wordmark.color}
             whiteSrc={ENVITEFY_BRAND_ASSETS.wordmark.white}
             alt="Envitefy"
-            width={150}
-            height={55}
-            priority
+            width={1194}
+            height={402}
+            preparedSrcSet={ENVITEFY_BRAND_ASSETS.wordmark.colorSrcSet}
+            whitePreparedSrcSet={ENVITEFY_BRAND_ASSETS.wordmark.whiteSrcSet}
+            sizes="(max-width: 600px) 125px, 150px"
           />
         </Link>
         <nav className={styles.desktopNav} aria-label="Main navigation">
@@ -209,25 +219,31 @@ export default function LandingExperience() {
         </section>
       </main>
       <ConciergeLauncher open={assistantOpen} onOpen={() => setAssistantOpen((open) => !open)} />
-      <MenuBottomSheet
-        allowDesktop
-        open={mobileMenuOpen}
-        onOpenChange={setMobileMenuOpen}
-        successRedirectUrl="/"
-        signupSuccessRedirectUrl="/"
-      />
-      <ConciergeSheet
-        open={assistantOpen}
-        onOpenChange={setAssistantOpen}
-        onSignupSelect={() => openAuth("signup")}
-      />
-      <AuthModal
-        open={authModalOpen}
-        mode={authMode}
-        onClose={() => setAuthModalOpen(false)}
-        onModeChange={setAuthMode}
-        successRedirectUrl={authRedirect}
-      />
+      <LoadOnFirstOpen open={mobileMenuOpen}>
+        <MenuBottomSheet
+          allowDesktop
+          open={mobileMenuOpen}
+          onOpenChange={setMobileMenuOpen}
+          successRedirectUrl="/"
+          signupSuccessRedirectUrl="/"
+        />
+      </LoadOnFirstOpen>
+      <LoadOnFirstOpen open={assistantOpen}>
+        <ConciergeSheet
+          open={assistantOpen}
+          onOpenChange={setAssistantOpen}
+          onSignupSelect={() => openAuth("signup")}
+        />
+      </LoadOnFirstOpen>
+      <LoadOnFirstOpen open={authModalOpen}>
+        <AuthModal
+          open={authModalOpen}
+          mode={authMode}
+          onClose={() => setAuthModalOpen(false)}
+          onModeChange={setAuthMode}
+          successRedirectUrl={authRedirect}
+        />
+      </LoadOnFirstOpen>
     </MarketingPage>
   );
 }

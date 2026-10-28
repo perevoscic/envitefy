@@ -68,10 +68,9 @@ test("image edits send multipart references and accept edit streaming events", a
     { type: "image_edit.completed", b64_json: "ZmluYWw=" },
   ], async (url, init) => {
     assert.match(String(url), /\/images\/edits$/);
-    assert.match(new Headers(init.headers).get("content-type"), /multipart\/form-data/);
-    const chunks = [];
-    for await (const chunk of init.body) chunks.push(Buffer.from(chunk));
-    const multipart = Buffer.concat(chunks).toString();
+    const request = new Request(url, init);
+    assert.match(request.headers.get("content-type"), /multipart\/form-data/);
+    const multipart = await request.text();
     assert.match(multipart, /name="stream"\r\n\r\ntrue/);
     assert.match(multipart, /name="partial_images"\r\n\r\n2/);
     assert.match(multipart, /name="image\[\]"; filename="reference.png"/);

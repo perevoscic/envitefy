@@ -87,7 +87,8 @@ import {
 } from "@/lib/owner-rsvp-dashboard";
 import { createServerTimingTracker } from "@/lib/server-timing";
 import { resolveEventShareImage, type EventShareImage, type EventShareImageContext } from "@/lib/share-image";
-import { resolveEventPageBackgroundColor, resolveEventThemeColor } from "@/lib/theme-color";
+import { resolveEventPageBackgroundColor } from "@/lib/event-page-background";
+import { resolveEventThemeColor } from "@/lib/theme-color";
 import EventPageTypography from "@/components/events/EventPageTypography";
 import { EventPageCompositionProvider } from "@/components/events/EventPageCompositionContext";
 import { normalizeEventPageComposition } from "@/lib/event-page-composition";

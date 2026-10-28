@@ -4,12 +4,21 @@ import { CARD_FONTS } from "./shared-card-design";
 
 type Font = { family: string; url: string };
 const coverage = new Map<string, (codepoint: number) => boolean>();
+const CARD_FONT_DIRECTORY = "/fonts/birthday/";
+
+/** Keep the font directory literal so the design function does not trace all of public. */
+export function bundledCardFontPath(url: string) {
+  const file = url.startsWith(CARD_FONT_DIRECTORY) ? url.slice(CARD_FONT_DIRECTORY.length) : "";
+  if (!file || file.includes("/") || file.includes("\\") || file.includes("..") || !file.endsWith(".ttf"))
+    throw new Error("The lettering font could not be read.");
+  return path.join(process.cwd(), "public/fonts/birthday", file);
+}
 
 /** Read bundled TrueType cmap tables; do not rely on host-installed fallback fonts. */
 function fontCoverage(font: Font) {
   const cached = coverage.get(font.url);
   if (cached) return cached;
-  const bytes = fs.readFileSync(path.join(process.cwd(), "public", font.url));
+  const bytes = fs.readFileSync(bundledCardFontPath(font.url));
   let cmap = 0;
   for (let i = 0; i < bytes.readUInt16BE(4); i++) {
     const offset = 12 + i * 16;

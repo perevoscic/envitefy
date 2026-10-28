@@ -34,6 +34,20 @@ const nextConfig = (phase: string): NextConfig => ({
   // Keep dev artifacts out of `.next` so `next build` doesn't race with `next dev`.
   distDir: phase === PHASE_DEVELOPMENT_SERVER ? resolveDevDistDir() : ".next",
   devIndicators: false,
+  // Keep route-only component styles out of unrelated marketing pages without
+  // splitting the initial route into many small render-blocking stylesheets.
+  experimental: { cssChunking: false },
+  async headers() {
+    // These filenames include their content hash; keep previous versions valid
+    // for open tabs while browsers reuse the exact stylesheet across routes.
+    return [
+      "/styles/runtime-utilities-:hash([a-f0-9]{12}).css",
+      "/fonts/gallery/catalog-:hash([a-f0-9]{12}).css",
+    ].map((source) => ({
+      source,
+      headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+    }));
+  },
   async redirects() {
     return [
       {
@@ -69,6 +83,7 @@ const nextConfig = (phase: string): NextConfig => ({
     ),
     "/api/livecard-builder/jobs": ["./public/fonts/birthday/*.ttf", "./node_modules/@napi-rs/canvas/**/*", "./node_modules/@napi-rs/canvas-*/**/*"],
     "/api/livecard-builder/headline": ["./public/fonts/birthday/*.ttf", "./node_modules/@napi-rs/canvas/**/*", "./node_modules/@napi-rs/canvas-*/**/*"],
+    "/api/livecard-builder/design": ["./public/fonts/birthday/*.ttf", "./node_modules/@napi-rs/canvas/**/*", "./node_modules/@napi-rs/canvas-*/**/*"],
     "/api/livecard-builder/location": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
     "/api/upload": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/uploads/*": ["./node_modules/ffmpeg-static/ffmpeg*"],
@@ -87,6 +102,11 @@ const nextConfig = (phase: string): NextConfig => ({
     "/api/events/*/scan-artwork": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/events/*/original": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/*": ["./public/fonts/Josefin_Sans/static/JosefinSans-Regular.ttf"],
+  },
+  outputFileTracingExcludes: {
+    "/api/livecard-builder/design": ["./public/templates/**/*", "./public/DEBUG/**/*", "./public/images/**/*", "./public/videos/**/*"],
+    "/api/livecard-builder/jobs": ["./public/templates/**/*", "./public/DEBUG/**/*", "./public/images/**/*", "./public/videos/**/*"],
+    "/api/livecard-builder/headline": ["./public/templates/**/*", "./public/DEBUG/**/*", "./public/images/**/*", "./public/videos/**/*"],
   },
 
   // Keep heavy server deps out of the serverless bundle (stays under Vercel 300MB limit)

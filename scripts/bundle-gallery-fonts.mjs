@@ -112,4 +112,5 @@ for (const [family, weights] of fonts) {
 }
 await writeFile(path.join(root, "src/app/gallery-fonts.css"), `${styles.join("\n\n")}\n`);
 await writeFile(path.join(directory, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+await import("./split-font-catalog.mjs");
 console.log(`Bundled ${manifest.length} families with licenses and source records.`);

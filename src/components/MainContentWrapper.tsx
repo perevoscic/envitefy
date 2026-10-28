@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { type CSSProperties, useEffect, useState } from "react";
-import { SIDEBAR_COLLAPSED_REM, SIDEBAR_WIDTH_REM } from "@/app/left-sidebar.model";
+import { SIDEBAR_COLLAPSED_REM, SIDEBAR_WIDTH_REM } from "@/app/sidebar-layout";
 import { useSidebar } from "@/app/sidebar-context";
 import { EVENT_SKIN_TOP_OFFSET_VAR } from "@/components/event-skin-layout";
 import { isCreateEventRoute } from "@/config/navigation-config";

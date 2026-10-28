@@ -2,10 +2,23 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import vm from "node:vm";
+import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server.js";
 
 const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+
+test("public portrait formats bypass authentication while application routes stay protected", () => {
+  const source = readSource("src/middleware.ts");
+  const context = { globalThis: {} };
+  vm.runInNewContext(source.slice(source.indexOf("export const config =")).replace("export const config =", "globalThis.config ="), context);
+  const matches = (pathname) => unstable_doesMiddlewareMatch({ config: context.globalThis.config, nextConfig: {}, url: `https://envitefy.com${pathname}` });
+  for (const pathname of ["/images/landing/hero/portrait-v1/garden-brunch-480.avif", "/images/landing/hero/portrait-v1/garden-brunch-768.webp", "/fonts/Josefin_Slab/JosefinSlab-VariableFont_wght.ttf"]) {
+    assert.equal(matches(pathname), false, `${pathname}: public asset must never redirect through authentication`);
+  }
+  for (const pathname of ["/create", "/chat", "/admin", "/event/weddings/customize"]) assert.equal(matches(pathname), true, `${pathname}: keep application authorization`);
+});
 
 test("login form supports redirect targets passed by the caller", () => {
   const loginForm = readSource("src/components/auth/LoginForm.tsx");

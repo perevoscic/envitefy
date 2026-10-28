@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "../components/birthdays/redesign/birthday-fonts.css";
-@import "./gallery-fonts.css";
+@import "./shared-gallery-fonts.css";
 @import "../styles/holiday-palettes.css";
 @import "../styles/app-appearance.css";
 

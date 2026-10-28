@@ -53,12 +53,14 @@ export default function EnvitefySocialLinks({
                   aria-hidden="true"
                   width={iconSize}
                   height={iconSize}
+                  loading="lazy"
+                  decoding="async"
                   className="block object-contain"
                 />
               ) : (
                 <span className={styles.imageSwitch} aria-hidden="true">
-                  <img src={iconSrc} alt="" width={iconSize} height={iconSize} className={`block object-contain ${styles.colorImage}`} />
-                  <img src={whiteIconSrc} alt="" width={iconSize} height={iconSize} className={`block object-contain ${styles.whiteImage}`} />
+                  <img src={iconSrc} alt="" width={iconSize} height={iconSize} loading="lazy" decoding="async" className={`block object-contain ${styles.colorImage}`} />
+                  <img src={whiteIconSrc} alt="" width={iconSize} height={iconSize} loading="lazy" decoding="async" className={`block object-contain ${styles.whiteImage}`} />
                 </span>
               )}
               <span className="sr-only">Envitefy on {name} (opens in a new tab)</span>

@@ -20,6 +20,9 @@ test("Next traces PDF/canvas files only for PDF processing routes", async () => 
     "/api/upload",
     "/api/ingest",
     "/api/ocr",
+    "/api/create/classify",
+    "/api/create/extract",
+    "/api/discovery/intake",
     "/api/scan/event-page",
     "/api/football/prefill",
     "/api/discovery/[eventId]/run",
@@ -39,11 +42,25 @@ test("Next traces PDF/canvas files only for PDF processing routes", async () => 
     "/api/uploads/birthday-asset",
     "/api/studio/generate",
     "/api/events/[id]/card/edit",
-    "/api/discovery/intake",
     "/api/discovery/[eventId]/status",
     "/api/discovery/[eventId]/cancel",
   ]) {
     assert.equal(includedFiles(route).some(isPdfRuntime), false, route);
   }
   assert.equal(JSON.stringify(config.outputFileTracingIncludes).includes("pdf-parse"), false);
+
+  for (const route of [
+    "/api/livecard-builder/design",
+    "/api/livecard-builder/jobs",
+    "/api/livecard-builder/headline",
+  ]) {
+    const files = includedFiles(route);
+    assert.ok(files.some((file) => file.includes("@napi-rs/canvas")), route);
+    assert.ok(files.some((file) => file.includes("public/fonts/birthday")), route);
+    const excluded = Object.entries(config.outputFileTracingExcludes).flatMap(([pattern, entries]) =>
+      picomatch(pattern, { contains: true, dot: true })(route) ? entries : [],
+    );
+    assert.ok(excluded.some((file) => file.includes("public/templates")), route);
+    assert.equal(excluded.some((file) => file.includes("public/fonts")), false, route);
+  }
 });

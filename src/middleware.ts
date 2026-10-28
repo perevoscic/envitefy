@@ -456,6 +456,6 @@ export const config = {
       source: "/:category(gymnastics|football|sports|sport-events|weddings|bridal-showers|baby-showers|signup-forms|gender-reveal|birthdays|anniversaries)/templates/:path*",
       missing: [{ type: "header", key: "next-router-prefetch" }],
     },
-    "/((?!_next|api|public|fonts|icons|videos|(?:gymnastics|football|sports|sport-events|weddings|bridal-showers|baby-showers|signup-forms|gender-reveal|birthdays|anniversaries|snap|invitation-maker)(?:/?$|/templates(?:/|$))|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|map|webmanifest|mp4|webm|woff|woff2|ttf|otf)).*)",
+    "/((?!_next|api|public|fonts|icons|videos|(?:gymnastics|football|sports|sport-events|weddings|bridal-showers|baby-showers|signup-forms|gender-reveal|birthdays|anniversaries|snap|invitation-maker)(?:/?$|/templates(?:/|$))|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|avif|css|js|map|webmanifest|mp4|webm|woff|woff2|ttf|otf)).*)",
   ],
 };

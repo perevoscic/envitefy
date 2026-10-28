@@ -18,7 +18,20 @@ async function buildFixture() {
     import MarketingMotion from "../../src/components/marketing/MarketingMotion";
     const originalRAF = window.requestAnimationFrame.bind(window);
     window.motionFrames = 0;
-    window.requestAnimationFrame = callback => { window.motionFrames++; return originalRAF(callback); };
+    window.motionMeasurementBatch = 0;
+    window.motionLateReads = {};
+    const originalRect = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function() {
+      if (this.id === "late") {
+        const batch = window.motionMeasurementBatch;
+        window.motionLateReads[batch] = (window.motionLateReads[batch] || 0) + 1;
+      }
+      return originalRect.call(this);
+    };
+    window.requestAnimationFrame = callback => {
+      window.motionFrames++;
+      return originalRAF(time => { window.motionMeasurementBatch++; callback(time); });
+    };
     function App() {
       const [enabled, setEnabled] = useState(true);
       return <div data-marketing-page>
@@ -35,7 +48,7 @@ async function buildFixture() {
         <section id="exit-invalid-range" data-motion-scene data-motion-range="exit" data-motion-exit-start="0.1" data-motion-exit-end="0.85" style={{height:400}}>Invalid range uses defaults</section>
         <section id="read" data-motion-scene data-motion-range="read" style={{height:260,"--scene-progress":"0.33"}}>A heading read as it moves into view</section>
         <div style={{height:600}} />
-        <section id="late" data-motion-reveal style={{"--motion-index":2}}><button id="late-focus">Keyboard destination</button></section>
+        <section id="late" data-motion-scene data-motion-reveal style={{"--motion-index":2}}><button id="late-focus">Keyboard destination</button></section>
         <div style={{height:1000}} />
       </div>;
     }
@@ -124,6 +137,10 @@ test("marketing motion follows native scroll, respects live reduced motion, and 
     );
     assert.equal(await page.locator("#initial").getAttribute("data-motion-visible"), "true");
     assert.equal(await page.locator("#late").getAttribute("data-motion-visible"), "false");
+    assert.ok(
+      await page.evaluate(() => Object.values(window.motionLateReads).every((reads) => reads <= 1)),
+      "A node used for both scene progress and reveal is measured once per update",
+    );
 
     await page.evaluate(() => {
       const scene = document.querySelector("#contained");

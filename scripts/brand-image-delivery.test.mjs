@@ -44,3 +44,24 @@ test("prepared brand images use their static URLs with real Next Image delivery"
   assert.ok(!html.includes("/_next/image"), "brand delivery must not depend on an optimizer request");
   assert.ok(html.includes('aria-label="Envitefy"'), "the pair retains one accessible brand name");
 });
+
+test("responsive prepared wordmarks preserve static delivery and reserve truthful proportions", () => {
+  const BrandImage = loadBrandImage();
+  const html = renderToStaticMarkup(React.createElement(BrandImage, {
+    src: "/brand/wordmark-v2/envitefy-wordmark.webp",
+    whiteSrc: "/brand/wordmark-v2/envitefy-wordmark-white.webp",
+    preparedSrcSet: "/brand/responsive-v1/wordmark-150.webp 150w, /brand/responsive-v1/wordmark-300.webp 300w",
+    whitePreparedSrcSet: "/brand/responsive-v1/wordmark-white-150.webp 150w, /brand/responsive-v1/wordmark-white-300.webp 300w",
+    width: 1194, height: 402, sizes: "150px", alt: "Envitefy",
+  }));
+  const images = html.match(/<img\b[^>]*>/g) || [];
+  assert.equal(images.length, 2);
+  for (const img of images) {
+    assert.ok(img.includes('width="1194"') && img.includes('height="402"'));
+    assert.ok(img.includes('sizes="150px"') && img.includes('srcSet="/brand/responsive-v1/'));
+    assert.ok(img.includes('loading="lazy"'), "hidden header appearance variants are not eagerly fetched");
+  }
+  assert.ok(!html.includes('rel="preload"'), "the header does not preload both appearance variants");
+  assert.ok(!html.includes("/_next/image"));
+  assert.equal((html.match(/aria-label="Envitefy"/g) || []).length, 1);
+});

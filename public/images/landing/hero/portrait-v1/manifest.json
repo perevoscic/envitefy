@@ -1,0 +1,60 @@
+{
+  "source": "public/images/landing/hero/garden-brunch-desktop.webp",
+  "sourceSha256": "ea2ad2a220bbe9f056a0b5f867e22157a91e5afa4d4db9c0c2eb9ec22c72701b",
+  "sourceWidth": 1672,
+  "sourceHeight": 941,
+  "objectPosition": "59% center",
+  "frame": "5 / 6",
+  "crop": {
+    "exact": {
+      "left": 523.8216666666667,
+      "top": 0,
+      "width": 784.1666666666666,
+      "height": 941
+    },
+    "extract": {
+      "left": 524,
+      "top": 0,
+      "width": 784,
+      "height": 941
+    }
+  },
+  "outputs": [
+    {
+      "format": "avif",
+      "width": 480,
+      "height": 576,
+      "quality": 35,
+      "filename": "garden-brunch-480.avif",
+      "bytes": 13829,
+      "sha256": "30939a3b4c5568d64d5e28f4a4fe006abc6a640608b5e7df108b9bed70117343"
+    },
+    {
+      "format": "avif",
+      "width": 768,
+      "height": 922,
+      "quality": 35,
+      "filename": "garden-brunch-768.avif",
+      "bytes": 26315,
+      "sha256": "418e3bc64ea0b5c8b661d559dbb749bdb73b9c4248c486e5fdc220f894ba7e02"
+    },
+    {
+      "format": "webp",
+      "width": 480,
+      "height": 576,
+      "quality": 25,
+      "filename": "garden-brunch-480.webp",
+      "bytes": 21170,
+      "sha256": "a1a74348c0df0f26453354529cdfdf5f668df227a23065eefeb6adbc34add667"
+    },
+    {
+      "format": "webp",
+      "width": 768,
+      "height": 922,
+      "quality": 25,
+      "filename": "garden-brunch-768.webp",
+      "bytes": 38740,
+      "sha256": "ab1d6420ee168b2d4d4dc281c1cf07d71e1984b4b9c9c2adc424e3dee4979e95"
+    }
+  ]
+}

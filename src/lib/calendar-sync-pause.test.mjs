@@ -42,6 +42,9 @@ function loadModule(relativePath, { enabled = false, calls = [] } = {}) {
     if (name === "next/server") return nextServer;
     if (name === "react") return realReact;
     if (name === "react/jsx-runtime") return require(name);
+    if (name === "@/assets/holiday-template-availability") {
+      return loadModule("src/assets/holiday-template-availability.ts", { enabled, calls });
+    }
     if (name === "@/config/calendar-sync") {
       return loadModule("src/config/calendar-sync.ts", { enabled, calls });
     }

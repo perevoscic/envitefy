@@ -92,7 +92,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url(/fonts/birthday/inter.ttf) format('truetype');
+  src: url(/fonts/birthday/inter.woff2) format('woff2'), url(/fonts/birthday/inter.ttf) format('truetype');
 }
 
 @font-face {
@@ -164,7 +164,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url(/fonts/birthday/playfairdisplay.ttf) format('truetype');
+  src: url(/fonts/birthday/playfairdisplay.woff2) format('woff2'), url(/fonts/birthday/playfairdisplay.ttf) format('truetype');
 }
 
 @font-face {

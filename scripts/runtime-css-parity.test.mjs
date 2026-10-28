@@ -79,7 +79,12 @@ test("runtime CSS keeps application utilities and every font while excluding ver
     assert.ok(broadRules.has(candidate), `configured dynamic utility exists: ${candidate}`);
     assert.equal(scopedRules.get(candidate), broadRules.get(candidate), `configured dynamic utility changed: ${candidate}`);
   }
-  assert.deepEqual(fontFaces(scoped.css), fontFaces(broad.css), "font descriptors and Unicode coverage stay identical");
+  assert.deepEqual(fontFaces(scoped.css), fontFaces(broad.css), "root font descriptors and Unicode coverage stay identical");
+  const catalog = await fs.readFile(path.join(sourceRoot, "app/gallery-fonts.css"), "utf8");
+  const catalogLink = await fs.readFile(path.join(sourceRoot, "lib/font-catalog-stylesheet.ts"), "utf8");
+  const catalogPath = catalogLink.match(/"(\/fonts\/gallery\/catalog-[a-f0-9]+\.css)"/)?.[1];
+  assert.ok(catalogPath, "complete gallery stylesheet has a content-versioned address");
+  assert.equal(await fs.readFile(path.join(project, "public", catalogPath), "utf8"), catalog, "deferred gallery keeps every original descriptor");
   assert.deepEqual(scoped.warnings().map((warning) => warning.text), []);
 
   const dependencies = scoped.messages.filter((message) => message.type === "dependency").map((message) => message.file);
@@ -103,9 +108,10 @@ test("runtime CSS keeps application utilities and every font while excluding ver
     identicalRuntimeUtilities: checked,
     identicalSafelistedUtilities: new Set(safelist).size,
     identicalFontFaces: fontFaces(scoped.css).length,
+    unchangedCatalogFontFaces: fontFaces(catalog).length,
     removedNonRuntimeUtilities: [...broadRules.keys()].filter((candidate) => !scopedRules.has(candidate)).length,
     stylesheets: optimized,
   };
-  await fs.writeFile(path.join(output, "runtime-parity.json"), JSON.stringify(evidence, null, 2) + "\n");
+  await fs.writeFile(path.join(output, "runtime-parity.json"), `${JSON.stringify(evidence, null, 2)}\n`);
   console.log(JSON.stringify(evidence));
 });
