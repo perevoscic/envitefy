@@ -7,6 +7,13 @@ const standaloneDir = path.join(process.cwd(), ".next", "standalone");
 const extraArgs = process.argv.slice(2);
 const isWindows = process.platform === "win32";
 
+// Generate once before Next starts parallel CSS workers; workers only read and
+// validate these content-versioned files, so compilation cannot race a writer.
+const utilities = spawnSync(process.execPath, [path.join(__dirname, "build-runtime-utilities.mjs")], {
+  cwd: process.cwd(), stdio: "inherit", env: { ...process.env, NODE_ENV: "production" }, shell: false,
+});
+if (utilities.status !== 0) process.exit(utilities.status || 1);
+
 function isBusyError(err) {
   return (
     err &&

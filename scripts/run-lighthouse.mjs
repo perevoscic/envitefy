@@ -10,8 +10,7 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const require = createRequire(import.meta.url);
 
-// LHCI's default is optimistic: the best value for each assertion across runs.
-// Keep that behavior, including inclusive thresholds and non-failing warnings.
+// Keep every run visible. A good outlier must not conceal a failing error budget.
 export function evaluateAssertions(reports, assertions) {
   const results = [];
   for (const [id, [level, limits]] of Object.entries(assertions)) {
@@ -28,14 +27,30 @@ export function evaluateAssertions(reports, assertions) {
         return audit?.[metric === "minScore" ? "score" : "numericValue"];
       });
       const validValues = values.filter(Number.isFinite);
-      const actual = validValues.length
-        ? metric === "minScore"
-          ? Math.max(...validValues)
-          : Math.min(...validValues)
+      const sorted = [...validValues].sort((first, second) => first - second);
+      const middle = Math.floor(sorted.length / 2);
+      const actual = sorted.length
+        ? sorted.length % 2
+          ? sorted[middle]
+          : (sorted[middle - 1] + sorted[middle]) / 2
         : null;
-      const passed =
-        actual !== null && (metric === "minScore" ? actual >= expected : actual <= expected);
-      results.push({ id, level, metric, expected, actual, values, passed });
+      const withinBudget = (value) =>
+        Number.isFinite(value) && (metric === "minScore" ? value >= expected : value <= expected);
+      const runPassed = values.map(withinBudget);
+      const allRunsPassed = runPassed.length > 0 && runPassed.every(Boolean);
+      const medianPassed = withinBudget(actual);
+      results.push({
+        id,
+        level,
+        metric,
+        expected,
+        actual,
+        values,
+        runPassed,
+        medianPassed,
+        allRunsPassed,
+        passed: medianPassed && allRunsPassed,
+      });
     }
   }
   const runtimeErrors = reports
@@ -49,6 +64,67 @@ export function evaluateAssertions(reports, assertions) {
       !runtimeErrors.length &&
       !results.some((result) => result.level === "error" && !result.passed),
   };
+}
+
+export function productionServerEnvironment(origin, environment = process.env) {
+  return {
+    ...environment,
+    NODE_ENV: "production",
+    PORT: new URL(origin).port,
+    NEXTAUTH_URL: origin,
+    NEXTAUTH_URL_INTERNAL: origin,
+    NEXT_TELEMETRY_DISABLED: "1",
+  };
+}
+
+export function chromeExecutable(environment = process.env) {
+  return (
+    environment.LIGHTHOUSE_CHROME_PATH ||
+    environment.PLAYWRIGHT_CHROMIUM_EXECUTABLE ||
+    environment.CHROME_PATH ||
+    undefined
+  );
+}
+
+export function auditPaths(paths, origin, environment = process.env) {
+  let selected = paths;
+  if (environment.LIGHTHOUSE_PATHS !== undefined) {
+    try {
+      selected = JSON.parse(environment.LIGHTHOUSE_PATHS);
+    } catch (error) {
+      throw new Error("LIGHTHOUSE_PATHS must be a JSON array of local paths.", { cause: error });
+    }
+  }
+  if (
+    !Array.isArray(selected) ||
+    !selected.length ||
+    selected.some((route) => {
+      if (typeof route !== "string" || !route.trim()) return true;
+      try {
+        return new URL(route, origin).origin !== origin;
+      } catch {
+        return true;
+      }
+    })
+  ) {
+    throw new Error("Lighthouse paths must target the local production server.");
+  }
+  return selected;
+}
+
+export async function saveRunArtifacts(artifacts, outputDirectory, name) {
+  const files = { trace: null, devtoolsLog: null };
+  for (const [field, key, suffix] of [
+    ["trace", "Trace", "trace"],
+    ["devtoolsLog", "DevtoolsLog", "devtoolslog"],
+  ]) {
+    const data = artifacts?.[key];
+    if (data == null || data instanceof Error) continue;
+    const filename = `${name}.${suffix}.json`;
+    await writeFile(path.join(outputDirectory, filename), JSON.stringify(data));
+    files[field] = filename;
+  }
+  return files;
 }
 
 export function waitForServer(server, timeoutMs = 60_000) {
@@ -70,7 +146,7 @@ export function waitForServer(server, timeoutMs = 60_000) {
       if (/Ready in|ready - started server/.test(output)) finish();
     };
     const timeout = setTimeout(
-      () => finish(new Error("Timed out waiting for the production server.")),
+      () => finish(new Error(`Timed out after ${timeoutMs}ms waiting for the production server.`)),
       timeoutMs,
     );
     server.stdout.on("data", onData);
@@ -103,23 +179,34 @@ async function ensurePortAvailable(port) {
 
 export async function runLighthouse() {
   const config = JSON.parse(await readFile(path.join(root, "lighthouse.config.json"), "utf8"));
+  if (process.env.LIGHTHOUSE_PORT) config.port = Number(process.env.LIGHTHOUSE_PORT);
+  if (!Number.isInteger(config.port) || config.port < 1 || config.port > 65535)
+    throw new Error("Lighthouse port must be an integer between 1 and 65535.");
   const origin = `http://localhost:${config.port}`;
   if (!Number.isInteger(config.numberOfRuns) || config.numberOfRuns < 1)
     throw new Error("numberOfRuns must be a positive integer.");
-  if (
-    !Array.isArray(config.paths) ||
-    !config.paths.length ||
-    config.paths.some((route) => new URL(route, origin).origin !== origin)
-  ) {
-    throw new Error("Lighthouse paths must target the local production server.");
-  }
+  config.paths = auditPaths(config.paths, origin);
   evaluateAssertions([], config.assertions);
   const baseDirectory = path.resolve(root, config.outputDir);
+  const relativeOutput = path.relative(path.join(root, "output"), baseDirectory);
+  if (
+    relativeOutput === ".." ||
+    relativeOutput.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativeOutput)
+  )
+    throw new Error("Lighthouse reports must be written inside output/.");
   await mkdir(baseDirectory, { recursive: true });
   const outputDirectory = await mkdtemp(
     path.join(baseDirectory, `${new Date().toISOString().replaceAll(":", "-")}-`),
   );
-  const summary = { startedAt: new Date().toISOString(), config, passed: false, pages: [] };
+  const summary = {
+    startedAt: new Date().toISOString(),
+    config,
+    aggregation: "median reported; every run must meet error budgets",
+    nodeVersion: process.version,
+    passed: false,
+    pages: [],
+  };
   let server;
   let chrome;
   let chromeLaunch;
@@ -158,6 +245,14 @@ export async function runLighthouse() {
   process.once("SIGTERM", onTerminate);
   console.log(`Lighthouse reports: ${outputDirectory}`);
   try {
+    try {
+      summary.buildId = (await readFile(path.join(root, ".next", "BUILD_ID"), "utf8")).trim();
+    } catch (error) {
+      throw new Error(
+        "Cannot read .next/BUILD_ID. Run npm run build before auditing the production server.",
+        { cause: error },
+      );
+    }
     await ensurePortAvailable(config.port);
     const { default: lighthouse } = await import("lighthouse");
     const { Launcher } = await import("chrome-launcher");
@@ -174,14 +269,18 @@ export async function runLighthouse() {
       ],
       {
         cwd: root,
-        env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" },
+        env: productionServerEnvironment(origin),
         stdio: ["ignore", "pipe", "inherit"],
       },
     );
     server.stdout.pipe(process.stdout);
     await waitForServer(server);
     checkInterrupted();
-    chrome = new Launcher({ chromeFlags: config.chromeFlags, handleSIGINT: false });
+    chrome = new Launcher({
+      chromeFlags: config.chromeFlags,
+      chromePath: chromeExecutable(),
+      handleSIGINT: false,
+    });
     chromeLaunch = chrome.launch();
     await chromeLaunch;
     checkInterrupted();
@@ -203,10 +302,15 @@ export async function runLighthouse() {
         const name = `${index + 1}-${new URL(url).pathname.replaceAll(/[^a-zA-Z0-9-]/g, "_")}-${run}`;
         await writeFile(path.join(outputDirectory, `${name}.html`), result.report[0]);
         await writeFile(path.join(outputDirectory, `${name}.json`), result.report[1]);
+        const artifacts = await saveRunArtifacts(result.artifacts, outputDirectory, name);
         reports.push(result.lhr);
         page.runs.push({
           run,
           finalUrl: result.lhr.finalDisplayedUrl,
+          lighthouseVersion: result.lhr.lighthouseVersion,
+          environment: result.lhr.environment,
+          artifacts,
+          result: evaluateAssertions([result.lhr], config.assertions),
           html: `${name}.html`,
           json: `${name}.json`,
         });
@@ -219,7 +323,7 @@ export async function runLighthouse() {
       for (const assertion of page.result.assertions) {
         const status = assertion.passed ? "PASS" : assertion.level.toUpperCase();
         console.log(
-          `${status} ${route} ${assertion.id}: ${assertion.actual ?? "missing"} (${assertion.metric} ${assertion.expected})`,
+          `${status} ${route} ${assertion.id}: median ${assertion.actual ?? "missing"}; runs ${assertion.values.map((value) => value ?? "missing").join(", ")} (${assertion.metric} ${assertion.expected}; all runs ${assertion.allRunsPassed ? "pass" : "fail"})`,
         );
       }
     }

@@ -1,6 +1,5 @@
 "use client";
 
-import * as Dialog from "@radix-ui/react-dialog";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import {
   createContext,
@@ -13,6 +12,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { loadProgressDialog } from "./progress-dialog";
 
 export type DeferredProgressSave = { beforeLeaving: Promise<void> };
 type Progress = {
@@ -127,16 +127,23 @@ export default function UnsavedProgressProvider({ children }: { children: ReactN
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [Dialog, setDialog] = useState<Awaited<ReturnType<typeof loadProgressDialog>> | null>(null);
+  const prepareDialog = useCallback(async () => {
+    const dialog = await loadProgressDialog();
+    setDialog(dialog);
+  }, []);
   const dirtyEntries = useCallback(
     () => [...entries.current.values()].map((read) => read()).filter((entry) => entry.dirty),
     [],
   );
   const register = useCallback((id: symbol, read: () => Progress) => {
     entries.current.set(id, read);
+    // Prepare the prompt on editor entry, without downloading it on read-only pages.
+    void prepareDialog().catch(() => {});
     return () => {
       entries.current.delete(id);
     };
-  }, []);
+  }, [prepareDialog]);
   const allowNavigation = useCallback((navigate: Navigation) => {
     bypass.current = true;
     try {
@@ -157,8 +164,17 @@ export default function UnsavedProgressProvider({ children }: { children: ReactN
       pending.current = navigate;
       setError("");
       setOpen(true);
+      void prepareDialog().catch(() => {
+        // A failed optional chunk must leave the editor usable and its work intact.
+        if (pending.current !== navigate) return;
+        pending.current = null;
+        setOpen(false);
+        window.requestAnimationFrame(() => {
+          if (returnFocus.current?.isConnected) returnFocus.current.focus();
+        });
+      });
     },
-    [dirtyEntries],
+    [dirtyEntries, prepareDialog],
   );
   const cancel = () => {
     if (resolving.current) return;
@@ -349,7 +365,7 @@ export default function UnsavedProgressProvider({ children }: { children: ReactN
         <div className="contents" inert={open ? true : undefined}>
           {children}
         </div>
-        <Dialog.Root
+        {Dialog && <Dialog.Root
           open={open}
           onOpenChange={(next) => {
             if (!next) cancel();
@@ -410,7 +426,7 @@ export default function UnsavedProgressProvider({ children }: { children: ReactN
               </div>
             </Dialog.Content>
           </Dialog.Portal>
-        </Dialog.Root>
+        </Dialog.Root>}
       </AppRouterContext.Provider>
     </ProgressContext.Provider>
   );

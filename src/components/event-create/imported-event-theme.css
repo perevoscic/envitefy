@@ -5,12 +5,12 @@
 }
 @font-face {
   font-family: "Event Editorial";
-  src: url("/fonts/birthday/playfairdisplay.ttf") format("truetype");
+  src: url("/fonts/birthday/playfairdisplay.woff2") format("woff2"), url("/fonts/birthday/playfairdisplay.ttf") format("truetype");
   font-display: swap;
 }
 @font-face {
   font-family: "Event Modern";
-  src: url("/fonts/birthday/inter.ttf") format("truetype");
+  src: url("/fonts/birthday/inter.woff2") format("woff2"), url("/fonts/birthday/inter.ttf") format("truetype");
   font-display: swap;
 }
 @font-face {

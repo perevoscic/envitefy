@@ -53,6 +53,8 @@ export default async function LandingPage() {
 
   return (
     <>
+      <link rel="preload" as="font" href="/fonts/marketing/homepage-v1/inter-latin-extended.woff2" type="font/woff2" crossOrigin="anonymous" />
+      <link rel="preload" as="font" href="/fonts/marketing/homepage-v1/playfairdisplay-latin-extended.woff2" type="font/woff2" crossOrigin="anonymous" />
       <LandingExperience />
       <Script id="ld-landing-webpage" type="application/ld+json" strategy="afterInteractive">
         {JSON.stringify(webpageLd)}

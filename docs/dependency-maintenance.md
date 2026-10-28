@@ -1,6 +1,35 @@
 # Dependency maintenance
 
-The September 9 Windows installation now uses Node 24.21.0 and npm 11.19.0, with both npm projects matching the committed lockfiles. Git, FFmpeg, QPDF, and Playwright Chromium were also installed or updated. See [the Windows update and verification record](dependency-updates-windows-2026-09-09.md) for versions, results, and remaining optional migrations.
+The September 9 Windows verification used Node 24.21.0 and npm 11.19.0, with both npm projects matching the committed lockfiles. Git, FFmpeg, QPDF, and Playwright Chromium were also installed or updated. See [the Windows update and verification record](dependency-updates-windows-2026-09-09.md) for that installation's versions and results.
+
+## October 28, 2026 security repair
+
+The root application was updated with Node 24.21.0 and npm 12.2.0. A fresh full audit reported 19 findings (3 moderate, 15 high, 1 critical); after targeted updates and compatible transitive fixes, both the full and production-only audits report **0 vulnerabilities**. A normal `npm install` completes without unreviewed-install-script warnings. No `--force` update or production deployment was performed. The separate `video-studio/` project was not changed or audited in this repair.
+
+| Package | Previous locked version | Updated version |
+| --- | --- | --- |
+| Next.js | 15.5.25 | 15.5.28 |
+| Sharp | 0.35.4 | 0.35.5 |
+| Nodemailer | 10.0.1 | 10.2.1 |
+| Multer | 2.3.0 | 2.5.0 |
+| OpenAI SDK | 4.104.0 | 6.49.0 |
+| Zod | 3.25.76 / 4.1.11 | 4.6.7 |
+| Puppeteer Core | 25.10.0 | 25.16.0 |
+
+Compatible transitive updates also patch gRPC, brace-expansion, source-map-js, Undici, and qs. The Vercel CLI configuration package still pins an affected Zod 4 release, so a scoped override selects Zod 4.6.7. OpenAI 6 and the updated Chromium BiDi dependency support Zod 4; the older consumers were upgraded rather than forced onto an unsupported Zod major. The application's image-stream helper now uses the SDK's public `images.generate` and `images.edit` methods, retaining partial images, custom dimensions, cancellation, timeouts, and disabled retries. API models and product behavior were not changed.
+
+npm 12 blocks dependency lifecycle scripts until the project records a decision in `package.json#allowScripts`. The reviewed setup scripts are approved at exact installed versions:
+
+- `@prisma/client@6.19.3`, `@prisma/engines@6.19.3`, and `prisma@6.19.3` for Prisma setup.
+- `ffmpeg-static@5.3.0` for the FFmpeg executable used by artwork conversion.
+
+The echo-only `@google/genai` preinstall and notification-only `protobufjs` postinstall are explicitly denied; neither produces required build output. The approved scripts rebuilt successfully, the FFmpeg executable runs, and the Prisma client export loads. Future versions with lifecycle scripts need a new review; do not replace these decisions with blanket script approval. See [npm's install-script policy documentation](https://docs.npmjs.com/cli/v12/commands/npm-install-scripts/).
+
+Verification reports are stored locally in the ignored `output/dependency-repair-2026-10-28/` directory. The application typecheck and installed dependency-tree validation pass, along with 102 dependency checks, 53 Concierge checks (including desktop/phone browser coverage), 47 AI-model checks, and six image-stream checks. Three existing test fixtures were corrected to support the homepage's named image helper, load actual holiday availability data, and match the configured PDF-processing routes; no product/configuration changes were needed for those nine initial fixture failures.
+
+The production build passes, including type validation, all 153 static pages, and standalone packaging. The sandbox build first encountered Windows directory-permission errors; the build with normal filesystem access retried once after a missing temporary `500.html` artifact and then completed successfully. Initial and final build logs are retained with the verification reports.
+
+Stop running dev servers before changing dependencies, then restart them after installation. The former Next.js 15.5.25 dev process retained a Webpack reference to `@vercel/cli-config/node_modules/zod/index.cjs` after npm correctly moved Zod to the root dependency directory. Stopping that server and clearing only its `.next-dev` cache removes the stale reference. For another port, use its matching `.next-dev-<port>` directory; preserve the production `.next` build and other servers' caches.
 
 The application and `video-studio/` have separate npm manifests and lockfiles. Run checks from the repository, not the home directory:
 
@@ -49,7 +78,8 @@ Keep these overrides until the consuming packages adopt patched compatible relea
 | Next.js → PostCSS 8.5.28 | Next.js 15 pins vulnerable PostCSS 8.4.31. The patched 8.x API passes CSS/source-map tests and the production build. |
 | Prisma config → deepmerge-ts 8.0.2 | Fixes recursive merge stack exhaustion while retaining Prisma 6. Config-file loading is tested. |
 | Older UUID → 11.1.1 | Fixes bounds checking while preserving CommonJS and the `v4()` API used by Google clients. |
-| Older qs → 6.16.0 | Applies the patched 6.x query-string parser. |
+| Older qs → 6.17.0 | Applies the patched 6.x query-string parser, including the October 28 advisory. |
+| Vercel CLI config → Zod 4.6.7 | Replaces its pinned affected Zod 4 version without changing the consumer's major API. |
 
 During this update npm retained an invalid nested PostCSS copy after changing the override. A clean lockfile resolution followed by `npm ci --include=dev` removed it. Always confirm the installed tree with `npm ls --all`; editing an override alone is insufficient.
 

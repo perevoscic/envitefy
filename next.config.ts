@@ -34,6 +34,20 @@ const nextConfig = (phase: string): NextConfig => ({
   // Keep dev artifacts out of `.next` so `next build` doesn't race with `next dev`.
   distDir: phase === PHASE_DEVELOPMENT_SERVER ? resolveDevDistDir() : ".next",
   devIndicators: false,
+  // Keep route-only component styles out of unrelated marketing pages without
+  // splitting the initial route into many small render-blocking stylesheets.
+  experimental: { cssChunking: false },
+  async headers() {
+    // These filenames include their content hash; keep previous versions valid
+    // for open tabs while browsers reuse the exact stylesheet across routes.
+    return [
+      "/styles/runtime-utilities-:hash([a-f0-9]{12}).css",
+      "/fonts/gallery/catalog-:hash([a-f0-9]{12}).css",
+    ].map((source) => ({
+      source,
+      headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+    }));
+  },
   async redirects() {
     return [
       {

@@ -151,10 +151,10 @@ test("tall Live Card dimensions reach generation, reference generation and edit 
 
 test("streamed Live Card generation forwards the same tall dimensions", async () => {
   mock.method(openAiStudioDeps, "getOpenAiClient", () => ({
-    post: async (_url, options) => {
-      assert.equal(options.body.size, "1024x2176");
+    images: { generate: async (request) => {
+      assert.equal(request.size, "1024x2176");
       return (async function* () { yield {type:"image_generation.completed", b64_json:"VEVTVA=="}; })();
-    },
+    } },
   }));
   assert.equal((await generateInvitationImageWithOpenAi("Tall birthday scene", undefined, "live_card", {onPartialImage: () => {}})).ok, true);
 });

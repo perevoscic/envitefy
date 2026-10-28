@@ -1,4 +1,4 @@
-/** Shared, self-hosted typefaces. Registration lives in globals.css and gallery-fonts.css. */
+/** Shared, self-hosted typefaces. FontCatalogStyles delivers the complete gallery-fonts.css catalog. */
 import { FONT_LIBRARY_ADDITIONS } from "./font-library-additions";
 
 export type FontCategory = "Serif" | "Sans serif" | "Script" | "Display";

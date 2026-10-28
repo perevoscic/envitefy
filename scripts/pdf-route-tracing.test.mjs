@@ -20,6 +20,9 @@ test("Next traces PDF/canvas files only for PDF processing routes", async () => 
     "/api/upload",
     "/api/ingest",
     "/api/ocr",
+    "/api/create/classify",
+    "/api/create/extract",
+    "/api/discovery/intake",
     "/api/scan/event-page",
     "/api/football/prefill",
     "/api/discovery/[eventId]/run",
@@ -39,7 +42,6 @@ test("Next traces PDF/canvas files only for PDF processing routes", async () => 
     "/api/uploads/birthday-asset",
     "/api/studio/generate",
     "/api/events/[id]/card/edit",
-    "/api/discovery/intake",
     "/api/discovery/[eventId]/status",
     "/api/discovery/[eventId]/cancel",
   ]) {

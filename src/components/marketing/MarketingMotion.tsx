@@ -127,9 +127,20 @@ export default function MarketingMotion({ children, className }: MarketingMotion
         }
       }
       // Read geometry together before writing progress or reveal styles.
+      // A node may be both a scene and a reveal, or supply shared exit geometry.
+      // Reuse its measurement within this update without retaining stale scroll bounds.
+      const bounds = new Map<HTMLElement, DOMRect>();
+      const readBounds = (target: HTMLElement) => {
+        let rect = bounds.get(target);
+        if (!rect) {
+          rect = target.getBoundingClientRect();
+          bounds.set(target, rect);
+        }
+        return rect;
+      };
       const sceneUpdates = scenes.map((target) => {
         if (reduced) return { target, progress: 1 };
-        const rect = geometryTarget(target).getBoundingClientRect();
+        const rect = readBounds(geometryTarget(target));
         if (target.dataset.motionRange === "exit") {
           const start = Number(target.dataset.motionExitStart ?? 1);
           const end = Number(target.dataset.motionExitEnd ?? 0.3);
@@ -152,7 +163,7 @@ export default function MarketingMotion({ children, className }: MarketingMotion
       });
       const revealUpdates = reveals.filter((target) => {
         if (reduced || revealed.has(target)) return true;
-        return target.getBoundingClientRect().top <= viewport * 0.92;
+        return readBounds(target).top <= viewport * 0.92;
       });
       for (const { target, progress } of sceneUpdates) {
         const value = progress.toFixed(4);

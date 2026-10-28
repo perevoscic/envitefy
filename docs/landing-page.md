@@ -66,6 +66,178 @@ Guest publishing offers **Create an account & publish** and **Sign in & publish*
 
 ## Verification
 
+Production builds retain the homepage's complete utility dependency set in root
+CSS, including account dialogs, navigation, Concierge and the deferred Live Card
+showcase. Other routes and the authenticated dashboard also receive the complete
+original utility catalog through `RuntimeUtilityStyles`, rendered as a stylesheet
+resource in server HTML and maintained across client navigation. The full catalog
+deliberately overlaps the critical subset to preserve original cascade order.
+Keep both stylesheet resources inside `Providers`, with AppShell rendered
+directly. An enclosing empty `Suspense` fallback can stream the entire shell into
+a hidden container whose reveal requires JavaScript; moving only the styles
+outside it does not solve that case. React coordinates stylesheet loading across
+the client commit without that enclosing boundary.
+Root foundations, theme variables, appearance boundaries, typography and persistent
+navigation CSS remain in place. Development keeps the original full stylesheet
+and normal automatic source watching.
+
+`npm run build` runs `scripts/build-runtime-utilities.mjs` before Next's parallel
+CSS compilation. This creates the immutable `public/styles/runtime-utilities-*.css`
+asset, generated URL and source/declaration manifest. PostCSS only validates and
+reads those outputs. After changing runtime sources, direct `next build` requires
+regeneration first; stale inputs fail with the regeneration command. Run
+`node scripts/build-runtime-utilities.mjs --check` to verify generated delivery.
+`node --test scripts/runtime-utility-delivery.test.mjs` verifies complete-rule
+parity, ordering, foundation preservation, stale detection and development/SSR
+loading boundaries. Real production widget and route delivery is checked by
+`scripts/homepage-performance-browser.test.cjs` against an explicitly supplied
+`ENVITEFY_PERFORMANCE_ORIGIN`; it never starts a development server.
+
+### Performance verification, October 27, 2026
+
+The implementation retains the existing artwork, typography, appearance palettes,
+motion, template destinations and account actions. It changes asset delivery:
+
+- Production root CSS keeps 1,443 utility entries needed by 144 homepage/chrome/
+  widget source files; every original utility remains in the complete catalog.
+  Generated critical root CSS is 43,733 gzip bytes versus 134,323 before the split.
+  Production CSS transfer in the local homepage audit fell from 195,362 to
+  101,549 bytes across the seven initial stylesheet requests.
+- The full 660-descriptor gallery font catalog is omitted on anonymous Home.
+  Homepage Inter/Playfair subsets total 79,452 bytes, saving 89,104 bytes versus
+  the full WOFF2 preload pair. Full original families and Unicode fallbacks remain.
+- Prepared wordmark sizes retain the original artwork; hidden header variants
+  are lazy. The Concierge mask is 3,514 bytes versus the 41,490-byte original.
+  Its anonymous-CORS, high-priority preload matches the CSS request and avoids
+  the duplicate fetch found in the earlier production trace.
+- Account, menu and Concierge modules load on first opening and remain mounted
+  for close/reset cleanup. Testimonial scroll updates reuse measured card
+  offsets; marketing scenes share geometry reads within each update.
+- The empty root AppShell Suspense wrapper was removed after actual no-JavaScript
+  checks found the whole page inside hidden streamed containers. The rebuilt
+  homepage, birthday landing and gallery now visibly render without JavaScript.
+  Footer heading hierarchy and 44px link targets were also corrected.
+
+Three cold simulated-mobile runs per route used Lighthouse 13.4.1 against the
+local production build. These are local measurements, not a new public PageSpeed
+result. Medians from `output/lighthouse/2026-10-27T22-33-27.804Z-WYiCWc/summary.json`:
+
+| Route | Performance | FCP | LCP | TBT | CLS |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `/` | 81 | 2.11s | 4.69s | 24.5ms | 0 |
+| `/landing` | 81 | 2.11s | 4.82s | 24ms | 0 |
+| `/gymnastics` | 60 | 5.86s | 10.07s | 43.5ms | 0.0019 |
+| `/snap` | 67 | 3.91s | 7.37s | 26.5ms | 0.0203 |
+
+The first local implementation-stage homepage median was 74 / 2.71s FCP /
+5.79s LCP, using the same runner. LCP still exceeds the 2.5s error budget on every
+configured route, so the complete Lighthouse command correctly exits nonzero.
+Every run, median, HTML report, trace and network log is retained; a best outlier
+is never substituted for a failing budget.
+
+An isolated native-image version of the same Concierge icon was tested and
+discarded: median LCP was 4.67s versus 4.69s with the mask, with different edge
+rasterization during interaction. All generated experiment files and the original
+mask were restored with matching hashes. The shipped source retains the mask.
+
+The next performance work is the remaining critical rendering path, rather than
+more icon compression. Roughly 30KiB of unused CSS comes from Next's CSS chunk
+coalescing: those files also contain required homepage button, motion and chrome
+styles, so deferring entire files is unsafe. Evaluate `cssChunking: "strict"`
+with emitted-module, request-count and cross-route appearance comparisons before
+adopting it. The category and Snap routes also need their own measured delivery
+work; the homepage utility closure does not replace their full catalog.
+
+Verification passed: production build with application type checks and 153 static
+pages; 36 final delivery/asset/runner/homepage contracts; 28 customer-entrypoint
+checks; 14 PWA/routing checks; CSS/font parity and 64 subset pixel/metric cases;
+the phone/desktop light/dark landing matrix; and the production browser smoke.
+Appearance, signed-in navigation, category hero/dark appearance, birthday gallery,
+showcase, motion and Concierge regression checks also passed during the change.
+The broad CSS parity check initially exceeded its 60s limit during a concurrent
+build; its isolated rerun passed in 24.37s.
+
+The final production smoke passed in 42.57s, with evidence in
+`output/homepage-performance/delivery.json`: visible no-JavaScript content on all
+three public routes, real Next client navigation, full font loading, actual CSS
+order and a conflicting-utility probe, compressed immutable stylesheet delivery,
+one mask fetch per context, native account controls, Concierge answer/reset/reopen
+and live showcase Details open/close on light/dark 390px and 1440px viewports.
+It recorded no uncaught page errors. Authenticated Home needs an authorized
+storage state for this production smoke; fixture tests cover its loader/session
+states. Google rejects the configured public reCAPTCHA key on localhost, so the
+test does not certify provider authentication or Concierge after signup on the
+public domain. Signup UI checks run last to avoid that local error badge.
+
+Local SEO 92 reflects Lighthouse 13.4.1's `head meta` gatherer: browser HTML and
+hydrated DOM contain the description in the streamed body, while Twitterbot's
+response contains it in the initial head. The metadata remains present; no
+audit-only streaming override was added. The unrelated baby-shower static
+`gallery previews` render test also reproduces its 0/60-marker failure on the
+unchanged starting commit, because `renderToStaticMarkup` does not resolve its
+Next dynamic thumbnail. That fixture failure is not an established product defect.
+
+### October 28 follow-up and accepted stopping point
+
+The user accepted the measured **2.52–2.80s mobile LCP range** and requested no
+further optimization. These are actual DevTools-throttled browser measurements
+against the local production app, not a new public PageSpeed result. The three
+runs were 2,727 / 2,803 / 2,525ms, with a 2,727ms median. Evidence is in
+`output/lighthouse-throttling-compare/2026-10-28T15-49-27.947Z-devtools-2lZaVy/`.
+
+The retained implementation:
+
+- Disables Next CSS chunk merging (`experimental.cssChunking: false`). Home now
+  receives three stylesheets totaling 66,967 transferred bytes, versus seven /
+  101,549 bytes in the prior build. Strict chunking was rejected after it produced
+  thirteen initial requests and slower browser results.
+- Uses the same Concierge artwork as a 3,514-byte native gold image. Its resized
+  alpha and authored gold are exact; the plum backing, 56px control, hover/press,
+  popover, keyboard and reset behavior remain. This avoids the late CSS-mask
+  paint observed during hydration. The old white mask asset stays available.
+- Provides a media-matched, high-priority mobile portrait preload and native
+  picture with AVIF/WebP fallback. The 480px AVIF is 13,829 bytes and retains the
+  original photograph's 59%-center crop; the desktop source and all frame/motion
+  styles remain. Public AVIF paths bypass authentication middleware, with a
+  framework matcher regression that also checks protected application routes.
+- Loads the unchanged unsaved-progress dialog library when an editor registers,
+  rather than on every anonymous visit. Dirty navigation remains blocked while
+  loading; failed chunk requests preserve work and allow retry. Theme-color
+  formatting and sidebar dimensions no longer pull unrelated template and OCR
+  registries into the startup bundle.
+- Keeps all 24 testimonial texts and attributions while rendering per-word
+  animation spans only for the active quote, including the first SSR quote.
+  This removes 523 initial elements. Seventy-two comparisons preserve dimensions
+  and line breaks; word positions differ by at most 0.125px on inactive text.
+- Compacts unused glyph-ID slots in the same Latin-extended homepage fonts,
+  saving another 7,920 bytes without changing character coverage, outlines,
+  hints, layout features or current rendering (224 pixel/metric comparisons).
+  Footer images are lazy; the five-size favicon retains every RGBA pixel in
+  lossless PNG entries, reducing it from 34,494 to 17,807 bytes.
+
+Build `vWvf8Emi6lwL8q895O-FC` passed compilation, application type checks and all
+153 static pages on Next 15.5.28. The Next/dependency update came from concurrent
+workspace work and was preserved. The final static font/photo compaction does
+not change compiled application code; its exact hashes are recorded in
+`output/performance-oct28-final-asset-manifest.json`.
+
+Regression verification passed: 44 delivery/runner/homepage/middleware contracts;
+63 shell/sidebar/onboarding/event-paper checks; 28 customer-entrypoint checks;
+four CSS parity/delivery checks; five font/catalog checks; the full landing
+matrix; four motion checks; unsaved-progress/editor Back checks; Concierge and
+dark-appearance browser suites; and the actual production navigation/widget
+smoke in all four phone/desktop light/dark contexts. The smoke also confirms
+visible no-JavaScript pages, full saved-font delivery, CSS cascade order, one
+native Concierge request, decoded mobile portraits and no uncaught page errors.
+
+The last full simulated Lighthouse matrix, before the final static compaction,
+reported Home 85 / FCP 1.81s / LCP 4.14s / TBT 14ms / CLS 0; Gymnastics LCP
+9.61s and Snap 6.92s. Those simulated LCP budgets still fail. The runner retains
+the original 2,500ms error threshold and every-run checks. It was not rerun after
+the user's stopping instruction. No deployment or public PageSpeed retest was
+performed. Unverified follow-up motion-startup and layout-auth experiments were
+removed; the restored application files match the measured build's source hashes.
+
 Run the landing contracts, authentication routing and marketing navigation checks:
 
 ```powershell

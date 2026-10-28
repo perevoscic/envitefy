@@ -225,11 +225,14 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
               {MARKETING_FOOTER_GROUPS.map((group) => (
                 <div
                   key={group.title}
+                  data-footer-group={group.title}
                   className={group.title === "Company" ? "col-span-2 lg:col-span-1" : ""}
                 >
-                  <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
+                  <h2
+                    className={`${marketingFooterStyles.groupTitle} text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]`}
+                  >
                     {group.title}
-                  </h4>
+                  </h2>
                   <div className="mt-4 text-sm text-[#62586a]">
                     {group.links.map((link) => (
                       <Link
@@ -246,7 +249,9 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
             </div>
           </div>
           <div className="relative border-t border-[#d7c5a5]">
-            <div className={`${marketingFooterStyles.copyright} mx-auto max-w-7xl px-6 py-6 text-sm text-[#665d68] sm:px-8 lg:px-10`}>
+            <div
+              className={`${marketingFooterStyles.copyright} mx-auto max-w-7xl px-6 py-6 text-sm text-[#665d68] sm:px-8 lg:px-10`}
+            >
               <p>© {new Date().getFullYear()} Envitefy</p>
               <PrivacyChoicesButton className="hover:text-[#2b1b16]" />
               {MARKETING_FOOTER_UTILITY_LINKS.map((link) => (

@@ -1,6 +1,19 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const loadTs = require("../../scripts/lib/event-messages-test-loader.cjs");
+const React = require("react");
+const { renderToStaticMarkup } = require("react-dom/server");
+
+test("the server-rendered provider keeps page content visible without loading its closed editor prompt", () => {
+  let dialogLoads = 0;
+  const { default: Provider } = loadTs("src/components/UnsavedProgressProvider.tsx", {
+    "./progress-dialog": { loadProgressDialog() { dialogLoads++; throw new Error("A closed prompt must stay unloaded"); } },
+  });
+  const markup = renderToStaticMarkup(React.createElement(Provider, null, React.createElement("p", null, "Complete public page")));
+  assert.equal(dialogLoads, 0);
+  assert.match(markup, /Complete public page/);
+  assert.doesNotMatch(markup, /\binert\b|role="dialog"|Save your progress/);
+});
 
 function eventProgress(save) {
   let readProgress;

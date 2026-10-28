@@ -3,6 +3,8 @@ import Script from "next/script";
 import { getServerSession } from "next-auth";
 import Providers from "./providers";
 import AppShell from "./AppShell";
+import FontCatalogStyles from "@/components/FontCatalogStyles";
+import RuntimeUtilityStyles from "@/components/RuntimeUtilityStyles";
 import "./globals.css";
 // Shared chrome must be styled before the dynamically loaded sidebar mounts.
 import "@/components/navigation/navigation-appearance.module.css";
@@ -14,7 +16,6 @@ import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images"
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import { themeColorPalette } from "@/lib/theme-color";
 import { buildAppearanceBootstrap } from "@/lib/appearance";
-import { Suspense } from "react";
 import type { CSSProperties } from "react";
 
 // Shared font stacks; locally bundled typefaces are downloaded only when used.
@@ -189,6 +190,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className={`${fontVarsClass} antialiased`}>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: Static app-authored bootstrap applies validated appearance before paint; no user HTML is interpolated. */}
         <script id="appearance-bootstrap" dangerouslySetInnerHTML={{ __html: buildAppearanceBootstrap() }} />
         <Script
           id="ld-website"
@@ -231,9 +233,11 @@ export default async function RootLayout({
           })();
         `}</Script>
         <Providers session={serverSession}>
-          <Suspense fallback={null}>
-            <AppShell serverSession={serverSession}>{children}</AppShell>
-          </Suspense>
+          {/* Render the shell directly: an empty streaming fallback can leave
+              the entire page hidden when JavaScript is unavailable. */}
+          <FontCatalogStyles />
+          <RuntimeUtilityStyles />
+          <AppShell serverSession={serverSession}>{children}</AppShell>
         </Providers>
       </body>
     </html>

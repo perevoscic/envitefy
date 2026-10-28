@@ -7,6 +7,9 @@ export default function dynamic(loader: () => Promise<{ default: ComponentType<a
     useEffect(() => {
       let mounted = true;
       loader().then((module) => {
+        const loads = (window as any).__landingProductDynamicLoads ?? [];
+        (window as any).__landingProductDynamicLoads = loads;
+        loads.push(module.default.name);
         if (mounted) setComponent(() => module.default);
       });
       return () => {

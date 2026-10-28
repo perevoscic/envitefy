@@ -14,13 +14,13 @@
   box-shadow: none;
   backdrop-filter: none;
 }
-.footer h4 {
+.footer .groupTitle {
   color: var(--footer-ink);
   font-size: 0.6875rem;
   letter-spacing: 0.13em;
 }
 .footer p,
-.footer h4 + div,
+.footer .groupTitle + div,
 .footer > div > div:last-child > div {
   color: var(--footer-muted);
 }
@@ -31,16 +31,18 @@
 .footer a:hover {
   color: var(--footer-ink);
 }
-.footer h4 + div a {
-  display: block;
-  min-height: 0;
-  padding-block: 0;
+.footer .groupTitle + div a {
+  display: flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 32px;
+  padding-block: 0.25rem;
   line-height: 1.5;
 }
-.footer h4 + div {
+.footer .groupTitle + div {
   margin-top: 0.6rem;
 }
-.footer h4 + div > * + * {
+.footer .groupTitle + div > * + * {
   margin-top: 0;
 }
 .footer > div > div:last-child {
@@ -59,6 +61,13 @@
 .copyright > * {
   white-space: nowrap;
 }
+.copyright :where(a, button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
 .footer :where(a, button):focus-visible {
   outline: 3px solid currentColor;
   outline-offset: 4px;
@@ -73,16 +82,18 @@
   background: var(--footer-paper);
   border-color: var(--footer-line);
 }
-:global(html.dark) .footer h4 {
+:global(html.dark) .footer .groupTitle {
   color: var(--footer-ink);
 }
 :global(html.dark) .footer p,
-:global(html.dark) .footer h4 + div,
+:global(html.dark) .footer .groupTitle + div,
 :global(html.dark) .footer > div > div:last-child > div {
   color: var(--footer-muted);
 }
 .footer.homepage,
 :global(html.dark) .footer.homepage {
+  --font-geist-sans: "Envitefy Homepage Inter", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-playfair: "Envitefy Homepage Playfair", "Playfair Display", Georgia, "Times New Roman", serif;
   --footer-paper: #482b3e;
   --footer-strip: #3b2333;
   --footer-ink: #fcf8f3;
@@ -106,7 +117,7 @@
     padding: 1.5rem 1.4rem 1rem;
     gap: 2rem;
   }
-  .footer h4 + div {
+  .footer .groupTitle + div {
     font-size: 0.8125rem;
   }
   .footer > div > div:last-child > div {

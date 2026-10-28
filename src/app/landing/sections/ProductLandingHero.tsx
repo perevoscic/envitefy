@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, Check, CheckCircle2, Link2, MapPin, X } from "lucide-react";
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
@@ -13,6 +13,22 @@ import styles from "./ProductLandingHero.module.css";
 
 type SampleAction = "rsvp" | "directions" | "calendar" | null;
 type SampleReply = "Going" | "Maybe" | "Can’t make it" | null;
+
+const mobilePortraitMedia = "(max-width: 719px)";
+const mobilePortraitSizes = "min(58vw, 232px)";
+const mobilePortraitAvifSrcSet =
+  "/images/landing/hero/portrait-v1/garden-brunch-480.avif 480w, /images/landing/hero/portrait-v1/garden-brunch-768.avif 768w";
+const mobilePortraitSrcSet =
+  "/images/landing/hero/portrait-v1/garden-brunch-480.webp 480w, /images/landing/hero/portrait-v1/garden-brunch-768.webp 768w";
+const { props: desktopPortraitProps } = getImageProps({
+  src: "/images/landing/hero/garden-brunch-desktop.webp",
+  alt: "A flower-filled garden table, ready for everyone to arrive",
+  fill: true,
+  loading: "eager",
+  fetchPriority: "high",
+  quality: 70,
+  sizes: "(max-width: 719px) min(58vw, 232px), (max-width: 1023px) 32vw, clamp(224px, 23vw, 448px)",
+});
 
 function SampleEventPage() {
   const [action, setAction] = useState<SampleAction>(null);
@@ -42,8 +58,8 @@ function SampleEventPage() {
             src="/images/landing/hero/garden-brunch-desktop.webp"
             alt="A sunlit garden table with flowers and a place set for brunch"
             fill
-            priority
             sizes="(min-width: 1024px) 392px, (min-width: 600px) 400px, calc(100vw - 56px)"
+            quality={70}
             className={styles.artworkImage}
           />
         </div>
@@ -254,8 +270,11 @@ export default function ProductLandingHero({ onCreate }: { onCreate: () => void 
             src={ENVITEFY_BRAND_ASSETS.wordmark.color}
             whiteSrc={ENVITEFY_BRAND_ASSETS.wordmark.white}
             alt=""
-            width={1198}
-            height={401}
+            width={1194}
+            height={402}
+            preparedSrcSet={ENVITEFY_BRAND_ASSETS.wordmark.colorSrcSet}
+            whitePreparedSrcSet={ENVITEFY_BRAND_ASSETS.wordmark.whiteSrcSet}
+            sizes="(max-width: 746px) calc(100vw - 2.8rem), (min-width: 2134px) calc(100vw - 8rem), 94vw"
             priority
             className={styles.displayWordmark}
           />
@@ -302,13 +321,38 @@ export default function ProductLandingHero({ onCreate }: { onCreate: () => void 
             </p>
           </div>
           <div className={styles.heroPortrait}>
-            <Image
-              src="/images/landing/hero/garden-brunch-desktop.webp"
-              alt="A flower-filled garden table, ready for everyone to arrive"
-              fill
-              priority
-              sizes="(max-width: 600px) 44vw, 24vw"
+            <link
+              rel="preload"
+              as="image"
+              type="image/avif"
+              media={mobilePortraitMedia}
+              imageSrcSet={mobilePortraitAvifSrcSet}
+              imageSizes={mobilePortraitSizes}
+              fetchPriority="high"
             />
+            <link
+              rel="preload"
+              as="image"
+              media="(min-width: 720px)"
+              imageSrcSet={desktopPortraitProps.srcSet}
+              imageSizes={desktopPortraitProps.sizes}
+              fetchPriority="high"
+            />
+            <picture>
+              <source
+                media={mobilePortraitMedia}
+                type="image/avif"
+                srcSet={mobilePortraitAvifSrcSet}
+                sizes={mobilePortraitSizes}
+              />
+              <source
+                media={mobilePortraitMedia}
+                type="image/webp"
+                srcSet={mobilePortraitSrcSet}
+                sizes={mobilePortraitSizes}
+              />
+              <img {...desktopPortraitProps} alt={desktopPortraitProps.alt} />
+            </picture>
             <span className={styles.portraitCaption}>Good things start with an invitation.</span>
           </div>
           <div className={styles.seedArches} aria-hidden="true">

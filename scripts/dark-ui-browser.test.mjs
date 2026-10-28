@@ -63,6 +63,17 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
         const result=await collect();
         measurements.push({screen,...result});
         assert.equal(result.theme,"general-dark");
+        if (result.overflow) {
+          const overflow = await page.evaluate(() => ({
+            viewport: innerWidth,
+            documentWidth: document.documentElement.scrollWidth,
+            elements: [...document.querySelectorAll("body *")].filter((node) => {
+              const rect = node.getBoundingClientRect();
+              return rect.width > 0 && node.scrollWidth > node.clientWidth + 1 && getComputedStyle(node).overflowX === "visible";
+            }).slice(0, 30).map((node) => ({ tag: node.tagName, id: node.id, className: String(node.className), width: node.clientWidth, scrollWidth: node.scrollWidth })),
+          }));
+          await fs.writeFile(path.join(out, `${screen}-overflow-${width}.json`), JSON.stringify(overflow, null, 2));
+        }
         assert.equal(result.overflow,false,`${screen} overflows at ${width}px`);
         for(const field of result.controls)assert.ok(field.ratio>=4.5,`${screen} control contrast ${field.ratio}: ${field.text}`);
         assert.deepEqual(result.lowContrast,[],`${screen} has visible text below 4.5:1 at ${width}px`);
@@ -157,7 +168,11 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
           const social=footer.getByRole("navigation",{name:"Follow Envitefy",exact:true});
           await social.waitFor();
           assert.equal(await footer.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(59, 35, 51)","the homepage's plum footer strip supports the white wordmark and social glyphs");
-          const visible=await social.locator("img").evaluateAll(images=>images.filter(img=>img.checkVisibility()).map(img=>({src:img.getAttribute("src"),loaded:img.complete&&img.naturalWidth>0})));
+          const visible=await social.locator("img").evaluateAll(async images=>{
+            const shown=images.filter(img=>img.checkVisibility());
+            await Promise.all(shown.map(img=>img.decode()));
+            return shown.map(img=>({src:img.getAttribute("src"),loaded:img.complete&&img.naturalWidth>0}));
+          });
           assert.equal(visible.length,5);
           assert.ok(visible.every(img=>img.src.startsWith("/email/white-v1/")&&img.loaded),"dark website footer uses all five loaded white icon assets");
           assert.equal(await footer.getByRole("heading",{name:"Create",exact:true}).evaluate(el=>getComputedStyle(el).color),"rgb(252, 248, 243)");
@@ -180,16 +195,29 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
           await launcherFixture.goto("https://dark-ui.test/landing?screen=concierge-launcher");
           const launcher=launcherFixture.getByRole("button",{name:"Open Envitefy Concierge",exact:true});
           await launcher.waitFor({state:"visible"});
-          const launcherAppearance=await launcher.evaluate(button=>{
+          const launcherAppearance=await launcher.evaluate(async button=>{
             const rect=button.getBoundingClientRect();
             const style=getComputedStyle(button);
-            const symbol=button.querySelector('[aria-hidden="true"]');
+            const symbol=button.querySelector('img[aria-hidden="true"]');
+            await symbol.decode();
             const symbolStyle=getComputedStyle(symbol);
-            return {width:rect.width,height:rect.height,color:style.color,backing:getComputedStyle(button,"::before").backgroundColor,mask:symbolStyle.maskImage,symbolColor:symbolStyle.backgroundColor};
+            const symbolRect=symbol.getBoundingClientRect();
+            return {width:rect.width,height:rect.height,color:style.color,backing:getComputedStyle(button,"::before").backgroundColor,mask:symbolStyle.maskImage,objectFit:symbolStyle.objectFit,src:symbol.getAttribute("src"),complete:symbol.complete&&symbol.naturalWidth>0&&symbol.naturalHeight>0,symbolWidth:symbolRect.width,symbolHeight:symbolRect.height,widthAttribute:symbol.getAttribute("width"),heightAttribute:symbol.getAttribute("height"),alt:symbol.alt,loading:symbol.loading,priority:symbol.fetchPriority,crossOrigin:symbol.crossOrigin};
           });
           assert.ok(launcherAppearance.width>=44&&launcherAppearance.height>=44,"Concierge must retain a 44px touch target at both widths");
-          assert.ok(launcherAppearance.mask.includes("/brand/concierge-chat.webp"),"Concierge uses the approved e-chat brand mark");
-          assert.equal(launcherAppearance.symbolColor,launcherAppearance.color,"Concierge brand mark follows the launcher ink");
+          assert.equal(launcherAppearance.src,"/brand/responsive-v1/concierge-gold-168.webp","Concierge uses the native gold derivative of the approved e-chat brand mark");
+          assert.equal(launcherAppearance.complete,true,"the native Concierge image decodes successfully");
+          assert.equal(launcherAppearance.objectFit,"contain");
+          assert.equal(launcherAppearance.mask,"none");
+          assert.equal(launcherAppearance.color,"rgb(249, 223, 148)","Concierge retains its approved gold ink");
+          assert.equal(launcherAppearance.symbolWidth,56);
+          assert.equal(launcherAppearance.symbolHeight,56);
+          assert.equal(launcherAppearance.widthAttribute,"56");
+          assert.equal(launcherAppearance.heightAttribute,"56");
+          assert.equal(launcherAppearance.alt,"");
+          assert.equal(launcherAppearance.loading,"eager");
+          assert.equal(launcherAppearance.priority,"high");
+          assert.equal(launcherAppearance.crossOrigin,"anonymous");
           assert.equal(launcherAppearance.width,56);
           assert.equal(launcherAppearance.height,56);
           assert.equal(launcherAppearance.backing,"rgb(36, 25, 39)","the icon launcher keeps its dark speech-shaped backing behind the brand mark");

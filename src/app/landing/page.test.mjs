@@ -40,6 +40,8 @@ function loadLandingComponent(relativePath, cache = new Map()) {
         __esModule: true,
         default: ({ fill, priority, unoptimized, sizes, ...props }) =>
           React.createElement("img", props),
+        getImageProps: (props) =>
+          require("next/image").getImageProps({ ...props, unoptimized: true }),
       };
     if (name === "next/dynamic") return { __esModule: true, default: () => () => null };
     if (name === "next/navigation")

@@ -6,6 +6,51 @@ const { chromium } = require("playwright");
 const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
 
+async function assertLauncherImage(button) {
+  const logo = await button.locator('img[aria-hidden="true"]').evaluate(async (node) => {
+    await node.decode();
+    const style = getComputedStyle(node);
+    const canvas = document.createElement("canvas");
+    canvas.width = node.naturalWidth;
+    canvas.height = node.naturalHeight;
+    const context = canvas.getContext("2d");
+    context.drawImage(node, 0, 0);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let gold;
+    for (let index = 0; index < pixels.length; index += 4) {
+      if (pixels[index + 3] === 255) {
+        gold = [...pixels.slice(index, index + 3)];
+        break;
+      }
+    }
+    return {
+      src: node.getAttribute("src"),
+      alt: node.alt,
+      loading: node.loading,
+      priority: node.fetchPriority,
+      crossOrigin: node.crossOrigin,
+      objectFit: style.objectFit,
+      mask: style.maskImage,
+      width: node.getBoundingClientRect().width,
+      height: node.getBoundingClientRect().height,
+      widthAttribute: node.getAttribute("width"),
+      heightAttribute: node.getAttribute("height"),
+      complete: node.complete && node.naturalWidth > 0 && node.naturalHeight > 0,
+      gold,
+    };
+  });
+  assert.deepEqual(logo, {
+    src: "/brand/responsive-v1/concierge-gold-168.webp",
+    alt: "", loading: "eager", priority: "high", crossOrigin: "anonymous",
+    objectFit: "contain", mask: "none", width: 56, height: 56,
+    widthAttribute: "56", heightAttribute: "56", complete: true, gold: [249, 223, 148],
+  }, "the native launcher image decodes at the approved size and gold with matching preload mode");
+  assert.deepEqual(await button.evaluate((node) => ({
+    ink: getComputedStyle(node).color,
+    backing: getComputedStyle(node, "::before").backgroundColor,
+  })), { ink: "rgb(249, 223, 148)", backing: "rgb(36, 25, 39)" }, "Concierge retains its gold ink and plum backing");
+}
+
 test("Concierge uses an anchored popover, answers known questions instantly, and clears conversations on reset or close", {
   timeout: 120000,
 }, async () => {
@@ -109,10 +154,10 @@ test("Concierge uses an anchored popover, answers known questions instantly, and
         contentType: "image/png",
         body: fs.readFileSync("public/logo-colored.png"),
       });
-    if (url.pathname === "/brand/concierge-chat.webp")
+    if (url.pathname === "/brand/responsive-v1/concierge-gold-168.webp")
       return route.fulfill({
         contentType: "image/webp",
-        body: fs.readFileSync("public/brand/concierge-chat.webp"),
+        body: fs.readFileSync("public/brand/responsive-v1/concierge-gold-168.webp"),
       });
     if (url.pathname.startsWith("/fonts/")) return route.fulfill({ status: 204 });
     if (url.pathname !== "/") {
@@ -153,16 +198,7 @@ test("Concierge uses an anchored popover, answers known questions instantly, and
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.equal(questions.length, 0, "scrolling alone makes no chat request");
     assert.equal(await button.getByText("Ask Envitefy").count(), 0);
-    const logo = await button.locator('[aria-hidden="true"]').evaluate((node) => ({
-      mask: getComputedStyle(node).maskImage,
-      color: getComputedStyle(node).backgroundColor,
-      width: node.getBoundingClientRect().width,
-      height: node.getBoundingClientRect().height,
-    }));
-    assert.ok(logo.mask.includes("/brand/concierge-chat.webp"), "the launcher uses the existing Envitefy chat logo");
-    assert.equal(logo.color, "rgb(249, 223, 148)", "the chat logo matches the launcher gold");
-    assert.equal(logo.width, 56, "the symbol fills the former circle's width");
-    assert.equal(logo.height, 56);
+    await assertLauncherImage(button);
     assert.equal(await button.textContent(), "", "the launcher displays only the symbol");
     const buttonSurface = await button.evaluate((node) => {
       const style = getComputedStyle(node);
@@ -517,7 +553,7 @@ test("Concierge uses an anchored popover, answers known questions instantly, and
         await toggle.waitFor();
         assert.equal(await page.locator("[data-concierge-launcher]").count(), 1, "each public page has one shared launcher");
         assert.equal((await toggle.boundingBox()).width, 56);
-        assert.ok(await toggle.locator("span").evaluate((node) => getComputedStyle(node).maskImage.includes("/brand/concierge-chat.webp")), "support and product pages use the Envitefy e symbol");
+        await assertLauncherImage(toggle);
         await toggle.click();
         await panel.waitFor();
         assert.equal(await toggle.getAttribute("aria-label"), "Minimize Envitefy Concierge");

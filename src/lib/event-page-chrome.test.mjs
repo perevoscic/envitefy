@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { EVENT_PAGE_COLOR_ATTRIBUTE, EVENT_PAGE_COLOR_PROPERTY, EVENT_PAGE_TONE_ATTRIBUTE, isDarkEventPageColor, normalizeEventPageColor, registerEventPageColor } from "./event-page-chrome.ts";
-import { resolveEventPageBackgroundColor } from "./theme-color.ts";
+import { resolveEventPageBackgroundColor } from "./event-page-background.ts";
 
 function rootFixture() {
   const attributes = new Map();

@@ -21,6 +21,7 @@ export default function LandingTestimonials() {
   const compositionRef = useRef<HTMLDivElement>(null);
   const numberRef = useRef<HTMLSpanElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const cardOffsetsRef = useRef<number[]>([]);
   const activeIndexRef = useRef(0);
   const requestedIndexRef = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -109,7 +110,17 @@ export default function LandingTestimonials() {
     if (!track) return;
     let frame = 0;
     let previousWidth = track.clientWidth;
+    let disposed = false;
+    const cards = [...track.querySelectorAll<HTMLElement>("[data-feedback-card]")];
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    function measureCards() {
+      if (!track || disposed) return;
+      const origin = track.getBoundingClientRect().left;
+      const scroll = track.scrollLeft;
+      // Card positions stay fixed within this native scroller. Refresh on layout
+      // changes, rather than reading all 24 rectangles during every scroll frame.
+      cardOffsetsRef.current = cards.map((card) => scroll + card.getBoundingClientRect().left - origin);
+    }
     function clearRequest() {
       requestedIndexRef.current = null;
       setRequestedIndex(null);
@@ -117,13 +128,12 @@ export default function LandingTestimonials() {
     function update() {
       frame = 0;
       if (!track) return;
-      const viewport = track.getBoundingClientRect();
-      const cards = [...track.querySelectorAll<HTMLElement>("[data-feedback-card]")];
-      if (!cards.length) return;
-      const index = cards.reduce(
-        (closest, card, index) =>
-          Math.abs(card.getBoundingClientRect().left - viewport.left) <
-          Math.abs(cards[closest].getBoundingClientRect().left - viewport.left)
+      const offsets = cardOffsetsRef.current;
+      if (!offsets.length) return;
+      const scroll = track.scrollLeft;
+      const index = offsets.reduce(
+        (closest, offset, index) =>
+          Math.abs(offset - scroll) < Math.abs(offsets[closest] - scroll)
             ? index
             : closest,
         0,
@@ -133,7 +143,7 @@ export default function LandingTestimonials() {
       const requested = requestedIndexRef.current;
       if (
         requested !== null &&
-        Math.abs(cards[requested].getBoundingClientRect().left - viewport.left) < 1.5
+        Math.abs(offsets[requested] - scroll) < 1.5
       ) {
         clearRequest();
       }
@@ -144,17 +154,17 @@ export default function LandingTestimonials() {
     function alignCurrent() {
       if (!track) return;
       const index = requestedIndexRef.current ?? activeIndexRef.current;
-      const card = track.querySelectorAll<HTMLElement>("[data-feedback-card]")[index];
-      if (!card) return;
+      const left = cardOffsetsRef.current[index];
+      if (left === undefined) return;
       track.scrollTo({
-        left:
-          track.scrollLeft + card.getBoundingClientRect().left - track.getBoundingClientRect().left,
+        left,
         behavior: "instant",
       });
       clearRequest();
       schedule();
     }
     function resize() {
+      measureCards();
       if (track && Math.abs(track.clientWidth - previousWidth) > 1) {
         previousWidth = track.clientWidth;
         alignCurrent();
@@ -180,8 +190,13 @@ export default function LandingTestimonials() {
     reducedMotion.addEventListener("change", motionChanged);
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(resize);
     observer?.observe(track);
+    measureCards();
     update();
+    void document.fonts?.ready.then(() => {
+      if (!disposed) resize();
+    });
     return () => {
+      disposed = true;
       cancelAnimationFrame(frame);
       observer?.disconnect();
       track.removeEventListener("pointerdown", clearRequest);
@@ -202,6 +217,7 @@ export default function LandingTestimonials() {
     setRequestedIndex(target);
     track.scrollTo({
       left:
+        cardOffsetsRef.current[target] ??
         track.scrollLeft + card.getBoundingClientRect().left - track.getBoundingClientRect().left,
       behavior:
         instant || window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -304,7 +320,7 @@ export default function LandingTestimonials() {
                   <p>
                     <span className={styles.accessibleQuote}>{quote}</span>
                     <span aria-hidden="true">
-                      {quote.split(" ").map((word, index, words) => (
+                      {activeIndex === cardIndex ? quote.split(" ").map((word, index, words) => (
                         <Fragment key={`${word}-${index}`}>
                           <span
                             className={styles.word}
@@ -314,7 +330,7 @@ export default function LandingTestimonials() {
                           </span>
                           {index < words.length - 1 ? " " : null}
                         </Fragment>
-                      ))}
+                      )) : quote}
                     </span>
                   </p>
                 </blockquote>
