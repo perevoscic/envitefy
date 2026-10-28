@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -69,14 +70,26 @@ test("font coverage traces bundled fonts without collecting unrelated public art
   assert.ok(publicBytes < 5_000_000, `bundled lettering fonts should stay below 5 MB; traced ${publicBytes} bytes`);
 });
 
-test("development campaign adapters do not infer QA evidence as production assets", async () => {
-  const campaignFile = path.join(root, "src/lib/campaign-media.ts");
-  const entries = [campaignFile, path.join(root, "src/lib/mail-transport.ts")];
+test("development campaign adapters do not infer QA evidence as production assets", async (t) => {
+  // A clean checkout has no campaign evidence. Seed a small, owned fixture so
+  // the positive control exercises the same asset inference on every machine.
+  const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "envitefy-adapter-trace-"));
+  t.after(() => fs.rm(fixtureRoot, { recursive: true, force: true }));
+  await fs.mkdir(path.join(fixtureRoot, "src/lib"), { recursive: true });
+  await fs.mkdir(path.join(fixtureRoot, ".qa/create-campaign/run"), { recursive: true });
+  await fs.writeFile(path.join(fixtureRoot, ".qa/create-campaign/run/evidence.txt"), "private QA evidence");
+  await fs.writeFile(path.join(fixtureRoot, "package.json"), '{"type":"module"}');
+  const entries = await Promise.all(["campaign-media.ts", "mail-transport.ts"].map(async filename => {
+    const target = path.join(fixtureRoot, "src/lib", filename);
+    await fs.copyFile(path.join(root, "src/lib", filename), target);
+    return target;
+  }));
+  const campaignFile = entries[0];
   async function traceAdapters(legacyProbe = false) {
     const qaRequests = [];
     const result = await nodeFileTrace(entries, {
-      base: root,
-      processCwd: root,
+      base: fixtureRoot,
+      processCwd: fixtureRoot,
       ignore(filename) {
         const relative = normalize(filename);
         if (/(?:^|\/)\.qa(?:\/|$)/.test(relative)) {

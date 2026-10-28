@@ -1,18 +1,15 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import vm from "node:vm";
+import { createRequire } from "node:module";
 import test from "node:test";
-import ts from "typescript";
 import sharp from "sharp";
 import { parseDataUrlBase64 } from "../../utils/data-url.ts";
 import { prepareCardEditPreviewImage, streamCardEditPreview } from "./card-edit-preview.ts";
 import * as cardRegistry from "./card-registry.ts";
 
 // Run the real route with external auth, storage and generation boundaries replaced.
-const source = fs.readFileSync("src/app/api/events/[id]/card/edit/route.ts", "utf8");
-const compiled = ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-}).outputText;
+const loadTs = createRequire(import.meta.url)("../../../scripts/lib/event-messages-test-loader.cjs");
+const { isPastEvent } = loadTs("src/lib/event-edit-lock.ts");
+const now = Date.parse("2026-08-01T12:00:00Z");
 const originalDetails = {
   eventTitle: "Livia is turning 10",
   eventDate: "2026-09-26",
@@ -29,6 +26,7 @@ function loadRoute({ userId = "owner", ownerId = "owner", generate, existingData
   const calls = { generations: [], uploads: [], writes: [], invalidated: [] };
   const item = { url: "https://assets.example.test/original.webp", details, data: existingData.studioCard?.invitationData || {}, positions: { title: { x: 50 } } };
   const modules = {
+    "@/lib/event-edit-lock": { isPastEvent: (data) => isPastEvent(data, now) },
     "next/server": { NextResponse: Response },
     "next-auth": { getServerSession: async () => ({ user: { id: userId } }) },
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => userId },
@@ -62,18 +60,8 @@ function loadRoute({ userId = "owner", ownerId = "owner", generate, existingData
     "@/lib/studio/card-registry": cardRegistry,
     "@/utils/data-url": { parseDataUrlBase64 },
   };
-  const module = { exports: {} };
-  vm.runInNewContext(compiled, {
-    exports: module.exports,
-    module,
-    Buffer,
-    console,
-    require: (specifier) => {
-      assert.ok(modules[specifier], `Unexpected external dependency: ${specifier}`);
-      return modules[specifier];
-    },
-  });
-  const post = (body) => module.exports.POST(new Request("https://envitefy.test/api/events/event-id/card/edit", {
+  const { POST } = loadTs("src/app/api/events/[id]/card/edit/route.ts", modules);
+  const post = (body) => POST(new Request("https://envitefy.test/api/events/event-id/card/edit", {
     method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" },
   }), { params: Promise.resolve({ id: "event-id" }) });
   return { post, calls };
@@ -211,5 +199,24 @@ test("invalid registry links and non-owner saves are rejected before any writes"
     const { post, calls } = loadRoute({ userId });
     assert.equal((await post({ action: "save", fields: { registryLink: "https://example.com/registry" } })).status, status);
     assert.equal(calls.writes.length, 0);
+  }
+});
+
+test("past published cards reject previews and saves before generation, uploads or writes", async () => {
+  for (const action of ["preview", "save"]) {
+    const { post, calls } = loadRoute({ existingData: { ...registryEvent, status: "published", date: "2026-07-31" } });
+    const response = await post({ action, fields: { registryLink: "https://example.test/registry" } });
+    assert.equal(response.status, 403);
+    assert.equal((await response.json()).error, "Past events cannot be edited.");
+    assert.deepEqual(calls, { generations: [], uploads: [], writes: [], invalidated: [] });
+  }
+  for (const existingData of [
+    { ...registryEvent, status: "published", date: "2026-08-02" },
+    { ...registryEvent, status: "draft", date: "2026-07-31" },
+  ]) {
+    const { post, calls } = loadRoute({ existingData, details: registryEvent.studioCard.invitationData.eventDetails });
+    const response = await post({ action: "save", fields: { registryLink: "https://example.test/registry" } });
+    assert.equal(response.status, 200);
+    assert.equal(calls.writes.length, 1);
   }
 });

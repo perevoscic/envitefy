@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import ts from "typescript";
 
 const repoRoot = process.cwd();
 
@@ -149,10 +150,6 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /normalizeOcrLocationFields/);
   assert.match(source, /enrichOcrVenueAddress/);
   assert.match(source, /normalizeOcrRsvpFields/);
-  assert.match(source, /const rsvpPhone = explicitRsvpDisabled \? "" : rawRsvpPhone;/);
-  assert.match(source, /const rsvpEmail = explicitRsvpDisabled \? "" : rawRsvpEmail;/);
-  assert.match(source, /const rsvpUrl = explicitRsvpDisabled \? "" : rawRsvpUrl;/);
-  assert.match(source, /const publicRsvpUrl = normalizedPublicRsvp\.rsvpUrl \|\| ""/);
   assert.doesNotMatch(source, /findFirstEmail\(data\)/);
   assert.match(source, /const hasPublicRsvpAction = Boolean\(/);
   assert.match(source, /const showPublicRsvp = !explicitRsvpDisabled && hasPublicRsvpAction;/);
@@ -170,7 +167,7 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /const hideHostDashboard =/);
   assert.match(
     source,
-    /const canEditCreatedEvent = canManageCreatedEvent && !isScannedOrUploadedEventData\(data\);/,
+    /const canEditCreatedEvent = canManageCreatedEvent && !isScannedOrUploadedEventData\(data\) && !editLocked;/,
   );
   assert.match(source, /const ownerRsvpDashboardEnabled = canShowOwnerRsvpDashboard\(data\);/);
   assert.match(
@@ -181,7 +178,6 @@ test("event route branches football discovery/template events into the football 
     source,
     /const showOwnerWorkspace = canManageCreatedEvent && !isScannedOrUploadedEventData\(data\);/,
   );
-  assert.match(source, /ownerToolsTab && !ownerRsvpDashboardEnabled && ownerToolsTab !== "design"/);
   assert.match(source, /redirect\(`\$\{ownerEventHref\}\?tab=\$\{resolvedOwnerToolsTab\}`\);/);
   assert.match(source, /if \(showOwnerWorkspace && resolvedOwnerToolsTab\) \{/);
   assert.match(source, /showHostDashboard=\{showHostDashboard\}/);
@@ -295,6 +291,47 @@ test("event route branches football discovery/template events into the football 
       source.indexOf("const isBabyShowerTemplate ="),
     "generic scanned invite branch should run before later template fallbacks",
   );
+});
+
+test("public RSVP contacts respect disabled collection, authored values, clears and legacy fallbacks", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+  const ast = ts.createSourceFile("page.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const renderer = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "RenderEventPage");
+  const names = ["rsvpPhone", "rsvpEmail", "rsvpUrl", "publicRsvpField", "publicRsvpUrl"];
+  const statements = names.map(name => {
+    const statement = renderer.body.statements.find(node => ts.isVariableStatement(node) && node.declarationList.declarations[0].name.getText(ast) === name);
+    assert.ok(statement, `${name} must be resolved for the public renderer`);
+    return statement.getText(ast);
+  });
+  const resolve = new Function("data", "explicitRsvpDisabled", "rawRsvpPhone", "rawRsvpEmail", "rawRsvpUrl", "normalizedPublicRsvp",
+    `${ts.transpile(statements.join("\n"))}; return { ${names.join(", ")} };`);
+  const legacy = { rsvpPhone: "legacy-phone", rsvpEmail: "legacy@example.test", rsvpUrl: "https://example.test/reply", publicRsvpField: "Contact the host", publicRsvpUrl: "https://example.test/rsvp" };
+  for (const fixture of [
+    { name: "legacy contacts", data: {}, expected: legacy },
+    { name: "authored contacts", data: { rsvpPhone: " 555-1234 ", rsvpEmail: " host@example.test " }, expected: { ...legacy, rsvpPhone: "555-1234", rsvpEmail: "host@example.test" } },
+    { name: "explicit clears", data: { rsvpPhone: "", rsvpEmail: " " }, expected: { ...legacy, rsvpPhone: "", rsvpEmail: "" } },
+    { name: "invalid stored values", data: { rsvpPhone: null, rsvpEmail: false }, expected: legacy },
+  ]) {
+    for (const disabled of [false, true]) {
+      assert.deepEqual(resolve(fixture.data, disabled, legacy.rsvpPhone, legacy.rsvpEmail, legacy.rsvpUrl, { rsvp: legacy.publicRsvpField, rsvpUrl: legacy.publicRsvpUrl }),
+        disabled ? Object.fromEntries(names.map(name => [name, ""])) : fixture.expected, `${fixture.name}, disabled=${disabled}`);
+    }
+  }
+  assert.deepEqual(resolve({}, false, "", "", "", {}), Object.fromEntries(names.map(name => [name, ""])));
+});
+
+test("owner workspace retains every hosting tab when RSVP is disabled", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+  const ast = ts.createSourceFile("page.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const renderer = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "RenderEventPage");
+  const statement = renderer.body.statements.find(node => ts.isVariableStatement(node) && node.declarationList.declarations[0].name.getText(ast) === "resolvedOwnerToolsTab");
+  assert.ok(statement, "owner workspace tabs must be resolved before rendering");
+  const resolve = new Function("ownerToolsTab", "ownerRsvpDashboardEnabled", "data", `${ts.transpile(statement.getText(ast))}; return resolvedOwnerToolsTab;`);
+  for (const createdVia of ["manual", "template", "livecard-builder", "studio"]) {
+    for (const enabled of [true, false]) for (const tab of [null, "dashboard", "rsvps", "messages", "design"]) {
+      assert.equal(resolve(tab, enabled, { createdVia, rsvpEnabled: enabled }), tab, `${createdVia}, RSVP=${enabled}, tab=${tab}`);
+    }
+  }
 });
 
 test("event route renders gender reveal templates as a guess scoreboard page", () => {

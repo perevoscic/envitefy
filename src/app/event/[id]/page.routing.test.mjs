@@ -11,7 +11,8 @@ const { manualEventEditHref } = loadTs("src/lib/manual-event-progress.ts");
 
 const source = fs.readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const ast = ts.createSourceFile("page.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const page = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "EventPage");
+// Inspect the renderer, whose routing is wrapped by EventPage's outage boundary.
+const page = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "RenderEventPage");
 
 test("unsupported public events end at notFound without a retired renderer or server actions after it", () => {
   assert.ok(page?.body);
