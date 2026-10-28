@@ -48,4 +48,19 @@ test("Next traces PDF/canvas files only for PDF processing routes", async () => 
     assert.equal(includedFiles(route).some(isPdfRuntime), false, route);
   }
   assert.equal(JSON.stringify(config.outputFileTracingIncludes).includes("pdf-parse"), false);
+
+  for (const route of [
+    "/api/livecard-builder/design",
+    "/api/livecard-builder/jobs",
+    "/api/livecard-builder/headline",
+  ]) {
+    const files = includedFiles(route);
+    assert.ok(files.some((file) => file.includes("@napi-rs/canvas")), route);
+    assert.ok(files.some((file) => file.includes("public/fonts/birthday")), route);
+    const excluded = Object.entries(config.outputFileTracingExcludes).flatMap(([pattern, entries]) =>
+      picomatch(pattern, { contains: true, dot: true })(route) ? entries : [],
+    );
+    assert.ok(excluded.some((file) => file.includes("public/templates")), route);
+    assert.equal(excluded.some((file) => file.includes("public/fonts")), false, route);
+  }
 });

@@ -83,6 +83,7 @@ const nextConfig = (phase: string): NextConfig => ({
     ),
     "/api/livecard-builder/jobs": ["./public/fonts/birthday/*.ttf", "./node_modules/@napi-rs/canvas/**/*", "./node_modules/@napi-rs/canvas-*/**/*"],
     "/api/livecard-builder/headline": ["./public/fonts/birthday/*.ttf", "./node_modules/@napi-rs/canvas/**/*", "./node_modules/@napi-rs/canvas-*/**/*"],
+    "/api/livecard-builder/design": ["./public/fonts/birthday/*.ttf", "./node_modules/@napi-rs/canvas/**/*", "./node_modules/@napi-rs/canvas-*/**/*"],
     "/api/livecard-builder/location": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
     "/api/upload": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/uploads/*": ["./node_modules/ffmpeg-static/ffmpeg*"],
@@ -101,6 +102,11 @@ const nextConfig = (phase: string): NextConfig => ({
     "/api/events/*/scan-artwork": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/events/*/original": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/*": ["./public/fonts/Josefin_Sans/static/JosefinSans-Regular.ttf"],
+  },
+  outputFileTracingExcludes: {
+    "/api/livecard-builder/design": ["./public/templates/**/*", "./public/DEBUG/**/*", "./public/images/**/*", "./public/videos/**/*"],
+    "/api/livecard-builder/jobs": ["./public/templates/**/*", "./public/DEBUG/**/*", "./public/images/**/*", "./public/videos/**/*"],
+    "/api/livecard-builder/headline": ["./public/templates/**/*", "./public/DEBUG/**/*", "./public/images/**/*", "./public/videos/**/*"],
   },
 
   // Keep heavy server deps out of the serverless bundle (stays under Vercel 300MB limit)
