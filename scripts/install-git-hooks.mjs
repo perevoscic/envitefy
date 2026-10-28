@@ -52,4 +52,4 @@ if (configured.status === 1) {
     process.exit(1);
   }
 }
-console.log("Git hooks ready: .githooks/pre-push blocks pushes while this checkout has uncommitted changes.");
+console.log("Git hooks ready: .githooks/pre-push checks checkout completeness and validates outgoing commits against the Create CI suites.");

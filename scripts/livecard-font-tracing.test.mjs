@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import os from "node:os";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -71,21 +70,31 @@ test("font coverage traces bundled fonts without collecting unrelated public art
 });
 
 test("development campaign adapters do not infer QA evidence as production assets", async (t) => {
-  // A clean checkout has no campaign evidence. Seed a small, owned fixture so
-  // the positive control exercises the same asset inference on every machine.
-  const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "envitefy-adapter-trace-"));
-  t.after(() => fs.rm(fixtureRoot, { recursive: true, force: true }));
-  await fs.mkdir(path.join(fixtureRoot, "src/lib"), { recursive: true });
-  await fs.mkdir(path.join(fixtureRoot, ".qa/create-campaign/run"), { recursive: true });
-  await fs.writeFile(path.join(fixtureRoot, ".qa/create-campaign/run/evidence.txt"), "private QA evidence");
-  await fs.writeFile(path.join(fixtureRoot, "package.json"), '{"type":"module"}');
-  const entries = await Promise.all(["campaign-media.ts", "mail-transport.ts"].map(async filename => {
-    const target = path.join(fixtureRoot, "src/lib", filename);
-    await fs.copyFile(path.join(root, "src/lib", filename), target);
-    return target;
-  }));
-  const campaignFile = entries[0];
-  async function traceAdapters(legacyProbe = false) {
+  // A clean CI checkout has no ignored .qa directory. Give the tracer one small,
+  // deterministic evidence tree instead of relying on workstation artifacts to
+  // make the negative mutation probe detectable.
+  const fixtureDirectory = path.join(root, "output/font-tracing");
+  await fs.mkdir(fixtureDirectory, { recursive: true });
+  const fixtureRoot = await fs.mkdtemp(path.join(fixtureDirectory, "campaign-"));
+  t.after(async () => {
+    const resolved = path.resolve(fixtureRoot);
+    assert.equal(path.dirname(resolved), path.resolve(fixtureDirectory));
+    assert.ok(path.basename(resolved).startsWith("campaign-"));
+    await fs.rm(resolved, { recursive: true, force: true });
+  });
+  const campaignFile = path.join(fixtureRoot, "src/lib/campaign-media.ts");
+  const mailFile = path.join(fixtureRoot, "src/lib/mail-transport.ts");
+  const campaignRoot = path.join(fixtureRoot, ".qa/create-campaign");
+  await fs.mkdir(path.dirname(campaignFile), { recursive: true });
+  await fs.mkdir(campaignRoot, { recursive: true });
+  await Promise.all([
+    fs.copyFile(path.join(root, "src/lib/campaign-media.ts"), campaignFile),
+    fs.copyFile(path.join(root, "src/lib/mail-transport.ts"), mailFile),
+    fs.writeFile(path.join(campaignRoot, "tracing-sentinel.txt"), "isolated QA evidence\n"),
+    fs.writeFile(path.join(fixtureRoot, "package.json"), '{"type":"module"}'),
+  ]);
+  const entries = [campaignFile, mailFile];
+  async function traceAdapters(legacyProbe) {
     const qaRequests = [];
     const result = await nodeFileTrace(entries, {
       base: fixtureRoot,
@@ -102,8 +111,7 @@ test("development campaign adapters do not infer QA evidence as production asset
         try {
           let source = await fs.readFile(filename, "utf8");
           if (legacyProbe && path.resolve(filename) === campaignFile) {
-            // Prove that this bounded probe detects the former static-root read.
-            source += '\nexport async function legacyTraceProbe() { return realpath(path.join(process.cwd(), ".qa", "create-campaign")); }\n';
+            source += `\nexport async function legacyTraceProbe() { return realpath(${legacyProbe}); }\n`;
           }
           return filename.endsWith(".ts")
             ? ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText
@@ -119,5 +127,12 @@ test("development campaign adapters do not infer QA evidence as production asset
     return qaRequests;
   }
   assert.deepEqual(await traceAdapters(), [], "development adapters must not request the QA directory tree");
-  assert.ok((await traceAdapters(true)).length > 0, "the regression probe must detect the former absolute-root read");
+  for (const legacyProbe of [
+    'path.join(process.cwd(), ".qa", "create-campaign")',
+    'path.resolve(process.cwd(), ".qa", "create-campaign")',
+  ]) {
+    assert.ok((await traceAdapters(legacyProbe)).some((file) =>
+      file === ".qa/create-campaign" || file.startsWith(".qa/create-campaign/")),
+    `the regression probe must detect the former absolute-root read: ${legacyProbe}`);
+  }
 });

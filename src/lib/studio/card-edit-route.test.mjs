@@ -5,11 +5,11 @@ import sharp from "sharp";
 import { parseDataUrlBase64 } from "../../utils/data-url.ts";
 import { prepareCardEditPreviewImage, streamCardEditPreview } from "./card-edit-preview.ts";
 import * as cardRegistry from "./card-registry.ts";
+const fixtureNow = Date.parse("2026-08-01T12:00:00Z");
 
 // Run the real route with external auth, storage and generation boundaries replaced.
 const loadTs = createRequire(import.meta.url)("../../../scripts/lib/event-messages-test-loader.cjs");
 const { isPastEvent } = loadTs("src/lib/event-edit-lock.ts");
-const now = Date.parse("2026-08-01T12:00:00Z");
 const originalDetails = {
   eventTitle: "Livia is turning 10",
   eventDate: "2026-09-26",
@@ -22,14 +22,16 @@ const originalDetails = {
 };
 const fields = { theme: "Add forgotten island movie them to it" };
 
-function loadRoute({ userId = "owner", ownerId = "owner", generate, existingData = { createdVia: "concierge", ownership: "owned" }, details = originalDetails } = {}) {
+function loadRoute({ userId = "owner", ownerId = "owner", generate, existingData = { createdVia: "concierge", ownership: "owned" }, details = originalDetails, now = fixtureNow } = {}) {
   const calls = { generations: [], uploads: [], writes: [], invalidated: [] };
   const item = { url: "https://assets.example.test/original.webp", details, data: existingData.studioCard?.invitationData || {}, positions: { title: { x: 50 } } };
   const modules = {
-    "@/lib/event-edit-lock": { isPastEvent: (data) => isPastEvent(data, now) },
     "next/server": { NextResponse: Response },
     "next-auth": { getServerSession: async () => ({ user: { id: userId } }) },
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => userId },
+    // Exercise the actual read-only policy with an explicit clock so fixtures
+    // cannot expire as CI's wall clock advances or silently bypass the lock.
+    "@/lib/event-edit-lock": { isPastEvent: (data) => isPastEvent(data, now) },
     "@/lib/event-collaboration": {
       getEventPermissions: async () => ({ canEdit: userId === ownerId }),
       eventRevision: () => "revision",
@@ -112,6 +114,36 @@ test("authorization is checked before starting generation or opening a stream", 
     assert.equal(response.status, expectedStatus);
     assert.equal(calls.generations.length, 0);
     assert.equal(calls.writes.length, 0);
+  }
+});
+
+test("published past cards reject preview and save before generation, upload or persistence", async () => {
+  const existingData = {
+    createdVia: "concierge", ownership: "owned", status: "published",
+    timezone: "America/Chicago", eventDate: "2026-09-26", endTime: "12:00",
+  };
+  for (const action of ["preview", "save"]) {
+    for (const fields of [{ theme: "New tropical artwork" }, { registryLink: "https://example.com/new-registry" }]) {
+      const { post, calls } = loadRoute({ existingData, now: Date.parse("2026-09-27T00:00:00Z") });
+      const response = await post({ action, fields, imageDataUrl: "data:image/png;base64,AAAA" });
+      assert.equal(response.status, 403);
+      assert.deepEqual(await response.json(), { error: "Past events cannot be edited." });
+      assert.deepEqual(calls, { generations: [], uploads: [], writes: [], invalidated: [] });
+    }
+  }
+});
+
+test("upcoming published cards and past-dated drafts retain access under the real read-only policy", async () => {
+  for (const [status, now] of [["published", "2026-09-25T00:00:00Z"], ["draft", "2026-09-27T00:00:00Z"]]) {
+    const existingData = {
+      createdVia: "concierge", ownership: "owned", status,
+      timezone: "America/Chicago", eventDate: "2026-09-26", endTime: "12:00",
+    };
+    const { post, calls } = loadRoute({ existingData, now: Date.parse(now) });
+    const response = await post({ action: "preview", fields: { registryLink: "https://example.com/new-registry" } });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).ok, true);
+    assert.deepEqual(calls, { generations: [], uploads: [], writes: [], invalidated: [] });
   }
 });
 

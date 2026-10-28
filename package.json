@@ -8,7 +8,8 @@
   "scripts": {
     "prepare": "node -e \"if(require('node:fs').existsSync('.git')) import('./scripts/install-git-hooks.mjs')\"",
     "git:check-push": "node scripts/git-pre-push.mjs",
-    "test:git-hooks": "node --test scripts/git-pre-push.test.mjs",
+    "test:git-hooks": "node --test scripts/git-pre-push.test.mjs scripts/push-validation.test.mjs",
+    "validate:push": "node scripts/validate-push.mjs",
     "dev": "node scripts/dev-single.js",
     "dev:turbo": "node scripts/dev-single.js --turbopack",
     "build": "node scripts/next-build.js",

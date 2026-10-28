@@ -23,9 +23,20 @@ npm install
 This also installs the repository's pre-push check. It stops a push if source,
 documentation, tests or other non-ignored files remain uncommitted, and lists the
 files to resolve. Commit intended changes or keep unfinished work in a separate
-worktree; the check never deletes or stashes files. To install it after using
+worktree; the check never deletes or stashes your work. To install it after using
 `npm install --ignore-scripts`, run `npm run prepare`. Generated Chromium
 `debug.log` files stay local and are ignored.
+
+Every outgoing push also requires the complete Create event fact integrity
+checks: `test:git-hooks`, `typecheck`, `test:create-remediation`, and
+`test:create-browser`. After committing the intended candidate, run
+`npm run validate:push`, then push. The hook runs missing validation automatically
+and reuses successful evidence only for that exact clean commit, configuration,
+runtime identity and UTC day. Evidence and individual command logs stay in the
+checkout's private Git directory under `envitefy-push-validation/`.
+Use Node 24, Bun, FFmpeg/ffprobe and Playwright Chromium as configured in
+`.github/workflows/create-fact-integrity.yml`. A failed or unavailable check
+blocks the push; targeted tests and a production build do not replace this gate.
 
 2. Configure environment
 
