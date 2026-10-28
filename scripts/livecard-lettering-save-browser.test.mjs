@@ -3,14 +3,14 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import http from "node:http";
-import { execFileSync } from "node:child_process";
+import buildBunFixture from "./lib/build-bun-fixture.cjs";
 import { createRequire } from "node:module";
 import { chromium } from "playwright";
 import sharp from "sharp";
 const load = createRequire(import.meta.url)("./lib/event-messages-test-loader.cjs");
 
 test("main info precedes generation, guest edits survive it, and title-only artwork persists on phone/desktop", { timeout: 90000 }, async () => {
-  execFileSync("bun", ["scripts/build-livecard-builder-fixture.mjs"], { timeout: 60000, stdio: "pipe" });
+  buildBunFixture("scripts/build-livecard-builder-fixture.mjs");
   const bg = await sharp({ create: { width: 1000, height: 1500, channels: 3, background: "#243933" } }).webp().toBuffer();
   const material = await sharp({ create: { width: 100, height: 150, channels: 3, background: "#ac7d22" } }).webp().toBuffer();
   const direction = { version: 1, titleFont: "classic", introFont: "cormorant", direction: "Warm candlelit botanical elegance", artworkDirection: "Quiet dark green garden", texturePrompt: "Softly brushed warm brass", preferredTop: 180, ornament: false, includeEventDetails: true, textureUrl: `data:image/webp;base64,${material.toString("base64")}` };

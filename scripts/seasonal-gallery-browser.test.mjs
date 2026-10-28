@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import buildBunFixture from "./lib/build-bun-fixture.cjs";
 import test from "node:test";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 
 test("seasonal galleries mix upcoming occasions, retain filters and links, and fit desktop and phones", { timeout: 180000 }, async () => {
-  execFileSync("bun", ["scripts/build-seasonal-gallery-fixture.mjs"], { stdio: "pipe" });
+  buildBunFixture("scripts/build-seasonal-gallery-fixture.mjs");
   const out = path.resolve("output/seasonal-gallery");
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: "America/Chicago", reducedMotion: "reduce" });

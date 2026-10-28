@@ -8,6 +8,7 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - Keep the versioned pre-push hook enabled. It must reject uncommitted work and require a successful validation receipt for the exact commit, tree, check configuration and runtimes being pushed. A new commit or changed configuration requires fresh validation; never fabricate or reuse an unrelated receipt, disable hooks, skip failing tests, or replace the complete checks with a smaller suite.
 - A failed, timed-out, skipped or unavailable check is not a pass. Fix the confirmed failure or report the exact blocked check and its cause before pushing. Never delete, reset or stash unfinished work to get through the hook.
 - When a route gains an imported dependency, update every isolated route harness that loads it. Preserve explicit dependency allowlists and offline auth/storage/provider boundaries; load real pure policy helpers through the shared test loader instead of bypassing them. Exercise the real behavior the new helper guards, including rejection before generation or writes.
+- Build browser fixtures with `scripts/lib/build-bun-fixture.cjs`; never call `execFileSync("bun", ...)` directly. Bun can be a Windows npm `.cmd` shim even when `bun --version` works in the terminal. Keep fixture/tool prerequisites portable and test the actual installed API before accepting push validation evidence.
 
 ## Reality Check
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import buildBunFixture from "./lib/build-bun-fixture.cjs";
 import test from "node:test";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
@@ -10,7 +10,7 @@ import sharp from "sharp";
 test("category callouts and dialogs preserve category, authentication, responsive layout and explicit handoff", {
   timeout: 180000,
 }, async () => {
-  execFileSync("bun", ["scripts/build-category-custom-design-fixture.mjs"], { stdio: "pipe" });
+  buildBunFixture("scripts/build-category-custom-design-fixture.mjs");
   const out = path.resolve("output/category-custom-design");
   const browser = await chromium.launch({
     headless: true,
