@@ -12,8 +12,8 @@ jobs:
   preserve-event-facts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -31,7 +31,7 @@ jobs:
         id: typecheck
         run: npm run typecheck
       - name: Cache Playwright browser
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-headless-${{ hashFiles('package-lock.json') }}
@@ -55,7 +55,7 @@ jobs:
         run: npm run test:create-browser
       - name: Keep editor screenshots on failure
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: event-editor-failure
           path: |
