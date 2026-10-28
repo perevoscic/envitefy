@@ -111,7 +111,7 @@ export default function NewspaperWedding({ theme, event }: Props) {
                 ))}
               </ul>
             </div>
-            {event.rsvp?.url && (
+            {event.rsvpEnabled && event.rsvp?.url && (
               <div id="rsvp" className="border-t border-black pt-6">
                 <a
                   href={event.rsvp.url}

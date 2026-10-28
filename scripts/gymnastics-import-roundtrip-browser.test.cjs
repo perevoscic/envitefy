@@ -158,6 +158,27 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       assert.equal(await preview.getByLabel("Address", { exact: true }).inputValue(), "");
       assert.equal(writes.length, count + 3, "guest rendering and reopening are read-only");
     }
+    // Older embedded links retain the same tools and explicit save lifecycle.
+    const embeddedRecord = structuredClone(records.get("gasparilla-v2"));
+    embeddedRecord.id = "gasparilla-embedded";
+    delete embeddedRecord.data.templateEditor;
+    records.set(embeddedRecord.id, embeddedRecord);
+    await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics&edit=gasparilla-embedded&embed=1`);
+    const embeddedControls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+    await embeddedControls.getByRole("button", { name: "Page sections", exact: true }).click();
+    await embeddedControls.getByRole("button", { name: "Back to details", exact: true }).click();
+    await embeddedControls.getByRole("button", { name: "Layout", exact: true }).click();
+    await embeddedControls.getByRole("button", { name: "Back to details", exact: true }).click();
+    await embeddedControls.getByRole("button", { name: "Design", exact: true }).click();
+    await embeddedControls.getByLabel("Title font", { exact: true }).selectOption("orbitron");
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await page.getByText("Draft saved.", { exact: true }).waitFor();
+    assert.equal(writes.at(-1).data.gymnasticsTitleFont, "orbitron");
+    await page.reload();
+    await page.waitForURL("**/gymnastics/templates/airborne-atlas/customize?edit=gasparilla-embedded");
+    await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Page settings", exact: true }).click();
+    await embeddedControls.getByRole("button", { name: "Design", exact: true }).click();
+    assert.equal(await embeddedControls.getByLabel("Title font", { exact: true }).inputValue(), "orbitron");
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

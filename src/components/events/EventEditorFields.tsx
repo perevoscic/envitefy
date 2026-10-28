@@ -179,6 +179,20 @@ export function EventEditorSection({
   );
 }
 
+/** An icon-only switch with the same touch target and theme as editor toggles. */
+export function EventEditorSwitch({ label, checked, onChange }: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  // Recovered template state can predate the enabled flag.
+  const isChecked = Boolean(checked);
+  return <span className={styles.toggleSwitch}>
+    <input type="checkbox" role="switch" aria-label={label} aria-checked={isChecked} checked={isChecked} onChange={event => onChange(event.target.checked)} />
+    <span className={styles.toggleTrack} aria-hidden="true"><span /></span>
+  </span>;
+}
+
 export function EventEditorToggle({
   label,
   checked,

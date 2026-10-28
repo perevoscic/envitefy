@@ -4,7 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { query } from "./db";
 import type { LiveCardForm } from "./livecard-builder";
 import { sharedCardDesignKey } from "./livecard-builder";
-import type { SharedCardDesign } from "./shared-card-design";
+import { hasGeneratedCardHeadlineForForm, type SharedCardDesign } from "./shared-card-design";
 import { generateSharedCard } from "./shared-card-generation";
 import { generateCardHeadline, resolveHeadlineBackground } from "./shared-card-headline";
 import { composeCardLettering } from "./card-lettering-composition";
@@ -88,28 +88,33 @@ export async function runArtworkJob(owner: string, id: string) {
     await guard();
     let design = claimed.design;
     const previous = design;
-    if (claimed.mode === "background" && (!previous?.headline?.layerUrl || !previous.headline.layout || previous.headline.title !== claimed.form.title.trim() || previous.headline.intro !== claimed.form.headlineIntro.trim()))
+    if (claimed.mode === "background" && previous?.composition !== "integrated-v1" && (!previous?.headline?.layerUrl || !previous.headline.layout || !hasGeneratedCardHeadlineForForm(claimed.form, previous)))
       throw new Error("There is no compatible saved lettering layer for this alternative.");
     if (!design || claimed.mode === "background") {
-      design = await artworkJobDeps.background(claimed.form, controller.signal, (value) => stage(`background_${value}`), { jobId: id, revision: claimed.revision, attempt: claimed.attempt });
+      design = await artworkJobDeps.background(claimed.form, controller.signal, (value) => stage(`background_${value}`), { jobId: id, revision: claimed.revision, attempt: claimed.attempt }, claimed.mode === "background" && previous?.composition !== "integrated-v1" ? previous?.letteringStyle || null : undefined, async () => { await authorize(); await guard(); });
       await guard();
       await artworkJobDeps.query("UPDATE livecard_artwork_jobs SET design=$3::jsonb,updated_at=now() WHERE id=$1 AND owner_id=$2 AND state='running'", [id, owner, JSON.stringify(design)]);
     }
     await guard();
-    if (claimed.mode === "background") {
-      if (!previous?.headline?.layerUrl || previous.headline.title !== claimed.form.title.trim() || previous.headline.intro !== claimed.form.headlineIntro.trim())
+    if (claimed.mode === "background" && previous?.composition !== "integrated-v1") {
+      if (!previous?.headline?.layerUrl || !hasGeneratedCardHeadlineForForm(claimed.form, previous))
         throw new Error("There is no compatible saved lettering layer for this alternative.");
       const background = await artworkJobDeps.references(design.backgroundUrl, controller.signal);
       const layer = await artworkJobDeps.references(previous.headline.layerUrl, controller.signal);
       if (!background[0] || !layer[0]) throw new Error("The saved assets could not be opened for composition.");
       const composition = await artworkJobDeps.compose(Buffer.from(background[0].data, "base64"), Buffer.from(layer[0].data, "base64"), previous.headline.layout);
       await guard();
-      design = { ...design, headline: { ...previous.headline, imageUrl: `data:image/webp;base64,${composition.composite.toString("base64")}`, layout: composition.layout } };
+      design = { ...design, font: previous.font, typography: previous.typography, letteringStyle: previous.letteringStyle, ink: previous.ink, accent: previous.accent, headline: { ...previous.headline, imageUrl: `data:image/webp;base64,${composition.composite.toString("base64")}`, layout: composition.layout } };
     }
     // A long background generation may outlive a grant or co-host membership.
     await authorize();
     const headline = await artworkJobDeps.headline(claimed.form, design, controller.signal, stage, claimed.mode === "verify" || claimed.mode === "background", { jobId: id, revision: claimed.revision, attempt: claimed.attempt });
     await guard();
+    if (design.composition === "integrated-v1" && !headline.wordingVerified) {
+      // Retain the paid candidate for checker retries or explicit lettering repair.
+      await artworkJobDeps.query("UPDATE livecard_artwork_jobs SET design=$3::jsonb,updated_at=now() WHERE id=$1 AND owner_id=$2 AND state='running'", [id, owner, JSON.stringify({ ...design, headline })]);
+      throw new LiveCardGenerationFailure(headline.validation?.status === "unavailable" ? "The wording check is unavailable. Retry checking this same artwork." : "The designed lettering needs correction. Update card text to repair this artwork.", "lettering", headline.validation?.status === "unavailable" ? "verification_unavailable" : "quality_rejected", headline.validation?.issues);
+    }
     // Conditional commit closes the cancellation-before-completion race.
     await artworkJobDeps.query(`UPDATE livecard_artwork_jobs SET state='ready',stage='ready',design=$3::jsonb,updated_at=now()
       WHERE id=$1 AND owner_id=$2 AND state='running'`, [id, owner, JSON.stringify({ ...design, headline: { ...headline, attempt: claimed.attempt } })]);

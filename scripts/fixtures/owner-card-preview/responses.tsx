@@ -1,4 +1,6 @@
-export default function Responses() {
+import EventResponseDashboard from "../../../src/components/EventResponseDashboard";
+export default function Responses(props: React.ComponentProps<typeof EventResponseDashboard>) {
+  if (new URLSearchParams(window.location.search).has("realResponses")) return <EventResponseDashboard {...props} />;
   return (
     <section style={{ minHeight: 1600, padding: 24, borderRadius: 24, background: "white" }}>
       <h2>Guest responses</h2>

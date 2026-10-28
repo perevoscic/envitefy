@@ -386,21 +386,23 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     if (props.activeTab === "calendar") calendarOptionRef.current?.focus();
   }, [props.activeTab]);
   const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
-  const categorySupportsRsvp = details?.actionVisibility?.rsvp ?? supportsStudioCategoryRsvp(readString(details?.category));
+  const categorySupportsRsvp = details?.rsvpEnabled !== false &&
+    (details?.actionVisibility?.rsvp ?? supportsStudioCategoryRsvp(readString(details?.category)));
   const openHouseAgentCard = isOpenHouseLiveCard(details);
   const detailsDescription = readString(details?.detailsDescription);
   const secondaryDescription =
     readString(invitationData?.description) || readString(details?.message);
   const rsvpContact = readString(details?.rsvpContact);
   const rsvpParsed = parseLiveCardRsvpContact(rsvpContact);
-  const directRsvpHref = normalizeLiveCardActionHref(details?.rsvpUrl);
+  const directRsvpHref = details?.rsvpEnabled === false ? "" : normalizeLiveCardActionHref(details?.rsvpUrl);
   const directRsvpEventId = readString(details?.eventId);
   const hasDirectEnvitefyRsvp = Boolean(
+    details?.rsvpEnabled !== false && (
     (directRsvpEventId &&
       (details?.rsvpEnabled === true ||
         readString(details?.rsvpMode).toLowerCase() === "envitefy" ||
         directRsvpHref)) ||
-      (props.previewMode && categorySupportsRsvp && !openHouseAgentCard),
+      (props.previewMode && categorySupportsRsvp && !openHouseAgentCard)),
   );
   const [directRsvpChoice, setDirectRsvpChoice] = useState<LiveCardRsvpResponseKey | null>(null);
   const [directRsvpName, setDirectRsvpName] = useState("");
@@ -520,6 +522,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
   useEffect(() => {
     if (
+      !openHouseAgentCard &&
       !categorySupportsRsvp &&
       !directRsvpHref &&
       !hasDirectEnvitefyRsvp &&
@@ -528,6 +531,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       props.onActiveTabChange("none");
     }
   }, [
+    openHouseAgentCard,
     categorySupportsRsvp,
     directRsvpHref,
     hasDirectEnvitefyRsvp,
@@ -604,13 +608,14 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         openHouse: openHouseAgentCard,
         hasLocation: locationActions.length > 0 || onlineLocations.length > 0,
         hasRegistry: Boolean(registryHref),
-        rsvpEnabled: details?.actionVisibility?.rsvp,
+        rsvpEnabled: categorySupportsRsvp,
         hasOpenHouseAgent: hasOpenHouseAgentInfo,
         hasOpenHouseLogo: hasOpenHouseLogoInfo,
       }),
     [
       details?.category,
       details?.actionVisibility?.rsvp,
+      categorySupportsRsvp,
       hasOpenHouseAgentInfo,
       hasOpenHouseLogoInfo,
       locationActions.length,

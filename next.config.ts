@@ -67,6 +67,8 @@ const nextConfig = (phase: string): NextConfig => ({
     ...Object.fromEntries(
       pdfProcessingRoutes.map((route) => [`${route}(?![\\s\\S])`, [...pdfRuntimeFiles]]),
     ),
+    "/api/livecard-builder/jobs": ["./public/fonts/birthday/*.ttf", "./node_modules/@napi-rs/canvas/**/*", "./node_modules/@napi-rs/canvas-*/**/*"],
+    "/api/livecard-builder/headline": ["./public/fonts/birthday/*.ttf", "./node_modules/@napi-rs/canvas/**/*", "./node_modules/@napi-rs/canvas-*/**/*"],
     "/api/livecard-builder/location": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
     "/api/upload": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/uploads/*": ["./node_modules/ffmpeg-static/ffmpeg*"],

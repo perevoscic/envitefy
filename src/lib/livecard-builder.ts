@@ -295,7 +295,7 @@ export function liveCardRegistryUrl(value: string): string | null {
 export type LiveCardErrors = Partial<Record<keyof LiveCardForm, string>>;
 export function validateLiveCard(
   form: LiveCardForm,
-  phase: "design" | "prepare" | "publish",
+  phase: "design" | "generate" | "prepare" | "publish",
 ): LiveCardErrors {
   const errors: LiveCardErrors = {};
   if (phase === "design") {
@@ -306,7 +306,7 @@ export function validateLiveCard(
   if (!form.design.trim()) errors.design = "Describe how you would like the card to look.";
   if (!form.date) errors.date = "Choose your event date.";
   if (!form.startTime) errors.startTime = "Add a start time.";
-  const validationZone = phase === "prepare" ? "UTC" : form.timezone;
+  const validationZone = phase === "prepare" || phase === "generate" ? "UTC" : form.timezone;
   try {
     new Intl.DateTimeFormat("en", { timeZone: validationZone }).format();
   } catch {
@@ -323,7 +323,7 @@ export function validateLiveCard(
       errors.endTime =
         "The end must be after the start. For an overnight event, choose the next date.";
   }
-  if (phase === "prepare") {
+  if (phase === "prepare" || phase === "generate") {
     if (
       !form.locations.length ||
       form.locations.some(
@@ -341,6 +341,7 @@ export function validateLiveCard(
     if (form.locations[0]?.resolution && !form.locations[0]?.timezone)
       errors.timezone = "Confirm the local time zone for your event location.";
   }
+  if (phase === "generate") return errors;
   if (form.rsvpEnabled) {
     if (!form.hostName.trim()) errors.hostName = "Add the host name guests should see.";
     if (!form.hostPhone.trim()) errors.hostPhone = "Add the host phone number for replies.";

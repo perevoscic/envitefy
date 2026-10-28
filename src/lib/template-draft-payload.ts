@@ -1,3 +1,4 @@
+import { readEventRsvpSettings } from "./event-rsvp-settings";
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
 import { getTemplateCategory, type TemplateCategory } from "./template-categories";
 import type { TemplateHistoryPayload } from "./template-draft-handoff";
@@ -62,8 +63,9 @@ export function buildTemplateDraftPayload(
           }
         : { ...data, ...themedFields }),
       title,
+      ...(category !== "signup-forms" && (typeof data.rsvpEnabled === "boolean" || typeof record(data.rsvp).isEnabled === "boolean") ? { rsvpEnabled: readEventRsvpSettings(data).isEnabled, rsvpDeadline: readEventRsvpSettings(data).deadline } : {}),
       ...(gymnasticsDates ? { allDay: gymnasticsDates.allDay, gymnasticsDateVersion: 1 } : {}),
-      ...(category !== "signup-forms" && snapshot.pageComposition ? { eventPageComposition: normalizeEventPageComposition(snapshot.pageComposition) } : {}),
+      ...(category !== "signup-forms" && Object.hasOwn(snapshot, "pageComposition") ? { eventPageComposition: normalizeEventPageComposition(snapshot.pageComposition) ?? null } : {}),
       category: info.historyCategory,
       primaryOutput: category === "signup-forms" ? "signup_form" : "event_page",
       startAt: start,

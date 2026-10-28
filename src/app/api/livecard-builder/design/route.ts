@@ -17,9 +17,9 @@ export async function POST(request: Request) {
   const input: unknown = await request.json().catch(() => null);
   const form =
     input && typeof input === "object" && "form" in input ? readLiveCardForm(input.form) : null;
-  if (!form || Object.keys(validateLiveCard(form, "design")).length)
+  if (!form || Object.keys(validateLiveCard(form, "generate")).length)
     return NextResponse.json(
-      { error: "Choose an event type and describe how you would like your invitation to look." },
+      { error: "Add your title, date, start time, location and describe the look." },
       { status: 400 },
     );
   const accessUser = await getAuthenticatedRequestUser(request);

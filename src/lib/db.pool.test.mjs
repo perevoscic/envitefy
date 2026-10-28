@@ -78,3 +78,17 @@ test("session exhaustion does not open retry connections or replace a healthy po
   assert.equal(h.pools.length, 1);
   assert.equal(h.releases, 1);
 });
+
+// pg-pool emits this when a waiter cannot acquire a checked-out client in time.
+test("checkout timeout preserves the pool and recovers when capacity is available", async () => {
+  const h = harness();
+  h.failure = new Error("timeout exceeded when trying to connect");
+  await assert.rejects(h.withClient(async () => assert.fail("No client was acquired")), error => error === h.failure);
+  assert.equal(h.connections, 1);
+  assert.equal(h.pools.length, 1);
+  assert.equal(h.pools[0].ends, 0);
+  h.failure = null;
+  assert.equal(await h.withClient(async () => "recovered"), "recovered");
+  assert.equal(h.pools.length, 1);
+  assert.equal(h.releases, 1);
+});

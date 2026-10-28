@@ -30,6 +30,7 @@ test("durable generation reconnects; Review never generates or publishes; publis
   const errors = []; page.on("pageerror", (error) => errors.push(error.message));
   await page.addInitScript(() => { window.__opened = []; window.__copied = []; window.__shared = []; window.open = (url) => { window.__opened.push(String(url)); return null; }; Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (value) => window.__copied.push(value) } }); Object.defineProperty(navigator, "share", { configurable: true, value: async (value) => window.__shared.push(value) }); });
   const jobs = new Map(); let dispatches = 0, saves = [], stored;
+  let htmlStatusFailures = 1, jobReads = 0;
   const raster = async (color) => `data:image/webp;base64,${(await sharp({ create: { width: 100, height: 150, channels: 4, background: color } }).webp({ lossless: true }).toBuffer()).toString("base64")}`;
   const design = { version: 1, quality: "medium", backgroundUrl: await raster("#374268"), font: "classic", ink: "#ffffff", accent: "#ffcc88", surface: "#374268" };
   const composed = await raster("#374269"), layer = await raster({ r: 255, g: 255, b: 255, alpha: 0.2 });
@@ -209,6 +210,8 @@ test("durable generation reconnects; Review never generates or publishes; publis
         const job = { id: `job-${dispatches}`, mode: input.mode, stage: "background_generating", state: "running", form: input.form, created_at: new Date().toISOString(), design: input.design || null };
         jobs.set(job.id, job); return route.fulfill({ json: { job } });
       }
+      jobReads++;
+      if (htmlStatusFailures-- > 0) return route.fulfill({ status: 502, contentType: "text/html", body: "<!DOCTYPE html><html>Temporary upstream error</html>" });
       return route.fulfill({ json: { job: jobs.get(url.searchParams.get("id")) } });
     }
     if (url.pathname.endsWith("/assist")) return route.fulfill({ status: 503, json: { error: "Controlled checker outage" } });
@@ -254,6 +257,10 @@ test("durable generation reconnects; Review never generates or publishes; publis
     await page.getByLabel("Event date", { exact: true }).fill("2026-11-15");
     await page.getByLabel("Start time", { exact: true }).fill("19:00");
     await page.getByLabel("Venue name", { exact: true }).fill("Online Event");
+    await page.waitForFunction(() => !document.body.innerText.includes("Connection interrupted. Reconnecting"));
+    assert.ok(jobReads >= 2, "an HTML gateway response retries status automatically");
+    assert.equal(dispatches, 1, "connection recovery does not dispatch another image job");
+    assert.doesNotMatch(await page.locator("body").innerText(), /Unexpected token|DOCTYPE/);
     // Browser recovery must reconnect to this same running job, without a POST.
     await page.waitForTimeout(300); await page.reload();
     await waitForDetails(page);
@@ -478,33 +485,29 @@ test("durable generation reconnects; Review never generates or publishes; publis
     await verified.getByRole("button", { name: "Cancel generation", exact: true }).waitFor();
     assert.equal(dispatches, beforeVerification, "recovery reconnects the pending verification without requesting generation or another check");
     await assertNoLetteringDiagnostics(verified, "reconnected legacy verification");
+    for (const viewport of [{ width: 1440, height: 1080 }, { width: 390, height: 844 }, { width: 320, height: 740 }]) {
+      await verified.setViewportSize(viewport);
+      assert.equal(await verified.getByRole("button", { name: "Cancel generation", exact: true }).count(), 1);
+      assert.equal(await verified.getByRole("button", { name: "Cancel", exact: true }).count(), 0, "one cancel action during lettering");
+      assert.doesNotMatch(await verified.locator("body").innerText(), /· attempt \d|seconds elapsed|· started/);
+    }
+    await verified.screenshot({ path: path.join(out, "phone-generation-progress.png"), fullPage: true });
+    await verified.setViewportSize({ width: 1440, height: 1080 });
     assert.equal(verification.mode, "verify");
     assert.equal(verification.design.headline.imageUrl, stored.data.studioCard.invitationData.sharedDesign.headline.imageUrl);
-    verification.state = "failed";
-    verification.stage = "checking";
-    verification.error_code = "safety_refused";
-    verification.error = "Controlled same-image safety rejection";
-    await verified.getByText("Controlled same-image safety rejection", { exact: true }).waitFor();
+    verification.state = "ready";
+    verification.stage = "ready";
+    verification.design.headline.validation = { status: "failed", issues: ["safety_mismatch"] };
+    await verified.getByRole("button", { name: "Cancel generation", exact: true }).waitFor({ state: "hidden" });
     await verified.getByRole("button", { name: "Save changes", exact: true }).click();
-    await verified.getByText("This artwork contains blocked content. Change the design instructions before generating again.", { exact: true }).waitFor();
-    assert.equal(saves.length, beforeVerificationSaves, "same-image safety rejection prevents publication of retained artwork");
+    await verified.waitForFunction(() => !document.querySelector('[data-publish-progress]'));
+    assert.equal(saves.length, beforeVerificationSaves + 1, "checker findings do not prevent saving existing artwork");
     await verified.reload();
     await waitForDetails(verified);
-    await assertNoLetteringDiagnostics(verified, "recovered blocked lettering validation");
-    await verified.getByRole("button", { name: "Save changes", exact: true }).click();
-    await verified.getByText("This artwork contains blocked content. Change the design instructions before generating again.", { exact: true }).waitFor();
-    assert.equal(saves.length, beforeVerificationSaves, "recovery retains the same-image safety rejection");
-    await verified.getByRole("button", { name: "Apply this version", exact: true }).click();
-    await verified.getByRole("button", { name: "Save changes", exact: true }).click();
-    await verified.getByText("This artwork contains blocked content. Change the design instructions before generating again.", { exact: true }).waitFor();
-    assert.equal(saves.length, beforeVerificationSaves, "an alternative copy cannot restore validation from before the safety finding");
-    await verified.getByRole("button", { name: "Preview earlier version 1", exact: true }).click();
-    await verified.getByRole("button", { name: "Apply this version", exact: true }).click();
-    await verified.getByRole("button", { name: "Save changes", exact: true }).click();
-    await verified.getByText("This artwork contains blocked content. Change the design instructions before generating again.", { exact: true }).waitFor();
-    assert.equal(saves.length, beforeVerificationSaves, "an earlier-version copy cannot restore validation from before the safety finding");
+    await assertNoLetteringDiagnostics(verified, "recovered advisory lettering validation");
+    assert.doesNotMatch(await verified.locator("body").innerText(), /blocked content/);
     assert.equal(dispatches, beforeVerification, "reload never starts image generation or repeats verification");
-    await verified.screenshot({ path: path.join(out, "verified-safety-recovery.png"), fullPage: true });
+    await verified.screenshot({ path: path.join(out, "verified-advisory-recovery.png"), fullPage: true });
     await verified.close();
     const failed = await browser.newPage({ viewport: { width: 1440, height: 1080 } });
     failed.on("pageerror", (error) => errors.push(error.message));
@@ -533,12 +536,12 @@ test("durable generation reconnects; Review never generates or publishes; publis
     blocked.stage = "ready";
     blocked.state = "ready";
     blocked.design = { ...design, headline: { ...job.design.headline, title: blocked.form.title, intro: blocked.form.headlineIntro, validation: { status: "failed", issues: ["safety_mismatch"] } } };
-    await failed.getByText("This artwork contains blocked content. Change the design instructions before generating again.", { exact: true }).waitFor();
-    assert.equal(await failed.locator("[data-live-card-artwork] img").count(), 0, "legacy ready jobs containing a safety finding never apply their image");
+    await failed.locator("[data-live-card-artwork] img").first().waitFor();
+    await failed.getByRole("button", { name: "Cancel generation", exact: true }).waitFor({ state: "hidden" });
     assert.equal(await failed.getByRole("region", { name: "Artwork job status", exact: true }).count(), 0);
-    assert.equal(await failed.getByRole("button", { name: "Retry design", exact: true }).count(), 0);
+    assert.doesNotMatch(await failed.locator("body").innerText(), /blocked content/);
     assert.equal(await failed.getByLabel("Event date", { exact: true }).inputValue(), "2026-10-26");
-    await failed.screenshot({ path: path.join(out, "safety-block.png"), fullPage: true });
+    await failed.screenshot({ path: path.join(out, "advisory-artwork.png"), fullPage: true });
     await failed.close();
     assert.deepEqual(errors, []);
   } catch (error) { console.error((await page.locator("body").innerText()).slice(-5000)); await page.screenshot({ path: path.join(out, "failure.png"), fullPage: true }); throw error; }

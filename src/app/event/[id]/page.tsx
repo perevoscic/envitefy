@@ -1,3 +1,5 @@
+import { isDatabaseUnavailableError } from "@/lib/database-errors";
+import { isPastEvent } from "@/lib/event-edit-lock";
 import { readableSchoolMemoData } from "@/lib/school-memo-typography.server";
 import { projectSignupForm } from "@/lib/signup-projection";
 import { isEventDraft } from "@/lib/event-draft-access";
@@ -86,6 +88,7 @@ import {
 import { createServerTimingTracker } from "@/lib/server-timing";
 import { resolveEventShareImage, type EventShareImage, type EventShareImageContext } from "@/lib/share-image";
 import { resolveEventPageBackgroundColor, resolveEventThemeColor } from "@/lib/theme-color";
+import EventPageTypography from "@/components/events/EventPageTypography";
 import { EventPageCompositionProvider } from "@/components/events/EventPageCompositionContext";
 import { normalizeEventPageComposition } from "@/lib/event-page-composition";
 import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
@@ -115,6 +118,7 @@ import {
   normalizeRegistryLinks,
 } from "@/utils/registry-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
+import { isRsvpExplicitlyDisabled } from "@/lib/event-rsvp-settings";
 import { sanitizeSignupForm } from "@/utils/signup";
 import { resolveFootballSeasonTemplateChrome } from "../football-season/customize/footballSeasonTemplateTheme";
 const WeddingTemplateView = nextDynamic(() => import("@/components/WeddingTemplateView"), {
@@ -219,6 +223,16 @@ const getCachedEventHistoryBySlugOrId = cache(async (value: string, userId?: str
     userId: userId || undefined,
   }),
 );
+
+// Metadata must remain renderable while the page shows a temporary outage notice.
+async function getEventMetadataRow(value: string) {
+  try {
+    return await getCachedEventHistoryBySlugOrId(value, null);
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) throw error;
+    return null;
+  }
+}
 
 async function resolveAbsoluteEventShareImage(
   data: Record<string, unknown>,
@@ -435,7 +449,7 @@ export async function generateMetadata(props: {
   const timing = createServerTimingTracker(EVENT_PAGE_TIMING_ENV);
   const awaitedParams = await props.params;
   const row = await timing.time("metadata_event_lookup", () =>
-    getCachedEventHistoryBySlugOrId(awaitedParams.id, null),
+    getEventMetadataRow(awaitedParams.id),
   );
   const data: any = row?.data || {};
   const rawTitle = (typeof data?.title === "string" && data.title) || row?.title || "Event";
@@ -497,7 +511,7 @@ export async function generateMetadata(props: {
 
 export async function generateViewport(props: { params: Promise<{ id: string }> }) {
   const awaitedParams = await props.params;
-  const row = await getCachedEventHistoryBySlugOrId(awaitedParams.id, null);
+  const row = await getEventMetadataRow(awaitedParams.id);
 
   return {
     themeColor: resolveEventThemeColor(row?.data || null),
@@ -997,7 +1011,7 @@ function formatEventRangeDisplay(
   }
 }
 
-export default async function EventPage({
+async function RenderEventPage({
   params,
   searchParams,
 }: {
@@ -1271,8 +1285,8 @@ export default async function EventPage({
         ) ? "before-footer" : "after-content"}
       >
         <EventPageCompositionProvider value={normalizeEventPageComposition(data.eventPageComposition)}>
-          {scanMediaPolicy && isValidElement<{ imageUrl?: string | null }>(children) && "imageUrl" in children.props && (scanMediaPolicy.heroMode === "generated" || scanMediaPolicy.medical)
-            ? cloneElement(children, { imageUrl: generatedScanHero(data) }) : children}
+          <EventPageTypography>{scanMediaPolicy && isValidElement<{ imageUrl?: string | null }>(children) && "imageUrl" in children.props && (scanMediaPolicy.heroMode === "generated" || scanMediaPolicy.medical)
+            ? cloneElement(children, { imageUrl: generatedScanHero(data) }) : children}</EventPageTypography>
         </EventPageCompositionProvider>
       </ScanArtworkProvider>
       </ScannedScheduleProvider>
@@ -1291,7 +1305,8 @@ export default async function EventPage({
       (data as any)?.invitedFromScan,
     ) === "invited";
   const canManageCreatedEvent = collaborationPermissions.canEdit && !isScannedInviteEvent;
-  const canEditCreatedEvent = canManageCreatedEvent && !isScannedOrUploadedEventData(data);
+  const editLocked = isPastEvent(data);
+  const canEditCreatedEvent = canManageCreatedEvent && !isScannedOrUploadedEventData(data) && !editLocked;
   const numberOfGuests = getRsvpDashboardGuestCount(data);
   const ownerRsvpDashboardEnabled = canShowOwnerRsvpDashboard(data);
   const ownerEventHref = buildEventPath(row.id, title, undefined, publicSlug);
@@ -1425,6 +1440,7 @@ export default async function EventPage({
     }
     return (
       <EventOwnerView
+        editLocked={editLocked}
         eventId={row.id}
         canDelete={isOwner}
         canManageAccess={showOwnerAccessControls}
@@ -1447,18 +1463,16 @@ export default async function EventPage({
     );
   }
 
-  const resolvedOwnerToolsTab: typeof ownerToolsTab =
-    ownerToolsTab && !ownerRsvpDashboardEnabled && ownerToolsTab !== "design" &&
-      !(data.createdVia === "livecard-builder" && ownerToolsTab === "dashboard")
-      ? "design"
-      : ownerToolsTab;
+  const resolvedOwnerToolsTab: typeof ownerToolsTab = ownerToolsTab;
 
   if (showOwnerWorkspace && ownerToolsTab && resolvedOwnerToolsTab !== ownerToolsTab) {
     redirect(`${ownerEventHref}?tab=${resolvedOwnerToolsTab}`);
   }
 
   if (showOwnerWorkspace && resolvedOwnerToolsTab) {
-    return renderWithEventPageBackground(
+    return (
+      <>
+      {calendarConnectionNotice}
       <EventOwnerTools
         eventId={row.id}
         isOwner={isOwner}
@@ -1469,8 +1483,8 @@ export default async function EventPage({
         eventOwnerHref={ownerEventHref}
         initialTab={resolvedOwnerToolsTab}
         numberOfGuests={numberOfGuests}
-      />,
-      { suppressCelebration: true },
+      />
+      </>
     );
   }
 
@@ -2098,8 +2112,7 @@ export default async function EventPage({
         })
         .filter((item): item is { title: string; items: string[] } => Boolean(item))
     : [];
-  const explicitRsvpDisabled =
-    data?.rsvpEnabled === false || rsvpRecord?.isEnabled === false || rsvpRecord?.enabled === false;
+  const explicitRsvpDisabled = isRsvpExplicitlyDisabled(data);
   const directRsvpEnabled =
     !explicitRsvpDisabled &&
     (Boolean(data?.rsvpEnabled) ||
@@ -2107,8 +2120,8 @@ export default async function EventPage({
       Boolean(rsvpRecord?.enabled) ||
       Boolean(rsvpRecord?.direct) ||
       Boolean((isConciergeLiveCardEvent || isConciergeEventPageProduct) && hasRsvpOutput));
-  const rsvpPhone = explicitRsvpDisabled ? "" : rawRsvpPhone;
-  const rsvpEmail = explicitRsvpDisabled ? "" : rawRsvpEmail;
+  const rsvpPhone = explicitRsvpDisabled ? "" : typeof data?.rsvpPhone === "string" ? data.rsvpPhone.trim() : rawRsvpPhone;
+  const rsvpEmail = explicitRsvpDisabled ? "" : typeof data?.rsvpEmail === "string" ? data.rsvpEmail.trim() : rawRsvpEmail;
   const rsvpUrl = explicitRsvpDisabled ? "" : rawRsvpUrl;
 
   const hostName =
@@ -2124,8 +2137,8 @@ export default async function EventPage({
     extractedContact: structuredRsvpContact,
     sourceText: data?.ocrText,
   });
-  const publicRsvpField = normalizedPublicRsvp.rsvp || "";
-  const publicRsvpUrl = normalizedPublicRsvp.rsvpUrl || "";
+  const publicRsvpField = explicitRsvpDisabled ? "" : normalizedPublicRsvp.rsvp || "";
+  const publicRsvpUrl = explicitRsvpDisabled ? "" : normalizedPublicRsvp.rsvpUrl || "";
   const hasPublicRsvpAction = Boolean(
     !explicitRsvpDisabled &&
       (rsvpPhone || rsvpEmail || publicRsvpUrl || directRsvpEnabled || publicRsvpField),
@@ -2147,7 +2160,7 @@ export default async function EventPage({
         .replace(/\(\d{3}\)\s*\d{3}[-.\s]?\d{4}/g, "") // Remove (555) 123-4567 format
         .trim()
     : "";
-  const rsvpName =
+  const rsvpName = typeof data?.rsvpName === "string" ? storedRsvpName :
     storedRsvpName ||
     (hasPublicRsvpAction ? hostName : "") ||
     (rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "");
@@ -3522,5 +3535,32 @@ function normalizeIso(input: unknown): string | null {
     return d.toISOString();
   } catch {
     return null;
+  }
+}
+
+export default async function EventPage(props: Parameters<typeof RenderEventPage>[0]) {
+  try {
+    return await RenderEventPage(props);
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) throw error;
+    console.warn("[event-page] Database temporarily unavailable");
+    const { id } = await props.params;
+    const searchParams = await props.searchParams;
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(searchParams || {})) {
+      for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) {
+        query.append(key, item);
+      }
+    }
+    const retryHref = `/event/${encodeURIComponent(id)}${query.size ? `?${query}` : ""}`;
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center px-6 py-16">
+        <section className="max-w-md text-center" aria-labelledby="event-unavailable-title">
+          <h1 id="event-unavailable-title" className="text-2xl font-semibold">This event is temporarily unavailable</h1>
+          <p className="mt-3 text-sm opacity-80">We couldn’t load the event right now. Please try again in a moment.</p>
+          <a href={retryHref} className="mt-6 inline-flex rounded-full border border-current px-6 py-3 font-semibold">Try again</a>
+        </section>
+      </main>
+    );
   }
 }

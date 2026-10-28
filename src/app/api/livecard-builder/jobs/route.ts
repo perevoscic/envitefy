@@ -20,13 +20,13 @@ async function authorizedJob(userId: string, id: string): Promise<ArtworkJob | n
   const event = await getEventHistoryById(job.event_id);
   return event && (await getEventPermissions(event, userId)).canEdit ? job : null;
 }
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const userId = await owner();
   if (!userId) return NextResponse.json({ error: "Sign in to view your artwork." }, { status: 401 });
   const job = await authorizedJob(userId, new URL(request.url).searchParams.get("id") || "");
   return NextResponse.json({ job: job ? { ...job, elapsed_ms: Math.max(0, Date.now() - Date.parse(job.created_at)) } : null }, { status: job ? 200 : 404, headers: { "Cache-Control": "no-store" } });
 }
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const denied = await builderApiAccess("design");
   if (denied) return denied;
   if (request.headers.get("sec-fetch-site") === "cross-site") return NextResponse.json({ error: "Open Envitefy to create artwork." }, { status: 403 });
@@ -34,9 +34,9 @@ export async function POST(request: Request) {
   if (!userId) return NextResponse.json({ error: "Sign in to create artwork." }, { status: 401 });
   const raw = await request.json().catch(() => null);
   const form = readLiveCardForm(raw?.form);
-  if (!form?.title.trim() || Object.keys(validateLiveCard(form, "design")).length || typeof raw?.key !== "string" || raw.key.length > 200)
-    return NextResponse.json({ error: "Add your title and design first." }, { status: 400 });
-  const mode = raw.mode === "verify" ? "verify" : raw.mode === "repair" ? "repair" : raw.mode === "background" ? "background" : "generate";
+  const mode = raw?.mode === "verify" ? "verify" : raw?.mode === "repair" ? "repair" : raw?.mode === "background" ? "background" : "generate";
+  if (!form?.title.trim() || Object.keys(validateLiveCard(form, mode === "generate" ? "generate" : "design")).length || typeof raw?.key !== "string" || raw.key.length > 200)
+    return NextResponse.json({ error: "Add your title, date, start time, location and design first." }, { status: 400 });
   const design = readSharedCardDesign(raw.design) || null;
   if (mode !== "generate" && !design) return NextResponse.json({ error: "Create a background first." }, { status: 400 });
   const eventId = typeof raw.eventId === "string" ? raw.eventId : null;
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   if (job.state === "queued") after(() => runArtworkJob(jobOwner, job.id));
   return NextResponse.json({ job }, { status: 202, headers: { "Cache-Control": "no-store" } });
 }
-export async function PATCH(request: Request) {
+async function handlePATCH(request: Request) {
   if (request.headers.get("sec-fetch-site") === "cross-site") return NextResponse.json({ error: "Open Envitefy to cancel artwork." }, { status: 403 });
   const userId = await owner();
   if (!userId) return NextResponse.json({ error: "Sign in to cancel artwork." }, { status: 401 });
@@ -61,3 +61,15 @@ export async function PATCH(request: Request) {
   const job = authorized ? await cancelArtworkJob(authorized.owner_id, authorized.id) : null;
   return NextResponse.json({ job, providerCancellation: "unconfirmed", message: "Cancellation requested. Provider execution status unknown." }, { status: job ? 200 : 404 });
 }
+
+// Application failures keep the API contract; proxy HTML is handled by the client.
+async function jobResponse(request: Request, handler: (request: Request) => Promise<Response>) {
+  try { return await handler(request); }
+  catch {
+    console.error("livecard_job_request_failed", { method: request.method });
+    return NextResponse.json({ error: "Artwork status is temporarily unavailable. Reconnect to the same job." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+}
+export async function GET(request: Request) { return jobResponse(request, handleGET); }
+export async function POST(request: Request) { return jobResponse(request, handlePOST); }
+export async function PATCH(request: Request) { return jobResponse(request, handlePATCH); }

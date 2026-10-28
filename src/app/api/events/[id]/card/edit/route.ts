@@ -1,3 +1,4 @@
+import { isPastEvent } from "@/lib/event-edit-lock";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import {
@@ -445,6 +446,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+  if (isPastEvent(existing.data)) {
+    return NextResponse.json({ error: "Past events cannot be edited." }, { status: 403 });
+  }
     const savedData = isRecord(existing.data) ? existing.data : {};
     const savedCard = isRecord(savedData.studioCard) ? savedData.studioCard : {};
     const savedInvitation = isRecord(savedCard.invitationData) ? savedCard.invitationData : {};

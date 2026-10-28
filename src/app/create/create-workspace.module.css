@@ -40,11 +40,15 @@
   --creation-line: var(--border);
   --creation-tint: var(--field-background);
   --creation-mode-surface: color-mix(in srgb, var(--surface) 92%, transparent);
-  --creation-mode-shadow: 0 2px 3px rgb(0 0 0 / 12%), 0 10px 20px -8px rgb(0 0 0 / 40%);
+  --creation-mode-shadow: 0 2px 3px rgb(235 224 255 / 8%), 0 10px 20px -8px rgb(221 200 255 / 24%);
   --creation-mode-upload: #93c5fd;
   --creation-mode-url: #c4b5fd;
   --creation-mode-scratch: #86efac;
   background: transparent;
+}
+:global(html.dark) .modeBar {
+  outline: 1px solid rgb(221 200 255 / 20%);
+  outline-offset: -1px;
 }
 :global(html.dark) :is(.steps, .stepNumber, .fileRow, .typeButton, .shortcutTile, .shortcutButton, .emptySuggestions, .summary) {
   background: var(--surface);
@@ -250,6 +254,8 @@
   padding: 8px;
   border: 0;
   border-radius: 18px;
+  outline: 1px solid rgb(91 63 209 / 14%);
+  outline-offset: -1px;
   background: var(--creation-mode-surface);
   box-shadow: var(--creation-mode-shadow);
   backdrop-filter: blur(16px);
@@ -292,7 +298,7 @@
   z-index: -1;
   inset: -8px;
   border-radius: 16px;
-  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--mode-accent) 18%, transparent), transparent 72%);
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--mode-accent) 30%, transparent), transparent 76%);
   opacity: 0;
   pointer-events: none;
   transform: scale(0.8);

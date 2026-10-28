@@ -17,17 +17,17 @@ export const PUBLISH_STAGES: Record<PublishStage, { title: string; description: 
     description: "Checking spelling and grammar while keeping your event details intact.",
   },
   lettering: {
-    title: "Creating title and opening-line artwork",
+    title: "Styling your title and opening line",
     description:
-      "Creating one coordinated lettering asset for your saved background.",
+      "Pairing artistic fonts with your background.",
   },
   saving: {
     title: "Saving artwork",
     description: "Saving your finished artwork and preparing the card for your guests.",
   },
   lettering_repair: {
-    title: "Repairing lettering",
-    description: "Creating the explicitly requested replacement lettering.",
+    title: "Updating card text",
+    description: "Applying your wording to the saved background.",
   },
   checking: { title: "Checking lettering", description: "Verifying existing artwork without generating another image." },
   opening: {
@@ -53,6 +53,7 @@ export default function PublishProgress({
   onCancel?: () => void;
   updating?: boolean;
 }) {
+  const complete = stage === "opening";
   const current = updating && stage === "publishing"
     ? { title: "Saving your changes", description: "Updating your live event and card for your guests." }
     : PUBLISH_STAGES[stage];
@@ -65,7 +66,7 @@ export default function PublishProgress({
           data-publish-progress={stage}
           onEscapeKeyDown={(event) => {
             event.preventDefault();
-            onCancel?.();
+            if (!complete) onCancel?.();
           }}
           onPointerDownOutside={(event) => event.preventDefault()}
         >
@@ -86,26 +87,30 @@ export default function PublishProgress({
               </p>
               <Dialog.Title className={styles.title}>A little magic. All yours.</Dialog.Title>
               <Dialog.Description className={styles.description}>
-                {updating ? "We’re updating your Live Card." : "We’re getting your Live Card ready to share."}
+                {complete ? "Your Live Card is published." : updating ? "We’re updating your Live Card." : "We’re getting your Live Card ready to share."}
               </Dialog.Description>
               <div className={styles.status} role="status" aria-live="polite" aria-atomic="true">
                 <strong>{current.title}</strong>
                 <p>{current.description}</p>
               </div>
-              <div
-                className={styles.track}
-                role="progressbar"
-                aria-label={current.title}
-                aria-valuetext="In progress"
-              >
-                <span />
-              </div>
-              {onCancel ? (
-                <button type="button" className={styles.cancel} onClick={onCancel}>
-                  Cancel and keep editing
-                </button>
-              ) : (
-                <p className={styles.stay}>Keep this page open while we finish.</p>
+              {!complete && (
+                <>
+                  <div
+                    className={styles.track}
+                    role="progressbar"
+                    aria-label={current.title}
+                    aria-valuetext="In progress"
+                  >
+                    <span />
+                  </div>
+                  {onCancel ? (
+                    <button type="button" className={styles.cancel} onClick={onCancel}>
+                      Cancel and keep editing
+                    </button>
+                  ) : (
+                    <p className={styles.stay}>Keep this page open while we finish.</p>
+                  )}
+                </>
               )}
             </div>
           </div>

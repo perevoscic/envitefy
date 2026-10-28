@@ -1,7 +1,12 @@
 // @ts-nocheck
 "use client";
+import { readEventRsvpSettings } from "@/lib/event-rsvp-settings";
 import { EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout, EventEditorInput as InputGroup } from "@/components/events/EventEditorFields";
+import EventEditorFontStyle from "@/components/events/EventEditorFontStyle";
 import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
+import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
+import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import HeroImageEditor from "@/components/events/HeroImageEditor";
@@ -490,6 +495,7 @@ const handleGalleryUpload = (e) => {
 
         setData((prev) => ({
           ...prev,
+          ...readEventRsvpContact(existing),
           babyName: existing.babyName || prev.babyName,
           momName: existing.momName || prev.momName,
           date: existing.date || loadedDate || prev.date,
@@ -538,13 +544,7 @@ const handleGalleryUpload = (e) => {
               (isBridal ? existing.heroImage || existing.images?.hero || getThemedEventDesign(resolvedTemplateId)?.artwork || prev.images.hero : resolveBabyShowerHero(existing.heroImage || existing.images?.hero || prev.images.hero, getBabyShowerDesign(resolvedTemplateId))),
           },
           registries: normalizedRegistries,
-          rsvp: {
-            isEnabled:
-              existing.rsvpEnabled ||
-              Boolean(resolvedRsvpDeadline) ||
-              Boolean(existing.rsvp?.isEnabled),
-            deadline: resolvedRsvpDeadline || prev.rsvp.deadline,
-          },
+          rsvp: readEventRsvpSettings(existing, prev.rsvp.isEnabled),
           gallery:
             Array.isArray(existing.gallery) && existing.gallery.length > 0
               ? existing.gallery
@@ -634,11 +634,9 @@ const handleGalleryUpload = (e) => {
         city: data.city || undefined,
         state: data.state || undefined,
         description: data.babyDetails.notes || undefined,
-        rsvp: data.rsvp.isEnabled
-          ? data.rsvp.deadline || undefined
-          : undefined,
+        rsvp: data.rsvp.isEnabled ? data.rsvp.deadline || "" : "",
         rsvpEnabled: data.rsvp.isEnabled,
-        rsvpDeadline: data.rsvp.deadline || undefined,
+        rsvpDeadline: data.rsvp.deadline,
         numberOfGuests: 0,
         templateId: template.id,
         ...(themedBridal ? { bodyDesignId: themedBridal.id } : {}),
@@ -723,7 +721,7 @@ const handleGalleryUpload = (e) => {
           desc={isBridal ? "Bride’s name, date, location." : "Baby’s name, date, location."}
           onClick={() => setActiveView("headline")}
         />
-        {templateEditor && <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />}
+        <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />
 
         <MenuCard
           title={isBridal ? "Celebration details" : "About Baby"}
@@ -813,6 +811,7 @@ const handleGalleryUpload = (e) => {
 
 const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
+        <EventEditorFontStyle />
       <div className="space-y-6">
         <div>
           <button
@@ -1105,30 +1104,10 @@ const renderDesignEditor = () => (
   );
 
   const renderRsvpEditor = () => (
-    <EditorLayout title="RSVP Settings" onBack={() => setActiveView("main")}>
+    <EventEditorRsvpSection title="RSVP" enabled={data.rsvp.isEnabled} onEnabledChange={enabled => setData(previous => ({ ...previous, rsvp: { ...previous.rsvp, isEnabled: enabled } }))} onBack={() => setActiveView("main")}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-          <span className="font-medium text-slate-700 text-sm">
-            Enable RSVP
-          </span>
-          <button
-            onClick={() =>
-              updateData("rsvp", {
-                ...data.rsvp,
-                isEnabled: !data.rsvp.isEnabled,
-              })
-            }
-            className={`w-11 h-6 rounded-full transition-colors relative ${
-              data.rsvp.isEnabled ? "bg-indigo-600" : "bg-slate-300"
-            }`}
-          >
-            <span
-              className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${
-                data.rsvp.isEnabled ? "translate-x-5" : "translate-x-0"
-              }`}
-            ></span>
-          </button>
-        </div>
+
+
 
         {data.rsvp.isEnabled && (
           <InputGroup
@@ -1139,12 +1118,14 @@ const renderDesignEditor = () => (
           />
         )}
 
-        <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
+        <EventRsvpContactEditor value={data} onChange={(patch) => setData(previous => ({ ...previous, ...patch }))} />
+
+          <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
           <strong>Preview:</strong> Check the preview pane to see the RSVP form
           that your guests will see.
         </div>
       </div>
-    </EditorLayout>
+    </EventEditorRsvpSection>
   );
 
   const renderRegistryEditor = () => {

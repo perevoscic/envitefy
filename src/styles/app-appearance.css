@@ -277,11 +277,11 @@ html.dark :is(.bg-white\/62, .bg-white\/65, .bg-white\/68, .bg-white\/75, .bg-wh
   background-color: color-mix(in srgb, var(--surface) 94%, transparent);
 }
 html.dark :is(.owner-workspace-glass, .owner-workspace-glass-panel, .owner-workspace-glass-chip):not([data-appearance-scope="authored"], [data-appearance-scope="authored"] *) {
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
-  border-color: var(--border);
-  box-shadow: inset 0 1px 0 #ffffff08, 0 20px 60px #0000002e;
+  background: linear-gradient(145deg, rgba(49, 40, 72, 0.96), rgba(23, 22, 37, 0.96));
+  border-color: rgba(196, 181, 253, 0.18);
+  box-shadow: inset 0 1px 0 #ffffff0d, 0 18px 48px #00000038;
 }
-html.dark :is(.owner-workspace-glass, .owner-workspace-glass-panel)::before { background: radial-gradient(circle at top left, #49304e44, transparent 56%); }
+html.dark :is(.owner-workspace-glass, .owner-workspace-glass-panel)::before { background: radial-gradient(circle at top left, #8b5cf614, transparent 55%); }
 /* Semantic dialog controls also work on iOS 17.0–17.3. Where supported,
    scoped utility compatibility stops at every later authored boundary. */
 @scope (html.dark [data-app-dialog], html.dark [data-app-surface="true"]) to ([data-appearance-scope="authored"]) {

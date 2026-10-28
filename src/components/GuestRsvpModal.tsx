@@ -1,4 +1,5 @@
 "use client";
+import EventRsvpContactDetails from "@/components/events/EventRsvpContactDetails";
 
 import { useState, FormEvent, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
@@ -285,6 +286,7 @@ export default function GuestRsvpModal({
         <div className="relative z-10 max-h-[90vh] overflow-y-auto p-8 md:p-10 custom-scrollbar">
           {!success ? (
             <form onSubmit={handleSubmit} className="space-y-6">
+              <EventRsvpContactDetails value={{ rsvpName, rsvpEmail, rsvpPhone }} />
               <header className="mb-2 space-y-3">
                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-purple-400">
                   RSVP

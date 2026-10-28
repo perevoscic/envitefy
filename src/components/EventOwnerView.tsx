@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import EventPreviewViewport from "./EventPreviewViewport";
 
 type Props = {
+  editLocked?: boolean;
   canDelete?: boolean;
   canManageAccess?: boolean;
   eventId: string;
@@ -26,6 +27,7 @@ type Props = {
 };
 
 export default function EventOwnerView({
+  editLocked = false,
   canDelete = true,
   canManageAccess = false,
   eventId,
@@ -72,10 +74,12 @@ export default function EventOwnerView({
         <Eye size={19} aria-hidden="true" />
         <span>Preview</span>
       </Link>
-      <Link href={editUrl} aria-label="Edit event" title="Edit event" className={`${mobileEditInEvent ? "hidden lg:inline-flex" : "inline-flex"} ${actionClassName}`}>
+      {editLocked ? <button type="button" disabled aria-label="Edit event" title="Past event" className={`inline-flex ${actionClassName} cursor-not-allowed opacity-40`}>
+        <Pencil size={19} aria-hidden="true" /><span>Edit</span>
+      </button> : <Link href={editUrl} aria-label="Edit event" title="Edit event" className={`${mobileEditInEvent ? "hidden lg:inline-flex" : "inline-flex"} ${actionClassName}`}>
         <Pencil size={19} aria-hidden="true" />
         <span>Edit</span>
-      </Link>
+      </Link>}
       <button
         type="button"
         onClick={shareEvent}

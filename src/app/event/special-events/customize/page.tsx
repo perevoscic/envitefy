@@ -3,7 +3,11 @@
 import EventPageSections from "@/components/events/EventPageSections";
 
 import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
+import EventEditorFontStyle from "@/components/events/EventEditorFontStyle";
 import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
+import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
+import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
@@ -607,7 +611,7 @@ export default function SpecialEventsCustomizePage() {
         const existing = row.data || {};
           if (existing.manualEditor?.snapshot) {
             const saved = existing.manualEditor.snapshot;
-            if (saved.data !== undefined) setData(saved.data);
+            if (saved.data !== undefined) setData({ ...readEventRsvpContact(existing), ...saved.data });
             setLoadingExisting(false);
             return;
           }
@@ -617,6 +621,7 @@ export default function SpecialEventsCustomizePage() {
         setSavedEventData(existing);
         setData((prev) => ({
           ...prev,
+          ...readEventRsvpContact(existing),
           title: row.title ?? existing.title ?? prev.title,
           date: existing.date ?? start.date,
           time: existing.time ?? start.time,
@@ -1096,6 +1101,7 @@ export default function SpecialEventsCustomizePage() {
 
   const renderDesignEditor = () => (
     <EditorLayout title="Design" onBack={() => setActiveView("main")}>
+        <EventEditorFontStyle />
       <div className="space-y-8 pb-8">
         <div className="border-b border-slate-100 pb-6">
           <button
@@ -1443,27 +1449,10 @@ export default function SpecialEventsCustomizePage() {
   );
 
   const renderRsvpEditor = () => (
-    <EditorLayout title="RSVP Settings" onBack={() => setActiveView("main")}>
+    <EventEditorRsvpSection title="RSVP" enabled={data.rsvpEnabled} onEnabledChange={enabled => setData(previous => ({ ...previous, rsvpEnabled: enabled }))} onBack={() => setActiveView("main")}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-          <div>
-            <label className="text-sm font-semibold text-slate-800">
-              Enable RSVP
-            </label>
-            <p className="text-xs text-slate-500 mt-1">
-              Allow guests to RSVP to your event
-            </p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={data.rsvpEnabled}
-              onChange={(e) => updateData("rsvpEnabled", e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-          </label>
-        </div>
+
+
         {data.rsvpEnabled && (
           <InputGroup
             label="RSVP Deadline"
@@ -1473,12 +1462,14 @@ export default function SpecialEventsCustomizePage() {
           />
         )}
 
-        <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
+        <EventRsvpContactEditor value={data} onChange={(patch) => setData(previous => ({ ...previous, ...patch }))} />
+
+          <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
           <strong>Preview:</strong> Check the preview pane to see the RSVP form
           that your guests will see.
         </div>
       </div>
-    </EditorLayout>
+    </EventEditorRsvpSection>
   );
 
   const infoLine = (

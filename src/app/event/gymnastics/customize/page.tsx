@@ -1,8 +1,11 @@
 // @ts-nocheck
 "use client";
-import { EventEditorSection as GymnasticsEditorLayout } from "@/components/events/EventEditorFields";
+import { EventEditorMenuCard, EventEditorSection as GymnasticsEditorLayout } from "@/components/events/EventEditorFields";
 import { EventEditorInput as InputGroup } from "@/components/events/EventEditorFields";
-import EventEditorWorkspace, { EventEditorToolsConsumer } from "@/components/events/EventEditorWorkspace";
+import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
+import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
+import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import { EventSectionBuilderProvider, EventSectionsReadOnly } from "@/components/events/EventSectionBuilder";
@@ -29,7 +32,6 @@ import { buildGymnasticsEventDateTimes, hydrateGymnasticsEventDates } from "@/li
 import {
   CalendarDays,
   ChevronLeft,
-  ChevronRight,
   Eye,
   ListPlus,
   Link2,
@@ -281,56 +283,6 @@ const baseInputClass =
 const baseTextareaClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
 
-
-/** Where each editor section appears on the generated public event page */
-type EditorMenuStatus = "not-started" | "in-progress" | "ready";
-
-function EditorMenuGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <section aria-label={label}>
-      <p className="px-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a8199]">{label}</p>
-      <div className="mt-2 divide-y divide-[#f0ebf6] overflow-hidden rounded-2xl border border-[#e8e1f1] bg-white shadow-[0_1px_2px_rgba(43,33,80,0.05)]">
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function EditorMenuRow({
-  title,
-  value,
-  icon,
-  status,
-  onClick,
-}: {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  status?: EditorMenuStatus;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-[60px] w-full items-center gap-3 px-3.5 py-2.5 text-left transition hover:bg-[#faf7ff] focus-visible:relative focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#6d4fc2]"
-    >
-      <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#f3effb] text-[#5b4a86]">
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-semibold leading-5 text-[#2a2238]">{title}</span>
-        <span className="block truncate text-[13px] leading-5 text-[#7a7189]">{value}</span>
-      </span>
-      {status === "ready" ? (
-        <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Done</span>
-      ) : status === "in-progress" ? (
-        <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">In progress</span>
-      ) : null}
-      <ChevronRight size={17} aria-hidden="true" className="shrink-0 text-[#b3aac2]" />
-    </button>
-  );
-}
 
 const REMOVED_GYM_EDITOR_SECTIONS = new Set([
   "roster",
@@ -1092,17 +1044,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       [visibleAdvancedSections],
     );
 
-    const headlineStatus: "not-started" | "in-progress" | "ready" = (() => {
-      const filled = [
-        Boolean(data.title?.trim()),
-        Boolean(data.date),
-        Boolean(data.timezone?.trim()),
-        Boolean(data.venue?.trim() || data.address?.trim()),
-      ].filter(Boolean).length;
-      if (filled === 0) return "not-started";
-      return filled >= 4 ? "ready" : "in-progress";
-    })();
-
     const hasStructuredDetailsContent = Boolean(
       asTrimmedString(
         advancedState?.meet?.warmUpTime ||
@@ -1186,6 +1127,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         "images",
         "design",
         "image-position",
+        "font-style",
         "details",
         "discover",
         "rsvp",
@@ -1348,6 +1290,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             const base = previousServerData || prev;
             const incoming = {
               ...base,
+            ...readEventRsvpContact(existing),
               title: json?.title || effectiveExisting.title || base.title,
               guestPlanning: normalizeEventGuestPlanning(effectiveExisting.guestPlanning),
               endTime: loadedDates.endTime,
@@ -1744,7 +1687,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           details: data.details || undefined,
           description: data.details || undefined,
           rsvpEnabled: data.rsvpEnabled,
-          rsvpDeadline: data.rsvpDeadline || undefined,
+          rsvpDeadline: data.rsvpDeadline,
           templateId: config.slug,
           pageTemplateId: resolvedPageTemplateId,
           fontSize: selectedSize.id,
@@ -1866,9 +1809,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           state: data.state || undefined,
           details: data.details || undefined,
           description: data.details || undefined,
-          rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
+          rsvp: data.rsvpEnabled ? data.rsvpDeadline || "" : "",
           rsvpEnabled: data.rsvpEnabled,
-          rsvpDeadline: data.rsvpDeadline || undefined,
+          rsvpDeadline: data.rsvpDeadline,
           numberOfGuests: 0,
           templateId: config.slug,
           pageTemplateId: resolvedPageTemplateId,
@@ -2054,61 +1997,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           )
         )}
 
-        <p className="text-sm text-[#6d627d]">Edit wording with the pencils on your page.</p>
-        <EditorMenuGroup label="Page settings">
-          <EditorMenuRow
-            title="Event basics"
-            value={data.title?.trim() || "Title, date and venue"}
-            icon={<CalendarDays size={18} />}
-            status={headlineStatus}
-            onClick={() => setActiveView("headline")}
-          />
-          <EditorMenuRow
-            title="Design"
-            value={data.importedTheme?.enabled ? "Your event theme" : getGymMeetTemplateMeta(resolveGymMeetTemplateId(data)).name}
-            icon={<Palette size={18} />}
-            onClick={() => setActiveView("design")}
-          />
-          <EditorMenuRow
-            title="Image position"
-            value={data.heroImageSettings?.fit === "contain" ? "Full image" : "Fit and framing"}
-            icon={<MoveVertical size={18} />}
-            onClick={() => setActiveView("image-position")}
-          />
-          <EventEditorToolsConsumer>
-            {(tools) => (
-              <>
-                <EditorMenuRow
-                  title="Page sections"
-                  value="Add, reorder or hide sections"
-                  icon={<ListPlus size={18} />}
-                  onClick={() => tools.openTool("sections")}
-                />
-                <EditorMenuRow
-                  title="Layout"
-                  value="Hero image and title"
-                  icon={<PanelsTopLeft size={18} />}
-                  onClick={() => tools.openTool("layout")}
-                />
-                {tools.canEditUrl && <EditorMenuRow
-                  title="Custom URL"
-                  value="Choose your shareable web address"
-                  icon={<Link2 size={18} />}
-                  onClick={() => tools.openTool("url")}
-                />}
-              </>
-            )}
-          </EventEditorToolsConsumer>
-        </EditorMenuGroup>
+        <div className="grid grid-cols-1 gap-3">
+          <EventEditorMenuCard title="Event basics" desc="" icon={<CalendarDays size={20} />} onClick={() => setActiveView("headline")} />
+          <EventEditorMenuCard title="Design" desc="" icon={<Palette size={20} />} onClick={() => setActiveView("design")} />
+          <EventEditorMenuCard title="Image position" desc="" icon={<MoveVertical size={20} />} onClick={() => setActiveView("image-position")} />
 
-        <EditorMenuGroup label="Access">
-          <EditorMenuRow
-            title="Passcode"
-            value={!data.passcodeRequired ? "Anyone with the link" : passcodeStatus === "ready" ? "Guests need a code" : "Add a code of 4+ characters"}
-            icon={<Lock size={18} />}
-            onClick={() => setActiveView("passcode")}
-          />
-        </EditorMenuGroup>
+          <EventEditorMenuCard title="RSVP" desc="" icon={<CalendarDays size={20} />} onClick={() => setActiveView("rsvp")} />
+          <EventEditorMenuCard title="Passcode" desc="" icon={<Lock size={20} />} onClick={() => setActiveView("passcode")} />
+        </div>
       </div>
     );
 
@@ -2294,6 +2190,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       >
         <div className="space-y-4">
           <ImportedThemeControls eventId={editEventId || templateEditor?.eventId || editor.eventId} value={data.importedTheme} context={{ title: data.title, sport: "gymnastics", city: data.city, seed: editEventId || data.title }} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} />
+        <div className="space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <label className="block text-sm font-semibold text-slate-700" htmlFor="gymnastics-title-font">Title font</label>
             <select
@@ -2303,7 +2200,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
             >
               <option value="">Design default</option>
-              {GYMNASTICS_TITLE_FONTS.map((font) => <option key={font.id} value={font.id}>{font.label}</option>)}
+              {GYMNASTICS_TITLE_FONTS.map((font) => <option key={font.id} value={font.id} style={{ fontFamily: font.fontFamily }}>{font.label}</option>)}
             </select>
           </section>
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -2311,9 +2208,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
                   Title Size
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Controls the event title in preview and on the live meet page.
                 </p>
               </div>
               <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
@@ -2341,6 +2235,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               })}
             </div>
           </section>
+        </div>
           <TemplateSelector
             value={resolveGymMeetTemplateId(data)}
             onChange={handleTemplateSelection}
@@ -2615,28 +2510,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderRsvpEditor = () => (
-      <GymnasticsEditorLayout
-
-        title={rsvpCopy.editorTitle}
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EventEditorRsvpSection title={rsvpCopy.editorTitle} toggleLabel={rsvpCopy.toggleLabel} enabled={data.rsvpEnabled} onEnabledChange={enabled => setData(previous => ({ ...previous, rsvpEnabled: enabled }))} onBack={() => setActiveView("main")}>
         <div className="space-y-6">
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <span className="font-medium text-slate-700 text-sm">{rsvpCopy.toggleLabel}</span>
-            <button
-              onClick={() => setData((p) => ({ ...p, rsvpEnabled: !p.rsvpEnabled }))}
-              className={`w-11 h-6 rounded-full transition-colors relative ${
-                data.rsvpEnabled ? "bg-indigo-600" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${
-                  data.rsvpEnabled ? "translate-x-5" : "translate-x-0"
-                }`}
-              ></span>
-            </button>
-          </div>
+
+
 
           <div className="space-y-3">
             <SectionToggle
@@ -2667,11 +2544,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             )}
           </div>
 
+          <EventRsvpContactEditor value={data} onChange={(patch) => setData(previous => ({ ...previous, ...patch }))} />
+
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
             <strong>Preview:</strong> {rsvpCopy.helperText}
           </div>
         </div>
-      </GymnasticsEditorLayout>
+      </EventEditorRsvpSection>
     );
 
     const renderPasscodeEditor = () => (
@@ -2807,9 +2686,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         details: data.details,
         description: data.details,
         previewDetailsPlaceholder: data.details ? undefined : previewDetails,
-        rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
+        rsvp: data.rsvpEnabled ? data.rsvpDeadline || "" : "",
         rsvpEnabled: data.rsvpEnabled,
-        rsvpDeadline: data.rsvpDeadline || undefined,
+        rsvpDeadline: data.rsvpDeadline,
         numberOfGuests: 0,
         templateId: config.slug,
         pageTemplateId: data.pageTemplateId,
@@ -2982,6 +2861,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </EventSectionBuilderProvider>
     );
 
+    const sectionEditors = { "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "image-position": renderImagePositionEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) };
+
     const sidebarPanel = (headerAction: React.ReactNode) => (
       <div className="min-h-full">
         <div className="sticky top-0 z-20 flex min-h-[60px] items-center justify-between gap-3 border-b border-[#ece6f3] bg-[#faf8ff]/95 px-4 py-2 backdrop-blur md:px-6">
@@ -3029,6 +2910,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             {activeView === "headline" && renderHeadlineEditor}
 
             {activeView === "design" && renderDesignEditor()}
+            {activeView === "font-style" && renderDesignEditor()}
             {activeView === "image-position" && renderImagePositionEditor()}
             {activeView === "details" && renderDetailsEditor()}
             {activeView === "discover" && renderDiscoverEditor()}
@@ -3135,7 +3017,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           if (activeView === "main" || activeView === "images") return false;
           setActiveView("main");
           return true;
-        }} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} controls={(headerAction) => <>{renderHeroImageEditor("px-4 pt-4 md:px-6")}{sidebarPanel(headerAction)}</>} compositionMenu="inline" />
+        }} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} sectionEditors={sectionEditors} artwork={data.hero} controls={(headerAction) => <>{renderHeroImageEditor("px-4 pt-4 md:px-6")}{sidebarPanel(headerAction)}</>} />
       );
     }
 
@@ -3144,7 +3026,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (activeView === "main" || activeView === "images") return false;
         setActiveView("main");
         return true;
-      }} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
+      }} sectionEditors={sectionEditors} artwork={data.hero} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
  pageEditing viewLabels={{ page: "Close settings", controls: "Page settings" }}
  preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
@@ -3196,7 +3078,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </div>
         </EventCanvas>}
  controls={sidebarPanel}
- compositionMenu="inline"
+
 ><dialog
           ref={fullscreenPreviewRef}
           aria-label="Event preview"

@@ -19,10 +19,15 @@ import { readSharedCardDesign, suggestCardTypography } from "@/lib/shared-card-d
 
 export function restoreLiveCardForm(value: unknown, data: Record<string, unknown>) {
   const form = readLiveCardForm(value);
-  if (!form?.rsvpEnabled) return form;
+  if (!form) return form;
+  const rsvpEnabled = form.format === "live_card" && typeof data.rsvpEnabled === "boolean"
+    ? data.rsvpEnabled : form.rsvpEnabled;
+  if (!rsvpEnabled) return { ...form, rsvpEnabled };
   // The owner workspace can edit these contacts independently of this builder.
   return {
     ...form,
+    rsvpEnabled,
+    rsvpDeadline: typeof data.rsvpDeadline === "string" ? data.rsvpDeadline : form.rsvpDeadline,
     hostName: typeof data.rsvpName === "string" ? data.rsvpName : form.hostName,
     hostEmail: typeof data.rsvpEmail === "string" ? data.rsvpEmail : form.hostEmail,
     hostPhone: typeof data.rsvpPhone === "string" ? data.rsvpPhone : form.hostPhone,

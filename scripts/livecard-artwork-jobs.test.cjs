@@ -38,7 +38,7 @@ test("durable claim prevents duplicate dispatch from reconnect and checker rejec
   assert.equal(h.row.design.headline.validation.status, "failed");
 });
 
-test("background safety rejection fails the durable job before lettering and reconnect does not replay it", async () => {
+test("background provider refusal fails the durable job before lettering and reconnect does not replay it", async () => {
   const h = harness("generate", "queued", "design");
   await h.api.runArtworkJob("owner", "job-1");
   assert.equal(h.row.state, "failed");
@@ -50,7 +50,7 @@ test("background safety rejection fails the durable job before lettering and rec
   assert.equal(h.row.state, "failed");
 });
 
-test("lettering safety rejection keeps the background without committing a headline or replaying on reconnect", async () => {
+test("lettering provider refusal keeps the background without committing a headline or replaying on reconnect", async () => {
   const h = harness("generate", "queued", "lettering");
   await h.api.runArtworkJob("owner", "job-1");
   assert.equal(h.row.state, "failed");
@@ -127,4 +127,24 @@ test("grant revocation during a background request prevents the next paid letter
   assert.deepEqual(h.counts(), { backgrounds: 1, lettering: 0, verification: 0 });
   assert.equal(h.row.state, "failed");
   assert.match(h.row.error, /revoked after background/);
+});
+
+test("integrated candidate copy defects remain durable and unsavable without automatic image replay", async () => {
+ const h=harness();
+ h.api.artworkJobDeps.background=async()=>({composition:"integrated-v1",backgroundUrl:"retained-paid-artwork"});
+ h.api.artworkJobDeps.headline=async()=>({renderer:"artwork-v1",imageUrl:"retained-paid-artwork",title:"Movie",intro:"You're invited",wordingVerified:false,validation:{status:"failed",issues:["unexpected_text"]}});
+ await h.api.runArtworkJob("owner","job-1");
+ assert.equal(h.row.state,"failed");assert.equal(h.row.error_code,"quality_rejected");
+ assert.equal(h.row.design.headline.imageUrl,"retained-paid-artwork");
+ assert.equal(h.row.design.headline.wordingVerified,false);
+ await h.api.runArtworkJob("owner","job-1");assert.equal(h.row.state,"failed");
+});
+
+test("integrated background alternatives compose a new complete card without requiring an isolated font layer", async () => {
+ const h=harness("background");
+ h.row.design={composition:"integrated-v1",backgroundUrl:"old",headline:{renderer:"artwork-v1",title:"Movie",intro:"You're invited",imageUrl:"old",wordingVerified:true}};
+ h.api.artworkJobDeps.background=async()=>({composition:"integrated-v1",backgroundUrl:"new",headline:{renderer:"artwork-v1",title:"Movie",intro:"You're invited",imageUrl:"new",wordingVerified:false}});
+ h.api.artworkJobDeps.headline=async()=>({renderer:"artwork-v1",title:"Movie",intro:"You're invited",imageUrl:"new",wordingVerified:true,validation:{status:"passed",issues:[]}});
+ h.api.artworkJobDeps.compose=async()=>{throw Error("Never reuse a font overlay on integrated artwork");};
+ await h.api.runArtworkJob("owner","job-1");assert.equal(h.row.state,"ready");assert.equal(h.row.design.headline.imageUrl,"new");
 });

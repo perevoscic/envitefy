@@ -83,7 +83,7 @@ export default function EtherealClassic({ theme, event }: Props) {
               .join(" & ")}
           </button>
           <ResponsiveEventNavigation
-            items={[{ id: "story", label: "Story" }, { id: "details", label: "Details" }, { id: "registry", label: "Registry" }, { id: "rsvp", label: "RSVP" }]}
+            items={[{ id: "story", label: "Story" }, { id: "details", label: "Details" }, { id: "registry", label: "Registry" }, ...(event.rsvpEnabled ? [{ id: "rsvp", label: "RSVP" }] : [])]}
             onSelect={id => id === "rsvp" ? setRsvpOpen(true) : scrollToSection(id)}
           >
             <div className="hidden md:flex space-x-8 text-sm tracking-widest uppercase">
@@ -96,12 +96,12 @@ export default function EtherealClassic({ theme, event }: Props) {
                   {item}
                 </button>
               ))}
-              <button
+              {event.rsvpEnabled && (<button
                 onClick={() => setRsvpOpen(true)}
                 className="border border-slate-800 px-6 py-2 hover:bg-slate-800 hover:text-white transition-all"
               >
                 RSVP
-              </button>
+              </button>)}
             </div>
           </ResponsiveEventNavigation>
           <button
@@ -122,7 +122,7 @@ export default function EtherealClassic({ theme, event }: Props) {
                 {item}
               </button>
             ))}
-            <button
+            {event.rsvpEnabled && (<button
               onClick={() => {
                 setRsvpOpen(true);
                 setIsMenuOpen(false);
@@ -130,7 +130,7 @@ export default function EtherealClassic({ theme, event }: Props) {
               className="bg-slate-800 text-white px-8 py-3 uppercase tracking-widest"
             >
               RSVP
-            </button>
+            </button>)}
           </div>
         )}
       </nav>
@@ -314,7 +314,7 @@ export default function EtherealClassic({ theme, event }: Props) {
       <EnvitefyEventBranding category="Weddings" inverse />
       </footer>
 
-      {rsvpOpen && (
+      {event.rsvpEnabled && rsvpOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white max-w-md w-full p-8 relative shadow-2xl animate-fade-in-up">
             <button

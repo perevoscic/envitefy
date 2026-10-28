@@ -1,6 +1,6 @@
 "use client";
 import InformationSectionBody from "./InformationSectionBody";
-import { EventSectionEditorClose as EditorClose, EventSectionEditorBusy } from "./EventSectionEditorContext";
+import { EventSectionEditorClose as EditorClose, EventSectionEditorBusy, EventSectionEditorHeaderTarget } from "./EventSectionEditorContext";
 import {
   EventPageCompositionProvider,
   useEventPageComposition,
@@ -241,6 +241,7 @@ export function EventSectionBuilderProvider({
   >(null);
   const [dragLabel, setDragLabel] = useState("");
   const [sectionBusy, setSectionBusy] = useState(false);
+  const [headerActionTarget, setHeaderActionTarget] = useState<HTMLSpanElement | null>(null);
   const [notice, setNotice] = useState<{ message: string } | null>(null);
   const [undo, setUndo] = useState<Array<EventSectionLayout | undefined>>([]);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -466,6 +467,7 @@ export function EventSectionBuilderProvider({
                 ? `Place beside ${panel.section.label}`
                 : "Add section"}
           </h2>
+          <span ref={setHeaderActionTarget} />
           <button type="button" onClick={close} disabled={sectionBusy} aria-label="Close section panel">
             <X size={20} />
           </button>
@@ -533,10 +535,12 @@ export function EventSectionBuilderProvider({
           ) : panel?.kind === "edit" ? (
             <EventSectionEditorBusy.Provider value={setSectionBusy}>
               <EditorClose.Provider value={close}>
+                <EventSectionEditorHeaderTarget.Provider value={headerActionTarget}>
                 <InformationSectionEditor
                   id={panel.section.id}
                   fallback={renderEditor(panel.section.editorId || panel.section.id)}
                 />
+                </EventSectionEditorHeaderTarget.Provider>
               </EditorClose.Provider>
             </EventSectionEditorBusy.Provider>
           ) : null}

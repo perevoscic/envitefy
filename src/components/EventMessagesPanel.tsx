@@ -1,6 +1,7 @@
 "use client";
 
 import { Mail, RefreshCw, Send } from "lucide-react";
+import styles from "./EventMessagesPanel.module.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useUnsavedProgress } from "@/components/UnsavedProgressProvider";
 import {
@@ -9,13 +10,10 @@ import {
   type EventMessagesData,
 } from "@/lib/event-message-types";
 
-const panel =
-  "owner-workspace-glass-panel rounded-[24px] border border-black/5 bg-white/85 p-4 shadow-sm sm:p-6";
-const button =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600";
-const primary = `${button} !border-slate-950 !bg-slate-950 !text-white`;
-const field =
-  "mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base font-normal text-slate-950 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100";
+const panel = styles.panel;
+const button = styles.button;
+const primary = `${styles.button} ${styles.primary}`;
+const field = styles.field;
 
 export default function EventMessagesPanel({
   eventId,
@@ -178,19 +176,11 @@ export default function EventMessagesPanel({
 
   const audience = `${data?.audienceCount ?? 0} ${(data?.audienceCount ?? 0) === 1 ? "guest" : "guests"}`;
   return (
-    <section aria-label="Messages" className="space-y-4">
+    <section aria-label="Messages" className={styles.messages}>
       <div className={panel}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#786bd6]">
-              Messages
-            </p>
-            <h3 ref={composer} tabIndex={-1} className="mt-2 text-2xl font-semibold text-slate-950">
-              Email guests
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Write an announcement, reminder, or change to share with your guests.
-            </p>
+            <h3 ref={composer} tabIndex={-1} className={styles.heading}>Email guests</h3>
           </div>
           <button
             type="button"
@@ -218,18 +208,9 @@ export default function EventMessagesPanel({
           </p>
         ) : (
           <>
-            <div className="my-5 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-              <p className="font-bold text-slate-900">Yes and Maybe · {audience}</p>
-              <p className="mt-1">
-                Guests who answered No are excluded. Current responses are checked again when
-                sending.
-              </p>
-              {!data.audienceCount ? (
-                <p className="mt-2">
-                  You can save a draft now. Sending becomes available when a Yes or Maybe guest has
-                  an email address.
-                </p>
-              ) : null}
+            <div className={styles.audience}>
+              <p>Yes and Maybe · {audience}</p>
+              {!data.audienceCount ? <p>No guest email addresses yet.</p> : null}
             </div>
             <form
               onSubmit={(event) => {
@@ -247,6 +228,7 @@ export default function EventMessagesPanel({
               {preview ? (
                 <section
                   aria-label="Email preview"
+                  data-appearance-scope="authored"
                   className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6"
                 >
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -346,9 +328,6 @@ export default function EventMessagesPanel({
                   </button>
                 )}
               </div>
-              <p className="mt-4 text-xs leading-5 text-slate-500">
-                Guest updates are sent only from Messages when you choose Send.
-              </p>
             </form>
           </>
         )}

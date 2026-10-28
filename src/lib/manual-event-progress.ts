@@ -1,3 +1,5 @@
+import { readEventRsvpSettings } from "./event-rsvp-settings";
+import { readEventRsvpContact } from "./event-rsvp-contact";
 import { normalizeSchoolTemplate } from "./school-events";
 import { normalizeScanSchedule, scanScheduleHistoryFields } from "./scan-schedule";
 import { parseCalendarDateTimeToIso } from "./calendar-date-time";
@@ -107,6 +109,7 @@ export async function saveManualEventProgress({
       ? parseCalendarDateTimeToIso(`${endDate}T${data.endTime}`, timezone)
       : null;
   const title = String(data.title || "Event draft");
+  const rsvpSettings = readEventRsvpSettings(data);
   const bodyDesignId = typeof data.bodyDesignId === "string" ? data.bodyDesignId : "";
   const holidayDesign = getHolidayBackground(bodyDesignId);
   const savedBackgroundChoice = normalizeHolidayBackgroundChoice(data.pageBackground);
@@ -164,6 +167,10 @@ export async function saveManualEventProgress({
             ? {}
             : {
                 title,
+                ...readEventRsvpContact(data),
+                rsvpEnabled: rsvpSettings.isEnabled,
+                rsvpDeadline: rsvpSettings.deadline,
+                rsvp: rsvpSettings.isEnabled ? rsvpSettings.deadline : "",
                 category,
                 templateId,
                 timezone,

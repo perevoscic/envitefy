@@ -8,3 +8,6 @@ export const useSectionEditorClose = () => useContext(EventSectionEditorClose);
 
 // A photo batch must finish or be cancelled before the dialog can be completed.
 export const EventSectionEditorBusy = createContext<((busy: boolean) => void) | null>(null);
+
+// Section editors can put a control beside the dialog-owned heading.
+export const EventSectionEditorHeaderTarget = createContext<HTMLElement | null>(null);

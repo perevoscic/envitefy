@@ -72,7 +72,7 @@ export default function ModernEditorial({ theme, event }: Props) {
             .join(" & ")}
         </span>
         <ResponsiveEventNavigation
-          items={[...(event.story ? [{ id: "story", label: "Story", href: "#story" }] : []), { id: "schedule", label: "Schedule", href: "#schedule" }, { id: "location", label: "Location", href: "#location" }, { id: "rsvp", label: "RSVP", href: "#rsvp" }]}
+          items={[...(event.story ? [{ id: "story", label: "Story", href: "#story" }] : []), { id: "schedule", label: "Schedule", href: "#schedule" }, { id: "location", label: "Location", href: "#location" }, ...(event.rsvpEnabled ? [{ id: "rsvp", label: "RSVP", href: "#rsvp" }] : [])]}
         >
           <div className="hidden md:flex gap-8 text-sm font-medium">
             {event.story && (
@@ -95,12 +95,12 @@ export default function ModernEditorial({ theme, event }: Props) {
             >
               LOCATION
             </a>
-            <a
+            {event.rsvpEnabled && (<a
               href="#rsvp"
               className="hover:underline decoration-2 underline-offset-4"
             >
               RSVP
-            </a>
+            </a>)}
           </div>
         </ResponsiveEventNavigation>
         <span className="text-sm font-mono border border-white px-2 py-0.5 rounded-full">
@@ -135,13 +135,13 @@ export default function ModernEditorial({ theme, event }: Props) {
             {location.toUpperCase()}. {dateLabel.toUpperCase()}.
           </p>
 
-          <a
+          {event.rsvpEnabled && (<a
             href={rsvpUrl}
             className="absolute bottom-8 right-8 bg-black text-white rounded-full p-8 md:p-12 hover:scale-110 transition-transform flex items-center justify-center group"
           >
             <span className="group-hover:hidden font-bold">RSVP</span>
             <ArrowRight className="hidden group-hover:block w-8 h-8" />
-          </a>
+          </a>)}
         </div>
       </section></WeddingHeroLayout>
 
@@ -255,7 +255,7 @@ export default function ModernEditorial({ theme, event }: Props) {
         </div>
       </section>
 
-      <section id="rsvp" className="bg-black text-white py-24 px-4 text-center">
+      {event.rsvpEnabled && (<section id="rsvp" className="bg-black text-white py-24 px-4 text-center">
         <div className="max-w-3xl mx-auto">
           <Heart className="w-24 h-24 mx-auto mb-8 text-lime-300 animate-pulse" />
           <h2
@@ -290,7 +290,7 @@ export default function ModernEditorial({ theme, event }: Props) {
           </p>
           <p>DESIGNED IN NYC</p>
         </div>
-      </section>
+      </section>)}
 
       <style>{`
         .text-stroke-black {

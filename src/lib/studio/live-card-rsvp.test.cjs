@@ -36,3 +36,24 @@ test("legacy reveal payload classification follows the same configuration marker
   assert.equal(renderData({ category: "Baby Shower", rsvpEnabled: true, genderReveal: {} }).category, "Gender Reveal");
   assert.equal(renderData({ category: "Baby Shower", rsvpEnabled: true }).category, "Baby Shower");
 });
+
+test("disabled saved RSVP removes stale live card actions", () => {
+  const details = renderData({ rsvpEnabled: false });
+  assert.equal(details.rsvpEnabled, false);
+  assert.equal(details.rsvpMode, "none");
+  assert.equal(details.rsvpUrl, "");
+  assert.equal(details.actionVisibility.rsvp, false);
+  assert.equal(accepted.eventDetails.rsvpEnabled, true);
+});
+
+test("classic invitation retains its external printed RSVP details", () => {
+  assert.deepEqual(renderData({ rsvpEnabled: false, rsvpMode: "external", primaryOutput: "digital_flyer" }), accepted.eventDetails);
+});
+
+test("saved live card contacts and cleared deadline replace generated details", () => {
+  const details = renderData({ rsvpEnabled: true, rsvpName: "New host", rsvpContact: "new@example.test", rsvpDeadline: "" });
+  assert.equal(details.rsvpName, "New host");
+  assert.equal(details.rsvpContact, "new@example.test");
+  assert.equal(details.rsvpDeadline, "");
+  assert.equal(details.actionVisibility.rsvp, true);
+});

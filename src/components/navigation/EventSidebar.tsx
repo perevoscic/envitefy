@@ -20,10 +20,10 @@ const OWNER_TAB_ITEMS: Array<{
   label: string;
   icon: LucideIcon;
 }> = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { key: "rsvps", label: "RSVPs", icon: Users },
+  { key: "dashboard", label: "Overview", icon: LayoutDashboard },
+  { key: "rsvps", label: "Guests", icon: Users },
   { key: "messages", label: "Messages", icon: MessageSquare },
-  { key: "design", label: "Design", icon: Palette },
+  { key: "design", label: "Invitation", icon: Palette },
 ];
 
 const GUEST_TAB_ITEMS: Array<{

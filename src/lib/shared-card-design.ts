@@ -1,3 +1,4 @@
+import { liveCardDateTime, type LiveCardForm } from "./livecard-builder.ts";
 import { composeGuestLocation } from "./guest-event-details.ts";
 
 export type LetteringFinding = { field: "title" | "opening_line" | "lettering" | "composition"; expectedWording: string; observedWording: string; region: string; concernType: string; explanation: string };
@@ -6,14 +7,19 @@ export type LetteringFinding = { field: "title" | "opening_line" | "lettering" |
 export type SharedCardDesign = {
   version: 1;
   backgroundUrl: string;
+  composition?: "integrated-v1";
   quality?: "high" | "medium";
   font: "classic" | "modern" | "playful";
   typography?: CardTypography;
+  letteringStyle?: CardLetteringStyle;
   ink: string;
   accent: string;
   surface: string;
   headline?: {
     imageUrl: string; title: string; intro: string;
+    renderer?: "font-v1" | "artwork-v1";
+    wordingVerified?: boolean;
+    detailLines?: string[];
     layerUrl?: string;
     attempt?: number;
     layout?: { left: number; top: number; width: number; height: number; canvasWidth: number; canvasHeight: number };
@@ -38,6 +44,35 @@ export const CARD_FONTS = {
   orbitron: { family: "EnvitefyCardOrbitron", url: "/fonts/birthday/orbitron.ttf" },
   body: { family: "EnvitefyCardBody", url: "/fonts/birthday/montserrat.ttf" },
 } as const;
+
+/** Per-card art direction; material is imagery only, never generated wording. */
+export type CardLetteringStyle = {
+  version: 1;
+  titleFont: keyof typeof CARD_FONTS;
+  introFont: keyof typeof CARD_FONTS;
+  direction: string;
+  artworkDirection: string;
+  texturePrompt: string;
+  textureUrl?: string;
+  preferredTop: number;
+  ornament: boolean;
+};
+
+export function readCardLetteringStyle(value: unknown): CardLetteringStyle | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return;
+  const raw = value as Record<string, unknown>;
+  if (raw.version !== 1 || typeof raw.titleFont !== "string" || !Object.hasOwn(CARD_FONTS, raw.titleFont) ||
+      typeof raw.introFont !== "string" || !Object.hasOwn(CARD_FONTS, raw.introFont) ||
+      !["direction", "artworkDirection", "texturePrompt"].every(key => typeof raw[key] === "string" && String(raw[key]).length <= 1600) ||
+      typeof raw.preferredTop !== "number" || !Number.isFinite(raw.preferredTop) || raw.preferredTop < 150 || raw.preferredTop > 450 ||
+      typeof raw.ornament !== "boolean") return;
+  return {
+    version: 1, titleFont: raw.titleFont as CardLetteringStyle["titleFont"], introFont: raw.introFont as CardLetteringStyle["introFont"],
+    direction: String(raw.direction), artworkDirection: String(raw.artworkDirection), texturePrompt: String(raw.texturePrompt),
+    preferredTop: raw.preferredTop, ornament: raw.ornament,
+    ...(typeof raw.textureUrl === "string" && /^(?:https?:\/\/|data:image\/(?:webp|png|jpeg);base64,|\/(?!\/))/.test(raw.textureUrl) ? { textureUrl: raw.textureUrl } : {}),
+  };
+}
 
 /** Curated invitation pairings: expressive titles, complementary opening lines, readable details. */
 export const CARD_TYPOGRAPHY = {
@@ -137,8 +172,8 @@ export function suggestCardTypography(
 export function cardFontRoles(design: SharedCardDesign) {
   const recipe = design.typography ? CARD_TYPOGRAPHY[design.typography] : undefined;
   return {
-    title: CARD_FONTS[recipe?.title || design.font],
-    intro: CARD_FONTS[recipe?.intro || "body"],
+    title: CARD_FONTS[design.letteringStyle?.titleFont || recipe?.title || design.font],
+    intro: CARD_FONTS[design.letteringStyle?.introFont || recipe?.intro || "body"],
     body: CARD_FONTS[recipe?.body || "body"],
     titleWeight: recipe?.titleWeight || 600,
     introWeight: recipe?.introWeight || 600,
@@ -166,14 +201,17 @@ export function readSharedCardDesign(value: unknown): SharedCardDesign | undefin
   const validPlacement = placement && ["left", "top", "width", "height", "canvasWidth", "canvasHeight"].every((key) => Number.isInteger(placement[key]) && Number(placement[key]) >= 0)
     && Number(placement.width) > 0 && Number(placement.height) > 0 && Number(placement.canvasWidth) > 0 && Number(placement.canvasHeight) > 0
     && Number(placement.left) + Number(placement.width) <= Number(placement.canvasWidth) && Number(placement.top) + Number(placement.height) <= Number(placement.canvasHeight);
+  const letteringStyle = readCardLetteringStyle(raw.letteringStyle);
   return {
     version: 1,
     backgroundUrl: raw.backgroundUrl,
+    ...(raw.composition === "integrated-v1" ? { composition: "integrated-v1" as const } : {}),
     ...(raw.quality === "high" || raw.quality === "medium" ? { quality: raw.quality } : {}),
     font: raw.font === "modern" || raw.font === "playful" ? raw.font : "classic",
     ...(typeof raw.typography === "string" && Object.hasOwn(CARD_TYPOGRAPHY, raw.typography)
       ? { typography: raw.typography as CardTypography }
       : {}),
+    ...(letteringStyle ? { letteringStyle } : {}),
     ink: color("ink", "#342332"),
     accent: color("accent", "#895c42"),
     surface: color("surface", "#fff6ee"),
@@ -183,6 +221,9 @@ export function readSharedCardDesign(value: unknown): SharedCardDesign | undefin
     typeof headline.intro === "string"
       ? { headline: {
           imageUrl: headline.imageUrl, title: headline.title, intro: headline.intro,
+          ...(headline.renderer === "font-v1" || headline.renderer === "artwork-v1" ? { renderer: headline.renderer } : {}),
+          ...(typeof headline.wordingVerified === "boolean" ? { wordingVerified: headline.wordingVerified } : {}),
+          ...(Array.isArray(headline.detailLines) && headline.detailLines.length <= 24 && headline.detailLines.every(line => typeof line === "string" && line.length <= 1000) ? { detailLines: headline.detailLines as string[] } : {}),
           ...(Number.isInteger(headline.attempt) && Number(headline.attempt) > 0 ? { attempt: Number(headline.attempt) } : {}),
           ...(typeof headline.layerUrl === "string" && /^(?:https?:\/\/|data:image\/(?:webp|png|jpeg);base64,|\/(?!\/))/.test(headline.layerUrl)
             ? { layerUrl: headline.layerUrl } : {}),
@@ -251,13 +292,43 @@ export function hasGeneratedCardHeadline(source: CardTextSource): boolean {
   return Boolean(
     headline &&
       headline.title === (source.title || "").trim() &&
-      headline.intro === (source.headlineIntro ?? "You're invited").trim(),
+      headline.intro === (source.headlineIntro ?? "You're invited").trim() &&
+      // Reject the mistaken detail-bearing layers; Live Cards print title/opening only.
+      !headline.detailLines?.length &&
+      (source.sharedDesign?.composition !== "integrated-v1" || headline.renderer === "artwork-v1" && headline.wordingVerified === true),
   );
+}
+
+/** Confirmed event facts are for guest controls and standalone invitation downloads. */
+export function cardEventTextSource(form: Pick<LiveCardForm, "title" | "headlineIntro" | "date" | "startTime" | "endTime" | "endDate" | "timezone" | "locations">): CardTextSource {
+  return { title: form.title, headlineIntro: form.headlineIntro, eventDetails: {
+    eventDate: form.date, startTime: form.startTime, endTime: form.endTime, timezone: form.timezone,
+    calendarEndISO: liveCardDateTime(form.endDate || form.date, form.endTime, form.timezone) || undefined,
+    venueName: form.locations?.[0]?.venue || form.locations?.[0]?.query || "", location: form.locations?.[0]?.address || "",
+  } };
+}
+
+export function hasGeneratedCardHeadlineForForm(form: LiveCardForm, design?: SharedCardDesign) {
+  return hasGeneratedCardHeadline({ title: form.title, headlineIntro: form.headlineIntro, sharedDesign: design });
+}
+
+export function cardMainInfoLines(source: CardTextSource): string[] {
+  const event = source.eventDetails;
+  if (!event) return [];
+  let endDate = "";
+  if (event.calendarEndISO && event.timezone) {
+    try { endDate = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: event.timezone }).format(new Date(event.calendarEndISO)); } catch { /* Preserve unknown dates. */ }
+  }
+  return [
+    localDate(event.eventDate),
+    [localTime(event.startTime), event.endTime ? [endDate && endDate !== event.eventDate ? localDate(endDate) : "", localTime(event.endTime)].filter(Boolean).join(", ") : ""].filter(Boolean).join(" – "),
+    ...composeGuestLocation(event.venueName, event.location, "\n").split("\n"),
+  ].map(line => line.trim()).filter(Boolean);
 }
 
 export function sharedCardArtworkUrl(source: CardTextSource): string {
   return (
-    (hasGeneratedCardHeadline(source)
+    (source.sharedDesign?.composition === "integrated-v1" || hasGeneratedCardHeadline(source)
       ? source.sharedDesign?.headline?.imageUrl
       : source.sharedDesign?.backgroundUrl) || ""
   );

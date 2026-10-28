@@ -82,7 +82,7 @@ export default function Retro70s({ theme, event }: Props) {
 
       <nav className="fixed top-4 left-0 w-full z-50 flex justify-center px-4">
         <ResponsiveEventNavigation
-          items={[...(event.story ? ["Story"] : []), "The Scoop", "The Digs", "RSVP"].map(label => ({ id: label.toLowerCase().replace(" ", "-"), label, href: `#${label.toLowerCase().replace(" ", "-")}` }))}
+          items={[...(event.story ? ["Story"] : []), "The Scoop", "The Digs", ...(event.rsvpEnabled ? ["RSVP"] : [])].map(label => ({ id: label.toLowerCase().replace(" ", "-"), label, href: `#${label.toLowerCase().replace(" ", "-")}` }))}
           background="#FEFAE0"
           foreground="#386641"
         >
@@ -91,7 +91,7 @@ export default function Retro70s({ theme, event }: Props) {
               ...(event.story ? ["Story"] : []),
               "The Scoop",
               "The Digs",
-              "RSVP",
+              ...(event.rsvpEnabled ? ["RSVP"] : []),
             ].map((item) => (
               <a
                 key={item}
@@ -218,7 +218,7 @@ export default function Retro70s({ theme, event }: Props) {
         </div>
       </section>
 
-      <section id="rsvp" className="py-24 px-4">
+      {event.rsvpEnabled && (<section id="rsvp" className="py-24 px-4">
         <div className="max-w-2xl mx-auto bg-[#F2E8CF] rounded-[3rem] p-8 md:p-16 border-4 border-[#BC4749] shadow-[12px_12px_0px_0px_#386641]">
           <div className="text-center mb-12">
             <Heart className="w-16 h-16 text-[#BC4749] mx-auto mb-4 fill-current animate-pulse" />
@@ -258,7 +258,7 @@ export default function Retro70s({ theme, event }: Props) {
             </div>
           </form>
         </div>
-      </section>
+      </section>)}
 
       {event.guestTools}
 

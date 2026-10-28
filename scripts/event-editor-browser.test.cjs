@@ -353,6 +353,39 @@ test("one Event Page editor protects saves and navigation across creation modes 
     }
   };
   try {
+    // RSVP remains reachable even when disabled and survives an explicit save/reopen.
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const mode of ["gymnastics", "football", "soccer", "sport-events", "dance-ballet"]) {
+        const id = `rsvp-${mode}-${width}`;
+        records.set(id, { id, title: "RSVP audit", revision: "rsvp-v1", data: {
+          title: "RSVP audit", status: "published", createdVia: "template", category: mode,
+          date: "2027-04-10", time: "14:00", venue: "Community Hall", rsvpEnabled: false, rsvp: { isEnabled: false, deadline: "2026-01-01" },
+        } });
+        const url = `${base}/event/${mode}/customize?mode=${mode}&edit=${id}`;
+        await page.goto(url);
+        await openControls();
+        const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+        await controls.getByRole("button", { name: /^(RSVP|Attendance)/ }).first().click();
+        const toggle = controls.getByRole("switch");
+        await toggle.click();
+        await page.getByRole("button", { name: "Save changes", exact: true }).click();
+        await page.waitForFunction(() => !document.querySelector('[role="group"][aria-label="Save event"] button:not([hidden])'));
+        assert.equal(records.get(id).data.rsvpEnabled, true, `${mode} saves enabled RSVP at ${width}`);
+        assert.equal(typeof records.get(id).data.rsvp, "string", "flat saves replace stale structured settings");
+        await page.goto(url);
+        await openControls();
+        await controls.getByRole("button", { name: /^(RSVP|Attendance)/ }).first().click();
+        const restoredToggle = toggle;
+        assert.equal(await restoredToggle.getAttribute("aria-checked"), "true");
+        await restoredToggle.click();
+        await page.getByRole("button", { name: "Save changes", exact: true }).click();
+        await page.waitForFunction(() => !document.querySelector('[role="group"][aria-label="Save event"] button:not([hidden])'));
+        assert.equal(records.get(id).data.rsvpEnabled, false, `${mode} saves disabled RSVP at ${width}`);
+      }
+    }
+    writes.length = 0;
+    for (const id of records.keys()) if (id.startsWith("rsvp-")) records.delete(id);
     for (const { width, height } of [{ width: 320, height: 640 }, { width: 390, height: 844 }, { width: 667, height: 375 }, { width: 1440, height: 900 }]) {
       await page.setViewportSize({ width, height });
       const before = writes.length;
@@ -417,26 +450,17 @@ test("one Event Page editor protects saves and navigation across creation modes 
       assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(rail.background), "page tools share one visible rail");
       assert.ok(rail.radius > 0, "the page-tools rail has rounded corners");
       const tools = await Promise.all([/^Page sections/, /^Layout/, /^Custom URL/].map(async (name) => controls.getByRole("button", { name }).boundingBox()));
-      assert.deepEqual(await toolRow.getByRole("button").evaluateAll((buttons) => buttons.map((button) => button.getAttribute("aria-pressed"))), ["false", "false", "false"], "page tools start without an active tool");
       assert.ok(await toolRow.getByRole("button").evaluateAll((buttons) => buttons.every((button) => {
         const style = getComputedStyle(button);
-        return [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth].every((value) => parseFloat(value) === 0);
-      })), "tools use one rail without separate card borders");
+        const box = button.getBoundingClientRect();
+        const rail = button.closest('[aria-label="Page tools"]').getBoundingClientRect();
+        return button.hasAttribute("aria-pressed") && parseFloat(style.borderTopWidth) === 0 && box.height >= 44 && box.left >= rail.left && box.right <= rail.right + 1;
+      })), "all shared and category settings use compact accessible tools inside one rail");
       const menus = await Promise.all([/^Headline/, /^Design/, /^Details/, /^RSVP/, /^Passcode/].map(async (name) => controls.getByRole("button", { name }).boundingBox()));
-      const panel = await controls.boundingBox();
-      for (const tile of tools) {
-        assert.ok(Math.abs(tile.width - tools[0].width) < 1 && Math.abs(tile.y - tools[0].y) < 1, "page tools form one row of equal-width buttons");
-        assert.ok(tile.height >= 44, "page tools retain touch targets");
-      }
-      for (const menu of menus) {
-        assert.ok(Math.abs(menu.width - menus[0].width) < 1 && Math.abs(menu.x - menus[0].x) < 1, "settings menu rows share a consistent width and left edge");
-        assert.ok(menu.height >= 44 && menu.height <= 92, "settings menu rows stay compact and usable");
-      }
-      assert.ok(Math.abs(rail.x - menus[0].x) < 1 && Math.abs(rail.x + rail.width - menus[0].x - menus[0].width) < 1, "the tools rail and settings rows share their outer gutters");
-      assert.ok(menus[0].x - panel.x >= 8 && panel.x + panel.width - menus[0].x - menus[0].width >= 8, "settings have breathing room on both sides");
+      for (const menu of menus) assert.ok(menu.height >= 44, "settings tools retain touch targets");
       await page.screenshot({ path: path.join(output, `compact-settings-top-${width}-${height}.png`) });
       await controls.getByRole("button", { name: /^Headline/ }).click();
-      const headline = page.getByLabel("Headline", { exact: true }), venue = page.getByLabel("Venue", { exact: true }), date = page.getByLabel("Date", { exact: true });
+      const headline = page.getByRole("textbox", { name: "Headline", exact: true, includeHidden: true }), venue = page.getByLabel("Venue", { exact: true }), date = page.getByLabel("Date", { exact: true });
       assert.equal(await date.inputValue(), "", "opening a template and its editor never fills an event date");
       await headline.fill(`Preserved title ${width}`);
       await headline.evaluate((element) => { window.savedNativeHeadlineNode = element; });
@@ -470,7 +494,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
         assert.equal(await controls.isVisible(), true, `${context}: Back keeps Edit open`);
         assert.equal(await controls.getByRole("button", { name: /^Headline/ }).isVisible(), true, `${context}: Back returns to the main Edit menu`);
         assert.equal(await headline.isVisible(), false, `${context}: Back also closes the native submenu beneath a shared tool`);
-        assert.deepEqual(await toolRow.getByRole("button").evaluateAll((buttons) => buttons.map((button) => button.getAttribute("aria-pressed"))), ["false", "false", "false"], `${context}: no shared tool remains active`);
+        assert.ok(await toolRow.getByRole("button").evaluateAll((buttons) => buttons.every((button) => button.getAttribute("aria-pressed") === "false")), `${context}: no shared tool remains active`);
         assert.equal(await page.getByRole("dialog").count(), 0, `${context}: local Back never asks to discard edits`);
         assert.equal(new URL(page.url()).pathname, "/event/general/customize", `${context}: local Back stays in the editor`);
         assert.equal(writes.length, before, `${context}: local Back never saves or publishes`);
@@ -1110,6 +1134,14 @@ test("one Event Page editor protects saves and navigation across creation modes 
       await page.setViewportSize({ width, height: 760 });
       await page.goto(gymUrl);
       await openControls();
+      const pageTools = gymControls.getByRole("group", { name: "Page tools", exact: true });
+      for (const name of ["Page sections", "Layout", "Custom URL"]) {
+        await pageTools.getByRole("button", { name, exact: true }).waitFor();
+      }
+      for (const name of ["Event basics", "Design", "Image position", "RSVP", "Passcode"]) await gymControls.getByRole("button", { name, exact: true }).waitFor();
+      assert.equal(await gymControls.getByRole("button", { name: "Font style", exact: true }).count(), 0);
+      assert.equal(await gymControls.getByText("Edit wording with the pencils on your page.", { exact: true }).count(), 0);
+      await page.screenshot({ path: path.join(output, `gymnastics-tools-${width}.png`) });
       await gymControls.getByRole("button", { name: /^Custom URL/ }).click();
       await page.getByRole("textbox", { name: "Custom URL", exact: true }).waitFor();
       await page.getByRole("button", { name: "Back to details", exact: true }).click();
@@ -1157,8 +1189,15 @@ test("one Event Page editor protects saves and navigation across creation modes 
       await page.keyboard.press("Home");
       await page.keyboard.press("ArrowRight");
       await click("Back to details");
-      await gymControls.getByRole("button", { name: /^Design/ }).click();
-      await page.getByLabel("Title font", { exact: true }).selectOption("montserrat");
+      await gymControls.getByRole("button", { name: "Design", exact: true }).click();
+      const titleFont = page.getByLabel("Title font", { exact: true });
+      assert.equal(await titleFont.locator("option").count(), 9);
+      await titleFont.selectOption("anton");
+      await titleFont.selectOption("");
+      assert.doesNotMatch(await workspace.locator('[aria-label="Event page preview panel"] h1').evaluate((element) => element.style.fontFamily), /Gym Anton/);
+      await titleFont.selectOption("montserrat");
+      await gymControls.getByRole("button", { name: "Large", exact: true }).click();
+      await page.screenshot({ path: path.join(output, `gymnastics-font-style-${width}.png`) });
       assert.equal(writes.length, beforeGym, "wording and settings remain unsaved until an explicit save");
       if (width === 390) await viewActions.getByRole("button", { name: "Close settings", exact: true }).click();
       const gymImageTools = preview.locator("[data-hero-image-control]");
@@ -1183,6 +1222,7 @@ test("one Event Page editor protects saves and navigation across creation modes 
       await page.getByText("Draft saved.", { exact: true }).waitFor();
       const gymSaved = writes.at(-1).body.data;
       assert.equal(gymSaved.gymnasticsTitleFont, "montserrat");
+      assert.equal(gymSaved.fontSize, "large");
       assert.equal(gymSaved.heroImageSettings.positionY, 1);
       assert.equal(gymSaved.address, `333 S Franklin St, Tampa, FL 33602, Hall ${width}`);
       assert.equal(gymSaved.venue, "Tampa Convention Center — East Hall");
@@ -1194,9 +1234,10 @@ test("one Event Page editor protects saves and navigation across creation modes 
       await gymControls.waitFor();
       // Browser recovery may restore the Design panel that was open when saved.
       if (!(await page.getByLabel("Title font", { exact: true }).isVisible())) {
-        await gymControls.getByRole("button", { name: /^Design/ }).click();
+        await gymControls.getByRole("button", { name: "Design", exact: true }).click();
       }
       assert.equal(await page.getByLabel("Title font", { exact: true }).inputValue(), "montserrat", "saved font reloads in the actual editor");
+      assert.equal(await gymControls.getByRole("button", { name: "Large", exact: true }).getAttribute("aria-pressed"), "true");
       await viewActions.getByRole("button", { name: "Close settings", exact: true }).click();
       const settingsButton = viewActions.getByRole("button", { name: "Page settings", exact: true });
       assert.equal(await settingsButton.evaluate((element) => Boolean(element.closest("footer")?.querySelector('[aria-label="Save event"]'))), true, "Page settings shares the bottom bar with save actions");

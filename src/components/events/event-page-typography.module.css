@@ -1,0 +1,6 @@
+.boundary {
+  display: contents;
+}
+.boundary[data-event-title-font] :is(h1, h1 *):not(.boundary [data-appearance-scope="app"] *, .boundary [role="dialog"] *) {
+  font-family: var(--event-title-font) !important;
+}
