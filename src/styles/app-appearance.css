@@ -170,7 +170,6 @@ html.dark .auth-transition-mark .envitefy-wordmark-shine {
   background-image: linear-gradient(100deg, #ffffff 0%, #f2eafa 22%, #f2c6de 39%, #ffffff 52%, #ede4ff 100%) !important;
   filter: drop-shadow(0 10px 22px #c5a7ff38);
 }
-html.dark [data-settings-canvas] { background-image: none; }
 html.dark [data-settings-surface] { background: var(--surface); border-color: var(--border); }
 html.dark [data-settings-accent-surface] { background: var(--surface-raised); color: var(--primary); }
 html.dark [data-snap-upload-intro] > div > p { color: var(--muted-foreground); }

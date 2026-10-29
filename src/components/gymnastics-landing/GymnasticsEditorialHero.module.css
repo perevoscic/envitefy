@@ -10,10 +10,6 @@
   background: transparent;
 }
 
-.background.background {
-  z-index: -1;
-}
-
 /* Native fragments and header links start at the same section boundary. */
 .page.page :where(section[id], div[id]) {
   scroll-margin-top: 0;

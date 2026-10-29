@@ -1,12 +1,12 @@
 .gallery.gallery {
-  background: var(--marketing-paper);
+  background: transparent;
   color: var(--marketing-ink);
   padding-top: calc(6.5rem + env(safe-area-inset-top));
   padding-bottom: calc(6rem + env(safe-area-inset-bottom));
 }
 .gallery > main > header,
 .gallery > section > div > [data-public-gallery-header] {
-  background: var(--marketing-soft);
+  background: transparent;
   border-color: var(--marketing-line);
 }
 .gallery > main {
@@ -34,7 +34,7 @@
 }
 .publicSection.publicSection,
 .featured.featured {
-  background: var(--marketing-paper, #fffaf5);
+  background: transparent;
   color: var(--marketing-ink, #412433);
 }
 .publicSection [data-public-gallery-header] {

@@ -1,6 +1,6 @@
 .studio {
   border-color: var(--marketing-line);
-  background: linear-gradient(var(--marketing-paper), var(--marketing-surface));
+  background: transparent;
 }
 
 .studioEyebrow {
@@ -25,7 +25,7 @@
 }
 
 .finalCta {
-  background: #0f172a;
+  background: transparent;
   color: #fff;
 }
 
@@ -50,7 +50,7 @@
 }
 
 :global(html.dark) .finalCta {
-  background: var(--marketing-paper);
+  background: transparent;
   color: var(--marketing-ink);
 }
 

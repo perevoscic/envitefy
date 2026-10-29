@@ -15,7 +15,7 @@
   --category-soft: #e1e6d7;
   --category-pop: #d6bd82;
   color: var(--category-ink);
-  background: var(--category-paper);
+  background: transparent;
   scroll-margin-top: 0;
 }
 

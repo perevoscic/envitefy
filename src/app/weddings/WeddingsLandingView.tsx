@@ -277,7 +277,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
         </MarketingHero>
         <PublicTemplateGallery category="weddings" featured />
 
-        <section id="collections" className="border-t border-[#f2ece1] bg-white py-24">
+        <section id="collections" className="border-t border-[#f2ece1] py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto mb-20 max-w-3xl space-y-4 text-center">
               <SectionEyebrow>Curated Design Suites</SectionEyebrow>
@@ -365,7 +365,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
           </div>
         </section>
 
-        <section id="concierge" className="bg-white py-24">
+        <section id="concierge" className="py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto mb-20 max-w-3xl space-y-4 text-center">
               <SectionEyebrow>Guest Planning Suite</SectionEyebrow>
@@ -396,7 +396,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
           </div>
         </section>
 
-        <section id="timeline" className="border-t border-[#e5d7c3]/60 bg-[#fbf9f5]/50 py-24">
+        <section id="timeline" className="border-t border-[#e5d7c3]/60 py-24">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto mb-16 max-w-3xl space-y-4 text-center">
               <SectionEyebrow>Seamless Process</SectionEyebrow>
@@ -424,7 +424,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
           </div>
         </section>
 
-        <section id="reviews" className="border-t border-[#f2ece1] bg-white py-24">
+        <section id="reviews" className="border-t border-[#f2ece1] py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto mb-16 max-w-3xl space-y-4 text-center">
               <SectionEyebrow>Thoughtful planning</SectionEyebrow>

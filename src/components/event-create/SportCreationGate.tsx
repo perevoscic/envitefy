@@ -103,7 +103,7 @@ export default function SportCreationGate({
 
   if (((visibility.loading && !visibility.hasLoadedPreferences) || (creation.loading && !creation.access)) && !optimisticPreferences) {
     return (
-      <main className="min-h-screen bg-[#f8f8fb] px-4 pb-12 pt-24 sm:px-6 lg:pt-12">
+      <main className="min-h-screen bg-transparent px-4 pb-12 pt-24 sm:px-6 lg:pt-12">
         <div className="mx-auto h-72 max-w-5xl animate-pulse rounded-[2rem] bg-white/80" />
       </main>
     );
@@ -114,7 +114,7 @@ export default function SportCreationGate({
   }
   if (!sportsEnabled || (activeSport && !allowedSport(activeSport))) {
     return (
-      <main className="min-h-screen bg-[#f8f8fb] px-4 pb-12 pt-24 text-[#20172b] sm:px-6 lg:pt-12">
+      <main className="min-h-screen bg-transparent px-4 pb-12 pt-24 text-foreground sm:px-6 lg:pt-12">
         <section className="mx-auto max-w-xl rounded-[2rem] border border-[#e4dff0] bg-white p-8 text-center shadow-[0_24px_80px_rgba(44,35,76,0.1)]">
           <Settings2 className="mx-auto h-9 w-9 text-[#6658ed]" />
           <h1 className="mt-4 text-3xl font-black">Access to this sport is required</h1>
@@ -134,7 +134,7 @@ export default function SportCreationGate({
 
   if (!activeSport) {
     return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_15%_10%,#eeeaff_0,transparent_34%),radial-gradient(circle_at_88%_12%,#e9f7ff_0,transparent_30%),#f8f8fb] px-3 pb-9 pt-24 text-[#1f1729] sm:px-6 lg:pt-9">
+      <main className="min-h-screen bg-transparent px-3 pb-9 pt-24 text-foreground sm:px-6 lg:pt-9">
         <section className="mx-auto max-w-5xl rounded-[1.5rem] border border-white/80 bg-white/90 p-4 shadow-[0_26px_90px_rgba(44,35,76,0.12)] sm:rounded-[2rem] sm:p-9">
           <div className="mx-auto max-w-2xl text-center">
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eeeaff] text-[#5f55ff]">
@@ -204,7 +204,7 @@ export default function SportCreationGate({
 
   if (!activeSport || (surface === "sports" && activeSport === "football") || (surface === "gymnastics") !== (activeSport === "gymnastics")) {
     return (
-      <main className="min-h-screen bg-[#f8f8fb] px-4 pb-12 pt-24 sm:px-6 lg:pt-12">
+      <main className="min-h-screen bg-transparent px-4 pb-12 pt-24 sm:px-6 lg:pt-12">
         <div className="mx-auto h-32 max-w-5xl animate-pulse rounded-[2rem] bg-white/80" />
       </main>
     );

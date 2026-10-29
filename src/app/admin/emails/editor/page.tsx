@@ -235,7 +235,7 @@ export default function EmailEditorPage() {
 
   return (
     <div
-      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] dark:bg-none dark:bg-background"
+      className="min-h-[100dvh] bg-transparent text-foreground"
       suppressHydrationWarning
     >
       <div className="max-w-[1600px] mx-auto p-4 sm:p-6 space-y-5">

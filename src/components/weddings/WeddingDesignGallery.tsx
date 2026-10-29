@@ -98,7 +98,7 @@ export default function WeddingDesignGallery() {
 
   return (
     <main className={`${categoryGalleryPageClassName("weddings")} min-h-screen text-[#2d2723]`}>
-      <section className="relative overflow-hidden border-b border-[#ded5ca] bg-[#fffcf7] px-5 py-12 text-[#2d2723] sm:px-8 lg:px-12 lg:py-16">
+      <section className="relative overflow-hidden border-b border-[#ded5ca] bg-transparent px-5 py-12 text-[#2d2723] sm:px-8 lg:px-12 lg:py-16">
         <CategoryGalleryBackdrop category="weddings" />
         <div className="relative mx-auto max-w-[1500px]">
           <Link

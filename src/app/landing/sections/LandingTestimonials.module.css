@@ -3,7 +3,7 @@
   overflow: hidden;
   padding: clamp(4rem, 7vw, 7rem) clamp(1.25rem, 4vw, 4rem) 3rem;
   color: var(--marketing-ink);
-  background: var(--marketing-surface);
+  background: transparent;
 }
 .accessibleHeading,
 .accessibleQuote {

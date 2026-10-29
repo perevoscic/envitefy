@@ -8,22 +8,7 @@
   background: var(--gallery-base);
   color: var(--gallery-ink);
 }
-:global(html.dark) .backdrop {
-  --gallery-base: var(--category-gallery-background, #251e2c) !important;
-  --gallery-fade: var(--category-gallery-background, #251e2c) !important;
-}
-:global(html.dark) .wash { opacity: 0.12; }
 :global(html.dark) .artwork { opacity: 0.42; }
-
-.wash {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 89% 39%, var(--gallery-wash), transparent 48%),
-    radial-gradient(ellipse at 69% 6%, var(--gallery-glow), transparent 43%);
-  mask-image: linear-gradient(90deg, transparent 28%, #000 73%);
-  -webkit-mask-image: linear-gradient(90deg, transparent 28%, #000 73%);
-}
 
 .artwork {
   position: absolute;
@@ -47,14 +32,6 @@
 }
 
 @media (max-width: 767px) {
-  .wash {
-    bottom: auto;
-    height: 280px;
-    opacity: 0.75;
-    mask-image: linear-gradient(90deg, transparent 15%, #000 100%);
-    -webkit-mask-image: linear-gradient(90deg, transparent 15%, #000 100%);
-  }
-
   .artwork {
     top: -25px;
     right: -95px;

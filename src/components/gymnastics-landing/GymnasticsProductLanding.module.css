@@ -347,14 +347,14 @@
   gap: clamp(2.5rem, 8vw, 9rem);
   align-items: center;
   padding: clamp(3rem, 7vw, 6rem) var(--marketing-gutter);
-  background: #25493d;
-  color: #f8f5e9;
+  background: transparent;
+  color: var(--marketing-ink);
   scroll-margin-top: 6rem;
 }
 
 .lightEyebrow {
   margin: 0 0 1.5rem;
-  color: #c0d7c5;
+  color: var(--marketing-accent);
   font-size: 0.625rem;
   font-weight: 650;
   letter-spacing: 0.16em;
@@ -373,7 +373,7 @@
 .audiences h2 strong {
   display: block;
   font-weight: 600;
-  color: #c0d7c5;
+  color: var(--marketing-accent);
 }
 
 .audienceRows article {
@@ -382,7 +382,7 @@
   align-items: start;
   gap: 1.5rem;
   padding: 1.4rem 0;
-  border-top: 1px solid #c0d7c54d;
+  border-top: 1px solid var(--marketing-line);
 }
 
 .audienceRows h3 {
@@ -393,7 +393,7 @@
 }
 .audienceRows p {
   margin: 0;
-  color: #e1e8de;
+  color: var(--marketing-muted);
   font-size: 0.8125rem;
   line-height: 1.8;
 }

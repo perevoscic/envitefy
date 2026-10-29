@@ -5,7 +5,7 @@ import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop
 
 export default function BirthdayGalleryHero() {
   return (
-    <section className="relative isolate overflow-hidden border-b border-[#eadbd9] bg-[#fff8f5] text-[#382a32]">
+    <section className="relative isolate overflow-hidden border-b border-[#eadbd9] bg-transparent text-[#382a32]">
       <CategoryGalleryBackdrop category="birthdays" />
 
       <div className="relative z-20 mx-auto max-w-[1500px] px-5 pb-8 pt-10 sm:px-8 sm:pb-10 sm:pt-12 lg:px-12 lg:pb-12 lg:pt-14">

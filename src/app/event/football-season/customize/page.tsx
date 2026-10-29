@@ -1280,7 +1280,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     if (initializingEdit) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-100">
+        <div className="min-h-screen flex items-center justify-center bg-transparent">
           <div className="text-center px-4 py-6 bg-white shadow rounded-lg border border-slate-200">
             <p className="text-sm font-medium text-slate-700">Loading your custom event…</p>
             <p className="text-xs text-slate-500 mt-1">

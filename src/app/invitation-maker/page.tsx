@@ -300,7 +300,7 @@ export default function InvitationMakerPage() {
           </figure>
         </section>
 
-        <section className="bg-[var(--marketing-soft)] px-5 py-5 text-[var(--marketing-ink)] sm:px-8 lg:px-12">
+        <section className="px-5 py-5 text-[var(--marketing-ink)] sm:px-8 lg:px-12">
           <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-4 text-sm font-bold md:grid-cols-4">
             {trustItems.map(({ icon: Icon, label }) => (
               <div
@@ -424,7 +424,7 @@ export default function InvitationMakerPage() {
           </div>
         </section>
 
-        <section className="bg-[var(--marketing-surface)] px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
+        <section className="px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
           <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[minmax(22rem,0.88fr)_minmax(0,1.12fr)] lg:gap-20">
             <div className="relative mx-auto w-full max-w-[31rem] pb-12 pl-5 sm:pl-10">
               <div className="absolute bottom-0 left-0 right-12 top-12 rounded-[2rem] bg-[#eee4d4]" />
@@ -502,19 +502,18 @@ export default function InvitationMakerPage() {
           </div>
         </section>
 
-        <section className="relative overflow-hidden bg-[#3a2a43] px-5 py-20 text-white sm:px-8 sm:py-24 lg:px-12 lg:py-28">
-          <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(circle_at_80%_10%,#8f6b9f_0,transparent_32%),radial-gradient(circle_at_5%_95%,#8a6b38_0,transparent_28%)]" />
+        <section className="relative overflow-hidden px-5 py-20 text-[var(--marketing-ink)] sm:px-8 sm:py-24 lg:px-12 lg:py-28">
           <div className="relative mx-auto max-w-7xl">
             <div className="grid gap-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-end">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#f2c6de]">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--marketing-accent)]">
                   A simple workflow
                 </p>
-                <h2 className="mt-4 max-w-2xl text-4xl font-light leading-[1.04] !tracking-[-0.035em] !text-white sm:text-5xl">
+                <h2 className="mt-4 max-w-2xl text-4xl font-light leading-[1.04] !tracking-[-0.035em] sm:text-5xl">
                   From idea to sent in three clear steps.
                 </h2>
               </div>
-              <p className="max-w-xl text-lg leading-8 text-[#d9ceda] lg:justify-self-end">
+              <p className="max-w-xl text-lg leading-8 text-[var(--marketing-muted)] lg:justify-self-end">
                 No separate RSVP form. No scavenger hunt for the address. No new group text when a
                 detail changes.
               </p>
@@ -524,7 +523,7 @@ export default function InvitationMakerPage() {
               {steps.map((step) => (
                 <li
                   key={step.number}
-                  className="rounded-[1.5rem] border border-white/12 bg-white/[0.06] p-7 backdrop-blur-sm sm:p-8"
+                  className="rounded-[1.5rem] border border-white/12 bg-[#3a2a43] p-7 text-white sm:p-8"
                 >
                   <span className="text-sm font-bold tracking-[0.18em] text-[#f2c6de]">
                     {step.number}
@@ -539,7 +538,7 @@ export default function InvitationMakerPage() {
           </div>
         </section>
 
-        <section className="border-b border-[var(--marketing-line)] bg-[var(--marketing-soft)] px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
+        <section className="border-b border-[var(--marketing-line)] px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
           <div className="mx-auto max-w-7xl">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
               <div className="max-w-3xl">
@@ -624,7 +623,7 @@ export default function InvitationMakerPage() {
           </div>
         </section>
 
-        <section className="bg-[var(--marketing-surface)] px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
+        <section className="px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
           <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)] lg:gap-20">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--marketing-accent)]">
@@ -672,7 +671,7 @@ export default function InvitationMakerPage() {
           </div>
         </section>
 
-        <section className="bg-[var(--marketing-paper)] px-5 py-12 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
+        <section className="px-5 py-12 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
           <div className="relative mx-auto flex max-w-7xl flex-col items-start overflow-hidden rounded-[2rem] bg-[#211a25] px-6 py-14 text-white shadow-[0_28px_80px_rgba(44,31,48,0.16)] sm:px-12 sm:py-16 lg:px-16">
             <div className="absolute -right-20 -top-28 h-80 w-80 rounded-full bg-[#76578a]/40 blur-3xl" />
             <div className="relative max-w-4xl">

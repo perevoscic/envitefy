@@ -321,8 +321,7 @@
   padding: clamp(105px, 12vw, 150px) 0;
   border-block: 1px solid var(--marketing-line);
   background:
-    radial-gradient(circle at 12% 12%, var(--marketing-soft), transparent 31%),
-    var(--marketing-paper);
+    transparent;
 }
 
 .splitHeading {
@@ -877,7 +876,7 @@
 .guestFlow {
   padding: clamp(100px, 12vw, 150px) 0;
   border-top: 1px solid var(--bridal-gold-soft);
-  background: var(--marketing-surface);
+  background: transparent;
 }
 
 .guestFlowGrid {
@@ -937,7 +936,7 @@
 .testimonials {
   padding: clamp(105px, 12vw, 150px) 0;
   border-top: 1px solid var(--bridal-gold-soft);
-  background: var(--marketing-soft);
+  background: transparent;
 }
 
 .testimonialGrid {
@@ -1026,8 +1025,8 @@
   position: relative;
   padding: clamp(115px, 14vw, 185px) 0;
   overflow: hidden;
-  background: #4b352e;
-  color: white;
+  background: transparent;
+  color: var(--marketing-ink);
   text-align: center;
 }
 
@@ -1036,7 +1035,7 @@
   inset: 0;
   content: "";
   opacity: 0.15;
-  background-image: radial-gradient(#f6dfc7 0.7px, transparent 0.7px);
+  background-image: none;
   background-size: 18px 18px;
 }
 
@@ -1047,7 +1046,7 @@
   width: 700px;
   height: 430px;
   border-radius: 50%;
-  background: rgba(202, 147, 113, 0.32);
+  background: transparent;
   filter: blur(100px);
   transform: translateX(-50%);
 }
@@ -1065,7 +1064,7 @@
 .finalCta .sectionShell > p:not(.eyebrow) {
   max-width: 610px;
   margin: 27px auto 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--marketing-muted);
   font-size: 0.8rem;
   font-weight: 300;
   line-height: 1.9;
@@ -1076,11 +1075,11 @@
 }
 
 .finalTextLink {
-  --arrow-fill-color: #fff;
-  --arrow-fill-hover-ink: #2c2522;
+  --arrow-fill-color: var(--marketing-accent);
+  --arrow-fill-hover-ink: var(--marketing-paper);
   min-height: 2.5rem;
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--marketing-ink);
 }
 
 .page :focus-visible {

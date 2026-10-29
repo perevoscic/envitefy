@@ -226,7 +226,7 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
               </div>
             </section>
 
-            <section className="bg-white px-5 py-14 sm:px-8 lg:px-10">
+            <section className="px-5 py-14 sm:px-8 lg:px-10">
               <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)]">
                 <div>
                   <SectionEyebrow>Launch path</SectionEyebrow>

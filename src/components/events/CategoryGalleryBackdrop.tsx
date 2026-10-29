@@ -6,8 +6,6 @@ import styles from "./category-gallery-backdrop.module.css";
 type BackdropStyle = CSSProperties & {
   "--gallery-base": string;
   "--gallery-fade": string;
-  "--gallery-wash": string;
-  "--gallery-glow": string;
   "--gallery-ink": string;
   "--gallery-accent": string;
 };
@@ -15,8 +13,8 @@ type BackdropStyle = CSSProperties & {
 /** Decorative header layer only; its parent must be relative and content must sit above it. */
 export default function CategoryGalleryBackdrop({
   category,
-  baseColor = "var(--category-gallery-background, #fffcfa)",
-  fadeColor = "var(--category-gallery-background, #fbf8f5)",
+  baseColor = "transparent",
+  fadeColor = "transparent",
 }: {
   category: string;
   baseColor?: string;
@@ -33,15 +31,12 @@ export default function CategoryGalleryBackdrop({
     pointerEvents: "none",
     "--gallery-base": baseColor,
     "--gallery-fade": fadeColor,
-    "--gallery-wash": theme.wash,
-    "--gallery-glow": theme.glow,
     "--gallery-ink": theme.ink,
     "--gallery-accent": theme.accent,
   };
 
   return (
     <div className={styles.backdrop} style={style} data-gallery-category={key} aria-hidden="true">
-      <div className={styles.wash} />
       <CategoryGalleryArtwork kind={theme.artwork} className={styles.artwork} />
       <div className={styles.fade} />
     </div>

@@ -20,7 +20,7 @@ export default function CalendarHandoff({ handoff }: { handoff: CalendarHandoffE
   }).format(new Date(event.startIso)) : "";
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-[#f7f5fb] px-4 py-8 text-[#2f2550]">
+    <main className="flex min-h-dvh items-center justify-center bg-transparent px-4 py-8 text-foreground">
       <section className="w-full max-w-md rounded-3xl border border-[#ddd4f8] bg-white p-6 shadow-sm sm:p-8" aria-labelledby="calendar-heading">
         <CalendarPlus className="mb-5 size-9 text-[#6b3cff]" aria-hidden="true" />
         <h1 id="calendar-heading" className="text-2xl font-semibold">Add to calendar</h1>

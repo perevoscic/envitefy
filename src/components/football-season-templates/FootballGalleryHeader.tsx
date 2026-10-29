@@ -3,7 +3,7 @@ import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop
 
 export default function FootballGalleryHeader({ count }: { count: number }) {
   return (
-    <header className="relative isolate overflow-hidden border-b border-[#dde5d9] bg-[#fffcfa] px-5 py-9 text-[#2e4034] sm:px-8 lg:px-12 lg:py-12">
+    <header className="relative isolate overflow-hidden border-b border-[#dde5d9] bg-transparent px-5 py-9 text-foreground sm:px-8 lg:px-12 lg:py-12">
       <CategoryGalleryBackdrop category="football" />
       <div className="relative z-10 mx-auto max-w-[1500px]">
         <p className="inline-flex items-center gap-2 rounded-full border border-[#d6dfd0] bg-white/90 px-4 py-2 text-xs font-semibold text-[#526b52]">

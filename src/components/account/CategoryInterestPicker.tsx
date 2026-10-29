@@ -87,7 +87,7 @@ export default function CategoryInterestPicker({
   disabled?: boolean;
   variant?: "compact" | "cards";
 }) {
-  const [sportsOpen, setSportsOpen] = useState(() => value.some((id) => sportIds.has(id)));
+  const [sportsOpen, setSportsOpen] = useState(true);
   const allowed = new Set(
     filterPinnedCategoryIds(
       CATEGORY_FAVORITES.map((favorite) => favorite.id),
@@ -127,6 +127,12 @@ export default function CategoryInterestPicker({
   );
   return (
     <div className={`${styles.picker} ${variant === "cards" ? styles.cardPicker : ""}`}>
+      {events.length > 0 ? (
+        <fieldset className={styles.fieldset} disabled={disabled}>
+          <legend className={styles.legend}>Event types</legend>
+          <div className={styles.grid}>{events.map(choice)}</div>
+        </fieldset>
+      ) : null}
       {sports.length > 0 ? (
         <details
           className={styles.sports}
@@ -148,12 +154,6 @@ export default function CategoryInterestPicker({
             <div className={styles.grid}>{sports.map(choice)}</div>
           </fieldset>
         </details>
-      ) : null}
-      {events.length > 0 ? (
-        <fieldset className={styles.fieldset} disabled={disabled}>
-          <legend className={styles.legend}>Event types</legend>
-          <div className={styles.grid}>{events.map(choice)}</div>
-        </fieldset>
       ) : null}
     </div>
   );

@@ -22,7 +22,6 @@ import PublicConciergeWidget from "@/components/navigation/PublicConciergeWidget
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 import ArrowFillButton from "@/components/ui/ArrowFillButton";
 import ArrowFillLink from "@/components/ui/ArrowFillLink";
-import { GradientBackgroundLayer } from "@/components/ui/gradient-backgrounds";
 import { marketingPageNavLinks } from "@/config/navigation";
 import hero from "./GymnasticsEditorialHero.module.css";
 import GymnasticsLandingFaq from "./GymnasticsLandingFaq";
@@ -170,7 +169,6 @@ export default function GymnasticsLanding() {
   );
   return (
     <MarketingPage tone="sports" className={`${styles.editorial} ${hero.page}`}>
-      <GradientBackgroundLayer className={hero.background} />
       <div ref={navigationRef} className={hero.navigation} data-hero-motion={heroMotion}>
         <HeroTopNav
           editorialTone="sports"

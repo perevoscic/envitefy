@@ -44,7 +44,7 @@ function createHarness(fetchResponse = async () => ({ ok: true, json: async () =
   return { state, requests, save: (provider) => state.saveCalendarDefault(provider) };
 }
 
-test("a tile switch saves a new default immediately and can clear it", async () => {
+test("the in-column default switch saves a new provider immediately and can clear it", async () => {
   const { state, requests, save } = createHarness();
   await save("microsoft");
   assert.equal(state.preferredProvider, "microsoft");

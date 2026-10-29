@@ -12,7 +12,7 @@
   gap: clamp(3rem, 6vw, 7rem);
   padding: clamp(4rem, 6vw, 7rem) clamp(1.25rem, 3vw, 3.5rem) clamp(5rem, 7vw, 8rem);
   color: var(--marketing-ink);
-  background: var(--marketing-paper);
+  background: transparent;
 }
 .eyebrow {
   margin: 0 0 1rem;

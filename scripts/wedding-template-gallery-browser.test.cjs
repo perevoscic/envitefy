@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const assertSharedGalleryBackground = require("./lib/assert-shared-gallery-background.cjs");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
@@ -64,7 +65,7 @@ function buildFixture() {
     const source = fs.readFileSync("src/app/globals.css", "utf8").replace(
       '@import "tailwindcss";',
       '@import "tailwindcss" source(none);\n' + [
-        "../components/templates", "../components/events", "../components/marketing", "../components/birthdays",
+        "../components/MainContentWrapper.tsx", "../components/ui/gradient-backgrounds.tsx", "../components/templates", "../components/events", "../components/marketing", "../components/birthdays",
       ].map((entry) => `@source "${entry}";`).join("\n"),
     );
     const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process(source, {
@@ -396,8 +397,9 @@ test("wedding light and dark appearance pair readable app surfaces without chang
         assert.equal(appearance.preference, theme, "the real appearance setter applies the requested preference");
         assert.equal(appearance.dark, theme === "dark");
         assertAppearanceContrast(appearance, theme, width);
+        await assertSharedGalleryBackground(page, appearance.samples, theme, width);
         assert.deepEqual(await sampleHeroPalette(page), authored, `${theme} retains all three authored wedding papers, inks and photographs`);
-        for (const key of ["page", "layout", "gallery", "header", "hero", "search", "order"]) {
+        for (const key of ["header", "hero", "search", "order"]) {
           const brightness = luminance(rgb(appearance.samples[key].background));
           assert.ok(theme === "light" ? brightness > 0.7 : brightness < 0.12,
             `${theme} ${key} has an appropriately ${theme === "light" ? "pale" : "dark"} surface at ${width}px (${brightness.toFixed(3)})`);
@@ -416,7 +418,7 @@ test("wedding light and dark appearance pair readable app surfaces without chang
       }
       for (const key of ["header", "hero", "gallery", "search", "order"]) {
         assert.notEqual(themes.light.samples[key].color, themes.dark.samples[key].color, `${key} ink changes with appearance`);
-        assert.notEqual(themes.light.samples[key].background, themes.dark.samples[key].background, `${key} paper changes with appearance`);
+        if (key !== "gallery") assert.notEqual(themes.light.samples[key].background, themes.dark.samples[key].background, `${key} paper changes with appearance`);
       }
       assert.notDeepEqual(themes.light.backdrop, themes.dark.backdrop, "the decorative photograph and scrim adapt to the light hero");
       assertNoThemeLayoutShift(themes.light, themes.dark, `${width}px light-to-dark`);

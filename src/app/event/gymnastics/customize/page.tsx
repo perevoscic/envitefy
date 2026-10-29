@@ -2927,7 +2927,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     if (isDemoPreview) {
       return (
-        <div className="min-h-screen bg-[#f0f2f5] px-4 py-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-transparent px-4 py-4 sm:px-6 lg:px-8">
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
             <div className="rounded-[1.75rem] border border-[#d9dde9] bg-white/90 px-4 py-4 shadow-sm backdrop-blur sm:px-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -75,7 +75,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <main
-      className={`${publicStyles.page} font-vars flex min-h-[100dvh] items-center justify-center bg-[#F3F0FA] p-4 sm:p-6`}
+      className={`${publicStyles.page} ${publicStyles.sharedBackground} font-vars flex min-h-[100dvh] items-center justify-center p-4 sm:p-6`}
       data-mobile-form-surface
     >
       <section className="w-full max-w-md rounded-2xl border border-[#E8E0EF] bg-white p-5 shadow-[0_20px_50px_rgba(87,67,157,0.08)] sm:p-8">

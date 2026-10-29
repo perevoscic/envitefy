@@ -174,7 +174,7 @@ export default function EventsWorkspaceClient() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f8f6fb] px-4 pb-16 pt-7 text-[#30253d] sm:px-8 sm:pt-11 lg:px-12">
+    <main className="min-h-screen bg-transparent px-4 pb-16 pt-7 text-foreground sm:px-8 sm:pt-11 lg:px-12">
       <div className="mx-auto max-w-[1240px]">
         <header className="mb-7 flex flex-wrap items-start justify-between gap-5">
           <div>

@@ -265,7 +265,7 @@ export default function BabyShowersLandingView() {
 
         <section
           id="collections"
-          className="scroll-mt-28 bg-white px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
+          className="scroll-mt-28 px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
         >
           <div className="mx-auto max-w-7xl">
             <SectionHeading
@@ -290,7 +290,7 @@ export default function BabyShowersLandingView() {
 
         <section
           id="registries"
-          className="scroll-mt-28 border-y border-[#e7edf2] bg-[var(--marketing-paper)] px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
+          className="scroll-mt-28 border-y border-[#e7edf2] px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-20">
             <div>
@@ -433,7 +433,7 @@ export default function BabyShowersLandingView() {
 
         <section
           id="how-it-works"
-          className="scroll-mt-28 bg-white px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
+          className="scroll-mt-28 px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
         >
           <div className="mx-auto max-w-7xl">
             <SectionHeading
@@ -525,7 +525,7 @@ export default function BabyShowersLandingView() {
 
         <section
           id="host-notes"
-          className="scroll-mt-28 border-y border-[#e7edf2] bg-[var(--marketing-paper)] px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
+          className="scroll-mt-28 border-y border-[#e7edf2] px-5 py-20 sm:px-8 lg:px-10 lg:py-24"
         >
           <div className="mx-auto max-w-7xl">
             <SectionHeading
@@ -554,7 +554,7 @@ export default function BabyShowersLandingView() {
           </div>
         </section>
 
-        <section className="bg-white px-5 py-20 sm:px-8 lg:px-10 lg:py-24">
+        <section className="px-5 py-20 sm:px-8 lg:px-10 lg:py-24">
           <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.42fr_0.58fr]">
             <SectionHeading
               align="left"
@@ -576,7 +576,7 @@ export default function BabyShowersLandingView() {
           </div>
         </section>
 
-        <section className="bg-[#13233d] px-5 py-20 text-white sm:px-8 lg:px-10">
+        <section className="px-5 py-20 text-white sm:px-8 lg:px-10">
           <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-[#1d3f64] via-[#17324f] to-[#13233d] px-6 py-12 text-center shadow-2xl sm:px-12 sm:py-16">
             <div className={styles.ctaPattern} aria-hidden="true" />
             <div className="relative z-[1] mx-auto max-w-3xl">

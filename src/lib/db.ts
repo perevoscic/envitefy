@@ -1574,6 +1574,17 @@ export async function updateUserNamesByEmail(params: {
   firstName?: string | null | undefined;
   lastName?: string | null | undefined;
 }): Promise<AppUserRow> {
+  return updateUserProfileByEmail(params);
+}
+
+/** Commit an explicit profile save without partially applying names or a photo. */
+export async function updateUserProfileByEmail(params: {
+  email: string;
+  firstName?: string | null | undefined;
+  lastName?: string | null | undefined;
+  avatarUrl?: string | null | undefined;
+}): Promise<AppUserRow> {
+  if (Object.hasOwn(params, "avatarUrl")) await ensureUsersHasAvatarUrlColumn();
   const lower = params.email.toLowerCase();
   const existing = await getUserByEmail(lower);
   if (!existing) {
@@ -1591,6 +1602,10 @@ export async function updateUserNamesByEmail(params: {
   if (Object.hasOwn(params, "lastName")) {
     sets.push(`last_name = $${idx++}`);
     values.push(params.lastName ?? null);
+  }
+  if (Object.hasOwn(params, "avatarUrl")) {
+    sets.push(`avatar_url = $${idx++}`, "avatar_user_set = true");
+    values.push(params.avatarUrl ?? null);
   }
   // If nothing to update, just return current row
   if (sets.length === 0) {

@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import GalleryAppCanvas from "./GalleryAppCanvas";
 import PublicTemplateGalleryContents from "../../src/components/templates/PublicTemplateGalleryContents";
 import TemplateGalleryLayout from "../../src/components/templates/TemplateGalleryLayout";
 import { applyAppearance } from "../../src/lib/appearance";
@@ -29,15 +30,17 @@ async function start() {
     });
   }
   createRoot(document.getElementById("root")!).render(
-    <TemplateGalleryLayout category="signup-forms">
-      <PublicTemplateGalleryContents
-        category="signup-forms"
-        templates={templates}
-        featured={query.has("featured")}
-        customThemeRequested={query.has("customTheme")}
-        customThemeExpired={query.has("expired")}
-      />
-    </TemplateGalleryLayout>,
+    <GalleryAppCanvas>
+      <TemplateGalleryLayout category="signup-forms">
+        <PublicTemplateGalleryContents
+          category="signup-forms"
+          templates={templates}
+          featured={query.has("featured")}
+          customThemeRequested={query.has("customTheme")}
+          customThemeExpired={query.has("expired")}
+        />
+      </TemplateGalleryLayout>
+    </GalleryAppCanvas>,
   );
 }
 void start();

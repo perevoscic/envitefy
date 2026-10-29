@@ -10,6 +10,8 @@ import FootballLanding from "../../src/components/football-landing/FootballLandi
 import GymnasticsLanding from "../../src/components/gymnastics-landing/GymnasticsLanding";
 import SportsLandingPage from "../../src/components/sports-landing/SportsLandingPage";
 import { applyAppearance } from "../../src/lib/appearance";
+import { SidebarProvider } from "../../src/app/sidebar-context";
+import { MainContentWrapper } from "../../src/components/MainContentWrapper";
 
 declare global {
   interface Window {
@@ -35,4 +37,10 @@ const views = {
   football: <FootballLanding />,
   sports: <SportsLandingPage />,
 };
-createRoot(document.getElementById("root")!).render(views[category as keyof typeof views]);
+createRoot(document.getElementById("root")!).render(
+  <SidebarProvider>
+    <MainContentWrapper isAuthenticated={false} reserveSidebarSpace={false}>
+      {views[category as keyof typeof views]}
+    </MainContentWrapper>
+  </SidebarProvider>,
+);

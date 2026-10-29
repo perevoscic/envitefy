@@ -11,7 +11,7 @@ export default async function UnsubscribePage({
   const email = await verifyMarketingUnsubscribeToken(token);
 
   return (
-    <main className={`${publicStyles.page} min-h-screen bg-[#fcfbf7] px-4 py-20 text-[#241c2b]`}>
+    <main className={`${publicStyles.page} ${publicStyles.sharedBackground} min-h-screen px-4 py-20 text-foreground`}>
       <section className="mx-auto max-w-lg rounded-2xl border border-[#d7c5a5] bg-white p-7 shadow-[0_24px_70px_rgba(33,26,35,0.12)]">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#2f6f64]">Email choices</p>
         <h1 className="mt-3 text-3xl font-semibold">Unsubscribe from marketing</h1>

@@ -26,6 +26,17 @@
   --marketing-soft: #e3ece5;
   --marketing-line: #d6e0d8;
 }
+
+/* The shared shell supplies one continuous aurora behind ordinary public pages. */
+.page.appCanvas,
+:global(html.dark) .page.appCanvas {
+  background: transparent;
+}
+
+/* Envitefy Create retains its separately approved editorial canvas. */
+.page.editorialCanvas {
+  background: var(--marketing-paper);
+}
 .page[data-marketing-tone="product"] {
   --marketing-accent: #70516f;
   --marketing-soft: #ece3ee;

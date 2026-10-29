@@ -191,7 +191,7 @@ export default function FaqPage() {
         description="Answers about Envitefy creation tools, hosted event pages, guest actions, calendars, privacy, and sharing."
         headingLevel="h2"
         showHeader={false}
-        className="border-t border-[#d9ded3] bg-white/72 px-4 py-16 sm:px-6 lg:py-24"
+        className="border-t border-[#d9ded3] px-4 py-16 sm:px-6 lg:py-24"
         accordionClassName="rounded-lg border-[#d9ded3] bg-white px-4 py-2 shadow-[0_24px_64px_rgba(32,49,55,0.08)] sm:px-6"
       />
       <Script id="ld-breadcrumb-faq" type="application/ld+json" strategy="afterInteractive">

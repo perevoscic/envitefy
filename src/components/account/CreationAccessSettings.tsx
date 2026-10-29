@@ -8,7 +8,11 @@ import { CREATION_CATEGORIES, CREATION_CATEGORY_LABELS, CREATION_PRODUCTS, CREAT
 import { TEMPLATE_KEYS } from "@/config/feature-visibility";
 import { normalizeSportPreferences } from "@/lib/sports-preferences";
 
-export default function CreationAccessSettings() {
+const buttonClass = "inline-flex min-h-11 max-w-full items-center justify-center rounded-lg border border-[color:var(--settings-line,var(--border))] px-3 py-2 text-sm font-medium text-[color:var(--settings-ink,var(--foreground))] transition-colors hover:bg-[color:var(--settings-selection,var(--muted))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--settings-accent,var(--ring))] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none";
+const rowClass = "flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[color:var(--settings-line,var(--border))] py-3 last:border-b-0";
+const headingClass = "!font-sans text-base font-medium !tracking-normal text-[color:var(--settings-ink,var(--foreground))]";
+
+export default function CreationAccessSettings({ showHeading = true }: { showHeading?: boolean }) {
   const { data: session } = useSession();
   const { access, loading, error, reload } = useCreationAccess();
   const preferences = useFeatureVisibility();
@@ -62,22 +66,62 @@ export default function CreationAccessSettings() {
     } catch (failure) { setMessage(failure instanceof Error ? failure.message : "Could not request access."); }
     finally { setBusy(""); }
   };
-  if (loading || preferences.loading) return <p role="status" className="py-4 text-sm text-[#6f6479]">Loading your workspace preferences…</p>;
-  if (!access || !preferences.hasLoadedPreferences) return <div role="alert" className="space-y-3 py-3 text-sm"><p>{error || preferences.error || "Could not load your preferences."}</p><button type="button" onClick={() => { void reload(); void preferences.refresh(); }} className="min-h-11 rounded-xl border px-4 font-semibold">Retry</button></div>;
+  if (loading || preferences.loading) return <p role="status" className="py-4 text-sm text-[color:var(--settings-muted,var(--muted-foreground))]">Loading your workspace preferences…</p>;
+  if (!access || !preferences.hasLoadedPreferences) return <div role="alert" className="space-y-3 py-3 text-sm"><p>{error || preferences.error || "Could not load your preferences."}</p><button type="button" onClick={() => { void reload(); void preferences.refresh(); }} className={buttonClass}>Retry</button></div>;
   const pending = (kind: string, key: string) => requests.some((item) => item.kind === kind && item.capability === key && item.status === "pending");
-  return <div className="space-y-6">
-    <div><p className="text-xs font-semibold uppercase tracking-[.15em] text-[#7964ad]">Workspace preferences</p><h2 className="mt-1 text-2xl font-semibold text-[#251b32]">Event creation</h2><p className="mt-2 text-sm leading-6 text-[#6f6479]">Choose the event types you use. Your existing events and co-host access stay available.</p></div>
-    <div className="space-y-3"><h3 className="font-semibold">Your event types</h3><div className="grid gap-2 sm:grid-cols-2">{CREATION_CATEGORIES.map((category) => {
-      const allowed = access.allowedCategories.includes(category) && access.allowedProducts.includes("event_page");
-      const waiting = pending("category", category);
-      return <div key={category} className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-[#e5dcf5] bg-white px-4 py-3"><span className="text-sm font-medium">{CREATION_CATEGORY_LABELS[category]}</span><button type="button" disabled={Boolean(busy) || waiting} onClick={() => void (allowed ? toggleCategory(category) : request("category", category))} aria-label={`${CREATION_CATEGORY_LABELS[category]}: ${allowed ? selected(category) ? "Remove from workspace" : "Add to workspace" : waiting ? "Requested" : "Request access"}`} className="min-h-11 rounded-lg border border-[#d9cdfa] px-3 text-sm font-semibold text-[#59428d] disabled:opacity-50">{allowed ? selected(category) ? "Remove from workspace" : "Add to workspace" : waiting ? "Requested" : "Request access"}</button></div>;
-    })}</div></div>
-    <div className="space-y-3"><h3 className="font-semibold">Creation tools</h3>{CREATION_PRODUCTS.map((product) => {
-      const allowed = access.allowedProducts.includes(product); const waiting = pending("product", product);
-      return <div key={product} className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-[#e5dcf5] bg-white px-4 py-2"><span className="text-sm font-medium">{CREATION_PRODUCT_LABELS[product]}</span>{allowed ? <span className="text-xs font-semibold text-[#6f6479]">Available</span> : <button type="button" disabled={Boolean(busy) || waiting} onClick={() => void request("product", product)} className="min-h-11 rounded-lg border px-3 text-sm font-semibold disabled:opacity-50">{waiting ? "Requested" : "Request access"}</button>}</div>;
-    })}</div>
-    <button type="button" disabled={Boolean(busy)} onClick={() => void save("reset", { visibleTemplateKeys: filterCreationTemplateKeys(TEMPLATE_KEYS, access), defaultCreateIntent: null, quickAccess: ["snap", "upload", "smart_signup"] })} className="min-h-11 rounded-xl border border-[#d9cdfa] bg-white px-4 text-sm font-semibold disabled:opacity-50">Reset preferences</button>
-    {message ? <p role="status" className="text-sm leading-6 text-[#59428d]">{message}</p> : null}
-    {(session?.user as any)?.isAdmin ? <Link href="/admin/creation-access" className="inline-flex min-h-11 items-center text-sm font-semibold text-[#59428d] underline">Review creation access requests</Link> : null}
-  </div>;
+  return (
+    <div className="space-y-7 text-[color:var(--settings-ink,var(--foreground))]">
+      {showHeading ? <h2 className="!font-sans text-2xl font-medium !tracking-normal">Creation tools &amp; access</h2> : null}
+      <div>
+        <h3 className={headingClass}>Creation tools</h3>
+        <div className="mt-2">
+          {CREATION_PRODUCTS.map((product) => {
+            const allowed = access.allowedProducts.includes(product);
+            const waiting = pending("product", product);
+            return (
+              <div key={product} className={rowClass}>
+                <span className="min-w-0 basis-36 grow text-sm font-medium">{CREATION_PRODUCT_LABELS[product]}</span>
+                {allowed ? (
+                  <span className="text-sm text-[color:var(--settings-muted,var(--muted-foreground))]">Available</span>
+                ) : (
+                  <button type="button" disabled={Boolean(busy) || waiting} onClick={() => void request("product", product)} className={`${buttonClass} ml-auto`}>
+                    {waiting ? "Requested" : "Request access"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div>
+        <h3 className={headingClass}>Your event types</h3>
+        <div className="mt-2">
+          {CREATION_CATEGORIES.map((category) => {
+            const allowed = access.allowedCategories.includes(category) && access.allowedProducts.includes("event_page");
+            const waiting = pending("category", category);
+            const action = allowed ? selected(category) ? "Remove from workspace" : "Add to workspace" : waiting ? "Requested" : "Request access";
+            return (
+              <div key={category} className={rowClass}>
+                <span className="min-w-0 basis-36 grow text-sm font-medium">{CREATION_CATEGORY_LABELS[category]}</span>
+                <button
+                  type="button"
+                  disabled={Boolean(busy) || waiting}
+                  onClick={() => void (allowed ? toggleCategory(category) : request("category", category))}
+                  aria-label={`${CREATION_CATEGORY_LABELS[category]}: ${action}`}
+                  className={`${buttonClass} ml-auto`}
+                >
+                  {action}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-4 border-t border-[color:var(--settings-line,var(--border))] pt-6">
+        <button type="button" disabled={Boolean(busy)} onClick={() => void save("reset", { visibleTemplateKeys: filterCreationTemplateKeys(TEMPLATE_KEYS, access), defaultCreateIntent: null, quickAccess: ["snap", "upload", "smart_signup"] })} className={buttonClass}>Reset preferences</button>
+        {message ? <p role="status" className="text-sm text-[color:var(--settings-muted,var(--muted-foreground))]">{message}</p> : null}
+      </div>
+      {(session?.user as any)?.isAdmin ? <Link href="/admin/creation-access" className="inline-flex min-h-11 items-center text-sm font-medium text-[color:var(--settings-accent,var(--primary))] underline underline-offset-4">Review creation access requests</Link> : null}
+    </div>
+  );
 }

@@ -3,7 +3,7 @@ import CategoryGalleryBackdrop from "./CategoryGalleryBackdrop";
 
 export default function BabyShowerGalleryHeader({ count }: { count: number }) {
   return (
-    <header className="relative isolate overflow-hidden border-b border-[#e2e5d7] bg-[#fffdf7] px-5 py-9 text-[#454e3d] sm:px-8 lg:px-12 lg:py-12">
+    <header className="relative isolate overflow-hidden border-b border-[#e2e5d7] bg-transparent px-5 py-9 text-foreground sm:px-8 lg:px-12 lg:py-12">
       <CategoryGalleryBackdrop category="baby-showers" />
       <div className="relative z-10 mx-auto max-w-[1500px]">
         <p className="inline-flex items-center gap-2 rounded-full border border-[#dfe4d4] bg-white/90 px-4 py-2 text-xs font-semibold text-[#647453]">
