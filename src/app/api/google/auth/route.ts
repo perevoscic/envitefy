@@ -53,7 +53,8 @@ export async function GET(request: Request) {
 
   const url = oAuth2Client.generateAuthUrl({
     access_type: "offline",
-    include_granted_scopes: true,
+    // Older grants may contain scopes that are no longer approved for this app.
+    include_granted_scopes: false,
     scope: scopes,
     // Calendar connections need a fresh offline token even when Google remembers an older grant.
     prompt: "consent",
