@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-30",
+  "revision": 3,
+  "concept": "Upload a PDF to create a live gymnastics meet page",
+  "headline": [
+    "UPLOAD A PDF.",
+    "GET A LIVE",
+    "MEET PAGE."
+  ],
+  "backTreatment": {
+    "plum": "#98153f",
+    "coral": "#f24772",
+    "wordmark": "Canonical lowercase shapes, monochrome plum"
+  },
+  "frontTreatment": "Original gradient E/plane and wordmark, small left chest",
+  "artworkReference": "output/merch/gymnastics-meet-shirt-2026-10-30-v3/gymnastics-meet-upload-live-v3b-placeholder-preview.webp",
+  "physicalReferenceIn": {
+    "width": 9,
+    "height": 12.2
+  },
+  "qr": {
+    "placeholder": true,
+    "destination": "https://envitefy.com/gymnastics#preview",
+    "caption": "SEE TODAY MEET",
+    "replaceWithActualMeetBeforePrinting": true
+  },
+  "tool": "built-in image_gen",
+  "mockup": "output/merch/gymnastics-meet-shirt-2026-10-30-v3/gymnastics-meet-upload-live-front-back-v3b-placeholder-mockup.webp",
+  "mockupDimensionsPx": {
+    "width": 1536,
+    "height": 1024
+  },
+  "mockupIsConceptNotMeasuredScaleProof": true,
+  "checks": {
+    "headlineExact": true,
+    "captionExact": true,
+    "frontGradientBackPlum": true,
+    "gymnasticsIllustrationPresent": true,
+    "noVisibleCopyErrorsOrOverlaps": true,
+    "webpDecode": true,
+    "placeholderQrDecodesToDemo": true
+  },
+  "generatedPngRemovedAfterVerifiedWebp": true
+}

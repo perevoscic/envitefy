@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-30",
+  "scope": "Attached PDF-to-phone crop only",
+  "requestedBenefitLine": "Meet details · Registration · Hotels and more.",
+  "phoneRows": [
+    "Meet details",
+    "Registration",
+    "Hotels"
+  ],
+  "icons": [
+    "Calendar with date dots",
+    "Checked registration card",
+    "Bed/hotel"
+  ],
+  "removedSymbols": [
+    "Cross/plus",
+    "Location pin",
+    "Diamond"
+  ],
+  "colors": {
+    "plum": "#98153f",
+    "coral": "#f24772"
+  },
+  "nativePreview": "output/merch/gymnastics-meet-details-registration-hotels-2026-10-30/meet-details-registration-hotels-preview-v2.webp",
+  "nativeTransparentArtwork": "output/merch/gymnastics-meet-details-registration-hotels-2026-10-30/meet-details-registration-hotels-flat-v2.webp",
+  "nativeDimensionsPx": {
+    "width": 2295,
+    "height": 1410
+  },
+  "nativeQa": {
+    "labelsExact": true,
+    "noCrossPlusIcon": true,
+    "noClipping": true,
+    "trueAlpha": true
+  },
+  "rasterEditTool": "built-in image_gen",
+  "prompt": "Use case: precise-object-edit / graphic text and icon update. Image1 is the original crop EDIT TARGET. Image2 is an exact clean vector-layout reference for the requested finished crop. Return ONLY the updated flat PDF-to-event-page illustration, no shirt, no mockup. Match image2 precisely in composition, shapes, line weights, colors, wording and icon shapes; image1 establishes the original layout to preserve. Phone heading stays MEET PAGE. Replace phone rows with exact title-case labels 'Meet details', 'Registration', 'Hotels'. Use a clear CALENDAR with small date dots for Meet details, a CHECKED REGISTRATION CARD for Registration, and a BED/HOTEL icon for Hotels. Remove the old cross/plus, location pin and diamond icons. There must be NO cross, plus-sign, X, medical cross or religious cross icon anywhere; the calendar uses dots, not crossing grid lines. The original stacked pages on left retain exact 'MEET PACKET' and 'SCHEDULE' labels and the dense short horizontal document lines. Keep the large coral right arrow between packet and phone. The single benefit line beneath the illustration must read EXACTLY 'Meet details · Registration · Hotels and more.' with middle-dot separators and the final period. Preserve exact spelling, capitalization and spacing; do not add extra words. Deep plum #98153f outlines/type and coral #f24772 arrow/fold/phone-rule accent, flat spot-color vector-style art with crisp anti-aliased edges. Phone row text must not collide with icons or rounded row outlines. Keep the original phone/paper/arrow proportions and the entire diagram visible with small safe margins. Real transparent alpha background, including all open phone/paper interiors, no white/cream rectangle and no checkerboard baked into the file. The cream background in image2 is only for viewing and must be removed. Clean high-resolution landscape graphic, ideally2295x1410 or larger. Do not add gymnast, headline, brand wordmark, QR, people, shadows, gradients, texture, watermark or any other elements outside this narrow crop.",
+  "selectedPreview": "output/merch/gymnastics-meet-details-registration-hotels-2026-10-30/meet-details-registration-hotels-preview-v2.webp",
+  "selectedTransparentArtwork": "output/merch/gymnastics-meet-details-registration-hotels-2026-10-30/meet-details-registration-hotels-flat-v2.webp",
+  "selectionReason": "Native SVG source edit preserves exact typography, icon geometry and crisp flat ink.",
+  "imagegenCandidate": "output/merch/gymnastics-meet-details-registration-hotels-2026-10-30/imagegen-candidate-not-selected.webp",
+  "imagegenCandidateSelected": false,
+  "generatedPngRemovedAfterVerifiedWebp": true
+}

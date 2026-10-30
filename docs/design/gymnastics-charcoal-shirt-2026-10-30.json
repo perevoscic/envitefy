@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-30",
+  "garment": "Charcoal shirt supplied by user",
+  "userPhoto": "C:/Users/rjosan/AppData/Local/Temp/codex-clipboard-2233716b-0706-4b71-baa1-3c473b4c4941.png",
+  "palette": {
+    "mainIvory": "#fff3e7",
+    "accentCoral": "#ff6688",
+    "illustrativeGarment": "#67615b"
+  },
+  "backBranding": "Canonical lowercase wordmark, ivory matching main ink",
+  "frontBranding": "Original gradient remains separate, not shown",
+  "artworkPng": "output/merch/gymnastics-charcoal-shirt-2026-10-30/gymnastics-charcoal-back-9x12.2in-300dpi.png",
+  "artworkSizeIn": {
+    "width": 9,
+    "height": 12.2
+  },
+  "artworkRaster": {
+    "width": 2700,
+    "height": 3660,
+    "dpi": 300,
+    "transparent": true
+  },
+  "qr": {
+    "placeholder": true,
+    "destination": "https://envitefy.com/gymnastics#preview",
+    "replaceBeforePrinting": true
+  },
+  "tool": "built-in image_gen",
+  "prompt": "Use case: precise-object-edit / apparel-print mockup. Image1 is the EDIT TARGET: person photographed from behind in a blank warm CHARCOAL gray T-shirt, beige pants, very light gray studio background. Image2 is the exact approved back graphic and ivory/coral palette reference. Apply that graphic ONLY to the back of the charcoal shirt in image1. Preserve the same person, hair, body, pose, arms and hands, beige pants, exact charcoal fabric color/cut/folds, lighting and studio framing. Do not recolor the shirt to black or change the body. The black rectangular matte behind the art in image2 is only for viewing: remove it completely rather than printing any black box. Only ivory and bright coral ink prints on charcoal, except the small light QR quiet-zone square which is part of the design. Main ink warm ivory #fff3e7, accent bright coral #ff6688. Official lowercase envitefy wordmark on BACK must be ivory matching the main ink, preserving the exact original canonical glyphs/serif joins from the supplied reference, never a blue-purple gradient on back. Use exact latest lettering and layout: headline TWO rows 'UPLOAD A PDF.' in ivory / 'GET A LIVE PAGE.' in bright coral ON ONE SINGLE ROW; tilted MEET PACKET / PDF document with circular upload arrow; coral transformation arrow; phone headed LIVE MEET showing gymnastics split-leap athlete over balance beam; phone rows 'Meet details', 'Registration', 'Hotels' with calendar, checked registration card and bed icons, no cross/plus; summary 'Meet details · Registration · Hotels.'; QR on left, official ivory envitefy wordmark on right with envitefy.com/gymnastics; QR caption exact 'SEE TODAY’S MEET'. Copy the original QR modules exactly as supplied, dark navy #182d48 on an ivory square with full quiet zone, no inverted pale QR. It is an intentional demo placeholder to be replaced before printing; do not write placeholder on garment. Center the complete graphic on upper back, starting about3inches below rear collar, approximately9inches wide by12.2inches tall on an adult shirt, with comfortable shoulder/side margins and blank charcoal cloth beneath; preserve the graphic's aspect ratio. Let the print subtly follow cotton folds but keep crisp legible lettering, all contents and icons. No front logo is shown; front branding is outside this edit and stays original gradient. Preserve full source person-from-behind portrait framing, no new props, no people added, no labels outside shirt, no watermark. Clean high-resolution commercial product photograph, same4:5 aspect, ideally2000x2500 or higher.",
+  "mockup": "output/merch/gymnastics-charcoal-shirt-2026-10-30/charcoal-shirt-mockup.webp",
+  "mockupPngDownload": "output/merch/gymnastics-charcoal-shirt-2026-10-30/charcoal-shirt-mockup-download.png",
+  "mockupDimensionsPx": {
+    "width": 1122,
+    "height": 1402
+  },
+  "mockupIsIllustrationNotMeasuredScaleProof": true,
+  "checks": {
+    "nativePrintPngMetadataAndAlphaVerified": true,
+    "nativePrintQrDecodesToDemo": true,
+    "canonicalAlphaAndInkVerified": true,
+    "photoVisualCopyPaletteAndGarmentVerified": true,
+    "finalWebpDecodes": true
+  },
+  "mockupQrReadAttempt": "No decode result at native photo resolution; print artwork QR passed separately. All codes are placeholders until the meet URL is supplied.",
+  "retainedPngDownloads": "User requested individual PNG downloads after image-viewer copy failure.",
+  "generatorOriginalRemovedAfterVerifiedReplacement": true
+}

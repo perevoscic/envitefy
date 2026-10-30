@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-30",
+  "revision": 2,
+  "changes": [
+    "QR caption changed verbatim to SEE TODAY MEET",
+    "Added split-leap gymnast silhouette and balance beam details"
+  ],
+  "frontTreatment": "Original blue-purple gradient unchanged",
+  "backTreatment": "Canonical envitefy shape remains solid #98153f to match plum lettering; coral #f24772 accents",
+  "draftQr": {
+    "placeholder": true,
+    "currentDestination": "https://envitefy.com/gymnastics#preview",
+    "finalMeetDestination": null,
+    "userInstruction": "User will supply/replace the meet link before sending the artwork to print"
+  },
+  "sourcePreview": "output/merch/gymnastics-meet-shirt-2026-10-30-v2/gymnastics-meet-back-v2-placeholder-preview.webp",
+  "imageTool": "built-in image_gen",
+  "mockup": "output/merch/gymnastics-meet-shirt-2026-10-30-v2/gymnastics-meet-shirt-front-back-v2-placeholder-mockup.webp",
+  "mockupDimensionsPx": {
+    "width": 1536,
+    "height": 1024
+  },
+  "checks": {
+    "captionExact": true,
+    "gymnastAndBeamPresent": true,
+    "frontGradientBackPlum": true,
+    "noCopyErrorsOrOverlaps": true,
+    "finalWebpDecodes": true,
+    "placeholderQrDecodesToDemo": true,
+    "actualMeetUrlVerified": false
+  },
+  "generatedPngRemovedAfterVerifiedWebp": true
+}

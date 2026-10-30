@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-30",
+  "userIntent": "One larger charcoal back print for a 22-inch-wide by 24-inch-high transfer sheet",
+  "method": "Deterministic enlargement/export from approved editable SVG; no new image generation",
+  "artwork": {
+    "widthIn": 12,
+    "heightIn": 16.2666666667,
+    "widthPx": 3600,
+    "heightPx": 4880,
+    "dpi": 300,
+    "visibleInkWidthIn": 10.9333333333,
+    "visibleInkHeightIn": 15.22,
+    "png": "output/merch/gymnastics-charcoal-large-back-2026-10-30/gymnastics-charcoal-back-12x16.27in-300dpi.png"
+  },
+  "sheet": {
+    "widthIn": 22,
+    "heightIn": 24,
+    "widthPx": 6600,
+    "heightPx": 7200,
+    "dpi": 300,
+    "backCount": 1,
+    "frontCount": 0,
+    "placementPx": {
+      "x": 1500,
+      "y": 1160
+    },
+    "png": "output/merch/gymnastics-charcoal-large-back-2026-10-30/gymnastics-charcoal-22x24-one-back-draft-QR-placeholder-300dpi.png"
+  },
+  "fitPreview": {
+    "path": "output/merch/gymnastics-charcoal-large-back-2026-10-30/charcoal-12in-back-exact-fit-preview-v2.webp",
+    "referenceShirt": {
+      "flatBodyWidthIn": 22,
+      "shoulderToHemIn": 30
+    },
+    "sharedPixelsPerInch": 36,
+    "topOfArtBelowHighShoulderIn": 4
+  },
+  "qr": {
+    "placeholder": true,
+    "destination": "https://envitefy.com/gymnastics#preview",
+    "replaceBeforePrinting": true
+  },
+  "frontBranding": "Original gradient front logo not included in the one-back sheet"
+}

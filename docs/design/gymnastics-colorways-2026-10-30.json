@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-30",
+  "purpose": "Gymnastics shirt colorway concepts using supplied available garment swatches",
+  "artwork": "Latest v4 UPLOAD A PDF. / GET A LIVE PAGE.",
+  "frontLogo": "Original official purple-to-blue gradient retained; comparison shows backs only",
+  "garmentColorsAreIllustrative": true,
+  "garmentColorReference": "Sampled from user-provided thumbnail, not a textile/PMS proof",
+  "palettes": [
+    {
+      "garment": "Ice Blue",
+      "fabric": "#a9c4df",
+      "main": "#182d48",
+      "accent": "#f24772"
+    },
+    {
+      "garment": "Black",
+      "fabric": "#1a1a1a",
+      "main": "#f8f1e7",
+      "accent": "#ff6688"
+    },
+    {
+      "garment": "Sunwashed Mint",
+      "fabric": "#b5ded5",
+      "main": "#174e4b",
+      "accent": "#f06f73"
+    },
+    {
+      "garment": "Manzanita",
+      "fabric": "#893b51",
+      "main": "#fff3e7",
+      "accent": "#ffbaa2"
+    }
+  ],
+  "backWordmark": "Canonical shape, matches each palette's main ink",
+  "qr": {
+    "placeholder": true,
+    "destination": "https://envitefy.com/gymnastics#preview",
+    "darkGarmentTreatment": "Dark QR on ivory quiet-zone patch",
+    "replaceBeforePrinting": true
+  },
+  "nativeBoard": "output/merch/gymnastics-colorways-2026-10-30/four-colorways-shirt-board.webp",
+  "tool": "built-in image_gen",
+  "prompt": "Use case: product-mockup / coordinated apparel colorways. Create a polished visual comparison of FOUR Envitefy gymnastics-shirt BACKS in a clean2-by-2 grid, one shirt per panel, all identical unisex tee cuts and photographed flat from overhead at the same scale. Full collars,sleeves and hems visible, pale neutral studio surface, soft shallow cotton folds, realistic texture and stitching. Image1 is the EXACT approved back-art reference. Preserve its exact canonical lettering and logo shapes, PDF-to-phone composition, phone gymnast/beam, all icon/text details, QR pattern and layout; recolor only as specified for each shirt. Image2 is the user's available garment color swatch reference, useful for approximating the four named fabric hues; do not reproduce that screenshot. TOP LEFT: ICE BLUE garment #a9c4df; main ink deep navy #182d48; accent ink coral #f24772. TOP RIGHT: BLACK garment #1a1a1a; main ink warm ivory #f8f1e7; accent ink bright coral #ff6688. BOTTOM LEFT: SUNWASHED MINT garment #b5ded5; main ink deep teal #174e4b; accent ink coral #f06f73. BOTTOM RIGHT: MANZANITA garment #893b51, muted warm berry/wine; main ink ivory #fff3e7; accent ink soft peach #ffbaa2. In each design, replace all original plum with that panel's MAIN INK and all original coral with that panel's ACCENT INK. The official lowercase envitefy wordmark on every BACK MUST match its main ink color exactly in appearance, never the front logo's blue-purple gradient. Preserve exact official wordmark glyphs/serif joins from reference. The only exception to palette remapping is the QR: retain a dark normal QR on a small warm-ivory square with its complete quiet zone, particularly on BLACK and MANZANITA, so it is not an inverted pale QR on dark cloth. Do not print large rectangular backgrounds behind the back graphics; only colored ink on each garment except the small QR quiet-zone square. The code is an intentional demo placeholder to replace before printing; copy supplied QR modules, do not add placeholder wording on shirts. Exact poster copy and breaks: top two rows 'UPLOAD A PDF.' / 'GET A LIVE PAGE.'; second headline remains ONE row. Phone heading LIVE MEET, phone rows Meet details / Registration / Hotels with calendar/check-card/bed icons, no cross/plus icons. Summary 'Meet details · Registration · Hotels.' Caption 'SEE TODAY’S MEET'. Footer official envitefy plus envitefy.com/gymnastics. Keep every back graphic the same relative size and centered upper-back placement, with comfortable fabric margins and some empty lower cloth. Below each shirt, OUTSIDE its garment, add a clean restrained bold label of that panel's color name only: ICE BLUE, BLACK, SUNWASHED MINT, MANZANITA. No other labels, hex codes, dimensions or explanatory text. Show BACKS ONLY so these main-ink logo choices are clear; front logos are outside this comparison and remain the original blue-purple gradient. Professional premium catalog styling, balanced square composition, ideally3072x3072 or larger. No people, hangers, props, watermark, extra slogans, extra logos or added decorations.",
+  "photographicComparison": "output/merch/gymnastics-colorways-2026-10-30/four-colorways-photographic-comparison.webp",
+  "photographicDimensionsPx": {
+    "width": 1254,
+    "height": 1254
+  },
+  "photoIsColorConceptNotMeasuredScaleOrFabricProof": true,
+  "photoQrBackingNote": "Photo uses ivory QR backing in all panels; exact native Ice Blue and Mint variants have transparent QR background.",
+  "checks": {
+    "allFourNativePalettesVerified": true,
+    "canonicalAlphaPreserved": true,
+    "allNativeQrDecodeWithoutInversion": true,
+    "photoVisibleCopyAndColorwayLabels": true,
+    "backWordmarksMatchMainInk": true,
+    "finalWebpDecodes": true
+  },
+  "generatedPngRemovedAfterVerifiedWebp": true
+}

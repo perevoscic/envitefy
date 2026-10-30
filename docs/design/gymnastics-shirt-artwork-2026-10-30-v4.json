@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-30",
+  "revision": 4,
+  "headline": [
+    "UPLOAD A PDF.",
+    "GET A LIVE PAGE."
+  ],
+  "headlineSecondRowSingleLine": true,
+  "phoneRows": [
+    "Meet details",
+    "Registration",
+    "Hotels"
+  ],
+  "summary": "Meet details · Registration · Hotels.",
+  "caption": "SEE TODAY’S MEET",
+  "icons": [
+    "calendar",
+    "checked registration card",
+    "bed"
+  ],
+  "sourcePreview": "output/merch/gymnastics-meet-shirt-2026-10-30-v4/gymnastics-meet-upload-live-v4-placeholder-preview.webp",
+  "sourceTransparentArtwork": "output/merch/gymnastics-meet-shirt-2026-10-30-v4/gymnastics-meet-upload-live-v4-placeholder-flat.webp",
+  "nativeQa": {
+    "copyExact": true,
+    "noClippingOrCollision": true,
+    "noOldLabels": true,
+    "canonicalWordmarkAlphaPreserved": true,
+    "canonicalWordmarkTint": "#98153f",
+    "trueAlpha": true,
+    "qrDemoDecodesAtThreeSizes": true
+  },
+  "qr": {
+    "placeholder": true,
+    "destination": "https://envitefy.com/gymnastics#preview",
+    "replaceBeforePrinting": true
+  },
+  "tool": "built-in image_gen; editable native SVG source preserved",
+  "prompt": "Use case: precise-object-edit / text-layout revision. Image1 is the user’s full poster edit target. Image2 is the exact approved updated native artwork reference and must be followed precisely. Return the updated flat poster only, matching image2 exactly in all geometry, type shapes, words, line breaks, spacing, icons, original official logo and plum/coral/cream colors. Required headline is ONLY TWO rows: 'UPLOAD A PDF.' in deep plum on row1 and 'GET A LIVE PAGE.' in coral ON ONE SINGLE ROW beneath it. There must not be a third headline row, and the second row must not wrap. Preserve bold condensed lettering. Phone remains LIVE MEET with gymnast and balance beam. Phone’s three rows must read 'Meet details', 'Registration', 'Hotels', with calendar, checked registration card and bed icons, respectively. No plus/cross icon; no old Sessions/Directions/Updates labels. Retain the small coral chevrons to the right. Summary line under illustration is EXACT 'Meet details · Registration · Hotels.' with separators and final period. QR caption is EXACT 'SEE TODAY’S MEET' including apostrophe. Preserve the tilted MEET PACKET / PDF document with circular upload-arrow badge, coral arrow, phone, gymnast/beam, QR-left / official-plum-envitefy-wordmark-right footer, and envitefy.com/gymnastics. Use the supplied original canonical logo shapes exactly, no retyping or font substitution, solid deep plum #98153f. All back ink is deep plum #98153f or coral #f24772 as supplied; warm cream #f8f1e7 background stays opaque and uniform. Preserve the supplied QR modules exactly; it is an authorized demo placeholder to replace before printing. Do not add a placeholder label on the artwork. Flat spot-color vector-style graphic with very crisp smooth edges, no texture, no shadows, no gradients, no garment, no extra decorations or text, no watermark. Keep full composition and safety margins visible. Portrait aspect9:12.2, ideally1800x2440 or higher.",
+  "selectedPreview": "output/merch/gymnastics-meet-shirt-2026-10-30-v4/gymnastics-meet-upload-live-v4-placeholder-preview.webp",
+  "selectedTransparentArtwork": "output/merch/gymnastics-meet-shirt-2026-10-30-v4/gymnastics-meet-upload-live-v4-placeholder-flat.webp",
+  "selectionReason": "Native source preserves exact canonical wordmark, QR modules, typography and flat ink.",
+  "imagegenPreview": "output/merch/gymnastics-meet-shirt-2026-10-30-v4/imagegen-v4-preview.webp",
+  "imagegenPreviewSelected": false,
+  "generatedPngRemovedAfterVerifiedWebp": true
+}
