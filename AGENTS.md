@@ -2,6 +2,10 @@
 
 This is the stuff that was not obvious on first read and is worth keeping in one place.
 
+## Start Envitefy testing
+
+When the user says **"start Envitefy testing"**, **"resume Envitefy testing"**, or **"run Envitefy QA"**, follow [docs/envitefy-testing.md](docs/envitefy-testing.md) and start or resume the authorized manual QA pass without asking for the plan again. Use the existing QA01-QA13 per-user persistent Android fleet and current checkpoints. Check for an active owner/runner before taking control; preserve each account's data and sign-in. The standalone `android-local-qa` emulator is not this workflow. A request to save, explain, or edit this instruction does not itself start a test run.
+
 ## Required Before Every Push
 
 - Commit the intended candidate, then run `npm run validate:push` before pushing. This runs the Create event fact integrity workflow's complete local checks: `test:git-hooks`, `typecheck`, `test:create-remediation`, and `test:create-browser`. Targeted tests, a production build, a clean working tree, and a successful Vercel deployment do not establish that these checks passed.

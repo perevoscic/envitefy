@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { runContainedProcess } from "./maestro-process-timeout.mjs";
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -138,68 +138,7 @@ export async function runProcess(
   args,
   { env = process.env, cwd = ROOT, timeoutMs = 300000, onOutput, secrets = [] } = {},
 ) {
-  return new Promise((resolve) => {
-    // .bat files require cmd on Windows. All CLI arguments are separately quoted;
-    // credentials travel only through MAESTRO_ environment variables, never args.
-    const batch = process.platform === "win32" && /\.(bat|cmd)$/i.test(binary);
-    if (batch && [binary, ...args].some((value) => /["\r\n%&|<>^]/.test(String(value))))
-      throw new Error("Unsafe Windows batch argument.");
-    const child = spawn(
-      batch ? "cmd.exe" : binary,
-      batch
-        ? ["/d", "/s", "/c", `"${[binary, ...args].map((value) => `"${value}"`).join(" ")}"`]
-        : args,
-      {
-        cwd,
-        env,
-        windowsHide: true,
-        windowsVerbatimArguments: batch,
-        shell: false,
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
-    let output = "";
-    let timedOut = false;
-    const capture = (chunk) => {
-      const value = redact(chunk.toString(), secrets);
-      output += value;
-      onOutput?.(value);
-    };
-    child.stdout.on("data", capture);
-    child.stderr.on("data", capture);
-    let settled = false;
-    const finish = (code) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      child.stdout.destroy();
-      child.stderr.destroy();
-      resolve({ exitCode: code, output: redact(output, secrets), timedOut });
-    };
-    const timer = setTimeout(() => {
-      timedOut = true;
-      if (process.platform === "win32")
-        spawn("taskkill.exe", ["/pid", String(child.pid), "/t", "/f"], {
-          windowsHide: true,
-          stdio: "ignore",
-        }).unref();
-      child.kill("SIGTERM");
-      child.unref();
-      finish(null);
-    }, timeoutMs);
-    child.once("error", (error) => {
-      clearTimeout(timer);
-      resolve({
-        exitCode: null,
-        output: redact(error.message, secrets),
-        timedOut,
-        spawnError: error.code,
-      });
-    });
-    child.once("close", finish);
-    // pg_ctl can exit while its daemon still holds inherited pipe handles.
-    child.once("exit", (code) => setTimeout(() => finish(code), 100));
-  });
+  return runContainedProcess(binary, args, { env, cwd, timeoutMs, onOutput, secrets, redact });
 }
 
 export async function maestroCommand() {

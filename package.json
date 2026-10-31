@@ -29,6 +29,8 @@
     "maestro:doctor": "node scripts/maestro-doctor.mjs",
     "maestro:android:doctor": "node scripts/maestro-android-doctor.mjs",
     "maestro:android:emulator": "powershell -NoProfile -File scripts/maestro-android-emulator.ps1 -Wait",
+    "android:qa": "node scripts/android-local-qa.mjs",
+    "test:android:qa": "node --test scripts/android-local-qa.test.mjs scripts/android-local-qa-device.test.mjs",
     "test:maestro": "node scripts/maestro-run.mjs",
     "maestro:check": "node scripts/maestro-run.mjs --check",
     "test:maestro:local": "node scripts/maestro-run.mjs --local-fixtures",
