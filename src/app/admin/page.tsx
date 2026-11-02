@@ -55,12 +55,6 @@ export default async function AdminDashboardPage() {
 
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <AdminMetricCard
-          label="Users"
-          value={formatNumber(overview.kpis.users)}
-          detail={`${formatNumber(overview.users.newUsers7Days)} new in 7 days`}
-          href="/admin/users"
-        />
-        <AdminMetricCard
           label="Events"
           value={formatNumber(overview.kpis.events)}
           detail={`${formatNumber(overview.kpis.publicEvents)} public pages`}

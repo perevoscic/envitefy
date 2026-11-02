@@ -15,6 +15,7 @@ test("admin dashboard is the executive operations surface", () => {
   assert.match(source, /GA4 Snapshot/);
   assert.match(source, /Event Category Performance/);
   assert.match(source, /Needs Attention/);
+  assert.doesNotMatch(source, /label="Users"|overview\.users|overview\.kpis\.users/);
   assert.doesNotMatch(source, /href="\/admin\/campaigns"/);
 });
 
