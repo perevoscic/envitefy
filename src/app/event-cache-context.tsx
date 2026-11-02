@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { useSession } from "next-auth/react";
+import { requestDashboard } from "@/lib/dashboard-request";
 import {
   EVENT_DELETION_CHANNEL,
   mergeEventHistoryRefresh,
@@ -316,12 +317,12 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
         if (opts?.force) params.set("refresh", "1");
         if (process.env.NODE_ENV !== "production") params.set("timing", "1");
         const qs = params.toString();
-        const res = await fetch(`/api/dashboard${qs ? `?${qs}` : ""}`, {
-          credentials: "include",
-          cache: "no-store",
-          headers: { Accept: "application/json" },
-        });
-        if (revision !== cacheRevisionRef.current) return;
+        const result = await requestDashboard(
+          `/api/dashboard${qs ? `?${qs}` : ""}`,
+          () => revision === cacheRevisionRef.current,
+        );
+        if (!result) return;
+        const { response: res, body: json } = result;
         if (res.status === 401) {
           const latestSession = await updateSession().catch(() => null);
           if (revision !== cacheRevisionRef.current) return;
@@ -336,8 +337,6 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
           setDashboardError("We couldn't load your events. Please try again.");
           return;
         }
-        const json = await res.json().catch(() => null);
-        if (revision !== cacheRevisionRef.current) return;
         if (isDashboardResponsePayload(json)) {
           const degraded = Boolean((json as DashboardPayload).degraded);
           if (degraded) {
