@@ -190,6 +190,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
 
   const isMarketingRoot = normalizedPathname === "/" && hasNoSession;
   const isHomepageFooter = isMarketingRoot || normalizedPathname === "/landing";
+  const usesSharedCanvas = normalizedPathname !== "/envitefy-create" && normalizedPathname !== "/envitefy-concierge";
   const isMarketingRoute =
     isMarketingRoot ||
     (normalizedPathname ? MARKETING_ROUTE_PATHS.has(normalizedPathname) : false) ||
@@ -200,7 +201,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
     return (
       <footer
         data-app-footer="marketing"
-        className={`${marketingFooterStyles.footer} ${isHomepageFooter ? marketingFooterStyles.homepage : ""} relative z-[2] w-full`}
+        className={`${marketingFooterStyles.footer} ${usesSharedCanvas ? marketingFooterStyles.sharedCanvas : isHomepageFooter ? marketingFooterStyles.homepage : ""} relative z-[2] w-full`}
       >
         <div className="isolate w-full overflow-hidden border-y border-[#d7c5a5] bg-[#fcfbf7]/96 shadow-[0_30px_80px_rgba(33,26,35,0.10)] backdrop-blur-[12px] [backface-visibility:hidden] [transform:translateZ(0)] [will-change:transform]">
           <div className="relative grid gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(268px,1.05fr)_repeat(5,minmax(0,0.62fr))] lg:px-10">
@@ -209,7 +210,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                 <EnvitefyWordmark
                   className="text-[4rem] leading-none sm:text-[3.5rem]"
                   scaled={false}
-                  tone={isHomepageFooter ? "light" : "gradient"}
+                  tone={isHomepageFooter && !usesSharedCanvas ? "light" : "gradient"}
                 />
               </Link>
               <p className="mt-4 max-w-sm text-sm leading-7 text-[#665d68]">
@@ -217,7 +218,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                 saves, maps, sign-ups, and guest updates from one shareable link.
               </p>
               <div className="mt-6">
-                <EnvitefySocialLinks tone={isHomepageFooter ? "white" : "auto"} />
+                <EnvitefySocialLinks tone={isHomepageFooter && !usesSharedCanvas ? "white" : "auto"} />
               </div>
             </div>
 

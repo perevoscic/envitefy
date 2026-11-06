@@ -47,7 +47,7 @@ async function buildFixture() {
       },
       plugins: [
         new compiled.webpack.DefinePlugin({
-          "process.env.NODE_ENV": JSON.stringify("development"),
+          "process.env": JSON.stringify({ NODE_ENV: "development" }),
         }),
         new compiled.webpack.NormalModuleReplacementPlugin(
           /(?:^|[/\\])(?:SignedOutPageChrome|HeroTopNav|PublicConciergeWidget|AuthModal)(?:\.tsx)?$/,
@@ -91,6 +91,8 @@ async function buildFixture() {
     );
   });
   const sourcePaths = [
+    "../components/MainContentWrapper.tsx",
+    "../components/ui/gradient-backgrounds.tsx",
     "../app/baby-showers",
     "../app/birthdays",
     "../app/bridal-showers",
@@ -162,6 +164,20 @@ async function serve(context, unexpected) {
   });
 }
 
+async function assertSharedCanvas(page, description) {
+  const state = await page.locator('[data-marketing-canvas="app"]').evaluate((canvas) => {
+    const gradient = document.querySelector('[data-project-gradient-background="true"]');
+    return {
+      canvas: getComputedStyle(canvas).backgroundColor,
+      gradientImage: gradient && getComputedStyle(gradient).backgroundImage,
+      gradientPosition: gradient && getComputedStyle(gradient).position,
+    };
+  });
+  assert.equal(state.canvas, "rgba(0, 0, 0, 0)", `${description}: page exposes the shared canvas`);
+  assert.match(state.gradientImage, /radial-gradient\(/, `${description}: dashboard aurora is present`);
+  assert.equal(state.gradientPosition, "fixed", `${description}: aurora continues while scrolling`);
+}
+
 // The fixture inspects real text/background pairs, including transparent layers.
 // Photograph overlays require visual inspection; authored preview colors are also
 // checked across theme transitions below.
@@ -200,7 +216,8 @@ async function auditText(page) {
       const style = getComputedStyle(node);
       if (!rect.width || !rect.height || style.visibility === "hidden" || style.opacity === "0")
         continue;
-      let background = [255, 255, 255, 1];
+      const gradient = document.querySelector('[data-project-gradient-background="true"]');
+      let background = rgba(getComputedStyle(gradient || document.documentElement).backgroundColor);
       const ancestors = [];
       for (let parent = node; parent; parent = parent.parentElement) ancestors.unshift(parent);
       let image = false;
@@ -324,6 +341,7 @@ test("all category landing sections preserve readable dark colors and authored s
       for (const category of categories) {
         await page.goto(`${base}/?category=${category}`);
         await page.locator("main h1").waitFor();
+        await assertSharedCanvas(page, `${category} ${viewport.width}px light`);
         await page.evaluate(() => document.fonts.ready);
         await page.evaluate(() => {
           for (const image of document.images) image.loading = "eager";
@@ -336,6 +354,7 @@ test("all category landing sections preserve readable dark colors and authored s
         const authoredLight = await authoredColors(page);
         await page.evaluate(() => window.__setLandingAppearance("dark"));
         await page.waitForTimeout(550);
+        await assertSharedCanvas(page, `${category} ${viewport.width}px dark`);
         const authoredDark = await authoredColors(page);
         if (JSON.stringify(authoredDark) !== JSON.stringify(authoredLight))
           failures.push(

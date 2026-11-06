@@ -83,7 +83,7 @@ function readDate(value: unknown): string | null {
 
 function signupUnavailablePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+    <div className="min-h-screen bg-transparent">
       <main className="mx-auto w-full max-w-2xl px-5 py-14 space-y-4">
         <h1 className="text-3xl font-bold text-neutral-900 text-center">
           This sign-up form is temporarily unavailable
@@ -399,7 +399,7 @@ export default async function SignupPage({
 
   if (!sessionEmail && !isPublicSignupPage) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+      <div className="min-h-screen bg-transparent">
         <main className="mx-auto w-full max-w-2xl px-5 py-14 space-y-4">
           <h1 className="text-3xl font-bold text-neutral-900 text-center">Sign in to respond</h1>
           <p className="text-center text-neutral-700">
@@ -423,7 +423,7 @@ export default async function SignupPage({
   if (!canManage && !recipientAccepted && !isPublicSignupPage) {
     const pending = userId ? await isEventSharePendingForUser(row.id, userId) : false;
     return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+      <div className="min-h-screen bg-transparent">
         <main className="mx-auto w-full max-w-2xl px-5 py-14 space-y-4">
           <h1 className="text-3xl font-bold text-neutral-900 text-center">
             {pending ? "You're invited" : "Access limited to invitees"}

@@ -47,7 +47,7 @@ export default async function RegistryPage({ params }: PageProps) {
     "Thank you for celebrating with us. Your presence is the greatest gift, but if you’d like to give something extra, here are a few things that would help us start our next chapter.";
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-transparent">
       <div className="max-w-5xl mx-auto px-4 py-10">
         <h1 className="text-3xl font-serif font-semibold mb-2">{title}</h1>
         <p className="text-sm text-slate-600 mb-6">{description}</p>

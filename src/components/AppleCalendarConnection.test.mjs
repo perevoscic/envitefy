@@ -98,7 +98,7 @@ function harness(fetchResponse = async (_url, options) => Response.json(options.
     return null;
   }
   return {
-    requests, changes, timers, document, render,
+    requests, changes, timers, document, render, find,
     focus() { for (const listener of focusListeners) listener(); },
     tick() { for (const callback of timers.values()) callback(); },
     open(value) { find(node => node.type === "Dialog.Root").props.onOpenChange(value); render(); },
@@ -127,125 +127,147 @@ test("disconnected Settings stays idle across mount, effect replay, focus and pa
   h.dispose();
 });
 
-test("saved prepared and connected subscriptions make no Apple requests while setup is closed", () => {
+test("saved subscriptions make no Apple requests when setup is opened, focused or left open", () => {
   const h = harness();
   for (const status of [prepared, { ready: true, connected: true }]) {
     h.render({ status });
+    h.open(true);
     h.focus();
     h.tick();
+    h.tick();
+    h.open(false);
   }
   assert.equal(h.requests.length, 0);
+  assert.equal(h.timers.size, 0);
   h.dispose();
 });
 
-test("explicit setup starts checks and connection confirmation stops them", async () => {
-  let connected = false;
-  const h = harness(async (_url, options) => Response.json(options.method === "POST"
-    ? { feedUrl: "https://example.com/feed", subscribeUrl: "webcal://example.com/feed", connected: false }
-    : { ready: true, connected }));
+test("explicit setup makes one POST and uses the parent's manually refreshed status", async () => {
+  const h = harness();
   h.render();
   h.open(true);
   h.click("Continue");
   await settle();
   h.render();
-  await settle();
-  h.render();
-  assert.deepEqual(h.requests.map(({ options }) => options.method || "GET"), ["POST", "GET"]);
-  assert.equal(h.timers.size, 1);
-  connected = true;
-  h.tick();
-  await settle();
-  h.render();
-  assert.equal(h.changes.at(-1).connected, true);
-  assert.equal(h.timers.size, 0);
-  h.focus();
-  h.tick();
-  assert.equal(h.requests.length, 3);
-  h.dispose();
-});
-
-test("slow setup checks never overlap and closing discards a late connection response", async () => {
-  let finish;
-  const h = harness(() => new Promise(resolve => { finish = resolve; }));
-  h.render({ status: prepared });
-  h.open(true);
+  assert.deepEqual(h.requests.map(({ options }) => options.method), ["POST"]);
+  assert.equal(h.requests[0].options.credentials, "include");
+  assert.equal(h.changes.at(-1).ready, true);
+  assert.equal(h.changes.at(-1).connected, false);
+  assert.equal(h.find(node => node.type === "a").props.href, "webcal://example.com/feed");
   h.focus();
   h.tick();
   h.tick();
   assert.equal(h.requests.length, 1);
-  const options = h.requests[0].options;
-  assert.equal(options.credentials, "include");
-  assert.equal(options.cache, "no-store");
-  h.open(false);
-  assert.equal(options.signal.aborted, true);
   assert.equal(h.timers.size, 0);
-  finish(Response.json({ ready: true, connected: true }));
-  await settle();
-  h.render();
+  h.render({ status: { ready: true, connected: true } });
+  assert.equal(h.find(node => node.props?.role === "status").props.children,
+    "Your calendar subscription is connected.");
+  assert.ok(h.find(node => node.props?.["aria-label"] === "Manage Apple Calendar"));
   h.focus();
-  assert.equal(h.changes.length, 0);
+  h.tick();
   assert.equal(h.requests.length, 1);
   h.dispose();
 });
 
-test("setup checks skip hidden tabs and retry failures on a later visible check", async () => {
+test("setup failures stay available for an explicit retry without focus or timer requests", async () => {
   let failing = true;
-  const h = harness(async () => {
-    if (failing) throw new Error("Network unavailable");
-    return Response.json(prepared);
-  });
-  h.render({ status: prepared });
-  h.document.visibilityState = "hidden";
+  const h = harness(async () => failing
+    ? Response.json({ error: "Setup unavailable" }, { status: 503 })
+    : Response.json({ feedUrl: "https://example.com/feed", subscribeUrl: "webcal://example.com/feed" }));
+  h.render();
   h.open(true);
-  h.tick();
-  assert.equal(h.requests.length, 0);
-  h.document.visibilityState = "visible";
-  h.focus();
+  h.click("Continue");
   await settle();
+  h.render();
+  assert.equal(h.find(node => node.props?.role === "alert").props.children, "Setup unavailable");
+  h.focus();
+  h.tick();
+  assert.equal(h.requests.length, 1);
   assert.equal(h.changes.length, 0);
   failing = false;
-  h.tick();
+  h.click("Continue");
   await settle();
-  assert.equal(h.requests.length, 2);
+  h.render();
+  assert.deepEqual(h.requests.map(({ options }) => options.method), ["POST", "POST"]);
+  assert.equal(h.find(node => node.props?.role === "alert"), null);
   assert.equal(h.changes.at(-1).ready, true);
   h.dispose();
 });
 
-test("account changes abort pending setup checks without applying another account's status", async () => {
+test("account changes discard a pending setup response and its private subscription link", async () => {
   let finish;
   const h = harness(() => new Promise(resolve => { finish = resolve; }));
-  h.render({ status: prepared });
+  h.render();
   h.open(true);
+  h.click("Continue");
   h.render({ accountKey: "owner-b", status: disconnected });
-  assert.equal(h.requests[0].options.signal.aborted, true);
-  finish(Response.json({ ready: true, connected: true }));
+  assert.equal(h.find(node => node.type === "Dialog.Root").props.open, false);
+  finish(Response.json({ feedUrl: "https://example.com/private-a", subscribeUrl: "webcal://example.com/private-a", connected: true }));
   await settle();
   h.render();
+  h.open(true);
   h.focus();
+  h.tick();
+  assert.equal(h.find(node => node.type === "a"), null);
   assert.equal(h.changes.length, 0);
   assert.equal(h.requests.length, 1);
   h.dispose();
 });
 
-test("disconnect cancels a pending check and late results cannot reconnect the card", async () => {
+test("a pending setup cannot reconnect a different account after its explicit disconnect", async () => {
   let finish;
   const h = harness((_url, options) => options.method === "DELETE"
     ? Promise.resolve(Response.json({ ok: true }))
     : new Promise(resolve => { finish = resolve; }));
-  h.render({ status: prepared });
+  h.render();
+  h.open(true);
+  h.click("Continue");
+  h.render({ accountKey: "owner-b", status: prepared });
   h.open(true);
   h.click("Disconnect Apple Calendar");
-  assert.equal(h.requests[0].options.signal.aborted, true);
   await settle();
   h.render();
-  finish(Response.json({ ready: true, connected: true }));
+  finish(Response.json({ feedUrl: "https://example.com/private-a", subscribeUrl: "webcal://example.com/private-a", connected: true }));
   await settle();
   h.render();
+  h.focus();
+  h.tick();
+  assert.deepEqual(h.requests.map(({ options }) => options.method), ["POST", "DELETE"]);
   assert.equal(h.changes.length, 1);
   assert.equal(h.changes[0].ready, false);
   assert.equal(h.changes[0].connected, false);
+  assert.equal(h.find(node => node.type === "a"), null);
+  assert.equal(h.find(node => node.type === "Dialog.Root").props.open, false);
+  h.dispose();
+});
+
+test("disconnect responses cannot change a newly selected account", async () => {
+  let finish;
+  const h = harness(() => new Promise(resolve => { finish = resolve; }));
+  h.render({ status: prepared });
+  h.open(true);
+  h.click("Disconnect Apple Calendar");
+  h.render({ accountKey: "owner-b", status: { ready: true, connected: true } });
+  finish(Response.json({ ok: true }));
+  await settle();
+  h.render();
+  assert.equal(h.changes.length, 0);
+  assert.ok(h.find(node => node.props?.["aria-label"] === "Manage Apple Calendar"));
+  assert.deepEqual(h.requests.map(({ options }) => options.method), ["DELETE"]);
+  h.dispose();
+});
+
+test("unmounting discards a pending setup result without a status callback", async () => {
+  let finish;
+  const h = harness(() => new Promise(resolve => { finish = resolve; }));
+  h.render();
+  h.open(true);
+  h.click("Continue");
+  h.dispose();
+  finish(Response.json({ feedUrl: "https://example.com/feed", subscribeUrl: "webcal://example.com/feed", connected: true }));
+  await settle();
   h.focus();
   h.tick();
-  assert.equal(h.requests.length, 2);
-  h.dispose();
+  assert.equal(h.changes.length, 0);
+  assert.equal(h.requests.length, 1);
 });

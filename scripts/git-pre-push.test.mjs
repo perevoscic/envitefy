@@ -4,6 +4,7 @@ import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSy
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { cleanGitEnvironment } from "./lib/push-validation.mjs";
 
 const sourceRoot = fileURLToPath(new URL("../", import.meta.url));
 const guard = path.join(sourceRoot, "scripts/git-pre-push.mjs");
@@ -11,8 +12,9 @@ const guard = path.join(sourceRoot, "scripts/git-pre-push.mjs");
 // Windows runs where child Git processes cannot write the system temp folder.
 const fixtureRoot = path.join(sourceRoot, "output/git-hooks-tests");
 
-function run(command, args, cwd) {
-  return spawnSync(command, args, { cwd, encoding: "utf8", windowsHide: true, env: { ...process.env, GIT_CEILING_DIRECTORIES: fixtureRoot, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: process.platform === "win32" ? "NUL" : "/dev/null" } });
+function run(command, args, cwd, input) {
+  const env = cleanGitEnvironment();
+  return spawnSync(command, args, { cwd, input, encoding: "utf8", windowsHide: true, env: { ...env, GIT_CEILING_DIRECTORIES: fixtureRoot, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: process.platform === "win32" ? "NUL" : "/dev/null" } });
 }
 function git(cwd, ...args) {
   const result = run("git", args, cwd);
@@ -25,8 +27,10 @@ function fixture(t, initialize = true) {
   const temporaryRoot = mkdtempSync(path.join(fixtureRoot, "envitefy-git-hooks-"));
   const repository = path.join(temporaryRoot, "repo with spaces");
   mkdirSync(path.join(repository, "scripts"), { recursive: true });
+  mkdirSync(path.join(repository, "scripts/lib"), { recursive: true });
   mkdirSync(path.join(repository, ".githooks"));
   for (const name of ["git-pre-push.mjs", "install-git-hooks.mjs"]) copyFileSync(path.join(sourceRoot, "scripts", name), path.join(repository, "scripts", name));
+  copyFileSync(path.join(sourceRoot, "scripts/lib/push-validation.mjs"), path.join(repository, "scripts/lib/push-validation.mjs"));
   copyFileSync(path.join(sourceRoot, ".githooks/pre-push"), path.join(repository, ".githooks/pre-push"));
   chmodSync(path.join(repository, ".githooks/pre-push"), 0o755);
   writeFileSync(path.join(repository, "tracked.txt"), "committed\n");
@@ -178,4 +182,33 @@ test("installer supports a .git file in a linked worktree", (t) => {
   const result = install(worktree);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(git(worktree, "config", "--local", "--get", "core.hooksPath"), ".githooks");
+});
+
+test("the real shell hook forwards outgoing refs to validation and preserves a failed check", (t) => {
+  const { repository } = fixture(t);
+  const library = path.join(repository, "scripts/lib/push-validation.mjs");
+  copyFileSync(library, path.join(repository, "scripts/lib/push-validation-real.mjs"));
+  writeFileSync(library, `export { parsePushUpdates, validationInterrupts } from './push-validation-real.mjs';\nexport async function validatePush({updates}) { console.log('candidate='+updates[0].localSha); throw new Error('fixture CI check failed'); }\n`);
+  git(repository, "add", "scripts/lib");
+  git(repository, "-c", "user.name=Hook Test", "-c", "user.email=hook@example.test", "commit", "--quiet", "-m", "Validation dispatch fixture");
+  assert.equal(install(repository).status, 0);
+  const head = git(repository, "rev-parse", "HEAD");
+  const zero = "0".repeat(40);
+  const refs = path.join(repository, "ignored.txt");
+  writeFileSync(refs, `refs/heads/main ${head} refs/heads/main ${zero}\n`);
+  const result = run("git", ["hook", "run", "--to-stdin", refs, "pre-push", "--", "origin", "https://example.test/repo"], repository);
+  assert.equal(result.status, 1, result.stderr + result.stdout);
+  assert.match(result.stdout + result.stderr, new RegExp(`candidate=${head}`));
+  assert.match(result.stderr, /fixture CI check failed/);
+  assert.equal(git(repository, "status", "--porcelain"), "");
+});
+
+test("deletion-only and no-op real pushes do not recursively run CI checks", (t) => {
+  const { repository } = fixture(t);
+  assert.equal(install(repository).status, 0);
+  const head = git(repository, "rev-parse", "HEAD");
+  for (const input of ["", `(delete) ${"0".repeat(40)} refs/heads/old ${head}\n`]) {
+    const result = run("git", ["hook", "run", "pre-push", "--", "origin", "https://example.test/repo"], repository, input);
+    assert.equal(result.status, 0, result.stderr);
+  }
 });

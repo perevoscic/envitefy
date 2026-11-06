@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import http from "node:http";
-import { execFileSync } from "node:child_process";
+import buildBunFixture from "./lib/build-bun-fixture.cjs";
 import { createRequire } from "node:module";
 import { chromium } from "playwright";
 import sharp from "sharp";
@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 const loadTs = require("./lib/event-messages-test-loader.cjs");
 
 test("artistic font cards recover HTML status and ambiguous starts without duplicate generation on phones", { timeout: 90000 }, async () => {
-  execFileSync("bun", ["scripts/build-livecard-builder-fixture.mjs"], { timeout: 60000, stdio: "pipe" });
+  buildBunFixture("scripts/build-livecard-builder-fixture.mjs");
   const image = await sharp({ create: { width: 1000, height: 1500, channels: 3, background: "#ddd3b7" } }).png().toBuffer();
   const { renderCardFontLettering } = loadTs("src/lib/card-font-lettering.ts");
   const design = { version: 1, backgroundUrl: `data:image/png;base64,${image.toString("base64")}`, typography: "botanical", font: "classic", ink: "#24482e", accent: "#ac7d22", surface: "#fff8ed" };
@@ -27,7 +27,7 @@ test("artistic font cards recover HTML status and ambiguous starts without dupli
   });
   await new Promise(resolve => server.listen(0, "127.0.0.1", resolve)); server.unref();
   const origin = `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
   const errors = [];
   try {
     const context = await browser.newContext({ viewport: { width: 320, height: 800 } });

@@ -6,14 +6,15 @@ import * as Dialog from "@radix-ui/react-dialog";
 import {
   CalendarDays,
   Bookmark,
+  ArrowLeft,
   Camera,
   Check,
   ChevronRight,
+  LockKeyhole,
   RefreshCw,
   Settings2,
   ShieldCheck,
   Sparkles,
-  Trash2,
   Unplug,
   UserRound,
   type LucideIcon,
@@ -59,6 +60,7 @@ import CreationAccessSettings from "@/components/account/CreationAccessSettings"
 import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 import AppearanceSelector from "@/components/AppearanceSelector";
 import CategoryFavoritesSettings from "@/components/account/CategoryFavoritesSettings";
+import styles from "./settings-workspace.module.css";
 
 type CalendarProvider = "google" | "microsoft" | "apple";
 type ConnectedCalendarProvider = Exclude<CalendarProvider, "apple">;
@@ -67,28 +69,23 @@ type SettingsSectionKey = "profile" | "calendars" | "security" | "creation" | "a
 const SETTINGS_SECTIONS: Array<{
   id: SettingsSectionKey;
   label: string;
-  description: string;
+  group: "Account" | "Workspace" | "Connections";
   icon: LucideIcon;
 }> = [
-  { id: "profile", label: "Profile", description: "Name and account email", icon: UserRound },
-  { id: "appearance", label: "Appearance", description: "Light or dark", icon: Settings2 },
-  { id: "favorites", label: "Favorites", description: "Event types and sports", icon: Bookmark },
+  { id: "profile", label: "Profile", group: "Account", icon: UserRound },
+  { id: "security", label: "Sign-in & security", group: "Account", icon: ShieldCheck },
+  { id: "appearance", label: "Appearance", group: "Workspace", icon: Settings2 },
+  { id: "favorites", label: "Favorites", group: "Workspace", icon: Bookmark },
   {
     id: "calendars",
     label: "Calendars",
-    description: "Connections and defaults",
+    group: "Connections",
     icon: CalendarDays,
   },
   {
-    id: "security",
-    label: "Security",
-    description: "Password and account access",
-    icon: ShieldCheck,
-  },
-  {
     id: "creation",
-    label: "Event creation",
-    description: "Menus, sports and defaults",
+    label: "Creation tools & access",
+    group: "Workspace",
     icon: Sparkles,
   },
 ];
@@ -102,12 +99,23 @@ type ApiState<T> = { loading: boolean; error: string | null; data?: T };
 type CalendarConnectionMessage = { kind: "success" | "error"; text: string };
 
 export default function SettingsPage() {
+  const { data: session, status } = useSession();
+  const identity = session?.user?.email || (session?.user as { id?: string } | undefined)?.id || "";
+  return <SettingsWorkspace key={`${status}:${identity}`} />;
+}
+
+function SettingsWorkspace() {
   const settingsSectionQuery = useSearchParams()?.get("section") || "";
   const { data: session, status: sessionStatus } = useSession();
 
   // Profile form state
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [savedProfile, setSavedProfile] = useState({ firstName: "", lastName: "" });
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [profileReload, setProfileReload] = useState(0);
+  const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
@@ -117,6 +125,12 @@ export default function SettingsPage() {
   });
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const avatarPreviewObjectUrlRef = useRef<string | null>(null);
+  const profileRequestRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+  const [mobileSettingsView, setMobileSettingsView] = useState<"list" | "detail">("list");
+  const sectionHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const navButtonRefs = useRef<Partial<Record<SettingsSectionKey, HTMLButtonElement | null>>>({});
+  const focusSectionRef = useRef(false);
   const [preferredProvider, setPreferredProvider] = useState<string>("");
   const [calendarDefaultLoading, setCalendarDefaultLoading] = useState(true);
   const calendarDefaultSavingRef = useRef(false);
@@ -175,18 +189,18 @@ export default function SettingsPage() {
 
   const userEmail = useMemo(() => (session?.user?.email as string) || "", [session]);
   const settingsDisplayName = useMemo(() => {
-    const profileName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+    const profileName = [savedProfile.firstName.trim(), savedProfile.lastName.trim()].filter(Boolean).join(" ");
     return profileName || session?.user?.name || userEmail || "Your account";
-  }, [firstName, lastName, session?.user?.name, userEmail]);
+  }, [savedProfile, session?.user?.name, userEmail]);
   const settingsInitials = useMemo(() => {
     const parts = settingsDisplayName.split(/\s+/).filter(Boolean);
     if (!parts.length) return "A";
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
   }, [settingsDisplayName]);
-  const connectedCalendarCount = Object.values(connectedCalendars).filter(Boolean).length + Number(appleSubscriptionStatus.connected);
-  const primarySportLabel = getSportCreationLabel(sportPreferences.primarySport);
-  const displayedAvatarUrl = avatarPreviewUrl || avatarUrl;
+  const displayedAvatarUrl = avatarRemoved ? null : avatarPreviewUrl || avatarUrl;
+  const profileDirty = firstName !== savedProfile.firstName || lastName !== savedProfile.lastName || Boolean(pendingAvatar) || avatarRemoved;
+  const activeSection = SETTINGS_SECTIONS.find((section) => section.id === activeSettingsSection)!;
 
   const clearAvatarPreview = useCallback(() => {
     if (avatarPreviewObjectUrlRef.current) {
@@ -196,46 +210,22 @@ export default function SettingsPage() {
     setAvatarPreviewUrl(null);
   }, []);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      profileRequestRef.current?.abort();
       if (avatarPreviewObjectUrlRef.current) {
         URL.revokeObjectURL(avatarPreviewObjectUrlRef.current);
       }
-    },
-    [],
-  );
+    };
+  }, []);
 
   const notifyProfileChanged = useCallback((nextAvatarUrl: string | null) => {
     window.dispatchEvent(
       new CustomEvent("envitefy:profile-changed", { detail: { avatarUrl: nextAvatarUrl } }),
     );
   }, []);
-
-  async function uploadAvatar(file: File) {
-    setAvatarState({ loading: true, error: null });
-    const previewUrl = URL.createObjectURL(file);
-    clearAvatarPreview();
-    avatarPreviewObjectUrlRef.current = previewUrl;
-    setAvatarPreviewUrl(previewUrl);
-    try {
-      const body = new FormData();
-      body.set("avatar", file);
-      const res = await fetch("/api/user/profile/avatar", { method: "POST", body });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || "Failed to upload profile image");
-      const nextAvatarUrl = typeof json.avatarUrl === "string" ? json.avatarUrl : null;
-      setAvatarUrl(nextAvatarUrl);
-      setAvatarState({ loading: false, error: null, data: { ok: true } });
-      notifyProfileChanged(nextAvatarUrl);
-    } catch (error) {
-      setAvatarState({
-        loading: false,
-        error: error instanceof Error ? error.message : "Failed to upload profile image",
-      });
-    } finally {
-      clearAvatarPreview();
-    }
-  }
 
   function onAvatarSelected(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -246,46 +236,84 @@ export default function SettingsPage() {
       setAvatarState({ loading: false, error: validation.error });
       return;
     }
-    void uploadAvatar(file);
+    if (profileState.loading || !profileLoaded) return;
+    clearAvatarPreview();
+    const previewUrl = URL.createObjectURL(file);
+    avatarPreviewObjectUrlRef.current = previewUrl;
+    setAvatarPreviewUrl(previewUrl);
+    setPendingAvatar(file);
+    setAvatarRemoved(false);
+    setFailedAvatarUrl(null);
+    setAvatarState({ loading: false, error: null });
+    setProfileState({ loading: false, error: null });
   }
 
-  async function removeAvatar() {
-    setAvatarState({ loading: true, error: null });
-    try {
-      const res = await fetch("/api/user/profile/avatar", { method: "DELETE" });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || "Failed to remove profile image");
-      clearAvatarPreview();
-      setAvatarUrl(null);
-      setAvatarState({ loading: false, error: null, data: { ok: true } });
-      notifyProfileChanged(null);
-    } catch (error) {
-      setAvatarState({
-        loading: false,
-        error: error instanceof Error ? error.message : "Failed to remove profile image",
-      });
-    }
+  function removeAvatar() {
+    if (profileState.loading || !profileLoaded) return;
+    clearAvatarPreview();
+    setPendingAvatar(null);
+    setAvatarRemoved(Boolean(avatarUrl));
+    setAvatarState({ loading: false, error: null });
+    setProfileState({ loading: false, error: null });
+  }
+
+  function cancelProfileChanges() {
+    if (profileState.loading) return;
+    setFirstName(savedProfile.firstName);
+    setLastName(savedProfile.lastName);
+    setPendingAvatar(null);
+    setAvatarRemoved(false);
+    clearAvatarPreview();
+    setFailedAvatarUrl(null);
+    setAvatarState({ loading: false, error: null });
+    setProfileState({ loading: false, error: null });
   }
 
   const selectSettingsSection = useCallback((section: SettingsSectionKey) => {
     setActiveSettingsSection(section);
+    setMobileSettingsView("detail");
+    focusSectionRef.current = true;
     if (typeof window === "undefined") return;
     const hash = section === "creation" ? "your-sports" : section;
-    window.history.replaceState(null, "", `${window.location.pathname}#${hash}`);
+    const url = new URL(window.location.href);
+    url.hash = hash;
+    window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`);
   }, []);
+
+  const showSettingsList = () => {
+    setMobileSettingsView("list");
+    const url = new URL(window.location.href);
+    url.hash = "";
+    url.searchParams.delete("section");
+    window.history.pushState(null, "", `${url.pathname}${url.search}`);
+    requestAnimationFrame(() => navButtonRefs.current[activeSettingsSection]?.focus());
+  };
+
+  useEffect(() => {
+    if (focusSectionRef.current && mobileSettingsView === "detail") {
+      sectionHeadingRef.current?.focus({ preventScroll: true });
+      focusSectionRef.current = false;
+    }
+  }, [activeSettingsSection, mobileSettingsView]);
 
   useEffect(() => {
     const syncSectionFromHash = () => {
       const hash = window.location.hash.replace(/^#/, "") || settingsSectionQuery;
       if (hash === "your-sports" || hash === "creation") {
         setActiveSettingsSection("creation");
+        setMobileSettingsView("detail");
       } else if (hash === "calendars" || hash === "security" || hash === "profile" || hash === "appearance" || hash === "favorites") {
         setActiveSettingsSection(hash);
-      }
+        setMobileSettingsView("detail");
+      } else setMobileSettingsView("list");
     };
     syncSectionFromHash();
     window.addEventListener("hashchange", syncSectionFromHash);
-    return () => window.removeEventListener("hashchange", syncSectionFromHash);
+    window.addEventListener("popstate", syncSectionFromHash);
+    return () => {
+      window.removeEventListener("hashchange", syncSectionFromHash);
+      window.removeEventListener("popstate", syncSectionFromHash);
+    };
   }, [settingsSectionQuery]);
 
   const normalizeProvider = (value: unknown): CalendarProvider | null => {
@@ -310,7 +338,6 @@ export default function SettingsPage() {
     const requestId = ++calendarRequestRef.current;
     const appleStatusVersion = appleStatusVersionRef.current;
     setConnectionsLoading(true);
-    setCalendarAccountEmails({ google: null, microsoft: null });
     try {
       const res = await fetch("/api/calendars?includeAccounts=1", { credentials: "include", cache: "no-store" });
       if (!res.ok) {
@@ -354,12 +381,12 @@ export default function SettingsPage() {
     if (!googleAuth) return;
 
     setActiveSettingsSection("calendars");
+    setMobileSettingsView("detail");
     if (googleAuth === "stored") {
       setCalendarConnectionMessage({
         kind: "success",
         text: "Google Calendar connected. New scanned events can now be added automatically.",
       });
-      void fetchConnectedCalendars();
     } else {
       const reason = params.get("googleAuthReason");
       const text =
@@ -372,7 +399,7 @@ export default function SettingsPage() {
     }
 
     window.history.replaceState(null, "", `${window.location.pathname}#calendars`);
-  }, [fetchConnectedCalendars]);
+  }, []);
 
   const handleCalendarConnect = useCallback(
     (provider: ConnectedCalendarProvider) => {
@@ -388,11 +415,8 @@ export default function SettingsPage() {
       } else if (provider === "microsoft") {
         window.open("/api/outlook/auth?source=settings", "_blank", "noopener,noreferrer");
       }
-      window.setTimeout(() => {
-        void fetchConnectedCalendars();
-      }, 4000);
     },
-    [fetchConnectedCalendars],
+    [],
   );
 
   async function disconnectCalendar(provider: ConnectedCalendarProvider) {
@@ -412,6 +436,9 @@ export default function SettingsPage() {
         throw new Error(payload.error || `Could not disconnect ${label}`);
       }
 
+      // Discard any older status read so it cannot restore this connection.
+      calendarRequestRef.current++;
+      setConnectionsLoading(false);
       setConnectedCalendars((current) => ({ ...current, [provider]: false }));
       setCalendarAccountEmails((current) => ({ ...current, [provider]: null }));
       if (preferredProvider === provider) {
@@ -422,7 +449,6 @@ export default function SettingsPage() {
         kind: "success",
         text: `${label} disconnected from this Envitefy account.`,
       });
-      await fetchConnectedCalendars();
       setDisconnectPromptProvider(null);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : `Could not disconnect ${label}`;
@@ -468,6 +494,8 @@ export default function SettingsPage() {
   useEffect(() => {
     let ignore = false;
     async function loadProfile() {
+      if (sessionStatus !== "authenticated") return;
+      setProfileState({ loading: false, error: null });
       try {
         const res = await fetch("/api/user/profile", { cache: "no-store" });
         if (!res.ok) throw new Error((await res.json()).error || "Failed to load profile");
@@ -475,10 +503,12 @@ export default function SettingsPage() {
         if (ignore) return;
         setFirstName(json.firstName || "");
         setLastName(json.lastName || "");
+        setSavedProfile({ firstName: json.firstName || "", lastName: json.lastName || "" });
+        setProfileLoaded(true);
         setAvatarUrl(typeof json.avatarUrl === "string" ? json.avatarUrl : null);
         setPreferredProvider(normalizeProvider(json.preferredProvider) || "");
-      } catch {
-        // no-op; page still renders
+      } catch (error) {
+        if (!ignore) setProfileState({ loading: false, error: error instanceof Error ? error.message : "Failed to load profile" });
       } finally {
         if (!ignore) setCalendarDefaultLoading(false);
       }
@@ -487,7 +517,7 @@ export default function SettingsPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [sessionStatus, profileReload]);
 
   useEffect(() => {
     let ignore = false;
@@ -534,16 +564,6 @@ export default function SettingsPage() {
   }, [fetchConnectedCalendars, sessionStatus, session?.user?.email]);
 
   useEffect(() => {
-    const onFocus = () => {
-      void fetchConnectedCalendars();
-    };
-    window.addEventListener("focus", onFocus);
-    return () => {
-      window.removeEventListener("focus", onFocus);
-    };
-  }, [fetchConnectedCalendars]);
-
-  useEffect(() => {
     if (connectionsLoading || !connectionsVerified) return;
     const invalidProvider = preferredProviderInvalid ? normalizeProvider(preferredProvider) : null;
     if (!invalidProvider) {
@@ -585,25 +605,47 @@ export default function SettingsPage() {
 
   async function onSaveProfile(e: React.FormEvent) {
     e.preventDefault();
+    if (!profileLoaded || !profileDirty || profileRequestRef.current) return;
+    const controller = new AbortController();
+    profileRequestRef.current = controller;
     setProfileState({ loading: true, error: null });
     try {
+      const body = new FormData();
+      body.set("firstName", firstName);
+      body.set("lastName", lastName);
+      body.set("avatarAction", pendingAvatar ? "replace" : avatarRemoved ? "remove" : "keep");
+      if (pendingAvatar) body.set("avatar", pendingAvatar);
       const res = await fetch("/api/user/profile", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-        }),
+        body,
+        signal: controller.signal,
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || "Failed to update profile");
+      if (!mountedRef.current || controller.signal.aborted) return;
+      if (json.ok !== true || (json.avatarUrl !== null && typeof json.avatarUrl !== "string")) {
+        throw new Error("Profile save could not be confirmed. Please try again.");
+      }
+      const nextProfile = { firstName: json.firstName || "", lastName: json.lastName || "" };
+      setFirstName(nextProfile.firstName);
+      setLastName(nextProfile.lastName);
+      setSavedProfile(nextProfile);
+      setAvatarUrl(json.avatarUrl);
+      setPendingAvatar(null);
+      setAvatarRemoved(false);
+      clearAvatarPreview();
+      setAvatarState({ loading: false, error: null });
       setProfileState({ loading: false, error: null, data: { ok: true } });
+      notifyProfileChanged(json.avatarUrl);
     } catch (err: unknown) {
+      if (!mountedRef.current || controller.signal.aborted) return;
       const message = err instanceof Error ? err.message : "Failed to update";
       setProfileState({
         loading: false,
         error: message,
       });
+    } finally {
+      if (profileRequestRef.current === controller) profileRequestRef.current = null;
     }
   }
 
@@ -717,496 +759,179 @@ export default function SettingsPage() {
   }
 
   return (
-    <main
-      data-mobile-form-surface
-      data-settings-canvas
-      className="min-h-screen w-full bg-[radial-gradient(circle_at_12%_0%,rgba(235,228,255,0.9),transparent_31%),radial-gradient(circle_at_92%_6%,rgba(224,246,255,0.8),transparent_28%)] px-3 py-4 text-foreground sm:px-6 sm:py-7 lg:px-8"
-    >
-      <section className="mx-auto w-full max-w-6xl pt-[var(--app-content-top-inset,0px)]">
-        <header className="relative overflow-hidden rounded-[1.5rem] border border-white/80 bg-[linear-gradient(118deg,#251b36_0%,#48357a_58%,#315d73_100%)] p-4 text-white shadow-[0_26px_80px_rgba(47,33,76,0.2)] sm:rounded-[2rem] sm:p-8">
-          <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[#8e7cff]/25 blur-3xl" />
-          <div className="absolute -bottom-28 left-1/3 h-52 w-52 rounded-full bg-[#6cdbff]/20 blur-3xl" />
-          <div className="relative flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
-            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-              <span className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/12 text-lg font-black shadow-inner">
-                {displayedAvatarUrl && displayedAvatarUrl !== failedAvatarUrl ? (
-                  <Image
-                    key={displayedAvatarUrl}
-                    src={displayedAvatarUrl}
-                    alt={`${settingsDisplayName} profile`}
-                    fill
-                    sizes="56px"
-                    unoptimized
-                    className="object-cover"
-                    onError={() => setFailedAvatarUrl(displayedAvatarUrl)}
-                  />
-                ) : (
-                  settingsInitials
-                )}
-              </span>
-              <div className="min-w-0">
-                <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-white/60">
-                  <Settings2 className="h-3.5 w-3.5" /> Account workspace
-                </p>
-                <h1 className="mt-2 text-3xl font-black tracking-tight !text-white sm:text-4xl">
-                  Settings
-                </h1>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">
-                  Keep your profile, calendar connections, security, and event creation preferences
-                  organized in one place.
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
-              <div className="rounded-xl border border-white/15 bg-white/10 px-3.5 py-2 backdrop-blur">
-                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/50">
-                  Account
-                </p>
-                <p className="mt-0.5 max-w-40 truncate text-xs font-bold">{settingsDisplayName}</p>
-              </div>
-              <div className="rounded-xl border border-white/15 bg-white/10 px-3.5 py-2 backdrop-blur">
-                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/50">
-                  Calendars
-                </p>
-                <p className="mt-0.5 text-xs font-bold">
-                  {connectedCalendarCount ? `${connectedCalendarCount} connected` : "None connected"}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => selectSettingsSection("creation")}
-                className="col-span-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2 text-left backdrop-blur transition hover:bg-white/15 sm:col-span-1"
-              >
-                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/50">
-                  Primary sport
-                </p>
-                <p className="mt-0.5 text-xs font-bold">
-                  {sportPreferences.setupCompleted ? primarySportLabel : "Not selected"}
-                </p>
-              </button>
-            </div>
+    <main data-mobile-form-surface data-settings-canvas data-settings-view={mobileSettingsView} className={styles.canvas}>
+      <div className={styles.workspace}>
+        <header className={styles.header}>
+          <h1 className={styles.pageTitle}>Settings</h1>
+          <div className={styles.account}>
+            <span className={styles.accountAvatar} aria-hidden="true">
+              {avatarUrl && avatarUrl !== failedAvatarUrl ? (
+                <Image src={avatarUrl} alt="" fill sizes="40px" unoptimized className="object-cover" onError={() => setFailedAvatarUrl(avatarUrl)} />
+              ) : settingsInitials}
+            </span>
+            <span className={styles.accountName}>{settingsDisplayName}</span>
           </div>
         </header>
 
-        <div className="mt-4 grid min-w-0 items-start gap-4 sm:mt-6 sm:gap-5 lg:grid-cols-[15.5rem_minmax(0,1fr)]">
-          <aside className="z-10 min-w-0 rounded-2xl border border-[#e3dcf0] bg-white/90 p-2 shadow-[0_14px_45px_rgba(65,51,92,0.08)] backdrop-blur lg:sticky lg:top-4 lg:p-3">
-            <nav
-              aria-label="Settings sections"
-              className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:flex lg:flex-col"
-            >
-              {SETTINGS_SECTIONS.map((section) => {
-                const Icon = section.icon;
-                const active = activeSettingsSection === section.id;
-                return (
-                  <button
-                    key={section.id}
-                    type="button"
-                    aria-current={active ? "page" : undefined}
-                    onClick={() => selectSettingsSection(section.id)}
-                    className={`group flex min-h-[52px] min-w-0 items-center gap-2 rounded-xl px-2.5 py-2 text-left transition sm:gap-3 sm:px-3 lg:min-h-0 lg:py-3 ${
-                      active
-                        ? "bg-[#33264c] text-white shadow-[0_8px_24px_rgba(51,38,76,0.18)]"
-                        : "text-[#50475d] hover:bg-[#f5f1fb] hover:text-[#2f2440]"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9 sm:rounded-xl ${
-                        active ? "bg-white/12 text-[#dcd4ff]" : "bg-[#f2eef9] text-[#7663a5]"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-bold sm:text-sm">{section.label}</span>
-                      <span
-                        className={`hidden truncate text-[11px] lg:block ${
-                          active ? "text-white/55" : "text-[#90869b]"
-                        }`}
-                      >
-                        {section.description}
-                      </span>
-                    </span>
-                    <ChevronRight
-                      className={`hidden h-4 w-4 lg:block ${active ? "text-white/45" : "text-[#c4bbc9]"}`}
-                    />
-                  </button>
-                );
-              })}
+        <div className={styles.layout}>
+          <aside className={styles.navigation}>
+            <nav aria-label="Settings sections">
+              {(["Account", "Workspace", "Connections"] as const).map((group) => (
+                <div key={group} className={styles.navGroup}>
+                  <h2 className={styles.navGroupTitle}>{group}</h2>
+                  {SETTINGS_SECTIONS.filter((section) => section.group === group).map((section) => {
+                    const Icon = section.icon;
+                    const active = activeSettingsSection === section.id;
+                    return (
+                      <button key={section.id} type="button" ref={(element) => { navButtonRefs.current[section.id] = element; }}
+                        aria-current={active ? "page" : undefined} aria-controls={section.id === "creation" ? "your-sports" : section.id === "appearance" ? "settings-appearance-panel" : section.id}
+                        onClick={() => selectSettingsSection(section.id)} className={styles.navButton}>
+                        <Icon className={styles.navIcon} aria-hidden="true" />
+                        <span className={styles.navLabel}>{section.label}</span>
+                        <ChevronRight className={styles.mobileChevron} aria-hidden="true" />
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </nav>
-            <div className="mt-3 hidden rounded-xl bg-[#f7f4fb] p-3 lg:block">
-              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8c7ea0]">
-                Tip
-              </p>
-              <p className="mt-1 text-xs leading-5 text-[#6a6074]">
-                Event creation preferences never hide or remove events you already own.
-              </p>
-            </div>
           </aside>
 
-          <div className="min-w-0">
-          <section id="favorites" aria-labelledby="settings-favorites-heading" className={`${activeSettingsSection === "favorites" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-border bg-card p-5 text-card-foreground sm:p-7`}>
-            <h2 id="settings-favorites-heading" className="text-2xl font-bold">Favorites</h2>
-            <CategoryFavoritesSettings />
-          </section>
-          <section className={`${activeSettingsSection === "appearance" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-border bg-card p-5 text-card-foreground sm:p-7`}>
-            <h2 className="text-2xl font-bold">Appearance</h2>
-            <AppearanceSelector />
-          </section>
-          {/* Profile (names) */}
-          <section
-            className={`${activeSettingsSection === "profile" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-[#e3dcf0] bg-white/95 p-5 shadow-[0_18px_55px_rgba(65,51,92,0.08)] sm:p-7`}
-          >
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7964ad]">
-                Account details
-              </p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight text-[#251b32]">Profile</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Keep the name shown across your Envitefy workspace up to date.
-              </p>
-            </div>
-            <div data-settings-surface className="flex min-w-0 flex-col gap-4 rounded-2xl border border-[#e2d9f2] bg-[linear-gradient(145deg,#fbf9ff,#fff)] p-4 sm:flex-row sm:items-center sm:p-5">
-              <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[1.6rem] border-4 border-white bg-[linear-gradient(135deg,#6f59b1,#527d98)] shadow-[0_12px_30px_rgba(70,52,111,0.18)]">
-                {displayedAvatarUrl && displayedAvatarUrl !== failedAvatarUrl ? (
-                  <Image
-                    key={displayedAvatarUrl}
-                    src={displayedAvatarUrl}
-                    alt={`${settingsDisplayName} profile`}
-                    fill
-                    sizes="96px"
-                    unoptimized
-                    className="object-cover"
-                    onError={() => setFailedAvatarUrl(displayedAvatarUrl)}
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-2xl font-black text-white">
-                    {settingsInitials}
+          <div data-settings-detail className={styles.detail}>
+            <button type="button" onClick={showSettingsList} className={`${styles.quietButton} ${styles.backButton}`}>
+              <ArrowLeft size={17} aria-hidden="true" />All settings
+            </button>
+            <h2 ref={sectionHeadingRef} id="settings-section-heading" tabIndex={-1} className={styles.sectionHeading}>{activeSection.label}</h2>
+
+            <section id="favorites" aria-labelledby="settings-section-heading" hidden={activeSettingsSection !== "favorites"}
+              className={`${activeSettingsSection === "favorites" ? "block" : "hidden"} ${styles.panel}`}>
+              <CategoryFavoritesSettings />
+            </section>
+            <section id="settings-appearance-panel" aria-labelledby="settings-section-heading" hidden={activeSettingsSection !== "appearance"}
+              className={`${activeSettingsSection === "appearance" ? "block" : "hidden"} ${styles.panel}`}>
+              <AppearanceSelector />
+            </section>
+
+            <section id="profile" aria-labelledby="settings-section-heading" hidden={activeSettingsSection !== "profile"}
+              className={`${activeSettingsSection === "profile" ? "block" : "hidden"} ${styles.panel}`}>
+              <form onSubmit={onSaveProfile} className={styles.profileForm} aria-busy={profileState.loading}>
+                <div className={styles.photoRow}>
+                  <span className={styles.profileAvatar}>
+                    {displayedAvatarUrl && displayedAvatarUrl !== failedAvatarUrl ? (
+                      <Image key={displayedAvatarUrl} src={displayedAvatarUrl} alt={`${settingsDisplayName} profile`} fill sizes="64px" unoptimized className="object-cover" onError={() => setFailedAvatarUrl(displayedAvatarUrl)} />
+                    ) : <span role="img" aria-label="Profile initials">{settingsInitials}</span>}
                   </span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-bold text-[#2f2440]">Profile image</h3>
-                <p className="mt-1 text-xs leading-5 text-[#7d7387]">
-                  Upload a JPG, PNG, or WebP image. We crop it to a square and optimize it for you.
-                  Maximum file size: 5 MB. Your Envitefy photo stays if you already have one, or if
-                  you replace the Google photo. Google is used only when you have not chosen a photo.
-                </p>
-                <input
-                  ref={avatarInputRef}
-                  type="file"
-                  accept={PROFILE_AVATAR_ACCEPT}
-                  onChange={onAvatarSelected}
-                  className="sr-only"
-                  aria-label="Choose profile image"
-                />
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => avatarInputRef.current?.click()}
-                    disabled={avatarState.loading}
-                    className="mobile-touch-target inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#33264c] px-3.5 py-2 text-sm font-bold text-white transition hover:bg-[#473460] disabled:cursor-wait disabled:opacity-60 sm:w-auto sm:text-xs"
-                  >
-                    <Camera className="h-3.5 w-3.5" />
-                    {avatarState.loading ? "Uploading…" : avatarUrl ? "Replace image" : "Upload image"}
-                  </button>
-                  {avatarUrl ? (
-                    <button
-                      type="button"
-                      onClick={() => void removeAvatar()}
-                      disabled={avatarState.loading}
-                      className="mobile-touch-target inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#ddd4e8] bg-white px-3.5 py-2 text-sm font-semibold text-[#6c5f76] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 sm:w-auto sm:text-xs"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> Remove
-                    </button>
-                  ) : null}
-                </div>
-                {avatarState.error ? (
-                  <p role="alert" className="mt-2 text-xs font-medium text-red-600">
-                    {avatarState.error}
-                  </p>
-                ) : null}
-                {avatarState.data?.ok && !avatarState.error ? (
-                  <p className="mt-2 text-xs font-medium text-emerald-700">
-                    Profile image updated.
-                  </p>
-                ) : null}
-              </div>
-            </div>
-            <form onSubmit={onSaveProfile} className="space-y-5">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium mb-1">First name</label>
-                  <input
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full rounded-xl border border-[#d9cdfa] bg-[#fcfaff] px-3.5 py-2.5 text-sm outline-none transition focus:border-[#8f7ac4] focus:ring-4 focus:ring-[#8f7ac4]/10"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Last name</label>
-                  <input
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="w-full rounded-xl border border-[#d9cdfa] bg-[#fcfaff] px-3.5 py-2.5 text-sm outline-none transition focus:border-[#8f7ac4] focus:ring-4 focus:ring-[#8f7ac4]/10"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <input
-                  type="email"
-                  value={userEmail}
-                  disabled
-                  className="w-full cursor-not-allowed rounded-xl border border-[#e3dafd] bg-[#f4eeff] px-3.5 py-2.5 text-sm text-[#746a7d]"
-                />
-                <p className="mt-1.5 text-xs text-[#8b8292]">
-                  Your sign-in email is managed with your account credentials.
-                </p>
-              </div>
-              {profileState.error && <p className="text-sm text-red-600">{profileState.error}</p>}
-              {profileState.data?.ok && <p className="text-sm text-green-600">Profile saved.</p>}
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={profileState.loading}
-                  className="mobile-touch-target inline-flex w-full items-center justify-center rounded-xl bg-[#33264c] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(51,38,76,0.18)] transition hover:bg-[#473460] disabled:opacity-60 sm:w-auto"
-                >
-                  {profileState.loading ? "Saving..." : "Save changes"}
-                </button>
-              </div>
-            </form>
-            <ProfileAccountDeletion accountEmail={userEmail} />
-          </section>
-
-          <section
-            className={`${activeSettingsSection === "calendars" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-[#e3dcf0] bg-white/95 p-5 shadow-[0_18px_55px_rgba(65,51,92,0.08)] sm:p-7`}
-          >
-              <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7964ad]">
-                  Connected services
-                </p>
-                <h2 className="mt-1 text-2xl font-black tracking-tight text-[#251b32]">
-                  Calendars
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {CONNECTED_CALENDAR_SYNC_ENABLED
-                    ? "Connect your calendars and choose where new scanned events are saved."
-                    : CALENDAR_SYNC_PAUSED_MESSAGE}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void fetchConnectedCalendars()}
-                className="inline-flex items-center rounded-xl border border-[#d9cdfa] bg-[#fcfaff] px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff]"
-                disabled={connectionsLoading}
-              >
-                {connectionsLoading ? "Refreshing..." : "Refresh"}
-              </button>
-              </div>
-
-              {calendarConnectionMessage ? (
-                <div
-                  className={`rounded-xl border px-3 py-2 text-sm ${
-                    calendarConnectionMessage.kind === "success"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-red-200 bg-red-50 text-red-700"
-                  }`}
-                  role="status"
-                >
-                  {calendarConnectionMessage.text}
-                </div>
-              ) : null}
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {[
-                {
-                  key: "google" as const,
-                  label: "Google",
-                  connected: connectedCalendars.google,
-                },
-                {
-                  key: "apple" as const,
-                  label: "Apple",
-                  connected: connectedCalendars.apple,
-                },
-                {
-                  key: "microsoft" as const,
-                  label: "Outlook",
-                  connected: connectedCalendars.microsoft,
-                },
-              ].map((item) => {
-                if (item.key === "apple") {
-                  return <AppleCalendarConnection key={userEmail || "apple"} accountKey={userEmail} status={appleSubscriptionStatus} onStatusChange={handleAppleStatusChange} />;
-                }
-                const disconnecting = disconnectingProvider === item.key;
-                const isDefault = preferredProvider === item.key && item.connected;
-                return (
-                  <div
-                    key={item.key}
-                    data-settings-surface
-                    className="min-w-0 space-y-3 rounded-2xl border border-[#e5dcff] bg-[linear-gradient(145deg,#fff,#fbf9ff)] p-4 shadow-[0_8px_24px_rgba(80,61,121,0.05)]"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-[#2f1d47]">{item.label}</p>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs ${
-                          item.connected
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-[#f1edff] text-[#6f5ba3]"
-                        }`}
-                      >
-                        {item.connected ? "Connected" : "Not connected"}
-                      </span>
-                    </div>
-
-                    {item.connected ? (
-                      <p className="text-sm leading-5 text-[#59466f] [overflow-wrap:anywhere]">
-                        <span className="block text-xs font-medium text-[#6f5ba3]">Synced account</span>
-                        {connectionsLoading
-                          ? "Checking email…"
-                          : calendarAccountEmails[item.key] || "Email unavailable — try Refresh"}
-                      </p>
-                    ) : null}
-
-                    {item.connected ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleCalendarConnect(item.key)}
-                          disabled={disconnecting || calendarState.loading || !CONNECTED_CALENDAR_SYNC_ENABLED}
-                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
-                        >
-                          <RefreshCw className="h-4 w-4" aria-hidden="true" />
-                          {CONNECTED_CALENDAR_SYNC_ENABLED ? "Reconnect" : "Sync paused"}
-                        </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setDisconnectPromptError(null);
-                              setDisconnectPromptProvider(item.key);
-                            }}
-                          disabled={disconnecting || calendarState.loading}
-                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
-                        >
-                          <Unplug className="h-4 w-4" aria-hidden="true" />
-                          {disconnecting ? "Disconnecting…" : "Disconnect"}
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleCalendarConnect(item.key)}
-                        disabled={!CONNECTED_CALENDAR_SYNC_ENABLED}
-                        className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
-                      >
-                        {CONNECTED_CALENDAR_SYNC_ENABLED ? `Connect ${item.label}` : "Sync paused"}
-                      </button>
-                    )}
-                    {item.connected && CONNECTED_CALENDAR_SYNC_ENABLED ? (
-                      <div className="border-t border-[#e5dcff] pt-2">
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={isDefault}
-                          aria-label={`Use ${item.label} as default calendar`}
-                          disabled={calendarDefaultLoading || calendarState.loading || connectionsLoading || !connectionsVerified || Boolean(disconnectingProvider)}
-                          onClick={() => void saveCalendarDefault(isDefault ? null : item.key)}
-                          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg text-left text-xs font-medium text-[#4f3f7a] transition hover:text-[#33264c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <span>Default calendar</span>
-                          <span
-                            aria-hidden="true"
-                            className={`flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors motion-reduce:transition-none ${isDefault ? "bg-[#7254ae]" : "bg-[#dcd4ed]"}`}
-                          >
-                            <span className={`flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm transition-transform motion-reduce:transition-none ${isDefault ? "translate-x-5" : "translate-x-0"}`}>
-                              {isDefault ? <Check className="h-3 w-3 text-[#7254ae]" /> : null}
-                            </span>
-                          </span>
-                        </button>
-                      </div>
-                    ) : null}
+                  <div className={styles.photoCopy}>
+                    <h3>Profile photo</h3>
+                    <p>JPG, PNG or WebP · Up to 5 MB</p>
                   </div>
-                );
-              })}
-            </div>
-
-            {calendarState.error ? <p role="alert" className="text-xs text-red-600">{calendarState.error}</p> : null}
-            <p role="status" className="sr-only">
-              {calendarState.loading ? "Saving calendar default…" : calendarState.data?.ok ? "Calendar default saved." : ""}
-            </p>
-          </section>
-
-          {/* Security */}
-          <section
-            className={`${activeSettingsSection === "security" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-[#e3dcf0] bg-white/95 p-5 shadow-[0_18px_55px_rgba(65,51,92,0.08)] sm:p-7`}
-          >
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7964ad]">
-                Account access
-              </p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight text-[#251b32]">Security</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Use a strong password that you don’t reuse on other services.
-              </p>
-            </div>
-            <form onSubmit={onChangePassword} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium mb-1">Current password</label>
-                <input
-                  name="currentPassword"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full rounded-xl border border-[#d9cdfa] bg-[#fcfaff] px-3.5 py-2.5 text-sm outline-none transition focus:border-[#8f7ac4] focus:ring-4 focus:ring-[#8f7ac4]/10"
-                  autoComplete="current-password"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium mb-1">New password</label>
-                  <input
-                    name="newPassword"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full rounded-xl border border-[#d9cdfa] bg-[#fcfaff] px-3.5 py-2.5 text-sm outline-none transition focus:border-[#8f7ac4] focus:ring-4 focus:ring-[#8f7ac4]/10"
-                    autoComplete="new-password"
-                  />
+                  <input ref={avatarInputRef} type="file" accept={PROFILE_AVATAR_ACCEPT} onChange={onAvatarSelected} className="sr-only" aria-label="Choose profile image" disabled={!profileLoaded || profileState.loading} />
+                  <div className={styles.photoActions}>
+                    <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={!profileLoaded || profileState.loading} className={styles.button}>
+                      <Camera size={16} aria-hidden="true" />Change photo
+                    </button>
+                    {displayedAvatarUrl ? <button type="button" onClick={removeAvatar} disabled={!profileLoaded || profileState.loading} className={styles.quietButton}>Remove</button> : null}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Confirm new password</label>
-                  <input
-                    name="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full rounded-xl border border-[#d9cdfa] bg-[#fcfaff] px-3.5 py-2.5 text-sm outline-none transition focus:border-[#8f7ac4] focus:ring-4 focus:ring-[#8f7ac4]/10"
-                    autoComplete="new-password"
-                  />
+                {avatarState.error ? <p role="alert" className={styles.error}>{avatarState.error}</p> : null}
+                <div className={styles.profileFields}>
+                  <label className={styles.label} htmlFor="settings-first-name">First name
+                    <input id="settings-first-name" name="firstName" autoComplete="given-name" value={firstName} onChange={(event) => { setFirstName(event.target.value); setProfileState({ loading: false, error: null }); }} disabled={!profileLoaded || profileState.loading} className={styles.input} />
+                  </label>
+                  <label className={styles.label} htmlFor="settings-last-name">Last name
+                    <input id="settings-last-name" name="lastName" autoComplete="family-name" value={lastName} onChange={(event) => { setLastName(event.target.value); setProfileState({ loading: false, error: null }); }} disabled={!profileLoaded || profileState.loading} className={styles.input} />
+                  </label>
                 </div>
-              </div>
-              {pwdState.error && <p className="text-sm text-red-600">{pwdState.error}</p>}
-              {pwdState.data?.ok && <p className="text-sm text-green-600">Password changed.</p>}
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={pwdState.loading}
-                  className="inline-flex items-center justify-center rounded-xl bg-[#33264c] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(51,38,76,0.18)] transition hover:bg-[#473460] disabled:opacity-60"
-                >
-                  {pwdState.loading ? "Saving..." : "Change password"}
+                <div className={styles.readOnly}>
+                  <div><h3>Sign-in email</h3><p>{userEmail}</p></div>
+                  <span><LockKeyhole size={14} aria-hidden="true" />Read only</span>
+                </div>
+                {profileState.error ? <div role="alert" className={styles.error}><p>{profileState.error}</p>{!profileLoaded ? <button type="button" onClick={() => setProfileReload((current) => current + 1)} className={styles.button}>Retry profile</button> : null}</div> : null}
+                <div className={styles.actions}>
+                  <p role="status" aria-live="polite" className={styles.feedback}>
+                    {profileState.loading ? "Saving profile…" : profileState.data?.ok ? "Profile saved." : profileDirty ? "Unsaved changes" : !profileLoaded && !profileState.error ? "Loading profile…" : ""}
+                  </p>
+                  <div className={styles.actionButtons}>
+                    <button type="button" onClick={cancelProfileChanges} disabled={!profileDirty || profileState.loading} className={styles.quietButton}>Cancel</button>
+                    <button type="submit" disabled={!profileLoaded || !profileDirty || profileState.loading} className={styles.primaryButton}>{profileState.loading ? "Saving…" : "Save changes"}</button>
+                  </div>
+                </div>
+              </form>
+            </section>
+
+            <section id="calendars" aria-labelledby="settings-section-heading" hidden={activeSettingsSection !== "calendars"}
+              className={`${activeSettingsSection === "calendars" ? "block" : "hidden"} ${styles.panel}`}>
+              <div className={styles.sectionRow}>
+                <h3>Calendar connections</h3>
+                <button type="button" onClick={() => void fetchConnectedCalendars()} className={styles.quietButton} disabled={connectionsLoading}>
+                  <RefreshCw size={16} aria-hidden="true" className={connectionsLoading ? "animate-spin motion-reduce:animate-none" : ""} />{connectionsLoading ? "Refreshing…" : "Refresh"}
                 </button>
               </div>
-            </form>
-          </section>
+              {!CONNECTED_CALENDAR_SYNC_ENABLED ? <p className={styles.feedback}>{CALENDAR_SYNC_PAUSED_MESSAGE}</p> : null}
+              {calendarConnectionMessage ? <p role={calendarConnectionMessage.kind === "error" ? "alert" : "status"} className={calendarConnectionMessage.kind === "error" ? styles.error : styles.feedback}>{calendarConnectionMessage.text}</p> : null}
+              <div className={styles.providerList}>
+                {([
+                  { key: "google", label: "Google Calendar", connected: connectedCalendars.google },
+                  { key: "microsoft", label: "Outlook Calendar", connected: connectedCalendars.microsoft },
+                ] as const).map((item) => {
+                  const disconnecting = disconnectingProvider === item.key;
+                  const isDefault = item.connected && connectionsVerified && !calendarDefaultLoading && normalizedPreferredProvider === item.key;
+                  return <div key={item.key} className={styles.providerRow}>
+                    <div className={styles.providerInfo}>
+                      <h3>{item.label}</h3>
+                      <p>{!connectionsVerified ? connectionsLoading ? "Checking connection…" : "Connection not verified" : item.connected ? "Connected" : "Not connected"}</p>
+                      {item.connected ? <p className={styles.providerEmail}>{connectionsLoading ? "Checking email…" : calendarAccountEmails[item.key] || "Email unavailable — try Refresh"}</p> : null}
+                      {item.connected ? (
+                        <button type="button" role="switch" aria-checked={isDefault} aria-label={`Use ${item.label} as default calendar`}
+                          disabled={!CONNECTED_CALENDAR_SYNC_ENABLED || calendarDefaultLoading || calendarState.loading || connectionsLoading || !connectionsVerified || Boolean(disconnectingProvider)}
+                          onClick={() => void saveCalendarDefault(isDefault ? null : item.key)} className={styles.defaultChoice}>
+                          {isDefault ? <Check size={12} aria-hidden="true" /> : null}{isDefault ? "Default" : "Set as default"}
+                        </button>
+                      ) : null}
+                    </div>
+                    <div className={styles.providerActions}>
+                      {item.connected ? (
+                        <button type="button" onClick={() => { setDisconnectPromptError(null); setDisconnectPromptProvider(item.key); }} disabled={disconnecting || calendarState.loading} className={styles.button}>
+                          <Unplug size={16} aria-hidden="true" />{disconnecting ? "Disconnecting…" : "Disconnect"}
+                        </button>
+                      ) : <button type="button" aria-label={`Connect ${item.label}`} onClick={() => handleCalendarConnect(item.key)} disabled={!CONNECTED_CALENDAR_SYNC_ENABLED || !connectionsVerified} className={styles.button}>Connect</button>}
+                    </div>
+                  </div>;
+                })}
+                <div className={styles.providerRow}>
+                  <AppleCalendarConnection key={userEmail || "apple"} accountKey={userEmail} status={appleSubscriptionStatus} onStatusChange={handleAppleStatusChange} presentation="settings-column" />
+                </div>
+              </div>
+              {calendarState.error ? <p role="alert" className={styles.error}>{calendarState.error}</p> : null}
+              <p role="status" className="sr-only">{calendarState.loading ? "Saving calendar default…" : calendarState.data?.ok ? "Calendar default saved." : ""}</p>
+            </section>
+
+            <section id="security" aria-labelledby="settings-section-heading" hidden={activeSettingsSection !== "security"}
+              className={`${activeSettingsSection === "security" ? "block" : "hidden"} ${styles.panel}`}>
+              <form onSubmit={onChangePassword} className={styles.passwordForm}>
+                <h3>Change password</h3>
+                <label htmlFor="settings-current-password" className={styles.label}>Current password
+                  <input id="settings-current-password" name="currentPassword" type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className={styles.input} autoComplete="current-password" disabled={pwdState.loading} />
+                </label>
+                <label htmlFor="settings-new-password" className={styles.label}>New password
+                  <input id="settings-new-password" name="newPassword" type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} className={styles.input} autoComplete="new-password" disabled={pwdState.loading} />
+                </label>
+                <label htmlFor="settings-confirm-password" className={styles.label}>Confirm new password
+                  <input id="settings-confirm-password" name="confirmPassword" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className={styles.input} autoComplete="new-password" disabled={pwdState.loading} />
+                </label>
+                {pwdState.error ? <p role="alert" className={styles.error}>{pwdState.error}</p> : null}
+                {pwdState.data?.ok ? <p role="status" className={styles.feedback}>Password changed.</p> : null}
+                <div><button type="submit" disabled={pwdState.loading} className={styles.primaryButton}>{pwdState.loading ? "Saving…" : "Change password"}</button></div>
+              </form>
+              <ProfileAccountDeletion accountEmail={userEmail} />
+            </section>
 
           <section
             data-settings-surface
-            className={`${activeSettingsSection === "creation" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-[#dcd3ee] bg-gradient-to-br from-white via-[#fcfaff] to-[#f4efff] p-5 shadow-[0_18px_55px_rgba(65,51,92,0.08)] sm:p-7`}
+            id="your-sports" aria-labelledby="settings-section-heading" hidden={activeSettingsSection !== "creation"}
+            className={`${activeSettingsSection === "creation" ? "block" : "hidden"} ${styles.panel}`}
           >
-            {UNIFIED_CREATION_ENABLED ? <CreationAccessSettings /> : <>
+            {UNIFIED_CREATION_ENABLED ? <CreationAccessSettings showHeading={false} /> : <>
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7964ad]">
                 Workspace preferences
@@ -1271,7 +996,7 @@ export default function SettingsPage() {
             </div>
 
             <div
-              id="your-sports"
+              id="legacy-sports-preferences"
               className="space-y-4 rounded-2xl border border-[#ddd4f5] bg-white p-4 shadow-[0_10px_30px_rgba(73,58,118,0.05)] sm:p-5"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1419,7 +1144,7 @@ export default function SettingsPage() {
           </section>
         </div>
         </div>
-      </section>
+      </div>
 
       <Dialog.Root
         open={Boolean(disconnectPromptProvider)}

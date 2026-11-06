@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import GalleryAppCanvas from "./GalleryAppCanvas";
 import PublicTemplateGalleryContents from "../../src/components/templates/PublicTemplateGalleryContents";
 import TemplateGalleryLayout from "../../src/components/templates/TemplateGalleryLayout";
 import { getTemplates } from "../../src/lib/public-template-catalogs/baby-showers";
@@ -29,13 +30,15 @@ async function start() {
     });
   }
   createRoot(document.getElementById("root")!).render(
-    <TemplateGalleryLayout category="baby-showers">
-      <PublicTemplateGalleryContents
-        category="baby-showers"
-        templates={templates}
-        featured={query.has("featured")}
-      />
-    </TemplateGalleryLayout>,
+    <GalleryAppCanvas>
+      <TemplateGalleryLayout category="baby-showers">
+        <PublicTemplateGalleryContents
+          category="baby-showers"
+          templates={templates}
+          featured={query.has("featured")}
+        />
+      </TemplateGalleryLayout>
+    </GalleryAppCanvas>,
   );
 }
 void start();

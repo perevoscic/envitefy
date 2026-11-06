@@ -527,7 +527,7 @@
 }
 .howItWorks {
   padding: clamp(2rem, 3vw, 3.5rem) clamp(1.4rem, 4vw, 6rem);
-  background: var(--marketing-paper, #fcf8f3);
+  background: transparent;
 }
 .howInner {
   display: grid;

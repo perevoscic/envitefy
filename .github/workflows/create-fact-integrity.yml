@@ -25,7 +25,7 @@ jobs:
         id: bun
         run: bun --version
       - run: npm ci
-      - name: Check push completeness safeguards
+      - name: Check push validation safeguards
         run: npm run test:git-hooks
       - name: Check application TypeScript before running regressions
         id: typecheck

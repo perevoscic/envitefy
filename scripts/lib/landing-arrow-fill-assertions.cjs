@@ -90,14 +90,9 @@ async function assertArrowFillCta(cta, { label, href, description }) {
   return state;
 }
 
-async function assertArrowFillInteraction(page, cta, description) {
-  await cta.scrollIntoViewIfNeeded();
-  await page.mouse.move(0, 0);
-  await cta.evaluate((node) => document.activeElement?.blur());
-  const before = await readArrowFill(cta);
-  await cta.hover();
+async function waitForArrowFill(cta, interaction) {
   await cta.evaluate(
-    (node) =>
+    (node, trigger) =>
       new Promise((resolve, reject) => {
         const surface = node.querySelector("[data-arrow-fill-surface]");
         const deadline = performance.now() + 2000;
@@ -109,19 +104,30 @@ async function assertArrowFillInteraction(page, cta, description) {
           ) {
             resolve();
           } else if (performance.now() > deadline) {
-            reject(new Error("The CTA did not finish its hover fill within 2 seconds"));
+            reject(new Error(`The CTA did not finish its ${trigger} fill within 2 seconds`));
           } else {
             requestAnimationFrame(check);
           }
         };
         check();
       }),
+    interaction,
   );
+}
+
+async function assertArrowFillInteraction(page, cta, description) {
+  await cta.scrollIntoViewIfNeeded();
+  await page.mouse.move(0, 0);
+  await cta.evaluate((node) => document.activeElement?.blur());
+  const before = await readArrowFill(cta);
+  await cta.hover();
+  await waitForArrowFill(cta, "hover");
   const hovered = await readArrowFill(cta);
   assert.equal(hovered.filled, true, `${description}: hover expands the circle over the button`);
   await page.mouse.move(0, 0);
   await page.keyboard.press("Tab");
   await cta.focus();
+  await waitForArrowFill(cta, "focus");
   const focused = await readArrowFill(cta);
   assert.equal(focused.focused, true, `${description}: keyboard focus receives the same effect`);
   assert.equal(

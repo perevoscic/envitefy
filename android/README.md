@@ -102,6 +102,11 @@ emulator's crash log and stops only Envitefy between scenarios. It refuses
 physical-device serials. A first-run Chrome screen is sufficient for this
 launcher check; it does not prove website trust or complete feature parity.
 
+For persistent headless testing on a dedicated Windows AVD, use the
+[local Android QA runner](../docs/android-local-qa.md). It handles isolated AVD
+setup, bounded boot and APK checks, optional Maestro flows, diagnostics and
+normal shutdown without replacing existing Play-installed QA devices.
+
 Keep `ManageDataLauncherActivity` declared even if the app does not show its own
 site-settings control: Android Browser Helper 2.7.3 enables or disables this
 component at launch on API 25+, and Android throws if the component is missing.

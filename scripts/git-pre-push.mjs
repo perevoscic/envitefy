@@ -1,7 +1,10 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { parsePushUpdates, validatePush, validationInterrupts } from "./lib/push-validation.mjs";
 
 // -z preserves spaces and Unicode paths. Disable optional index refresh writes:
-// this guard inspects the checkout and never changes its files or Git state.
+// this initial completeness check never changes the checkout or index. The
+// validation gate below stores its evidence privately in the Git directory.
 const result = spawnSync("git", [
   "--no-optional-locks",
   "-c", "core.quotepath=false",
@@ -38,4 +41,18 @@ if (changes.length) {
   console.error("Review these paths and commit the intended changes before retrying git push.");
   console.error("Keep unrelated work in a separate worktree. This check does not modify, stash or delete files.");
   process.exit(1);
+}
+
+// Git supplies remote name/URL and ref updates. A manual completeness check has
+// no remote arguments and deliberately does not recursively run the CI suite.
+if (process.argv.length > 2) {
+  const interrupts = validationInterrupts();
+  try {
+    if (process.argv.length !== 4) throw new Error("Expected Git remote name and URL for pre-push validation.");
+    const updates = parsePushUpdates(readFileSync(0, "utf8"));
+    if (updates.length) await validatePush({ updates, signal: interrupts.signal });
+  } catch (error) {
+    console.error(`Push blocked: ${error.message}`);
+    process.exitCode = 1;
+  } finally { interrupts.dispose(); }
 }

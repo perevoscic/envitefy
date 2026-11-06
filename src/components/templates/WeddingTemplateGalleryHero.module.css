@@ -51,7 +51,7 @@
 }
 
 .page[data-marketing-page] {
-  background: var(--wedding-paper);
+  background: transparent;
 }
 
 .page[data-marketing-page] [data-public-landing-header] {
@@ -71,11 +71,11 @@
 .layout.layout {
   padding-top: calc(80px + env(safe-area-inset-top));
   padding-bottom: 0;
-  background: var(--wedding-paper);
+  background: transparent;
 }
 
 .gallery.gallery {
-  background: var(--wedding-paper);
+  background: transparent;
   color: var(--wedding-ink);
   padding: 0 0 calc(5rem + env(safe-area-inset-bottom));
 }

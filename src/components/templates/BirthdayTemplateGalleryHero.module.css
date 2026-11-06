@@ -40,7 +40,7 @@
 }
 
 .page[data-marketing-page] {
-  background: var(--birthday-paper);
+  background: transparent;
 }
 .page[data-marketing-page] [data-public-landing-header] {
   --public-header-paper: var(--birthday-paper);
@@ -53,11 +53,11 @@
 .layout.layout {
   padding-top: calc(80px + env(safe-area-inset-top));
   padding-bottom: 0;
-  background: var(--birthday-paper);
+  background: transparent;
 }
 .gallery.gallery {
   padding: 0 0 calc(5rem + env(safe-area-inset-bottom));
-  background: var(--birthday-paper);
+  background: transparent;
   color: var(--birthday-ink);
 }
 .shell {

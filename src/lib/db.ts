@@ -28,7 +28,7 @@ import {
 } from "@/features/event-pages/schemas/eventBlueprint.schema";
 import {
   ADMIN_USER_METRICS_CTE_SQL,
-  ADMIN_USER_METRICS_SELECT_SQL,
+  ADMIN_USERS_PAGE_SQL,
   type AdminUserListItem,
   type AdminUserListPage,
 } from "@/lib/admin-user-metrics-sql";
@@ -768,100 +768,61 @@ export async function getAdminUsersPageData(): Promise<{
 }> {
   await ensureUsersHasAdminAndMetricsColumns();
   const usersLimit = 100;
-  const [users, events, shares, scans, categories] = await Promise.all([
-    query<{ n: string }>(`select count(*)::text as n from users`),
-    query<{ n: string }>(`select count(*)::text as n from event_history`),
-    query<{ n: string }>(`select count(*)::text as n from event_shares`),
-    query<{
-      scans_total: string | null;
-      scans_birthdays: string | null;
-      scans_weddings: string | null;
-      scans_sport_events: string | null;
-      scans_appointments: string | null;
-      scans_doctor_appointments: string | null;
-      scans_play_days: string | null;
-      scans_general_events: string | null;
-      scans_car_pool: string | null;
-      initial_users: AdminUserListItem[];
-    }>(`
-      ${ADMIN_USER_METRICS_CTE_SQL}
-      select
-        coalesce(sum(scans_total), 0)::text as scans_total,
-        coalesce(sum(scans_birthdays), 0)::text as scans_birthdays,
-        coalesce(sum(scans_weddings), 0)::text as scans_weddings,
-        coalesce(sum(scans_sport_events), 0)::text as scans_sport_events,
-        coalesce(sum(scans_appointments), 0)::text as scans_appointments,
-        coalesce(sum(scans_doctor_appointments), 0)::text as scans_doctor_appointments,
-        coalesce(sum(scans_play_days), 0)::text as scans_play_days,
-        coalesce(sum(scans_general_events), 0)::text as scans_general_events,
-        coalesce(sum(scans_car_pool), 0)::text as scans_car_pool,
-        (
-          select coalesce(jsonb_agg(initial_user order by created_at desc nulls last, id desc), '[]'::jsonb)
-          from (
-            select ${ADMIN_USER_METRICS_SELECT_SQL}
-            from admin_users_with_metrics
-            order by created_at desc nulls last, id desc
-            limit ${usersLimit + 1}
-          ) initial_user
-        ) as initial_users
-      from admin_users_with_metrics
-    `),
-    query<{
-      events_birthdays: string | null;
-      events_weddings: string | null;
-      events_sport_events: string | null;
-      events_appointments: string | null;
-      events_doctor_appointments: string | null;
-      events_play_days: string | null;
-      events_general_events: string | null;
-      events_car_pool: string | null;
-    }>(`
-      select
-        coalesce(sum(case when lower(data->>'category') like '%birthday%' then 1 else 0 end), 0)::text as events_birthdays,
-        coalesce(sum(case when lower(data->>'category') like '%wedding%' then 1 else 0 end), 0)::text as events_weddings,
-        coalesce(sum(case when lower(data->>'category') like '%sport%' then 1 else 0 end), 0)::text as events_sport_events,
-        coalesce(sum(case when lower(data->>'category') = 'appointments' or lower(data->>'category') like '%appointment%' then 1 else 0 end), 0)::text as events_appointments,
-        coalesce(sum(case when (lower(data->>'category') like '%doctor%' or lower(data->>'category') like '%medical%') then 1 else 0 end), 0)::text as events_doctor_appointments,
-        coalesce(sum(case when lower(data->>'category') like '%play%' then 1 else 0 end), 0)::text as events_play_days,
-        coalesce(sum(case when lower(data->>'category') like '%general%' then 1 else 0 end), 0)::text as events_general_events,
-        coalesce(sum(case when lower(data->>'category') like '%car%' or lower(data->>'category') like '%pool%' then 1 else 0 end), 0)::text as events_car_pool
-      from event_history
-      where data->>'category' is not null
-    `),
-  ]);
-  const categoryRow = categories.rows[0] || {};
-  const scansRow = scans.rows[0] || {};
+  const result = await query<{
+    total_users: string;
+    total_events: string;
+    total_shares: string;
+    scans_total: string | null;
+    scans_birthdays: string | null;
+    scans_weddings: string | null;
+    scans_sport_events: string | null;
+    scans_appointments: string | null;
+    scans_doctor_appointments: string | null;
+    scans_play_days: string | null;
+    scans_general_events: string | null;
+    scans_car_pool: string | null;
+    initial_users: AdminUserListItem[];
+    events_birthdays: string | null;
+    events_weddings: string | null;
+    events_sport_events: string | null;
+    events_appointments: string | null;
+    events_doctor_appointments: string | null;
+    events_play_days: string | null;
+    events_general_events: string | null;
+    events_car_pool: string | null;
+  }>(ADMIN_USERS_PAGE_SQL, [usersLimit + 1]);
+  const row = result.rows[0];
   const toNumber = (value: string | null | undefined) => Number(value || 0);
-  const initialUsers = scansRow.initial_users || [];
+  const initialUsers = row?.initial_users || [];
   const lastUser = initialUsers[usersLimit - 1];
   const nextCursor =
     initialUsers.length > usersLimit && lastUser?.created_at && lastUser.id
       ? Buffer.from(JSON.stringify({ created_at: lastUser.created_at, id: lastUser.id })).toString("base64")
       : null;
   const overview: AdminOverviewStats = {
-    totalUsers: Number(users.rows[0]?.n || 0),
-    totalEvents: Number(events.rows[0]?.n || 0),
-    totalShares: Number(shares.rows[0]?.n || 0),
-    totalScans: toNumber(scansRow.scans_total),
+    totalUsers: toNumber(row?.total_users),
+    totalEvents: toNumber(row?.total_events),
+    totalShares: toNumber(row?.total_shares),
+    totalScans: toNumber(row?.scans_total),
     eventsByCategory: {
-      scans_birthdays: toNumber(categoryRow.events_birthdays),
-      scans_weddings: toNumber(categoryRow.events_weddings),
-      scans_sport_events: toNumber(categoryRow.events_sport_events),
-      scans_appointments: toNumber(categoryRow.events_appointments),
-      scans_doctor_appointments: toNumber(categoryRow.events_doctor_appointments),
-      scans_play_days: toNumber(categoryRow.events_play_days),
-      scans_general_events: toNumber(categoryRow.events_general_events),
-      scans_car_pool: toNumber(categoryRow.events_car_pool),
+      scans_birthdays: toNumber(row?.events_birthdays),
+      scans_weddings: toNumber(row?.events_weddings),
+      scans_sport_events: toNumber(row?.events_sport_events),
+      scans_appointments: toNumber(row?.events_appointments),
+      scans_doctor_appointments: toNumber(row?.events_doctor_appointments),
+      scans_play_days: toNumber(row?.events_play_days),
+      scans_general_events: toNumber(row?.events_general_events),
+      scans_car_pool: toNumber(row?.events_car_pool),
     },
     scansByCategory: {
-      scans_birthdays: toNumber(scansRow.scans_birthdays),
-      scans_weddings: toNumber(scansRow.scans_weddings),
-      scans_sport_events: toNumber(scansRow.scans_sport_events),
-      scans_appointments: toNumber(scansRow.scans_appointments),
-      scans_doctor_appointments: toNumber(scansRow.scans_doctor_appointments),
-      scans_play_days: toNumber(scansRow.scans_play_days),
-      scans_general_events: toNumber(scansRow.scans_general_events),
-      scans_car_pool: toNumber(scansRow.scans_car_pool),
+      scans_birthdays: toNumber(row?.scans_birthdays),
+      scans_weddings: toNumber(row?.scans_weddings),
+      scans_sport_events: toNumber(row?.scans_sport_events),
+      scans_appointments: toNumber(row?.scans_appointments),
+      scans_doctor_appointments: toNumber(row?.scans_doctor_appointments),
+      scans_play_days: toNumber(row?.scans_play_days),
+      scans_general_events: toNumber(row?.scans_general_events),
+      scans_car_pool: toNumber(row?.scans_car_pool),
     },
   };
   return { overview, users: { items: initialUsers.slice(0, usersLimit), nextCursor } };
@@ -1574,6 +1535,17 @@ export async function updateUserNamesByEmail(params: {
   firstName?: string | null | undefined;
   lastName?: string | null | undefined;
 }): Promise<AppUserRow> {
+  return updateUserProfileByEmail(params);
+}
+
+/** Commit an explicit profile save without partially applying names or a photo. */
+export async function updateUserProfileByEmail(params: {
+  email: string;
+  firstName?: string | null | undefined;
+  lastName?: string | null | undefined;
+  avatarUrl?: string | null | undefined;
+}): Promise<AppUserRow> {
+  if (Object.hasOwn(params, "avatarUrl")) await ensureUsersHasAvatarUrlColumn();
   const lower = params.email.toLowerCase();
   const existing = await getUserByEmail(lower);
   if (!existing) {
@@ -1591,6 +1563,10 @@ export async function updateUserNamesByEmail(params: {
   if (Object.hasOwn(params, "lastName")) {
     sets.push(`last_name = $${idx++}`);
     values.push(params.lastName ?? null);
+  }
+  if (Object.hasOwn(params, "avatarUrl")) {
+    sets.push(`avatar_url = $${idx++}`, "avatar_user_set = true");
+    values.push(params.avatarUrl ?? null);
   }
   // If nothing to update, just return current row
   if (sets.length === 0) {

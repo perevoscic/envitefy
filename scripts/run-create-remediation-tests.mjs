@@ -87,6 +87,7 @@ const files = [
   "src/components/studio/StudioLiveCardActionSurface.rsvp-mailto.source.test.mjs",
   "src/hooks/useVisualViewportInsets.test.mjs",
   "scripts/lib/create-offline-network.test.mjs",
+  "scripts/lib/build-bun-fixture.test.cjs",
   "scripts/lib/event-messages-test-loader.test.cjs",
   "scripts/livecard-location-backend.test.cjs",
   "scripts/livecard-headline-backend.test.cjs",

@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const assertSharedGalleryBackground = require("./lib/assert-shared-gallery-background.cjs");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
@@ -57,7 +58,7 @@ function buildFixture() {
     const source = fs.readFileSync("src/app/globals.css", "utf8").replace(
       '@import "tailwindcss";',
       '@import "tailwindcss" source(none);\n' + [
-        "../components/templates", "../components/events", "../components/marketing", "../components/birthdays",
+        "../components/MainContentWrapper.tsx", "../components/ui/gradient-backgrounds.tsx", "../components/templates", "../components/events", "../components/marketing", "../components/birthdays",
       ].map((entry) => `@source "${entry}";`).join("\n"),
     );
     const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process(source, {
@@ -225,8 +226,9 @@ test("birthday gallery hero and controls fit desktop, tablet and narrow phones i
         assert.equal(state.preference, theme, "real appearance setter applies selected preference");
         assert.equal(state.dark, theme === "dark");
         assertContrast(state, theme, width);
+        await assertSharedGalleryBackground(page, state.samples, theme, width);
         assert.deepEqual(await authoredAppearance(page), authored, `${theme} preserves authored ink, paper and images`);
-        for (const key of ["hero", "gallery", "search"]) {
+        for (const key of ["hero", "search"]) {
           const brightness = luminance(rgb(state.samples[key].background));
           assert.ok(theme === "light" ? brightness > 0.7 : brightness < 0.12, `${theme} ${key} surface at ${width}px`);
         }

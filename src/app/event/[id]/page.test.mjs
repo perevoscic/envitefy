@@ -8,6 +8,46 @@ const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
+function evaluateRouteDeclarations(names, context) {
+  const source = readSource("src/app/event/[id]/page.tsx");
+  const ast = ts.createSourceFile("page.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const renderer = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "RenderEventPage");
+  assert.ok(renderer?.body, "the actual public renderer must retain its data guards");
+  const declarations = renderer.body.statements.filter(node => ts.isVariableStatement(node) &&
+    node.declarationList.declarations.some(declaration => names.includes(declaration.name.getText(ast))));
+  assert.equal(declarations.length, names.length, `expected route declarations: ${names.join(", ")}`);
+  const code = ts.transpile(declarations.map(node => node.getText(ast)).join("\n"));
+  return new Function(...Object.keys(context), `${code}; return { ${names.join(", ")} };`)(...Object.values(context));
+}
+
+test("public RSVP contacts preserve authored values and clears while disabled collection hides every destination", () => {
+  const fields = ["rsvpPhone", "rsvpEmail", "rsvpUrl", "publicRsvpUrl"];
+  const rawRsvpPhone = "3125550101", rawRsvpEmail = "printed@example.test", rawRsvpUrl = "https://example.test/printed-rsvp";
+  for (const [data, phone, email] of [
+    [{ rsvpPhone: " 7735550102 ", rsvpEmail: " authored@example.test " }, "7735550102", "authored@example.test"],
+    [{ rsvpPhone: "", rsvpEmail: "" }, "", ""],
+    [{}, rawRsvpPhone, rawRsvpEmail],
+  ]) {
+    for (const explicitRsvpDisabled of [false, true]) {
+      const result = evaluateRouteDeclarations(fields, {
+        data, explicitRsvpDisabled, rawRsvpPhone, rawRsvpEmail, rawRsvpUrl,
+        normalizedPublicRsvp: { rsvpUrl: "https://example.test/normalized-rsvp" },
+      });
+      assert.deepEqual(result, explicitRsvpDisabled
+        ? { rsvpPhone: "", rsvpEmail: "", rsvpUrl: "", publicRsvpUrl: "" }
+        : { rsvpPhone: phone, rsvpEmail: email, rsvpUrl: rawRsvpUrl, publicRsvpUrl: "https://example.test/normalized-rsvp" });
+    }
+  }
+});
+
+test("owner workspace retains all four requested tabs with RSVP enabled or disabled", () => {
+  for (const ownerToolsTab of ["dashboard", "rsvps", "messages", "design"]) {
+    for (const ownerRsvpDashboardEnabled of [false, true]) {
+      assert.equal(evaluateRouteDeclarations(["resolvedOwnerToolsTab"], { ownerToolsTab, ownerRsvpDashboardEnabled }).resolvedOwnerToolsTab, ownerToolsTab);
+    }
+  }
+});
+
 test("newly saved events offer accurate calendar setup choices", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
   const promptSource = readSource("src/components/FirstScanCalendarPrompt.tsx");
@@ -150,6 +190,7 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /normalizeOcrLocationFields/);
   assert.match(source, /enrichOcrVenueAddress/);
   assert.match(source, /normalizeOcrRsvpFields/);
+  assert.match(source, /const rsvpUrl = explicitRsvpDisabled \? "" : rawRsvpUrl;/);
   assert.doesNotMatch(source, /findFirstEmail\(data\)/);
   assert.match(source, /const hasPublicRsvpAction = Boolean\(/);
   assert.match(source, /const showPublicRsvp = !explicitRsvpDisabled && hasPublicRsvpAction;/);
@@ -169,6 +210,7 @@ test("event route branches football discovery/template events into the football 
     source,
     /const canEditCreatedEvent = canManageCreatedEvent && !isScannedOrUploadedEventData\(data\) && !editLocked;/,
   );
+  assert.match(source, /const editLocked = isPastEvent\(data\);/);
   assert.match(source, /const ownerRsvpDashboardEnabled = canShowOwnerRsvpDashboard\(data\);/);
   assert.match(
     source,

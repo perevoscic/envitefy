@@ -2,12 +2,7 @@ import { query } from "@/lib/db";
 import { eventProductRoutingProjectionSql } from "@/lib/event-product-routing-sql";
 import { getPrimaryEventProductOutput } from "@/utils/event-product-route";
 import { ensureScanAttemptsSchema, type ScanAttemptStatus } from "@/lib/scan-attempts";
-import { ADMIN_SCAN_SQL, daysAgo, toIsoString, toNumber } from "./data-utils";
-
-export type AdminUsersSummary = {
-  totalUsers: number;
-  newUsers7Days: number;
-};
+import { ADMIN_SCAN_SQL, toIsoString } from "./data-utils";
 
 export type AdminUserDebugLinkKind = "events" | "scans";
 
@@ -29,21 +24,6 @@ export type AdminUserScanAttemptLink = {
   status: ScanAttemptStatus;
   createdAt: string | null;
 };
-
-export async function getAdminUsersSummary(): Promise<AdminUsersSummary> {
-  const [total, new7] = await Promise.all([
-    query<{ n: string }>(`select count(*)::text as n from users`),
-    query<{ n: string }>(
-      `select count(*)::text as n from users where created_at >= $1::timestamptz`,
-      [daysAgo(7)],
-    ),
-  ]);
-
-  return {
-    totalUsers: toNumber(total.rows[0]?.n),
-    newUsers7Days: toNumber(new7.rows[0]?.n),
-  };
-}
 
 export async function getAdminUserDebugLinks(
   userId: string,

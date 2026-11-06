@@ -101,6 +101,16 @@
 .footer.homepage > div > div:last-child {
   background: var(--footer-strip);
 }
+
+/* Page chrome shares the shell canvas; Create keeps the editorial footer above. */
+.footer.sharedCanvas,
+.footer.sharedCanvas > div,
+.footer.sharedCanvas > div > div:last-child,
+:global(html.dark) .footer.sharedCanvas,
+:global(html.dark) .footer.sharedCanvas > div,
+:global(html.dark) .footer.sharedCanvas > div > div:last-child {
+  background: transparent;
+}
 @media (max-width: 600px) {
   .footer > div > div:first-child {
     padding: 1.5rem 1.4rem 1rem;

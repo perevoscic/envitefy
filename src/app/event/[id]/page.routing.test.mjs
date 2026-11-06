@@ -3,16 +3,107 @@ import fs from "node:fs";
 import test from "node:test";
 import { createRequire } from "node:module";
 import ts from "typescript";
+import vm from "node:vm";
+import * as React from "react";
+import * as jsxRuntime from "react/jsx-runtime";
 import { redactDiscoverySourceForPublicView } from "../../../lib/discovery-public-redact.ts";
 import { isEventDraft } from "../../../lib/event-draft-access.ts";
 
 const loadTs = createRequire(import.meta.url)("../../../../scripts/lib/event-messages-test-loader.cjs");
 const { manualEventEditHref } = loadTs("src/lib/manual-event-progress.ts");
+const { isDatabaseUnavailableError } = loadTs("src/lib/database-errors.ts");
+const { createServerTimingTracker } = loadTs("src/lib/server-timing.ts");
 
 const source = fs.readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const ast = ts.createSourceFile("page.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 // Inspect the renderer, whose routing is wrapped by EventPage's outage boundary.
-const page = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "RenderEventPage");
+const entry = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "EventPage");
+const forwarding = entry?.body?.statements.find(ts.isTryStatement)?.tryBlock.statements.find(ts.isReturnStatement)?.expression;
+assert.ok(forwarding && ts.isAwaitExpression(forwarding) && ts.isCallExpression(forwarding.expression), "the exported route must await its renderer inside the outage boundary");
+const rendererCall = forwarding.expression;
+assert.equal(rendererCall.arguments[0]?.getText(ast), "props", "the route forwards its complete props to the renderer");
+const page = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === rendererCall.expression.getText(ast));
+assert.ok(page?.body, "resolve the actual renderer reached by the exported route");
+
+// Evaluate the complete real route module with import boundaries supplied as
+// explicit bindings. Unused imports stay unavailable rather than recursively
+// loading auth, database clients, UI runtimes or provider integrations.
+const isolated = ts.factory.updateSourceFile(ast, ast.statements.filter(node => !ts.isImportDeclaration(node)));
+const compiled = ts.transpileModule(ts.createPrinter().printFile(isolated), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
+}).outputText;
+function loadPublicPage({ session = null, row = null, lookupError = null, identity = null } = {}) {
+  const calls = { lookups: [], redirects: [], invalidated: [], warnings: [] };
+  const module = { exports: {} };
+  vm.runInNewContext(compiled, {
+    module, exports: module.exports,
+    require: (name) => { assert.equal(name, "react/jsx-runtime"); return jsxRuntime; },
+    process: { env: {} }, URL, URLSearchParams,
+    console: { warn: (...args) => calls.warnings.push(args) },
+    cache: React.cache, cloneElement: React.cloneElement, isValidElement: React.isValidElement,
+    nextDynamic: () => () => null,
+    createServerTimingTracker, isDatabaseUnavailableError, isEventDraft, manualEventEditHref,
+    authOptions: {}, getServerSession: async () => session,
+    getUserIdByEmail: async () => session?.user?.id || null,
+    getEventHistoryPublicRenderBySlugOrId: async (query) => {
+      calls.lookups.push(query);
+      if (lookupError) throw lookupError;
+      return row;
+    },
+    resolveEventHistoryIdentityBySlugOrId: async () => identity,
+    getEventPermissions: async () => ({ canEdit: session?.user?.id === row?.user_id, role: "owner" }),
+    resolveEditHref: (id, data) => manualEventEditHref(id, data) || "/resolved-editor",
+    redirect: (href) => { calls.redirects.push(href); throw Object.assign(new Error("NEXT_REDIRECT"), { href }); },
+    notFound: () => { throw new Error("NEXT_HTTP_ERROR_FALLBACK;404"); },
+    invalidateUserHistory: (id) => calls.invalidated.push(`history:${id}`),
+    invalidateUserDashboard: (id) => calls.invalidated.push(`dashboard:${id}`),
+    fetch: () => { throw new Error("Unexpected external request from public route fixture"); },
+  });
+  return { page: module.exports.default, calls };
+}
+
+test("the real exported page executes missing-row and draft routing through its outage boundary", async () => {
+  const missing = loadPublicPage();
+  const missingProps = { params: Promise.resolve({ id: "missing-event" }), searchParams: Promise.resolve({}) };
+  const notice = await missing.page(missingProps);
+  assert.equal(notice.type.name, "DeletedEventNotice");
+  assert.equal(notice.props.missingEventKey, "missing-event");
+  assert.equal(missing.calls.lookups[0].value, "missing-event");
+  assert.equal(missing.calls.warnings.length, 0);
+
+  const privateDraft = loadPublicPage({ identity: { id: "private-draft" } });
+  const privateNotice = await privateDraft.page(missingProps);
+  assert.equal(privateNotice.props.missingEventKey, undefined, "an unreadable private draft must not be pruned as deleted");
+
+  const draft = loadPublicPage({
+    session: { user: { id: "owner", email: "owner@example.test" } },
+    row: { id: "saved-manual", user_id: "owner", title: "Draft", data: {
+      status: "draft", createdVia: "manual", manualEditor: { path: "/event/general/customize" },
+    } },
+  });
+  await assert.rejects(draft.page({ params: Promise.resolve({ id: "saved-manual" }), searchParams: Promise.resolve({}) }),
+    (error) => error.href === "/event/general/customize?edit=saved-manual");
+  assert.deepEqual(draft.calls.redirects, ["/event/general/customize?edit=saved-manual"]);
+  assert.equal(draft.calls.warnings.length, 0, "Next redirects must never become outage notices");
+});
+
+test("the real page catches database outages while retaining query values and rethrowing other failures", async () => {
+  const outage = loadPublicPage({ lookupError: Object.assign(new Error("Database connection unavailable"), { code: "ECONNREFUSED" }) });
+  const result = await outage.page({ params: Promise.resolve({ id: "event / one" }), searchParams: Promise.resolve({ tab: "rsvps", label: ["first", "second"], skip: undefined }) });
+  const retry = result.props.children.props.children.at(-1);
+  const href = new URL(retry.props.href, "https://envitefy.test");
+  assert.equal(href.pathname, "/event/event%20%2F%20one");
+  assert.deepEqual(href.searchParams.getAll("label"), ["first", "second"]);
+  assert.equal(href.searchParams.get("tab"), "rsvps");
+  assert.equal(href.searchParams.has("skip"), false);
+  assert.equal(outage.calls.warnings.length, 1);
+  for (const message of ["NEXT_HTTP_ERROR_FALLBACK;404", "NEXT_REDIRECT", "Renderer invariant failed"]) {
+    const failure = new Error(message);
+    const route = loadPublicPage({ lookupError: failure });
+    await assert.rejects(route.page({ params: Promise.resolve({ id: "event" }), searchParams: Promise.resolve({}) }), error => error === failure);
+    assert.equal(route.calls.warnings.length, 0);
+  }
+});
 
 test("unsupported public events end at notFound without a retired renderer or server actions after it", () => {
   assert.ok(page?.body);
@@ -93,7 +184,7 @@ test("legacy event links open standalone signup forms instead of the unsupported
   assert.deepEqual(destinations, [], "embedded signup forms must keep their original event renderer");
 });
 
-test("reachable sharing checks retain owner, anonymous, accepted, pending and missing-share-table behavior", async () => {
+test("reachable sharing checks retain owner, cohost, anonymous, accepted, pending and missing-share-table behavior", async () => {
   const statements = page.body.statements;
   const start = statements.findIndex(node => ts.isVariableStatement(node) && node.declarationList.declarations[0].name.getText(ast) === "recipientAccepted");
   const end = statements.findIndex((node, index) => index > start && ts.isIfStatement(node) && node.expression.getText(ast) === "!isOwner && !collaborationPermissions.canEdit");
@@ -102,6 +193,7 @@ test("reachable sharing checks retain owner, anonymous, accepted, pending and mi
   const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
   for (const fixture of [
     { owner: true, userId: "owner", access: false, pending: false, accepted: false, readonly: false },
+    { owner: false, userId: "cohost", canEdit: true, role: "cohost", access: false, pending: false, accepted: true, readonly: false },
     { owner: false, userId: null, access: false, pending: false, accepted: false, readonly: true },
     { owner: false, userId: "guest", access: true, pending: false, accepted: true, readonly: false },
     { owner: false, userId: "guest", access: false, pending: false, accepted: false, readonly: true },
@@ -111,7 +203,7 @@ test("reachable sharing checks retain owner, anonymous, accepted, pending and mi
     for (const autoAccept of [false, true]) {
       const writes = [];
       const run = new AsyncFunction("isOwner", "userId", "row", "timing", "isEventSharedWithUser", "isEventSharePendingForUser", "autoAccept", "fetch", "collaborationPermissions", `${ts.transpile(code)}; return { recipientAccepted, isReadOnly };`);
-      const result = await run(fixture.owner, fixture.userId, { id: "offline-event" }, { time: (_name, fn) => fn() }, async () => fixture.access, async () => fixture.pending, autoAccept, async (...args) => { writes.push(args); }, { canEdit: fixture.owner, role: fixture.owner ? "owner" : null });
+      const result = await run(fixture.owner, fixture.userId, { id: "offline-event" }, { time: (_name, fn) => fn() }, async () => fixture.access, async () => fixture.pending, autoAccept, async (...args) => { writes.push(args); }, { canEdit: fixture.canEdit ?? fixture.owner, role: fixture.role ?? (fixture.owner ? "owner" : null) });
       assert.deepEqual(result, { recipientAccepted: fixture.accepted, isReadOnly: fixture.readonly });
       assert.equal(writes.length, fixture.pending && autoAccept ? 1 : 0);
       if (writes.length) assert.deepEqual(JSON.parse(writes[0][1].body), { eventId: "offline-event" });

@@ -72,7 +72,7 @@ function InvitationExperience({ primaryHref }: { primaryHref: string }) {
   return (
     <section
       id="birthday-live-page"
-      className="scroll-mt-20 bg-[#f4ebe4] px-5 py-20 sm:px-8 sm:py-28 lg:px-10"
+      className="scroll-mt-20 px-5 py-20 sm:px-8 sm:py-28 lg:px-10"
     >
       <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.82fr_1.18fr]">
         <div>
@@ -131,14 +131,13 @@ function InvitationExperience({ primaryHref }: { primaryHref: string }) {
 
 function HostDashboard({ primaryHref }: { primaryHref: string }) {
   return (
-    <section className="bg-[var(--birthday-green)] px-5 py-20 text-white sm:px-8 sm:py-28 lg:px-10">
+    <section className="px-5 py-20 text-[var(--marketing-ink)] sm:px-8 sm:py-28 lg:px-10">
       <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.7fr_1.3fr]">
         <div>
           <BirthdaySectionIntro
             eyebrow="The host view"
             title="Know the count before you order the pizza."
             body="No spreadsheet. No notes-app tally. No searching the group chat for who still has not replied."
-            inverse
           />
           <ArrowFillLink
             href={primaryHref}
@@ -150,7 +149,7 @@ function HostDashboard({ primaryHref }: { primaryHref: string }) {
 
         <div
           data-appearance-scope="authored"
-          className="overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.07] shadow-[0_32px_80px_rgba(7,18,12,0.2)]"
+          className="overflow-hidden rounded-[2rem] border border-white/12 bg-[color-mix(in_srgb,var(--birthday-green),white_7%)] text-white shadow-[0_32px_80px_rgba(7,18,12,0.2)]"
         >
           <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-7">
             <div>
@@ -273,7 +272,7 @@ function StartWays() {
   return (
     <section
       id="birthday-start"
-      className="scroll-mt-20 bg-[#fff1e8] px-5 py-20 sm:px-8 sm:py-28 lg:px-10"
+      className="scroll-mt-20 px-5 py-20 sm:px-8 sm:py-28 lg:px-10"
     >
       <div className="mx-auto max-w-7xl">
         <BirthdaySectionIntro
@@ -373,7 +372,7 @@ function StartWays() {
 
 function SetupSteps() {
   return (
-    <section className="bg-white px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
+    <section className="px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
       <div className="mx-auto max-w-7xl">
         <BirthdaySectionIntro
           eyebrow="From idea to invited"

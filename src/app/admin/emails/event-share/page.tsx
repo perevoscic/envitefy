@@ -74,7 +74,7 @@ export default function EventSharePreviewPage() {
 
   return (
     <div
-      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] transition-colors dark:bg-none dark:bg-background"
+      className="min-h-[100dvh] bg-transparent text-foreground transition-colors"
       suppressHydrationWarning
     >
       <div

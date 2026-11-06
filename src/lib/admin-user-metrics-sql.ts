@@ -27,7 +27,19 @@ export type AdminUserListPage = {
 };
 
 export const ADMIN_USER_METRICS_CTE_SQL = `
-  with event_metrics as (
+  with event_rows as materialized (
+    select
+      user_id,
+      created_at,
+      lower(coalesce(data->>'category', '')) as category,
+      (
+        lower(coalesce(data->>'createdVia', '')) = 'ocr'
+        or lower(coalesce(data->>'createdVia', '')) like 'ocr-%'
+        or lower(coalesce(data->'sourceContext'->>'type', '')) in ('upload', 'snap', 'ocr_text')
+      ) as is_scan
+    from event_history
+  ),
+  event_metrics as (
     select
       user_id,
       count(*)::integer as events_total,
@@ -50,19 +62,8 @@ export const ADMIN_USER_METRICS_CTE_SQL = `
       coalesce(sum(case when is_scan and (category like '%car%' or category like '%pool%') then 1 else 0 end), 0)::integer as scans_from_history_car_pool,
       max(created_at) as last_event_created_at,
       max(case when is_scan then created_at else null end) as last_scan_created_at
-    from (
-      select
-        user_id,
-        created_at,
-        lower(coalesce(data->>'category', '')) as category,
-        (
-          lower(coalesce(data->>'createdVia', '')) = 'ocr'
-          or lower(coalesce(data->>'createdVia', '')) like 'ocr-%'
-          or lower(coalesce(data->'sourceContext'->>'type', '')) in ('upload', 'snap', 'ocr_text')
-        ) as is_scan
-      from event_history
-      where user_id is not null
-    ) event_rows
+    from event_rows
+    where user_id is not null
     group by user_id
   ),
   share_metrics as (
@@ -116,4 +117,50 @@ export const ADMIN_USER_METRICS_SELECT_SQL = `
   events_appointments, events_doctor_appointments, events_play_days,
   events_general_events, events_car_pool,
   last_event_created_at, last_scan_created_at
+`;
+
+// Project the small event facts once: repeatedly extracting keys from large saved
+// artwork JSON can occupy every database connection for longer than checkout allows.
+// The overview and initial directory share that projection and one connection.
+export const ADMIN_USERS_PAGE_SQL = `
+  ${ADMIN_USER_METRICS_CTE_SQL},
+  event_totals as (
+    select
+      count(*)::text as total_events,
+      count(*) filter (where category like '%birthday%')::text as events_birthdays,
+      count(*) filter (where category like '%wedding%')::text as events_weddings,
+      count(*) filter (where category like '%sport%')::text as events_sport_events,
+      count(*) filter (where category = 'appointments' or category like '%appointment%')::text as events_appointments,
+      count(*) filter (where category like '%doctor%' or category like '%medical%')::text as events_doctor_appointments,
+      count(*) filter (where category like '%play%')::text as events_play_days,
+      count(*) filter (where category like '%general%')::text as events_general_events,
+      count(*) filter (where category like '%car%' or category like '%pool%')::text as events_car_pool
+    from event_rows
+  ),
+  user_totals as (
+    select
+      count(*)::text as total_users,
+      coalesce(sum(scans_total), 0)::text as scans_total,
+      coalesce(sum(scans_birthdays), 0)::text as scans_birthdays,
+      coalesce(sum(scans_weddings), 0)::text as scans_weddings,
+      coalesce(sum(scans_sport_events), 0)::text as scans_sport_events,
+      coalesce(sum(scans_appointments), 0)::text as scans_appointments,
+      coalesce(sum(scans_doctor_appointments), 0)::text as scans_doctor_appointments,
+      coalesce(sum(scans_play_days), 0)::text as scans_play_days,
+      coalesce(sum(scans_general_events), 0)::text as scans_general_events,
+      coalesce(sum(scans_car_pool), 0)::text as scans_car_pool,
+      (
+        select coalesce(jsonb_agg(initial_user order by created_at desc nulls last, id desc), '[]'::jsonb)
+        from (
+          select ${ADMIN_USER_METRICS_SELECT_SQL}
+          from admin_users_with_metrics
+          order by created_at desc nulls last, id desc
+          limit $1
+        ) initial_user
+      ) as initial_users
+    from admin_users_with_metrics
+  )
+  select user_totals.*, event_totals.*,
+    (select count(*)::text from event_shares) as total_shares
+  from user_totals cross join event_totals
 `;

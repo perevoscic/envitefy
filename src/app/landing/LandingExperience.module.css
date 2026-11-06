@@ -6,10 +6,9 @@
   --landing-surface: var(--marketing-surface);
   --landing-wash: var(--marketing-soft);
   color: var(--landing-ink);
-  background: #fcfaff;
+  background: transparent;
   background-image:
-    radial-gradient(ellipse 70% 25rem at 90% 13rem, #eeeaffb3, transparent),
-    radial-gradient(ellipse 65% 24rem at 0 30rem, #fce9f080, transparent);
+    none;
   font-family: var(--font-geist-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -20,10 +19,9 @@
   --landing-line: #4a394f;
   --landing-surface: #2c2233;
   --landing-wash: #312436;
-  background-color: #251d2c;
+  background-color: transparent;
   background-image:
-    radial-gradient(ellipse 70% 25rem at 90% 13rem, #47365680, transparent),
-    radial-gradient(ellipse 65% 24rem at 0 30rem, #5b30444d, transparent);
+    none;
 }
 .root :where(a, button, summary) {
   -webkit-tap-highlight-color: transparent;
@@ -214,7 +212,7 @@
     serif;
 }
 .showcaseShell {
-  background: var(--landing-surface);
+  background: transparent;
 }
 .showcaseShell :global(#showcase-cards) {
   min-height: 0;
@@ -243,7 +241,7 @@
 .finalCta {
   padding: 4.75rem 1.5rem 5.25rem;
   border-top: 1px solid var(--landing-line);
-  background: radial-gradient(ellipse at 30% 120%, #f4deec70, transparent 65%), var(--landing-wash);
+  background: transparent;
   text-align: center;
 }
 .finalCta h2 {
@@ -364,7 +362,7 @@
 }
 
 .root {
-  background: var(--marketing-paper);
+  background: transparent;
   background-image: none;
 }
 :global(html.dark) .root {
@@ -374,7 +372,7 @@
   --landing-line: var(--marketing-line);
   --landing-surface: var(--marketing-surface);
   --landing-wash: var(--marketing-soft);
-  background: var(--marketing-paper);
+  background: transparent;
   background-image: none;
 }
 .root h2:not(:where([data-appearance-scope="authored"] *)) {
@@ -405,7 +403,7 @@
   --landing-line: #e5d6d6;
   --marketing-paper: #fcf8f3;
   color: var(--landing-ink);
-  background: var(--landing-wash);
+  background: transparent;
   border-radius: 0;
   padding-block: 5rem;
 }

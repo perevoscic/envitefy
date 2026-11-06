@@ -92,6 +92,7 @@ function harness({ account = accountA, grant = eventScope } = {}) {
       },
       "@/lib/signup-intent": {},
       "@/lib/legal-acceptance": {},
+      "@/lib/new-account-notification": { notifyNewAccountSignup: async () => {} },
       googleapis: {
         google: {
           auth: {

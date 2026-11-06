@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-30",
+  "purpose": "Gymnastics meet shirt concept preview",
+  "tool": "built-in image_gen",
+  "frontTreatment": "Original official purple-to-blue gradient E/plane + envitefy wordmark, small left chest",
+  "backTreatment": "Canonical envitefy letterforms in monochrome #98153f to match the headline; coral #f24772 accents",
+  "backArt": "output/merch/gymnastics-meet-shirt-2026-10-30/gymnastics-meet-back-concept.svg",
+  "backPreview": "output/merch/gymnastics-meet-shirt-2026-10-30/gymnastics-meet-back-concept-preview.webp",
+  "backSizeIn": {
+    "width": 9,
+    "height": 12.2
+  },
+  "qrDestination": "https://envitefy.com/gymnastics#preview",
+  "sourceQrVerified": true,
+  "photographicMockupQrVerified": true,
+  "prompt": "Use case: product-mockup / precise-object-edit. Create a polished photorealistic front-and-back preview of the new Envitefy gymnastics meet shirt. Image 1 is the EDIT TARGET and garment/front-logo authority: matching cream/ecru cotton shirts, front left/back right, full garments visible, on pale concrete studio backdrop. Preserve the front shirt entirely, including the small wearer's LEFT CHEST E-with-integrated-paper-plane stacked above official lowercase envitefy wordmark, exact purple-to-blue gradient and exact brand logo shapes. Its real pocket print is3inches wide. Image2 is the exact COMPLETE BACK ARTWORK INSERT: use it as supplied, unchanged in typography, drawing layout, relative spacing, exact words and logo shape. Replace ALL previous back-shirt ink from image1 with this new graphic from image2. The cream rectangular background in image2 is only a viewing background: do NOT print a rectangular panel; print only the plum and coral ink directly on the cream cotton. Scale the full supplied back composition to approximately9inches wide by12.2inches tall on a22inch wide shirt body; it should occupy41percent of flat body width, with generous side margins and blank space below. Place it centered, upper back, beginning about3inches below rear collar. This is the new approved visual message: headline 'LESS SEARCHING.' in deep plum and 'MORE CHEERING.' in coral; below it illustrated MEET PACKET with SCHEDULE on left, coral arrow to outlined mobile MEET PAGE with Sessions / Directions / Updates; benefit line 'Session times · Directions · Meet updates'; official lowercase envitefy wordmark; supplied QR; 'SEE A SAMPLE MEET'; 'envitefy.com/gymnastics'. Copy the actual exact supplied QR pixels as closely as possible rather than inventing a different pattern. CRITICAL COLOR REQUIREMENT DIRECT FROM USER: ALL branding on the BACK is a single deep plum#98153f, identical to the back's plum headline, PDF and phone outlines and text. The back envitefy wordmark MUST be deep plum, never purple/blue gradient, brown, black or multicolored. The only coral#f24772 accents on back are MORE CHEERING. headline, arrow, folded paper corner and small UI accent. FRONT alone retains the original official vivid blue-purple gradient. Keep original logo letterforms, serif joins and proportions; do not typeset a replacement. Render fine realistic cream cotton texture, collars and stitching, soft folds and studio shadows, without obscuring text. Landscape3:2 composition, both complete shirts, crisp detailed commercial garment mockup, ideally3840x2560. No people, no extra slogans, no social icons, no dimension annotations, no hangers, no watermark. Respect the supplied back design exactly; only make it look naturally screen printed on the shirt.",
+  "mockup": "output/merch/gymnastics-meet-shirt-2026-10-30/gymnastics-meet-shirt-front-back-mockup.webp",
+  "mockupDimensionsPx": {
+    "width": 1536,
+    "height": 1024
+  },
+  "finalWebpQrVerified": true,
+  "photoVisibleCopyVerified": true,
+  "photoFrontGradientAndBackPlumVerified": true,
+  "generatedPngRemovedAfterWebpVerification": true
+}

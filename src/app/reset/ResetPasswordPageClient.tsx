@@ -76,7 +76,7 @@ export default function ResetPasswordPageClient() {
   };
 
   return (
-    <main className={`${publicStyles.page} min-h-[100dvh] flex items-center justify-center p-6 bg-[#F8F5FF]`}>
+    <main className={`${publicStyles.page} ${publicStyles.sharedBackground} min-h-[100dvh] flex items-center justify-center p-6`}>
       <section className="w-full max-w-md rounded-2xl bg-white/80 backdrop-blur-lg border border-white/60 p-8 shadow-xl">
         <Link href="/" className="mb-6 block text-center">
           <EnvitefyBrandImage

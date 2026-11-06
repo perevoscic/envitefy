@@ -32,12 +32,15 @@ const calendarsRouteSource = readFileSync(
   "utf8",
 );
 
-test("settings uses a sectioned workspace instead of one continuous form", () => {
+test("settings groups a sectioned workspace with a mobile list and detail view", () => {
   assert.match(
     source,
     /type SettingsSectionKey = "profile" \| "calendars" \| "security" \| "creation" \| "appearance"/,
   );
-  assert.match(source, /SETTINGS_SECTIONS\.map/);
+  assert.match(source, /SETTINGS_SECTIONS\.filter\(\(section\) => section\.group === group\)\.map/);
+  assert.match(source, /\["Account", "Workspace", "Connections"\]/);
+  assert.match(source, /data-settings-view=\{mobileSettingsView\}/);
+  assert.match(source, /All settings/);
   assert.match(source, /<AppearanceSelector/);
   assert.match(source, /activeSettingsSection === "appearance"/);
   assert.match(source, /aria-label="Settings sections"/);
@@ -55,25 +58,30 @@ test("sports deep links and compact preference grids remain available", () => {
   assert.match(source, /Save create settings/);
 });
 
-test("profile exposes a validated avatar upload experience", () => {
+test("profile stages validated photos and names behind an explicit save and cancel", () => {
   assert.match(source, /PROFILE_AVATAR_ACCEPT/);
   assert.match(source, /validateProfileAvatarMeta\(file\)/);
-  assert.match(source, /\/api\/user\/profile\/avatar/);
-  assert.match(source, /Maximum file size: 5 MB/);
-  assert.match(source, /Replace image/);
+  assert.doesNotMatch(source, /fetch\("\/api\/user\/profile\/avatar"/);
+  assert.match(source, /body\.set\("avatarAction", pendingAvatar \? "replace" : avatarRemoved \? "remove" : "keep"\)/);
+  assert.match(source, /Up to 5 MB/);
+  assert.match(source, /Change photo/);
   assert.match(source, /removeAvatar/);
+  assert.match(source, /cancelProfileChanges/);
+  assert.match(source, /Sign-in email/);
+  assert.match(source, /Read only/);
 });
 
-test("Google Calendar reconnect forces offline consent and returns to calendar settings", () => {
+test("Google Calendar connection forces offline consent and returns to calendar settings", () => {
   assert.match(source, /\/api\/google\/auth\?consent=1&next=/);
   assert.match(source, /encodeURIComponent\("\/settings#calendars"\)/);
 });
 
 test("only connected calendars can be selected and persisted as the default", () => {
   assert.match(source, /if \(provider && !connectedCalendars\[provider\]\) return/);
-  assert.match(source, /const isDefault = preferredProvider === item\.key && item\.connected/);
-  assert.match(source, /item\.connected && CONNECTED_CALENDAR_SYNC_ENABLED \? \(/);
-  assert.match(source, /role="switch"\s+aria-checked=\{isDefault\}/);
+  assert.doesNotMatch(source, /settings-default-calendar|styles\.calendarDefault/);
+  assert.match(source, /role="switch" aria-checked=\{isDefault\} aria-label=\{`Use \$\{item\.label\} as default calendar`\}/);
+  assert.match(source, /const isDefault = item\.connected && connectionsVerified && !calendarDefaultLoading && normalizedPreferredProvider === item\.key/);
+  assert.doesNotMatch(source, /<option value="apple"/);
   assert.match(source, /saveCalendarDefault\(isDefault \? null : item\.key\)/);
   assert.doesNotMatch(source, /Save calendar default|Clear default|togglePreferredProvider/);
 

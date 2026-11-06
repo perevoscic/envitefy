@@ -1,0 +1,137 @@
+.canvas {
+  --settings-surface: light-dark(#ffffff, #211e28);
+  --settings-panel-shadow: light-dark(rgb(62 36 87 / 16%), rgb(0 0 0 / 48%));
+  --settings-panel-edge-shadow: light-dark(rgb(62 36 87 / 5%), rgb(0 0 0 / 24%));
+  --settings-ink: light-dark(#282232, #f3eff8);
+  --settings-muted: light-dark(#64596f, #c0b6cb);
+  --settings-line: light-dark(#e4dee9, #3e3749);
+  --settings-field: light-dark(#ffffff, #25212e);
+  --settings-input-line: light-dark(#93869f, #8e7f9f);
+  --settings-selection: light-dark(#eae2f4, #392c4c);
+  --settings-accent: light-dark(#633e8a, #d2b5f1);
+  --settings-on-accent: light-dark(#ffffff, #251731);
+  --settings-error: light-dark(#a52442, #f8a9bb);
+  min-height: 100dvh;
+  width: 100%;
+  padding: 24px 32px 48px;
+  background: transparent;
+  color: var(--settings-ink);
+  font-family: var(--font-inter, Arial), sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.workspace { width: 100%; max-width: 1184px; margin-inline: auto; padding-top: var(--app-content-top-inset, 0px); }
+.header { display: flex; justify-content: space-between; align-items: center; gap: 24px; min-height: 88px; padding-bottom: 24px; border-bottom: 1px solid var(--settings-line); }
+.pageTitle { margin: 0; color: var(--settings-ink); font-family: var(--font-playfair, Georgia), serif; font-size: 34px; font-weight: 500; line-height: 1.2; }
+.account { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.accountAvatar, .profileAvatar { position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; background: var(--settings-selection); color: var(--settings-accent); font-weight: 600; }
+.accountAvatar { width: 40px; height: 40px; border-radius: 50%; }
+.accountName { max-width: 240px; overflow-wrap: anywhere; }
+.layout { display: grid; grid-template-columns: 206px minmax(0, 1fr); align-items: start; gap: 40px; padding-top: 30px; }
+.navigation { position: sticky; top: calc(var(--app-content-top-inset, 0px) + 24px); min-width: 0; margin-top: 30px; }
+.navGroup + .navGroup { margin-top: 26px; }
+.canvas .navGroupTitle { margin: 0 12px 8px; color: var(--settings-muted); font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.5; }
+.navButton { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 46px; border: 0; border-radius: 8px; padding: 11px 12px; background: transparent; color: var(--settings-muted); font: inherit; text-align: left; cursor: pointer; transition: background-color 150ms, color 150ms; }
+.navButton:hover { background: var(--settings-surface); color: var(--settings-ink); }
+.navButton[aria-current="page"] { background: var(--settings-selection); color: var(--settings-ink); box-shadow: inset 3px 0 var(--settings-accent); font-weight: 600; }
+.navIcon { flex-shrink: 0; width: 17px; height: 17px; }
+.navLabel { min-width: 0; flex: 1; overflow-wrap: break-word; }
+.mobileChevron { display: none; }
+.detail { min-width: 0; width: 100%; max-width: 720px; container: settings-content / inline-size; }
+.canvas .sectionHeading { margin: 0 0 24px; color: var(--settings-ink); font-family: inherit; font-size: 25px; font-weight: 600; line-height: 1.3; }
+.sectionHeading:focus { outline: none; }
+.panel { min-width: 0; padding: 26px; border-radius: 12px; background: var(--settings-surface); color: var(--settings-ink); box-shadow: 0 18px 48px -16px var(--settings-panel-shadow), 0 2px 8px -2px var(--settings-panel-edge-shadow); }
+.panel h3 { color: var(--settings-ink); font-family: inherit; font-size: 15px; font-weight: 600; line-height: 1.5; }
+.profileForm { display: grid; gap: 24px; }
+.photoRow { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding-bottom: 24px; border-bottom: 1px solid var(--settings-line); }
+.profileAvatar { width: 64px; height: 64px; border-radius: 18px; font-size: 21px; }
+.photoCopy { flex: 1; min-width: 140px; }
+.photoCopy h3 { margin: 0; }
+.photoCopy p { margin-top: 4px; color: var(--settings-muted); font-size: 12px; }
+.photoActions, .actionButtons, .providerActions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.profileFields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.label { display: flex; flex-direction: column; gap: 7px; min-width: 0; color: var(--settings-ink); font-weight: 500; }
+.input { display: block; width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--settings-input-line); border-radius: 9px; padding: 10px 12px; background: var(--settings-field); color: var(--settings-ink); font: inherit; font-size: 16px; font-weight: 400; }
+.input:disabled { cursor: not-allowed; opacity: .65; }
+.readOnly { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; }
+.readOnly h3 { margin: 0; }
+.readOnly p { margin-top: 2px; color: var(--settings-muted); overflow-wrap: anywhere; }
+.readOnly > span { display: inline-flex; align-items: center; gap: 6px; color: var(--settings-muted); font-size: 12px; }
+.button, .primaryButton, .quietButton { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; max-width: 100%; border: 1px solid var(--settings-input-line); border-radius: 9px; padding: 9px 14px; background: transparent; color: var(--settings-ink); font: inherit; font-weight: 500; text-align: center; cursor: pointer; transition: background-color 150ms, opacity 150ms; }
+.button:hover, .quietButton:hover { background: var(--settings-selection); }
+.primaryButton { border-color: var(--settings-accent); background: var(--settings-accent); color: var(--settings-on-accent); }
+.primaryButton:hover { opacity: .9; }
+.quietButton { border-color: transparent; padding-inline: 8px; color: var(--settings-muted); }
+.canvas :is(.button, .primaryButton, .quietButton, .defaultChoice):disabled { cursor: not-allowed; opacity: .5; }
+.canvas :is(.navButton, .button, .primaryButton, .quietButton, .defaultChoice, .input):focus-visible { outline: 3px solid var(--settings-accent); outline-offset: 3px; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 24px; border-top: 1px solid var(--settings-line); }
+.actionButtons { margin-left: auto; }
+.feedback { color: var(--settings-muted); font-size: 13px; overflow-wrap: anywhere; }
+.feedback:empty { display: none; }
+.error { color: var(--settings-error); font-size: 14px; overflow-wrap: anywhere; }
+.error .button { margin-top: 12px; }
+.backButton { display: none; }
+.sectionRow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; }
+.providerList { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.providerRow { display: flex; flex-direction: column; min-width: 0; min-height: 174px; padding-inline: 18px; }
+.providerRow:first-child { padding-left: 0; }
+.providerRow:last-child { padding-right: 0; }
+.providerRow + .providerRow { border-left: 1px solid var(--settings-line); }
+.providerRow > [data-apple-calendar-connection] { width: 100%; flex: 1; }
+.providerInfo { display: grid; grid-template-rows: auto auto auto minmax(min-content, 1fr); flex: 1; min-width: 0; }
+.providerInfo h3 { margin: 0; }
+.providerInfo p { margin-top: 3px; color: var(--settings-muted); font-size: 13px; }
+.defaultChoice { display: flex; align-items: center; align-self: center; gap: 4px; width: fit-content; min-height: 32px; margin-block: 8px; margin-inline: auto; border: 0; border-radius: 4px; padding: 3px 6px; background: transparent; color: var(--settings-muted); font: inherit; font-size: 12px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.defaultChoice[aria-checked="true"] { background: var(--settings-selection); color: var(--settings-accent); }
+.defaultChoice[aria-checked="false"] { text-decoration: underline; text-underline-offset: 3px; }
+.defaultChoice:hover { background: var(--settings-selection); color: var(--settings-accent); }
+.providerEmail { overflow-wrap: anywhere; }
+.providerActions { flex-direction: column; align-items: stretch; margin-top: auto; }
+.providerActions > button { width: 100%; }
+.passwordForm { display: grid; gap: 18px; max-width: 440px; margin-bottom: 32px; }
+.passwordForm h3 { margin-bottom: 2px; }
+
+@container settings-content (max-width: 39.999rem) {
+  .providerList { grid-template-columns: 1fr; }
+  .providerRow, .providerRow:first-child, .providerRow:last-child { min-height: 0; padding: 20px 0; }
+  .providerRow:first-child { padding-top: 0; }
+  .providerRow:last-child { padding-bottom: 0; }
+  .providerRow + .providerRow { border-left: 0; border-top: 1px solid var(--settings-line); }
+  .providerActions { flex-direction: row; align-items: center; margin-top: 0; }
+  .providerActions > button { width: auto; }
+  .providerRow > [data-apple-calendar-connection] > button { width: auto; align-self: flex-start; }
+}
+
+@media (max-width: 47.999rem) {
+  .canvas { padding: 18px 18px 36px; font-size: 16px; }
+  .header { min-height: 74px; padding-bottom: 18px; gap: 16px; }
+  .pageTitle { font-size: 32px; }
+  .accountName { display: none; }
+  .layout { display: block; padding-top: 24px; }
+  .navigation { position: static; margin-top: 0; }
+  .navGroup + .navGroup { margin-top: 24px; }
+  .canvas .navGroupTitle { font-size: 13px; }
+  .navButton { min-height: 56px; }
+  .navButton[aria-current="page"] { background: transparent; box-shadow: none; font-weight: 500; }
+  .mobileChevron { display: block; width: 17px; height: 17px; color: var(--settings-muted); }
+  .canvas[data-settings-view="list"] .detail { display: none; }
+  .canvas[data-settings-view="detail"] .navigation { display: none; }
+  .backButton { display: inline-flex; margin-bottom: 18px; }
+  .panel { padding: 20px; }
+  .profileFields { grid-template-columns: 1fr; gap: 18px; }
+  .photoRow { gap: 12px; }
+  .photoActions { width: 100%; margin-top: 4px; }
+  .photoCopy p { font-size: 13px; }
+  .actions { align-items: flex-start; }
+  .feedback { font-size: 13px; }
+  .providerActions { gap: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navButton, .button, .primaryButton, .quietButton { transition: none; }
+}
+
+@media (pointer: coarse) {
+  .defaultChoice { min-height: 44px; }
+}

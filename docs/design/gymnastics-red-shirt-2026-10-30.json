@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-30",
+  "garment": "Red shirt supplied by user",
+  "userPhoto": "C:/Users/rjosan/AppData/Local/Temp/codex-clipboard-852bc5d5-a56f-42a8-862d-12bdeb42f1a0.png",
+  "palette": {
+    "mainIvory": "#fff3e7",
+    "accentNavy": "#182d48",
+    "referenceGarment": "#dc3048"
+  },
+  "backBranding": "Canonical wordmark, warm ivory to match main back ink",
+  "frontBranding": "Original official gradient remains separate; not shown",
+  "printFile": "output/merch/gymnastics-red-shirt-2026-10-30/gymnastics-red-back-9x12.2in-300dpi.png",
+  "printSizeIn": {
+    "width": 9,
+    "height": 12.2
+  },
+  "printPixels": {
+    "width": 2700,
+    "height": 3660,
+    "dpi": 300
+  },
+  "qr": {
+    "placeholder": true,
+    "destination": "https://envitefy.com/gymnastics#preview",
+    "replaceBeforePrinting": true
+  },
+  "tool": "built-in image_gen",
+  "prompt": "Use case: precise-object-edit / apparel-print mockup. Image1 is the EDIT TARGET: a person photographed from behind wearing a blank bright RED T-shirt and beige pants against white. Image2 is the exact approved RED-COLORWAY BACK ARTWORK INSERT, with ivory main ink and deep navy accents. Apply ONLY the supplied graphic to the back of the shirt in image1. Preserve the same person, hair, body, pose, arms, pants, exact shirt fabric red, shirt cut, wrinkles, light/shadow and pure white background. Do not change the person's identity or body. Use image2's exact composition, all lettering shapes and official lowercase envitefy wordmark geometry, phone/art icons, gymnast and balance-beam, QR and all wording. The red rectangle behind image2 is only a garment-color viewing matte: do NOT print a red or white rectangular panel; only its ivory/navy ink goes on the shirt, apart from the small ivory QR quiet-zone square which is part of the actual design. Ink palette: warm ivory #fff3e7 for UPLOAD A PDF., diagram outlines, phone text, gymnast, summary, footer wordmark and captions; deep navy #182d48 for the single-row headline GET A LIVE PAGE., PDF fold, transformation/upload arrows, beam/chevrons and dark QR modules. Back Envitefy wordmark MUST remain warm ivory matching the primary artwork, no blue-purple gradient on the back. Keep exact TWO headline rows UPLOAD A PDF. / GET A LIVE PAGE. The second row stays on one line. Phone heading LIVE MEET, phone rows Meet details / Registration / Hotels with calendar, checked registration card and bed icons, no plus/cross. Summary reads Meet details · Registration · Hotels. Caption below QR reads SEE TODAY’S MEET, with apostrophe. Footer envitefy.com/gymnastics. The QR is an authorized demo placeholder that will be replaced before printing; copy the supplied modules exactly rather than inventing a pattern, do not add a placeholder label on clothing. Print centered on the upper back, beginning about3inches below rear collar, around9inches wide by12.2inches tall on a typical adult shirt, comfortable shoulder/side margins and blank red fabric below. Keep the artwork's original aspect ratio, no stretching. Conform it subtly to natural cotton folds while keeping all type crisp and readable; no box behind the graphic. Entire original composition stays the same person-from-behind framing, no front view, no captions outside shirt, no added props, no watermark. Clean high-resolution commercial product photograph, ideally2000x2500 or higher, same4:5 portrait aspect as target.",
+  "mockup": "output/merch/gymnastics-red-shirt-2026-10-30/red-shirt-mockup.webp",
+  "mockupPngDownload": "output/merch/gymnastics-red-shirt-2026-10-30/red-shirt-mockup-download.png",
+  "mockupDimensionsPx": {
+    "width": 1122,
+    "height": 1402
+  },
+  "mockupIsIllustrationNotMeasuredScaleProof": true,
+  "checks": {
+    "nativePrintMetadataAndAlphaVerified": true,
+    "copyAndIconsVerified": true,
+    "ivoryWordmarkMatchesMainInk": true,
+    "mockupQrDecodesToDemo": true,
+    "finalWebpDecodes": true
+  },
+  "retainedPngDownloads": "User requested individual designs following PNG download delivery; print PNGs and explicit download copies retained.",
+  "generatorOriginalRemovedAfterVerifiedReplacement": true
+}

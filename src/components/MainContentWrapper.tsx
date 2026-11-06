@@ -18,7 +18,8 @@ export function MainContentWrapper({
   children,
   isAuthenticated,
   reserveSidebarSpace = isAuthenticated,
-  enableProjectBackground = isAuthenticated,
+  // New pages inherit the dashboard canvas unless they explicitly opt out.
+  enableProjectBackground = true,
   className = "",
 }: {
   children: React.ReactNode;
@@ -37,9 +38,6 @@ export function MainContentWrapper({
   const isEventSharePage = pathSegments.length === 2 && pathSegments[0] === "event" && !isCreateEventRoute(normalizedPath);
   const isSettingsRoute = normalizedPath === "/settings";
   const isUnifiedCreateRoute = isAuthenticated && UNIFIED_CREATION_ENABLED && normalizedPath === "/create";
-  const isAdminRoute = normalizedPath === "/admin" || normalizedPath.startsWith("/admin/");
-  const usesOwnLandingBackground =
-    normalizedPath === "/gymnastics" || (normalizedPath === "/snap" && !isAuthenticated);
 
   useEffect(() => {
     const checkDesktop = () => {
@@ -69,14 +67,10 @@ export function MainContentWrapper({
 
   const shellBgClass = isStudioCardShare
     ? "bg-neutral-950"
-    : isAdminRoute
-      ? "bg-slate-50 dark:bg-background"
-      : "bg-transparent";
+    : "bg-transparent";
 
   const showProjectGradientBackground =
     enableProjectBackground &&
-    !usesOwnLandingBackground &&
-    !isAdminRoute &&
     !isEventSharePage &&
     !isStudioCardShare;
 

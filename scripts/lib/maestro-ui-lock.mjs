@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync, unlinkSync } from "node:fs";
+import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { processTerminationLockDecision } from "./maestro-process-timeout.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ROOT } from "./maestro-core.mjs";
@@ -24,7 +25,11 @@ export async function acquireAndroidUiLock(serial, context) {
   }
   const release = () => {
     try {
-      if (JSON.parse(readFileSync(file, "utf8")).token === token) unlinkSync(file);
+      const decision = processTerminationLockDecision(JSON.parse(readFileSync(file, "utf8")), token);
+      if (decision.retainedLock) {
+        writeFileSync(file, JSON.stringify(decision.retainedLock, null, 2));
+        process.stderr.write(`Android UI lock retained pending verified runner process-tree exit: ${file}\n`);
+      } else if (decision.release) unlinkSync(file);
     } catch (error) {
       if (error.code !== "ENOENT")
         process.stderr.write(`Could not release Android UI lock: ${error.message}\n`);

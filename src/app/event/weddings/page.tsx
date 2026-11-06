@@ -5,7 +5,7 @@ export default function NewWeddingEventPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-[#f7f4ef]" aria-label="Loading wedding designs" />
+        <main className="min-h-screen bg-transparent" aria-label="Loading wedding designs" />
       }
     >
       <WeddingDesignGallery />

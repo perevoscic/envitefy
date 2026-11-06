@@ -1302,11 +1302,6 @@ html[data-ios-browser-chrome="true"] body {
   }
 }
 
-/* Category galleries continue their ivory paper behind the top navigation and notch. */
-body:has([data-category-gallery-page="true"])::before {
-  background: #fffcfa;
-}
-
 /* Event and editor navigation use the actual event paper color, including safe areas. */
 html[data-event-page-color],
 html[data-event-page-color] body {

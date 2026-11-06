@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const assertSharedGalleryBackground = require("./lib/assert-shared-gallery-background.cjs");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
@@ -62,7 +63,7 @@ function buildFixture() {
     const source = fs.readFileSync("src/app/globals.css", "utf8").replace(
       '@import "tailwindcss";',
       '@import "tailwindcss" source(none);\n' + [
-        "../components/templates", "../components/events", "../components/marketing", "../components/birthdays", "../components/smart-signup-form",
+        "../components/MainContentWrapper.tsx", "../components/ui/gradient-backgrounds.tsx", "../components/templates", "../components/events", "../components/marketing", "../components/birthdays", "../components/smart-signup-form",
       ].map((entry) => `@source "${entry}";`).join("\n"),
     );
     const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process(source, {
@@ -264,6 +265,7 @@ test("signup gallery hero and controls fit desktop, tablet and narrow phones in 
         assert.equal(state.preference, theme, "real appearance setter applies selected preference");
         assert.equal(state.dark, theme === "dark");
         assertContrast(state, theme, width);
+        await assertSharedGalleryBackground(page, state.samples, theme, width);
         const controlPalette = await page.locator('[data-public-gallery-controls] input, [data-public-gallery-controls] select').evaluateAll((nodes) => nodes.map((node) => {
           const style = getComputedStyle(node), probe = document.createElement("span");
           probe.style.backgroundColor = style.getPropertyValue("--signup-surface");
@@ -281,7 +283,7 @@ test("signup gallery hero and controls fit desktop, tablet and narrow phones in 
           assert.deepEqual(palette.actual, palette.expected, `${theme} control ${index + 1} uses the sign-up surface and line tokens at ${width}px`);
         }
         assert.deepEqual(await authoredAppearance(page), authored, `${theme} preserves authored ink, paper and images`);
-        for (const key of ["hero", "gallery", "search", "header"]) {
+        for (const key of ["hero", "search", "header"]) {
           const brightness = luminance(state.samples[key].backgrounds.reduce((back, front) => composite(rgb(front), back), [255, 255, 255, 1]));
           assert.ok(theme === "light" ? brightness > 0.7 : brightness < 0.12, `${theme} ${key} surface at ${width}px`);
         }

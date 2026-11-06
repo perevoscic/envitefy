@@ -797,7 +797,7 @@ const rawTextClass = currentTheme?.text || "";
     );
 
     if (loadingExisting || loadError) return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-slate-700">
+      <div className="flex min-h-screen items-center justify-center bg-transparent p-6 text-muted-foreground">
         <p role={loadError ? "alert" : "status"}>{loadError || "Loading your event…"}</p>
       </div>
     );

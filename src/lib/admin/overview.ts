@@ -13,8 +13,6 @@ import {
   toNumber,
 } from "./data-utils";
 import { getAdminEventsData, type AdminEventCategorySummary } from "./events";
-import { getAdminScanData } from "./scans";
-import { getAdminUsersSummary, type AdminUsersSummary } from "./users";
 import { isDatabaseUnavailableError, query } from "@/lib/db";
 
 export type AdminFunnelStep = {
@@ -24,7 +22,7 @@ export type AdminFunnelStep = {
 };
 
 export type AdminRecentActivity = {
-  type: "user" | "event" | "share" | "rsvp" | "email";
+  type: "event" | "share" | "rsvp" | "email";
   label: string;
   detail: string;
   occurredAt: string | null;
@@ -47,7 +45,6 @@ export type AdminGrowthInsight = {
 export type AdminOverviewData = {
   generatedAt: string;
   kpis: {
-    users: number;
     events: number;
     publicEvents: number;
     scans: number;
@@ -55,7 +52,6 @@ export type AdminOverviewData = {
     rsvps: number;
     emailCampaigns: number;
   };
-  users: AdminUsersSummary;
   funnel: AdminFunnelStep[];
   ga4: AdminGa4Status;
   ga4Report: AdminGa4DashboardSnapshot;
@@ -83,10 +79,6 @@ function getErrorMessage(error: unknown): string {
 
 function createDatabaseUnavailableOverview(error: unknown): AdminOverviewData {
   const message = getErrorMessage(error);
-  const users: AdminUsersSummary = {
-    totalUsers: 0,
-    newUsers7Days: 0,
-  };
   const ga4 = getAdminGa4Status();
   const ga4Report: AdminGa4DashboardSnapshot = {
     status: "error",
@@ -106,17 +98,14 @@ function createDatabaseUnavailableOverview(error: unknown): AdminOverviewData {
   return {
     generatedAt: new Date().toISOString(),
     kpis: {
-      users: 0,
       events: 0,
       publicEvents: 0,
       scans: 0,
       shares: 0,
       rsvps: 0,
       emailCampaigns: 0,
-      },
-    users,
+    },
     funnel: [
-      { label: "Users", value: 0, href: "/admin/users" },
       { label: "Events", value: 0, href: "/admin/events" },
       { label: "Public events", value: 0, href: "/admin/events" },
       { label: "Shares", value: 0, href: "/admin/scans" },
@@ -135,12 +124,18 @@ function createDatabaseUnavailableOverview(error: unknown): AdminOverviewData {
     ],
     recentActivity: [],
     growthInsights: [
-      { label: "New users", current7Days: 0, previous7Days: 0, delta: 0 },
       { label: "Events created", current7Days: 0, previous7Days: 0, delta: 0 },
       { label: "Scans saved", current7Days: 0, previous7Days: 0, delta: 0 },
       { label: "RSVP responses", current7Days: 0, previous7Days: 0, delta: 0 },
     ],
   };
+}
+
+async function getSavedScanCount(): Promise<number> {
+  const result = await query<{ n: string }>(
+    `select count(*)::text as n from event_history where ${ADMIN_SCAN_SQL}`,
+  );
+  return toNumber(result.rows[0]?.n);
 }
 
 async function getEmailCampaignSummary(): Promise<EmailCampaignSummary> {
@@ -186,12 +181,6 @@ async function getRecentActivity(): Promise<AdminRecentActivity[]> {
   const result = await query<ActivityRow>(`
     select type, label, detail, occurred_at
     from (
-      select 'user'::text as type,
-             email as label,
-             'joined' as detail,
-             created_at as occurred_at
-      from users
-      union all
       select 'event'::text as type,
              title as label,
              coalesce(nullif(data->>'category', ''), 'event created') as detail,
@@ -225,14 +214,7 @@ async function getGrowthInsights(): Promise<AdminGrowthInsight[]> {
   const currentStart = daysAgo(7);
   const previousStart = daysAgo(14);
 
-  const [users, events, scans, rsvps] = await Promise.all([
-    query<{ current_count: string; previous_count: string }>(
-      `select
-         count(*) filter (where created_at >= $1::timestamptz)::text as current_count,
-         count(*) filter (where created_at >= $2::timestamptz and created_at < $1::timestamptz)::text as previous_count
-       from users`,
-      [currentStart, previousStart],
-    ),
+  const [events, scans, rsvps] = await Promise.all([
     query<{ current_count: string; previous_count: string }>(
       `select
          count(*) filter (where created_at >= $1::timestamptz)::text as current_count,
@@ -275,7 +257,6 @@ async function getGrowthInsights(): Promise<AdminGrowthInsight[]> {
   };
 
   return [
-    buildInsight("New users", users.rows[0]),
     buildInsight("Events created", events.rows[0]),
     buildInsight("Scans saved", scans.rows[0]),
     buildInsight("RSVP responses", rsvps.rows[0]),
@@ -283,9 +264,8 @@ async function getGrowthInsights(): Promise<AdminGrowthInsight[]> {
 }
 
 export async function getAdminOverviewData(): Promise<AdminOverviewData> {
-  let users: AdminUsersSummary;
   let events: Awaited<ReturnType<typeof getAdminEventsData>>;
-  let scans: Awaited<ReturnType<typeof getAdminScanData>>;
+  let savedScans: number;
   let analytics: Awaited<ReturnType<typeof getAdminAnalyticsOverviewSnapshot>>;
   let emailCampaigns: EmailCampaignSummary;
   let recentActivity: AdminRecentActivity[];
@@ -293,21 +273,15 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
 
   try {
     [
-      users,
       events,
-      scans,
+      savedScans,
       analytics,
       emailCampaigns,
       recentActivity,
       growthInsights,
     ] = await Promise.all([
-      getAdminUsersSummary(),
       getAdminEventsData(8, { includeRecent: false }),
-      getAdminScanData(1, {
-        includeCategories: false,
-        includeRecent: false,
-        includeEngagementCounts: false,
-      }),
+      getSavedScanCount(),
       getAdminAnalyticsOverviewSnapshot(),
       getEmailCampaignSummary(),
       getRecentActivity(),
@@ -353,7 +327,6 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
   }
 
   const funnel: AdminFunnelStep[] = [
-    { label: "Users", value: users.totalUsers, href: "/admin/users" },
     { label: "Events", value: events.summary.totalEvents, href: "/admin/events" },
     { label: "Public events", value: events.summary.publicEvents, href: "/admin/events" },
     { label: "Shares", value: events.summary.shares, href: "/admin/scans" },
@@ -363,15 +336,13 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
   return {
     generatedAt: new Date().toISOString(),
     kpis: {
-      users: users.totalUsers,
       events: events.summary.totalEvents,
       publicEvents: events.summary.publicEvents,
-      scans: scans.summary.totalScans,
+      scans: savedScans,
       shares: events.summary.shares,
       rsvps: events.summary.rsvps,
       emailCampaigns: emailCampaigns.total,
-      },
-    users,
+    },
     funnel,
     ga4: analytics.ga4,
     ga4Report: analytics.ga4Report,

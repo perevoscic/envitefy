@@ -12,7 +12,7 @@ export default function GymnasticsGalleryHeader({
   forwardQueryString?: string;
 }) {
   return (
-    <header className="relative isolate overflow-hidden border-b border-[#e4ddea] bg-[#fffcfa] px-5 py-8 text-[#40324f] sm:px-8 lg:px-12 lg:py-10">
+    <header className="relative isolate overflow-hidden border-b border-[#e4ddea] bg-transparent px-5 py-8 text-foreground sm:px-8 lg:px-12 lg:py-10">
       <CategoryGalleryBackdrop category="gymnastics" />
       <div className="relative z-10 mx-auto grid max-w-[1500px] gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(360px,440px)] lg:items-center lg:gap-12">
         <div className="min-w-0">

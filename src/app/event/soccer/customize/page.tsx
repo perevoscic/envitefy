@@ -1280,7 +1280,7 @@ const rawTextClass = currentTheme?.text || "";
 
     if (loadingExisting) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-100">
+        <div className="min-h-screen flex items-center justify-center bg-transparent">
           <div className="px-4 py-6 bg-white shadow rounded-lg border border-slate-200 text-sm font-medium text-slate-700">
             Loading your saved soccer match…
           </div>

@@ -1429,7 +1429,7 @@ const handleGalleryUpload = useCallback(
 
   if (editEventId && loadingExisting) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-transparent">
         <p className="text-sm text-slate-500">Loading your {isAnniversaryDesign ? "anniversary" : "birthday"}...</p>
       </div>
     );

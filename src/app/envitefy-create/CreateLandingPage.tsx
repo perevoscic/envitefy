@@ -122,7 +122,7 @@ export default function CreateLandingPage() {
   }
 
   return (
-    <MarketingPage tone="product" className={`${styles.editorial} ${styles.coordinated}`}>
+    <MarketingPage tone="product" canvas="editorial" className={`${styles.editorial} ${styles.coordinated}`}>
       <HeroTopNav
         editorialTone="product"
         navLinks={navigation}

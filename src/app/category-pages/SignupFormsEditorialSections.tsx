@@ -43,7 +43,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
 
   return (
     <>
-      <section className="overflow-hidden bg-[#f8f9ff] px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
+      <section className="overflow-hidden px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
         <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
           <div className="max-w-xl">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#3c55ad]">
@@ -142,7 +142,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
         </div>
       </section>
 
-      <section className="bg-[#eef2ff] px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
+      <section className="px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#3c55ad]">
@@ -183,7 +183,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
 
       <section
         id="how-it-works"
-        className="hash-anchor-below-fixed-nav bg-[#f8f9ff] px-5 py-20 sm:px-8 sm:py-28 lg:px-10"
+        className="hash-anchor-below-fixed-nav px-5 py-20 sm:px-8 sm:py-28 lg:px-10"
       >
         <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.8fr)]">
           <div className="relative min-h-[34rem] overflow-hidden rounded-[2.25rem]">
@@ -239,7 +239,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
 
       <section
         id="faq"
-        className="hash-anchor-below-fixed-nav bg-[#eef2ff] px-5 py-20 sm:px-8 sm:py-24 lg:px-10"
+        className="hash-anchor-below-fixed-nav px-5 py-20 sm:px-8 sm:py-24 lg:px-10"
       >
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1fr)]">
           <div>

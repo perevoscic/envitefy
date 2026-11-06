@@ -10,7 +10,7 @@
   position: relative;
   isolation: isolate;
   color: var(--marketing-ink);
-  background: var(--marketing-paper);
+  background: transparent;
 }
 .stage {
   padding: clamp(3.5rem, 5vw, 6rem) clamp(1.4rem, 2vw, 3rem);

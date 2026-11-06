@@ -4,6 +4,12 @@
   color: var(--app-foreground);
 }
 
+/* Utility pages share the dashboard canvas while retaining public control colors. */
+.page.sharedBackground,
+:global(html.dark) .page.sharedBackground {
+  background: transparent;
+}
+
 :global(html.dark) .heroScrim.heroScrim {
   background: linear-gradient(90deg, #181818f5 0%, #181818e8 55%, #181818b8 100%);
 }
@@ -41,8 +47,6 @@
 :global(html.dark) .page.page :is(
   [class~="bg-[#32a56e]"],
   [class~="bg-[#39b87f]"],
-  [class~="bg-[#F3F0FA]"],
-  [class~="bg-[#F8F5FF]"],
   [class~="bg-[#FBF7F2]"],
   [class~="bg-[#d5f2e9]"],
   [class~="bg-[#d8ccff]/55"],
@@ -60,7 +64,6 @@
   [class~="bg-[#ebe1d1]"],
   [class~="bg-[#ebe4d4]"],
   [class~="bg-[#edf9f5]"],
-  [class~="bg-[#eef2ff]"],
   [class~="bg-[#eef3ff]"],
   [class~="bg-[#eefbfc]"],
   [class~="bg-[#efe7ff]"],
@@ -73,7 +76,6 @@
   [class~="bg-[#f3e9e2]"],
   [class~="bg-[#f3efe4]"],
   [class~="bg-[#f3f0ff]"],
-  [class~="bg-[#f4ebe4]"],
   [class~="bg-[#f4ebe5]"],
   [class~="bg-[#f4eee4]"],
   [class~="bg-[#f4efe3]"],
@@ -82,7 +84,6 @@
   [class~="bg-[#f7f1e7]"],
   [class~="bg-[#f7f8f3]"],
   [class~="bg-[#f8efe9]"],
-  [class~="bg-[#f8f9ff]"],
   [class~="bg-[#faf7f2]"],
   [class~="bg-[#faf7ff]"],
   [class~="bg-[#faf8ff]"],
@@ -93,7 +94,6 @@
   [class~="bg-[#fbf9f5]/60"],
   [class~="bg-[#fbfcf8]"],
   [class~="bg-[#fbfee8]"],
-  [class~="bg-[#fcfbf7]"],
   [class~="bg-[#fdfbf7]"],
   [class~="bg-[#fefcf7]"],
   [class~="bg-[#ffe0e7]"],
@@ -110,7 +110,6 @@
   [class~="bg-[#fff4ec]"],
   [class~="bg-[#fff7e8]"],
   [class~="bg-[#fffaf6]"],
-  [class~="bg-[#fffaf7]"],
   [class~="bg-[#fffdf9]"],
   [class~="bg-[var(--birthday-yellow)]"],
   [class~="bg-[var(--use-case-accent-soft)]"],
@@ -134,7 +133,6 @@
   [class~="text-[#231c49]"],
   [class~="text-[#236c73]"],
   [class~="text-[#241b29]"],
-  [class~="text-[#241c2b]"],
   [class~="text-[#251b2e]"],
   [class~="text-[#252b49]"],
   [class~="text-[#267247]"],

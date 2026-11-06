@@ -457,9 +457,9 @@
 }
 .editor {
   padding: 24px;
-  background: #f5f1fa;
+  background: transparent;
   min-height: 100vh;
-  color: #342d38;
+  color: var(--foreground);
 }
 .toolbar {
   max-width: 1500px;

@@ -141,7 +141,6 @@ export default function AppShell({
       <MainContentWrapper
         isAuthenticated={true}
         reserveSidebarSpace={false}
-        enableProjectBackground={false}
       >
         <div className="flex-1 min-w-0">{children}</div>
         <ConditionalFooter />
@@ -163,7 +162,6 @@ export default function AppShell({
             <MainContentWrapper
               isAuthenticated={showAppChrome}
               reserveSidebarSpace={showAppChrome}
-              enableProjectBackground={true}
             >
               <div className="min-h-0 flex-1 min-w-0">{children}</div>
             </MainContentWrapper>
@@ -171,10 +169,7 @@ export default function AppShell({
         ) : showAppChrome ? (
           <MenuProvider>
             <LeftSidebar />
-            <MainContentWrapper
-              isAuthenticated={true}
-              enableProjectBackground={true}
-            >
+            <MainContentWrapper isAuthenticated={true}>
               <div className="min-h-0 flex-1 min-w-0">{children}</div>
             </MainContentWrapper>
           </MenuProvider>
@@ -182,7 +177,6 @@ export default function AppShell({
           <MainContentWrapper
             isAuthenticated={false}
             reserveSidebarSpace={false}
-            enableProjectBackground={false}
           >
             {isRedirectingFromMarketing ? (
               <AuthTransitionOverlay />

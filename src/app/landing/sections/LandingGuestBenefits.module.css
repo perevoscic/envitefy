@@ -8,7 +8,7 @@
 .section {
   padding: clamp(4rem, 7vw, 8rem) clamp(1.4rem, 3vw, 4rem);
   color: var(--marketing-ink);
-  background: var(--marketing-paper);
+  background: transparent;
 }
 .header {
   display: grid;

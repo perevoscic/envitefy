@@ -658,7 +658,7 @@ function MarketingFooter() {
 function PreviewDenied({ status }: { status: number }) {
   const isUnauthorized = status === 401;
   return (
-    <main className="grid min-h-screen place-items-center bg-[#fcfbf7] px-6 text-slate-950">
+    <main className="grid min-h-screen place-items-center bg-transparent px-6 text-foreground">
       <section className="max-w-md rounded-lg border border-[#c5a880]/20 bg-white p-8 text-center shadow-sm">
         <ShieldCheck className="mx-auto h-10 w-10 text-[#a88b58]" />
         <h1 className="mt-5 text-2xl font-semibold">

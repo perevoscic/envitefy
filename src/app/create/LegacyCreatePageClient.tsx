@@ -364,7 +364,7 @@ export default function CreatePageClient() {
   const linkOnly = phase.kind === "confirm" && phase.source.kind === "url";
 
   return (
-    <main className="min-h-screen bg-[#f7f5fc] px-4 pb-16 pt-6 text-[#251f3d] sm:px-8 sm:pt-10 lg:px-12">
+    <main className="min-h-screen bg-transparent px-4 pb-16 pt-6 text-foreground sm:px-8 sm:pt-10 lg:px-12">
       <div className="mx-auto max-w-[1100px]">
         <header>
           <h1 className="text-4xl font-normal leading-tight tracking-tight [font-family:var(--font-playfair),Georgia,serif] sm:text-5xl">

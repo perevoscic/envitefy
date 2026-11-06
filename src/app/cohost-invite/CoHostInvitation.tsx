@@ -59,7 +59,7 @@ export default function CoHostInvitation() {
     invitation.signedInEmail.toLowerCase() !== invitation.email.toLowerCase();
   const returnPath = `/cohost-invite#${token}`;
   return (
-    <main className="flex min-h-[100dvh] w-full flex-col items-center justify-center bg-slate-50 px-4 py-12 text-slate-950">
+    <main className="flex min-h-[100dvh] w-full flex-col items-center justify-center bg-transparent px-4 py-12 text-foreground">
       <a
         href="/"
         aria-label="Envitefy home"

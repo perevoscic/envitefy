@@ -606,9 +606,11 @@ async function getDashboard(req: Request) {
     return withTiming(timing, body);
   } catch (err: unknown) {
     const timedOut = isStatementTimeoutError(err);
-    if (!timedOut && process.env.NODE_ENV !== "production") {
-      console.error("[api/dashboard] GET failed", err);
-    }
+    // Keep production diagnostics useful without logging event data or user details.
+    console.error("[api/dashboard] GET failed", {
+      reason: timedOut ? "statement_timeout" : "unexpected_error",
+      code: typeof err === "object" && err !== null && "code" in err && typeof err.code === "string" ? err.code : undefined,
+    });
     const message = errorMessage(err, "Failed to load dashboard");
     const body = timedOut
       ? timing.enabled
