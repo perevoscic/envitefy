@@ -103,6 +103,31 @@ test("meet discovery targeted parse calls run concurrently with deterministic me
   );
 });
 
+test("generated gymnastics pages stay single-column until the host authors a section layout", () => {
+  const renderer = readSource("src/components/gym-meet-templates/GymMeetTemplateRenderer.tsx");
+  const normalizer = readSource(
+    "src/components/gym-meet-templates/normalizeGymMeetEventData.ts",
+  );
+  const programCss = readSource(
+    "src/components/gym-meet-templates/gymnastics-program.module.css",
+  );
+
+  assert.match(
+    normalizer,
+    /\["meet-discovery", "meet-discovery-v2"\]\.includes\(safeString\(eventData\?\.createdVia\)\)/,
+  );
+  assert.match(normalizer, /generatedFromDiscovery:\s*isDiscoveryEvent/);
+  assert.match(renderer, /data-generated-event=\{props\.model\.generatedFromDiscovery/);
+  assert.match(
+    programCss,
+    /\.design\[data-generated-event\] \.chapters:not\(\[data-event-body-layout\]\) \{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)/,
+  );
+  assert.match(
+    programCss,
+    /\.chapters\[data-event-body-layout="split"\],[\s\S]*\.chapters\[data-event-body-layout="cards"\][^{]*\{\s*grid-template-columns:\s*repeat\(2,/,
+  );
+});
+
 test("gymnastics PDF vision handoff persists raster images before OpenAI calls", () => {
   const source = readSource("src/lib/meet-discovery/core.ts");
 

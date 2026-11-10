@@ -372,16 +372,19 @@ export function buildTravelAccommodationState(
       }
       return retained;
     }),
-    ...(previous?.hotels || []).filter(
-      (old) =>
-        !result.hotels.some(
-          (hotel) =>
-            (hotel.id && hotel.id === old.id) ||
-            hotel.name.toLowerCase() === old.name.toLowerCase(),
-        ),
-    ),
+    ...(incomplete
+      ? (previous?.hotels || []).filter(
+          (old) =>
+            !result.hotels.some(
+              (hotel) =>
+                (hotel.id && hotel.id === old.id) ||
+                hotel.name.toLowerCase() === old.name.toLowerCase(),
+            ),
+        )
+      : []),
   ];
-  const fallbackLink = result.fallbackLink || previous?.fallbackLink || null;
+  const fallbackLink =
+    result.fallbackLink || (incomplete ? previous?.fallbackLink || null : null);
   const checkedAt = new Date().toISOString();
   return {
     version: 3,

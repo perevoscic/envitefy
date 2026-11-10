@@ -7,7 +7,18 @@ const original = { ...createExtractionDeps };
 afterEach(() => Object.assign(createExtractionDeps, original));
 
 test("classifies the source independently, retains host corrections and never requests artwork", async () => {
-  createExtractionDeps.read = async () => ({ text: "Football schedule: Tigers vs Central May 3 at Old Stadium", images: [], pageCount: 1 });
+  createExtractionDeps.read = async () => ({
+    text: "Football schedule: Tigers vs Central May 3 at Old Stadium",
+    images: [],
+    pageCount: 1,
+    sourceBranding: {
+      version: 1,
+      origin: "website",
+      colors: ["#101936", "#ff4ba8", "#82ead2"],
+      font: "Anton, sans-serif",
+      tone: "dark",
+    },
+  });
   createExtractionDeps.classify = async (input) => {
     expect(input.text).toContain("Football schedule");
     expect(input.text).not.toContain("birthday colors");
@@ -17,6 +28,10 @@ test("classifies the source independently, retains host corrections and never re
     expect(input.mode).toBe("information");
     expect(input.informationText).toContain("Old Stadium");
     expect(input.prompt).toContain("Venue changed to Riverside Park; use birthday colors.");
+    expect(input.prompt).toContain("SOURCE-INSPIRED EVENT PAGE");
+    expect(input.prompt).toContain('"tonalMode":"dark"');
+    expect(input.prompt).toContain("must not be replaced with an unrelated pale");
+    expect(input.prompt).toContain("Never copy or return the source HTML");
     return { version: 1, kind: "information", category: input.category, design: { version: 1, name: "Event information", description: "", layout: "editorial", font: "editorial", colors: { page: "#ffffff", surface: "#ffffff", ink: "#111111", accent: "#123456" } }, details: { ...emptyCustomEventDetails(), title: "Tigers vs Central", venue: "Riverside Park" } };
   };
   const result = await extractCreateInformation({ text: "Venue changed to Riverside Park; use birthday colors.", category: "general" }, new AbortController().signal);

@@ -328,6 +328,31 @@ test("failed refresh keeps previous hotel records and original check evidence", 
   assert.equal(state.hotels[0].bookingUrl, bookingUrl);
 });
 
+test("successful refresh removes hotels and fallback links that are absent from current evidence", () => {
+  const staleHotels = parseHotelEvidence(fright, { sourceUrl: eventUrl });
+  const state = buildTravelAccommodationState(
+    {
+      hotels: [],
+      pdfHotels: [],
+      candidates: [],
+      attempts: [],
+      fallbackLink: null,
+      confidence: 0.9,
+      resolution: {
+        provider: "none",
+        resolvedUrl: null,
+        resolutionType: "none",
+        confidence: 0.9,
+      },
+    },
+    { hotels: staleHotels, fallbackLink: bookingUrl },
+  );
+
+  assert.equal(state.status, "unavailable");
+  assert.deepEqual(state.hotels, []);
+  assert.equal(state.fallbackLink, null);
+});
+
 test("model fields require evidence in that hotel's own source block", () => {
   const block = "Small Boutique Stay\nRate: $170";
   const fields: Record<string, { value: string; quote: string } | null> = Object.fromEntries(

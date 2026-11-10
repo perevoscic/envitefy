@@ -6,6 +6,7 @@ import {
   stageCustomEventPage,
 } from "@/lib/event-custom-design";
 import { UPLOAD_LIMITS } from "@/lib/upload-config";
+import { sourceInspiredEventPagePrompt } from "@/lib/source-inspired-event-page";
 
 export const EVENT_INFORMATION_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -99,7 +100,7 @@ export async function createEventPageFromInformation(
       mode: "design",
       category,
       prompt:
-        "Create a complete, polished event page with a distinctive theme and artwork based on the supplied event title, description, activities and sections. Choose the layout, typography and palette automatically to suit this event. Preserve every supplied fact and section; do not invent missing event information.",
+        `${sourceInspiredEventPagePrompt()}\nThe current design is the source-derived visual profile. Preserve its tonal mode, palette family, typographic category and information emphasis unless the host explicitly changes them. Create a complete, polished Envitefy event page and original artwork based on the supplied event title, description, activities and sections. Preserve every supplied fact and section; do not invent missing event information.`,
       currentDesign: extracted.design,
       currentDetails: extracted.details,
     },

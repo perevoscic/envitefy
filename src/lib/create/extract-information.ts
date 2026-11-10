@@ -9,6 +9,7 @@ import { emptyCustomEventDetails, customEventCategory, normalizeCustomEventInfor
 import type { CreateClassification } from "./create-intent";
 import { isSchoolMemoText, schoolMemoLocation } from "../school-memo";
 import { extractSchoolMemo } from "../ocr/school-memo";
+import { sourceInspiredEventPagePrompt } from "../source-inspired-event-page";
 
 export type CreateExtractionResult = {
   classification: CreateClassification;
@@ -91,7 +92,7 @@ export async function extractCreateInformation(input: { files?: File[]; url?: st
   const result = await createExtractionDeps.information({
     mode: "information",
     category,
-    prompt: `Read all supplied event facts and sections. ${school?.kind ? `This is a School & classroom ${school.kind}. Preserve destination, transportation, packing, permission deadlines, activities, agenda and check-in details in labelled sections where printed. Teacher/organizer names are hosts, never venues. Do not turn this single school activity into a weekly memo or merge secondary deadlines into its main date.` : ""} Never invent missing details. The following host-authored notes may correct source facts; keep visual styling instructions out of guest-facing wording and retain factual corrections: ${input.text?.trim() || "No additional notes."}`,
+    prompt: `${sourceInspiredEventPagePrompt(source.sourceBranding)}\nRead all supplied event facts and sections. ${school?.kind ? `This is a School & classroom ${school.kind}. Preserve destination, transportation, packing, permission deadlines, activities, agenda and check-in details in labelled sections where printed. Teacher/organizer names are hosts, never venues. Do not turn this single school activity into a weekly memo or merge secondary deadlines into its main date.` : ""} Never invent missing details. The following host-authored notes may correct source facts; keep visual styling instructions out of guest-facing wording and retain factual corrections: ${input.text?.trim() || "No additional notes."}`,
     informationText: sourceText,
     informationImages: source.images,
     currentDesign: null,

@@ -254,7 +254,7 @@ export default function EventPreviewViewport({
   return (
     <section
       aria-label={`${title} preview`}
-      className={`${fullscreen ? "fixed inset-0 z-[7001] h-[100dvh]" : "relative h-full min-h-0"} flex w-full flex-col ${preserveNavigation ? "pt-[var(--app-mobile-topbar-offset,6rem)] lg:pt-0" : ""}`}
+      className={`@container ${fullscreen ? "fixed inset-0 z-[7001] h-[100dvh]" : "relative h-full min-h-0"} flex w-full flex-col ${preserveNavigation ? "pt-[var(--app-mobile-topbar-offset,6rem)] lg:pt-0" : ""}`}
       style={background}
     >
       {!preserveNavigation && (fullscreen || onClose) ? <OwnerPreviewMobileTopbarSuppressor /> : null}

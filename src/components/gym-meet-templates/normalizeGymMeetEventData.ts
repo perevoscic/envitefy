@@ -427,7 +427,7 @@ export const normalizeGymMeetEventData = ({
   ].filter((item) => safeString(item.value));
 
   const isDiscoveryEvent =
-    safeString(eventData?.createdVia) === "meet-discovery" ||
+    ["meet-discovery", "meet-discovery-v2"].includes(safeString(eventData?.createdVia)) ||
     Boolean(eventData?.discoverySource?.input || eventData?.discoverySource?.parseResult);
   const rawDiscoveryDetails = safeString(eventData?.details || eventData?.description);
   const detailsText = isDiscoveryEvent
@@ -466,6 +466,7 @@ export const normalizeGymMeetEventData = ({
   const quickLinks = isDiscoveryEvent ? buildPublicQuickAccessLinks(discovery) : baseQuickLinks;
 
   return {
+    generatedFromDiscovery: isDiscoveryEvent,
     sectionLayout: normalizeEventSectionLayout(eventData?.sectionLayout),
     importedTheme: eventData?.importedTheme,
     schedule: advancedSections?.schedule,

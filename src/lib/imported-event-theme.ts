@@ -5,6 +5,7 @@ export type SourceBranding = {
   origin: "website" | "pdf" | "image";
   colors: string[];
   font?: string;
+  tone?: "dark" | "light" | "mixed";
   sourceUrl?: string;
 };
 export const IMPORTED_THEME_FONTS = {
@@ -83,6 +84,9 @@ export function readSourceBranding(value: unknown): SourceBranding | null {
       6,
     ),
     ...(clean(raw.font, 100) ? { font: clean(raw.font, 100) } : {}),
+    ...(["dark", "light", "mixed"].includes(String(raw.tone))
+      ? { tone: raw.tone as SourceBranding["tone"] }
+      : {}),
     ...(typeof raw.sourceUrl === "string" && /^https?:\/\//i.test(raw.sourceUrl)
       ? { sourceUrl: raw.sourceUrl.slice(0, 2000) }
       : {}),
@@ -151,6 +155,13 @@ function mix(color: string, target: string, fraction: number) {
     )
     .join("")}`;
 }
+function relativeLuminance(color: string) {
+  const channels = [1, 3, 5].map((index) => {
+    const value = parseInt(color.slice(index, index + 2), 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+}
 const profiles = [
   { match: /gymnastics/i, motif: "gymnastics", color: "#127c94", font: "editorial" },
   { match: /swim|water|rowing|surf/i, motif: "water", color: "#087f8c", font: "modern" },
@@ -203,11 +214,21 @@ export function createImportedEventTheme(input: {
       ?.map(hex)
       .filter((color): color is string => !!color) || [];
   const palette = hostColors.length ? hostColors : branding?.colors || [];
-  const accent = palette[0] || profile.color;
-  const secondary = palette[1] || mix(accent, hash % 2 ? "#e6b15d" : "#254363", 0.5);
-  const page = mix(accent, "#ffffff", 0.96);
-  const surface = mix(secondary, "#ffffff", 0.94);
-  const ink = "#142431";
+  const darkSource = branding?.tone === "dark";
+  const sourceGround = darkSource
+    ? palette
+        .filter((color) => relativeLuminance(color) < 0.16)
+        .sort((a, b) => relativeLuminance(a) - relativeLuminance(b))[0]
+    : undefined;
+  const accent = darkSource
+    ? palette.find((color) => relativeLuminance(color) >= 0.2) || profile.color
+    : palette[0] || profile.color;
+  const secondary =
+    palette.find((color) => color !== accent && color !== sourceGround) ||
+    mix(accent, hash % 2 ? "#e6b15d" : "#254363", 0.5);
+  const page = sourceGround || mix(accent, "#ffffff", 0.96);
+  const surface = darkSource ? mix(page, "#ffffff", 0.08) : mix(secondary, "#ffffff", 0.94);
+  const ink = darkSource ? "#fff8f4" : "#142431";
   const sourceFont = branding?.font?.toLowerCase() || "";
   const font =
     /serif|playfair|georgia|cormorant/.test(sourceFont) && !/sans-serif/.test(sourceFont)

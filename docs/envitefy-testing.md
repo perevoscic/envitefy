@@ -65,6 +65,21 @@ Replace `QA01` with the verified selected account. This is the normal completed-
 setup path, not a batch to run blindly. Resume an idle device only after matching
 its lease, AVD and serial; use the current checkpoint to choose the next phase.
 
+For the installed Maestro 2.11.0, prefer verified driver reuse to avoid its default
+close path uninstalling both Maestro driver packages. Before adding
+`--reuse-installed-driver` to `scripts/maestro-fleet-session.mjs` or
+`output/maestro/device-fleet/run-observed-fleet.mjs`, the sole UI owner must verify
+the current assigned AVD and installed pinned driver with
+`node output/maestro/device-fleet/verify-installed-maestro-driver.mjs --account QA01`.
+Reuse skips those uninstalls, but Maestro can still install a missing package.
+If missing, use the reviewed per-account pinned installer with the exact fresh
+lease SHA256, only when its launch-mode and runtime guards pass; never reuse an
+old lease hash or batch devices. Preserve its timeouts, UI locks and Envitefy
+userdata. The [fleet operating note](maestro-device-fleet.md) links November 3's
+actual QA01/QA02 driver proofs, optional-flag validation and exact installer
+constraints. Those tool checks add no app checks or scheduled attempts and do
+not establish the earlier startup stall's cause or a fleet-wide pass.
+
 For incomplete setup, finish the existing account's authorized Google/Play and
 Envitefy sign-in phases described in the fleet notes. Confirm the actual screen
 before each phase. Retain successful setup and reauthenticate only after an

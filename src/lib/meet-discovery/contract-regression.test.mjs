@@ -137,3 +137,49 @@ test("browser resource candidates retain only the defined discovery kinds", () =
   }
   assert.equal(build({ url: "invalid", sameHost: true, depth: 0 }, root), null);
 });
+
+test("same-weekend links need the pasted event identity before they can be followed", () => {
+  const score = loadFunction("scoreEventResourceMatch", {
+    normalizeEventTokens: (value) =>
+      String(value)
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean),
+    filterSpecificEventTokens: (tokens) =>
+      [...new Set(tokens)].filter(
+        (token) => !["classic", "invitational", "meet", "gymnastics", "2027"].includes(token),
+      ),
+    classifyMeetDateCandidates: (value) => ({
+      primary: /jan(?:uary)?\s*15\s*[-–]\s*17|2027-01-1[5-7]/i.test(value)
+        ? { startDate: "2027-01-15", endDate: "2027-01-17", label: "January 15-17, 2027" }
+        : null,
+    }),
+    deriveDateRangeFromText: () => null,
+  });
+  const fingerprint = {
+    titleTokens: ["tampa", "bay", "turners", "invitational", "2027"],
+    slugTokens: ["tampa", "bay", "turners", "invitational", "2027"],
+    identityTokens: ["tampa", "bay", "turners"],
+    locationTokens: ["bradenton", "palmetto", "fl"],
+    startDate: "2027-01-15",
+    endDate: "2027-01-17",
+    year: "2027",
+  };
+
+  const unrelated = score(
+    fingerprint,
+    "",
+    "Presidential Classic Orlando, FL - January 15-17, 2027",
+    "https://www.vaultgymnastics.com/meets/presidential-classic/2027",
+  );
+  const related = score(
+    fingerprint,
+    "",
+    "Tampa Bay Turners Invitational 2027 host information",
+    "https://www.vaultgymnastics.com/meets/tampa-bay-turners-invitational/2027/details",
+  );
+
+  assert.equal(unrelated.passes, false);
+  assert.match(unrelated.reason, /date_only_match/);
+  assert.equal(related.passes, true);
+});

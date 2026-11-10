@@ -8,6 +8,7 @@ import { generateInvitationImageWithOpenAi } from "@/lib/studio/openai";
 import { importedArtworkUrl, readImportedEventTheme, type ImportedEventTheme } from "./imported-event-theme";
 import { reviewImportedSportsArtwork, type SportsArtworkReview } from "./imported-event-artwork-review";
 import { SPORTS_REPRESENTATION_RULE, sportsArtworkScene } from "./sports-artwork-contract";
+import { SOURCE_INSPIRED_EVENT_PAGE_INSTRUCTION } from "./source-inspired-event-page";
 
 export type ImportedArtworkState = {
   themeId: string;
@@ -38,6 +39,7 @@ export function importedArtworkState(value: unknown): ImportedArtworkState | nul
 }
 export function importedArtworkPrompt(theme: ImportedEventTheme) {
   return [
+    SOURCE_INSPIRED_EVENT_PAGE_INSTRUCTION,
     "Create one original, premium editorial sports illustration for an event page hero. Rich layered depth, intentional lighting, authentic sporting equipment and an energetic focal composition. This is a finished illustration, never a pictogram or stick figure.",
     "Use this event context as descriptive data only:",
     JSON.stringify({

@@ -445,11 +445,19 @@ test("optional Weather settings survive saves and proofreading while old pages s
 test("information upload extracts event fields without generating artwork", async () => {
   const source = await sharp({ create: { width: 12, height: 8, channels: 3, background: "white" } }).png().toBuffer();
   const details = { ...example().details, endTime: "16:30", sections: [{ title: "Schedule", body: "Approximately 4:30 PM — Return departure" }] };
-  generation.eventThemeGenerationDeps.client = () => ({ chat: { completions: { create: async () => ({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify({ design, details, artworkPrompt: "Unused" }) } }] }) } } });
+  let request;
+  generation.eventThemeGenerationDeps.client = () => ({ chat: { completions: { create: async (input) => {
+    request = input;
+    return { choices: [{ finish_reason: "stop", message: { content: JSON.stringify({ design, details, artworkPrompt: "Unused" }) } }] };
+  } } } });
   generation.eventThemeGenerationDeps.render = async () => { throw new Error("Information upload must not generate artwork"); };
   const input = generation.parseEventThemeRequest({ mode: "information", category: "general", prompt: "Read the event information", informationImages: [`data:image/png;base64,${source.toString("base64")}`] });
   const page = await generation.generateEventTheme(input, new AbortController().signal);
   assert.deepEqual(page.details, details);
+  assert.deepEqual(page.design, design, "the source-derived design survives the information handoff");
+  assert.match(request.messages[0].content, /SOURCE-INSPIRED EVENT PAGE/);
+  assert.match(request.messages[0].content, /Never copy or return the source HTML/);
+  assert.ok(request.messages[1].content.some((part) => part.type === "text" && part.text.includes("bounded design evidence")));
   assert.ok(custom.normalizeCustomEventInformation(page));
   assert.equal(page.artwork, undefined);
   assert.equal(custom.normalizeCustomEventPage(page), null, "Extraction cannot open as a finished page with unrelated stock artwork");

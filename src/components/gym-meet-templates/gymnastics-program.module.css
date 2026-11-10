@@ -316,6 +316,19 @@
 .design .chapters[data-event-body-layout] { grid-template-columns: minmax(0, 1fr); }
 .design .chapters[data-event-body-layout="split"],
 .design .chapters[data-event-body-layout="cards"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.design[data-generated-event] .chapters:not([data-event-body-layout]) {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--program-gap);
+  width: auto;
+  margin-inline: 0;
+  padding: 0;
+  border: 0;
+}
+.design[data-generated-event] .chapters:not([data-event-body-layout]) > .chapter {
+  grid-column: 1 / -1;
+  width: auto;
+  margin: 0;
+}
 .design[data-layout="trail"] .chapters:not([data-event-body-layout]) { width: auto; }
 .design[data-layout="trail"] .chapters[data-event-body-layout] { margin-inline: auto; }
 

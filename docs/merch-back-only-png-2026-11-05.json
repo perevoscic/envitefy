@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-05",
+  "request": "PNG files for both latest back designs only",
+  "method": "Built-in OpenAI image generation for art extraction; contour cleanup and native original brand/footer composition",
+  "formats": "Explicit PNG request overrides the standard WebP-only delivery rule. Requested transparent PNGs and necessary PNG rebuild sources retained.",
+  "files": [
+    {
+      "title": "SEE YOU THERE.",
+      "path": "output/merch/back-only-2026-11-05/envitefy-see-you-there-back-300dpi.png",
+      "width": 3300,
+      "height": 4461,
+      "dpi": 300,
+      "canvasWidthIn": 11,
+      "canvasHeightIn": 14.87,
+      "artworkWidthIn": 10.5,
+      "prompt": "Use case: background-extraction / precise-object-edit.\nImage 1 is the EDIT TARGET: front-and-back butter-yellow Envitefy shirt mockup. Extract ONLY the complete printed artwork from the BACK shirt on the RIGHT. Output the BACK DESIGN ALONE as clean flat isolated print artwork on genuine transparent alpha, portrait composition, ideally 2048x2560 or larger native resolution. NO SHIRT and no garment or fabric background. This is an artwork export, not another product mockup.\nPreserve this EXACT chosen design, do not redesign:\n- The cherry-red outline of the big admission ticket, with the rounded corners and side semicircle notches. Keep its original playful slight tilt within the straight portrait canvas; do not distort proportions.\n- Exact three-line oversized cobalt slogan \"SEE\" / \"YOU\" / \"THERE.\", original bold letter shapes, cherry-red hard offset ink shadows and final period.\n- Cobalt dashed perforation line and cherry-red four-point sparkle inside bottom ticket stub.\n- Official lowercase blue-purple gradient \"envitefy\" wordmark centered beneath the ticket.\n- Exactly FIVE cherry-red outlined-square social icons, Instagram, Facebook, YouTube, TikTok, Reddit, in that original order, equal optical size, single centered row.\n- Exact cherry-red bold uppercase \"YOU ARE INVITED\" centered below icons.\nPreserve all original relative sizes, spacing, printed colors, exact letter forms and composition. Straighten only fabric distortion so the art is flat, retain intentional ticket tilt. Logo spelling E-N-V-I-T-E-F-Y.\nRemove ALL yellow cotton color/texture, seams, folds, garment shadows and gray photographic backdrop. The interior of the ticket must also be TRANSPARENT, since the original yellow is the garment and not a yellow printed shape. Letter counters, spaces, gaps and entire exterior must be transparent. Only actual cobalt, cherry-red and gradient brand printing is opaque. Do not add a white or yellow ticket fill. Do not leave a fake checkerboard or background haze. All edges smooth clean and high resolution.\nDo not include the front chest logo or front shirt, no labels, borders around canvas, cut marks or extra text. Complete original back print only with a comfortable transparent margin."
+    },
+    {
+      "title": "BRING YOUR PEOPLE.",
+      "path": "output/merch/back-only-2026-11-05/envitefy-bring-your-people-back-300dpi.png",
+      "width": 3300,
+      "height": 4213,
+      "dpi": 300,
+      "canvasWidthIn": 11,
+      "canvasHeightIn": 14.043333333333333,
+      "artworkWidthIn": 10.5,
+      "prompt": "Use case: background-extraction / precise-object-edit.\nImage 1 is the EDIT TARGET: a front-and-back lavender Envitefy shirt mockup. Extract ONLY the complete printed artwork from the BACK shirt on the RIGHT. Output the BACK DESIGN ALONE as flat clean isolated print artwork on genuine transparent alpha, portrait composition, ideally 2048x2560 or larger native resolution. NO SHIRT and no garment or fabric background. This is an artwork export, not another product mockup.\nPreserve this EXACT chosen design, do not redesign:\n- Large three-row flowing interconnected retro hand lettering \"BRING\" / \"YOUR\" / \"PEOPLE.\" with original shapes, wide fluid cream letter faces, rich dark-plum outlines, tangerine orange offset print shadows and flowing linked swashes. Preserve every word, all open counters, final period, original proportions and character.\n- Original official lowercase \"envitefy\" gradient wordmark centered below the headline.\n- Exactly FIVE deep-plum social icons, Instagram, Facebook, YouTube, TikTok, Reddit, in that original order, same optical size, single centered row.\n- Exact deep-plum bold uppercase \"YOU ARE INVITED\" centered below icons.\nKeep the same relative sizes and composition of all artwork elements. Straighten the slight fabric perspective so the artwork is flat and square to the viewer, keep clean smooth high resolution edges. Logo spelling E-N-V-I-T-E-F-Y.\nRemove ALL purple/lavender cotton texture, seams, folds, garment shadows and gray photo backdrop. Remove the accidental hazy pink/orange patch behind the lower wordmark; it is not part of the design. Spaces between letters, counters, between all logo/icon elements and outside the artwork must be entirely transparent, not gray, black, white or checkerboard. Cream letter faces remain solid opaque cream, plum outlines remain opaque plum, orange offset shadows remain opaque orange. Do not add drop shadows outside actual original print geometry. Do not leave any solid background or pale fabric haze. Do not include the front chest logo or front shirt.\nOnly original complete back art, transparent background, tight but comfortable clear margin, no cut marks or labels or added text."
+    }
+  ],
+  "sources": [
+    "output/merch/more-concepts-2026-11-05/envitefy-see-you-there.webp",
+    "output/merch/more-concepts-2026-11-05/envitefy-bring-your-people.webp"
+  ],
+  "preparation": "Generated extraction candidates contained noisy stray pixels and imperfect branding. Headlines isolated by opaque ink colors, tiny disconnected pixels removed, closed contours fitted, opaque flat print colors restored. All logos/socials replaced with original native brand assets via actual EnvitefyWordmark component and bundled Josefin Slab, high-resolution screenshot, SVG icons and local Arial Bold invitation caption. Generated extraction alone was not delivered as finished print artwork.",
+  "qualityLimit": "Tracing follows the extracted artwork and smooths its edges; it does not recover an original vector font master. Intentional hand-lettered contours and cream/plum/orange filled lettering regions retained.",
+  "verification": "Root and independent agent visually passed both final proofs. Actual PNG metadata/alpha and pHYs verified: 300 DPI, 11811 pixels/metre in both directions, unit 1. Transparent corners/exterior and ticket interior, no shirt/fabric/light spill. Actual reports/hashes in output/merch/back-only-2026-11-05/verification.json. Proof checkerboard is separate and is not baked into final PNGs.",
+  "scripts": [
+    "scripts/build-envitefy-back-only.mjs",
+    "scripts/lib/merch-back-footer.mjs",
+    "scripts/lib/merch-contours.mjs"
+  ]
+}

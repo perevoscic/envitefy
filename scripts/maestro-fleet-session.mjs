@@ -17,6 +17,7 @@ export const FLEET_STEPS = Object.freeze({
   "device-password": "device-google-password.yaml",
   "chrome-email": "chrome-google-email.yaml",
   "chrome-password": "chrome-google-password.yaml",
+  "chrome-password-observed": null,
   "chrome-signin": "chrome-google-email.yaml",
   "app-session": "envitefy-google-session.yaml",
   "app-browse": "envitefy-google-session.yaml",
@@ -24,7 +25,7 @@ export const FLEET_STEPS = Object.freeze({
   "app-signin": null,
 });
 const APP_STEPS = new Set(["app-session", "app-signin", "app-browse", "smoke"]);
-const PASSWORD_STEPS = new Set(["play-password", "device-password", "chrome-password"]);
+const PASSWORD_STEPS = new Set(["play-password", "device-password", "chrome-password", "chrome-password-observed"]);
 const CREDENTIAL_STEPS = new Set([...PASSWORD_STEPS, "play-signin", "chrome-signin"]);
 const TIMEOUT_MS = 300000;
 const MASTER_SERIAL = "emulator-5556";
@@ -140,8 +141,14 @@ export function parseFleetSessionArgs(args) {
   const options = {};
   for (let index = 0; index < args.length; index++) {
     const flag = args[index];
+    if (flag === "--reuse-installed-driver") {
+      if (Object.hasOwn(options, "reuseInstalledDriver"))
+        throw new Error("Use each session option once.");
+      options.reuseInstalledDriver = true;
+      continue;
+    }
     if (!["--account", "--step", "--serial"].includes(flag) || Object.hasOwn(options, flag.slice(2)))
-      throw new Error("Use only --account, --step and optional --serial, each once.");
+      throw new Error("Use only --account, --step and optional --serial or --reuse-installed-driver, each once.");
     const value = args[++index];
     if (!value || value.startsWith("--")) throw new Error("A session option is missing its value.");
     options[flag.slice(2)] = value;
@@ -150,6 +157,13 @@ export function parseFleetSessionArgs(args) {
   if (!Object.hasOwn(FLEET_STEPS, options.step))
     throw new Error("Choose an explicit supported --step; no action was started.");
   return options;
+}
+
+export function buildFleetMaestroArgs({ serial, dir, flow, reuseInstalledDriver = false }) {
+  if (typeof reuseInstalledDriver !== "boolean") throw new Error("Driver reuse must be an explicit boolean.");
+  return ["--device", serial, "test", ...(reuseInstalledDriver ? ["--no-reinstall-driver"] : []),
+    "--no-ansi", "--format", "JUNIT", "--output", path.join(dir, "junit.xml"),
+    "--test-output-dir", dir, "--debug-output", dir, flow];
 }
 
 export function expectedFleetDevice(account) {
@@ -208,9 +222,9 @@ export function recordedSessionBlockers(files) {
 }
 
 export function credentialEvidence(step, files) {
-  if (!["play-signin", "chrome-signin"].includes(step)) return {};
+  if (!["play-signin", "chrome-signin", "chrome-password-observed"].includes(step)) return {};
   const has = (name) => files.some((file) => path.basename(file) === `${name}.png`);
-  const chrome = step === "chrome-signin";
+  const chrome = step === "chrome-signin" || step === "chrome-password-observed";
   return {
     credentialsSubmitted: has(chrome ? "google-oauth-password-result" : "google-password-submission-result"),
     credentialOutcomeObserved: has(chrome ? "chrome-credential-outcome" : "google-credential-outcome"),
@@ -221,12 +235,13 @@ export function credentialEvidence(step, files) {
 
 export function classifyFleetSessionResult(step, result, files) {
   const { browserAssociation, ownerGate } = recordedSessionBlockers(files);
-  const combinedSignin = step === "play-signin" || step === "chrome-signin";
+  const chromeCredentialOutcome = step === "chrome-signin" || step === "chrome-password-observed";
+  const combinedSignin = step === "play-signin" || chromeCredentialOutcome;
   const credentials = credentialEvidence(step, files);
   const has = (name) => files.some((file) => path.basename(file) === `${name}.png`);
   const terminalState = step === "play-signin" && has("google-play-listing-ready") ? "play_app_listing"
-    : step === "chrome-signin" && has("chrome-oauth-consent-ready") ? "envitefy_oauth_consent"
-      : step === "chrome-signin" && has("chrome-dashboard-observed") ? "envitefy_dashboard" : undefined;
+    : chromeCredentialOutcome && has("chrome-oauth-consent-ready") ? "envitefy_oauth_consent"
+      : chromeCredentialOutcome && has("chrome-dashboard-observed") ? "envitefy_dashboard" : undefined;
   // A challenge may disappear from an accessibility snapshot while remaining
   // visible onscreen. Skipped negative gates are not positive completion proof.
   const terminalEvidenceComplete = !combinedSignin || Boolean(
@@ -255,8 +270,27 @@ export async function buildFleetFlow(step, read = readFile) {
   if (!Object.hasOwn(FLEET_STEPS, step)) throw new Error("Unsupported fleet step.");
   const load = (file) => read(path.join(ROOT, ".maestro/android/setup", file), "utf8");
   const guards = gateCommands();
-  let source = step === "app-signin" ? SIGNIN_FLOW : await load(FLEET_STEPS[step]);
+  let source = step === "app-signin" ? SIGNIN_FLOW
+    : step === "chrome-password-observed" ? "appId: com.android.chrome\nname: Observed Google website password form\n---\n"
+      : await load(FLEET_STEPS[step]);
   source = preserveSession(source.replaceAll("\r\n", "\n"));
+  if (step === "chrome-password-observed") {
+    // QA04's saved November 4 hierarchy has no password label. Its exact
+    // password container surrounds the focused EditText; passwordNext
+    // surrounds the Next button. This explicit phase never navigates to login.
+    const chromeGuards = `${guards}${stopAt(RECOVERY_GATE, "account-recovery-owner-action-required")}${stopAt(CREDENTIAL_ERROR, "google-credentials-rejected")}${stopAt("Set up screen lock to use passkeys", "owner-verification-required")}${stopAt(GOOGLE_TERMS_GATE, "google-terms-owner-action-required")}`;
+    source += `${chromeGuards}- assertNotVisible: "Sign in to Chrome"\n- assertVisible: 'accounts\\.google\\.com'\n- assertVisible: '.*${EMAIL_PATTERN}.*'\n`;
+    source += '- extendedWaitUntil:\n    visible:\n      id: "^password$"\n    timeout: 30000\n';
+    source += `${chromeGuards}- assertVisible: 'accounts\\.google\\.com'\n- assertVisible: '.*${EMAIL_PATTERN}.*'\n- assertVisible:\n    id: "^passwordNext$"\n`;
+    source += '- tapOn:\n    id: "^password$"\n    retryTapIfNoChange: false\n- pressKey: Backspace\n- inputText: ${MAESTRO_PASSWORD}\n- hideKeyboard\n';
+    source += `${chromeGuards}- assertVisible: 'accounts\\.google\\.com'\n- assertVisible: '.*${EMAIL_PATTERN}.*'\n`;
+    source += '- tapOn:\n    id: "^passwordNext$"\n    retryTapIfNoChange: false\n- takeScreenshot: google-oauth-password-result\n';
+    const outcome = [OWNER_GATE, CAPTCHA_GATE, RECOVERY_GATE, CREDENTIAL_ERROR, BROWSER_ASSOCIATION_GATE,
+      GOOGLE_TERMS_GATE, "Set up screen lock to use passkeys", "^Continue$|^Продолжить$|Welcome,.*"].join("|");
+    source += `- extendedWaitUntil:\n    visible: ${JSON.stringify(outcome)}\n    timeout: 90000\n- takeScreenshot: chrome-credential-outcome\n${chromeGuards}`;
+    source += `- runFlow:\n    when:\n      visible: "^Continue$|^Продолжить$"\n    commands:\n      - assertVisible: 'accounts\\.google\\.com'\n      - assertVisible: '.*${EMAIL_PATTERN}.*'\n      - assertVisible: ".*Envitefy.*"\n      - takeScreenshot: chrome-oauth-consent-ready\n`;
+    source += '- runFlow:\n    when:\n      visible: "Welcome,.*"\n    commands:\n      - assertVisible: "Welcome,.*"\n      - takeScreenshot: chrome-dashboard-observed\n';
+  }
   if (step === "play-signin") {
     // Keep both credential phases in one Maestro session. The first live pilot
     // reached Google's password page, but that transient page did not remain
@@ -350,8 +384,9 @@ export async function buildFleetFlow(step, read = readFile) {
 }
 
 function help() {
-  console.log("Usage: node scripts/maestro-fleet-session.mjs --account QA01 --step app-session [--serial emulator-5560]");
+  console.log("Usage: node scripts/maestro-fleet-session.mjs --account QA01 --step app-session [--serial emulator-5560] [--reuse-installed-driver]");
   console.log(`Steps: ${Object.keys(FLEET_STEPS).join(", ")}. No step is run by default.`);
+  console.log("--reuse-installed-driver requests Maestro test --no-reinstall-driver; Maestro may still install a missing driver.");
   console.log("Each command performs one bounded phase. Password submission does not prove Google login completed. MFA, CAPTCHA and signup consent require owner action.");
 }
 
@@ -368,7 +403,8 @@ export async function main(args = process.argv.slice(2)) {
   let secrets = [];
   let result;
   let status = { account: device.account, step: options.step, serial: device.serial, avdName: device.avdName,
-    startedAt: new Date().toISOString(), sessionType: "maestro_automation", status: "preflight_pending" };
+    startedAt: new Date().toISOString(), sessionType: "maestro_automation", status: "preflight_pending",
+    ...(options.reuseInstalledDriver ? { reuseInstalledDriver: true } : {}) };
   try {
     // The legacy master lock serializes UI ownership across both old devices
     // and the entire fleet. The second lock also reserves this exact device.
@@ -400,8 +436,8 @@ export async function main(args = process.argv.slice(2)) {
     const runtimeHome = path.join(dir, "runtime-home");
     await mkdir(runtimeHome, { recursive: true });
     status.runtimeHome = runtimeHome;
-    result = await runProcess(command.binary, ["--device", device.serial, "test", "--no-ansi", "--format", "JUNIT",
-      "--output", path.join(dir, "junit.xml"), "--test-output-dir", dir, "--debug-output", dir, flow], {
+    result = await runProcess(command.binary, buildFleetMaestroArgs({ serial: device.serial, dir, flow,
+      reuseInstalledDriver: options.reuseInstalledDriver }), {
       env: { ...command.env, JAVA_OPTS: `-Duser.home=${runtimeHome.replaceAll("\\", "/")}`,
         MAESTRO_EMAIL: email, MAESTRO_EMAIL_PATTERN: emailPattern,
         ...(CREDENTIAL_STEPS.has(options.step) ? { MAESTRO_PASSWORD: password } : {}) },

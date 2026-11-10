@@ -322,6 +322,7 @@ type EventFingerprint = {
   rootUrl: string;
   slugTokens: string[];
   titleTokens: string[];
+  identityTokens: string[];
   locationTokens: string[];
   startDate: string | null;
   endDate: string | null;
@@ -3850,6 +3851,30 @@ const EVENT_MATCH_GENERIC_TOKENS = new Set([
   "cup",
   "gymnastics",
   "invitational",
+  "jan",
+  "january",
+  "feb",
+  "february",
+  "mar",
+  "march",
+  "apr",
+  "april",
+  "may",
+  "jun",
+  "june",
+  "jul",
+  "july",
+  "aug",
+  "august",
+  "sep",
+  "sept",
+  "september",
+  "oct",
+  "october",
+  "nov",
+  "november",
+  "dec",
+  "december",
   "level",
   "levels",
   "meet",
@@ -3949,6 +3974,9 @@ function buildEventFingerprint(
   const titleSource = [safeString(pageTitle), slug, firstMeaningfulLines].filter(Boolean).join(" ");
   const titleTokens = normalizeEventTokens(titleSource);
   const slugTokens = normalizeEventTokens(slug);
+  const identityTokens = filterSpecificEventTokens(
+    normalizeEventTokens([safeString(pageTitle), slug].filter(Boolean).join(" ")),
+  );
   const addressMatch =
     readableText.match(
       /\b\d{2,6}\s+[A-Za-z0-9.\-'\s]+,\s*[A-Za-z.\-'\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/,
@@ -3965,6 +3993,7 @@ function buildEventFingerprint(
     rootUrl: rootUrl.toString(),
     slugTokens,
     titleTokens,
+    identityTokens,
     locationTokens,
     startDate,
     endDate,
@@ -3987,13 +4016,12 @@ function scoreEventResourceMatch(
   const overlappingSlugTokens = fingerprint.slugTokens.filter((token) =>
     candidateTokenSet.has(token),
   );
+  const overlappingIdentityTokens = fingerprint.identityTokens.filter((token) =>
+    candidateTokenSet.has(token),
+  );
   const overlappingLocationTokens = filterSpecificEventTokens(
     fingerprint.locationTokens.filter((token) => candidateTokenSet.has(token)),
   );
-  const specificOverlapTokens = filterSpecificEventTokens([
-    ...overlappingTitleTokens,
-    ...overlappingSlugTokens,
-  ]);
   const candidateDate = classifyMeetDateCandidates(text).primary || deriveDateRangeFromText(text);
 
   if (
@@ -4045,12 +4073,11 @@ function scoreEventResourceMatch(
   let passes = score >= 4;
   if (
     passes &&
-    specificOverlapTokens.length === 0 &&
-    overlappingLocationTokens.length === 0 &&
-    !candidateDate?.startDate
+    overlappingIdentityTokens.length === 0 &&
+    overlappingLocationTokens.length < 2
   ) {
     passes = false;
-    reasons.push("generic_token_overlap_only");
+    reasons.push(candidateDate?.startDate ? "date_only_match" : "generic_token_overlap_only");
   }
   return {
     score,

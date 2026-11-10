@@ -40,6 +40,7 @@ export default function GymMeetTemplateRenderer(props: GymMeetTemplateRendererPr
   return (
     <div
       style={{ ...gymnasticsDesignStyle(design), ...importedThemeStyle(props.model.importedTheme) }}
+      data-generated-event={props.model.generatedFromDiscovery || undefined}
       data-imported-theme={activeImportedTheme(props.model.importedTheme)?.id}
       className={programStyles.design}
       data-gym-body={design.bodyStyle}

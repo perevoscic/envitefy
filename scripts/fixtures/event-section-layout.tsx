@@ -24,14 +24,26 @@ function App() {
   const search = new URLSearchParams(location.search);
   const selected = search.get("layout") || "template";
   const editing = search.has("editing");
-  const [layout, setLayout] = useState<EventSectionLayout>();
+  const initialLayout: EventSectionLayout | undefined = search.get("explicit") === "split"
+    ? {
+        version: 1,
+        order: sections.map(({ id }) => id),
+        hidden: [],
+        added: [],
+        widths: { details: 6, schedule: 6 },
+        pairs: [["details", "schedule"]],
+      }
+    : undefined;
+  const [layout, setLayout] = useState<EventSectionLayout | undefined>(initialLayout);
   const [composition, setComposition] = useState<EventPageComposition | undefined>({
     version: 1,
     sections: [],
     ...(selected === "template" ? {} : { layout: selected as EventPageComposition["layout"] }),
   });
   const design = search.get("design") === "citrus-springboard" ? "citrus-springboard"
-    : search.get("design") === "desert-dismount" ? "desert-dismount" : "airborne-atlas";
+    : search.get("design") === "desert-dismount" ? "desert-dismount"
+      : search.get("design") === "moonbeam-balance" ? "moonbeam-balance"
+        : "airborne-atlas";
   const presentation = GYMNASTICS_PRESENTATIONS[design];
   const program = (
     <GymnasticsProgram
@@ -44,6 +56,7 @@ function App() {
   return (
     <article
       data-layout-fixture
+      data-generated-event={search.has("generated") || undefined}
       className={programStyles.design}
       data-gym-design={design}
       data-layout={presentation.layout}

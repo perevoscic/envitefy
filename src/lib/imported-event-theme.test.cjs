@@ -49,6 +49,22 @@ test("source branding and confirmed geography create stable event-specific ident
   assert.notEqual(theme.id, themes.createImportedEventTheme({ ...fixture, city: "Boston" }).id);
   assert.deepEqual(themes.readImportedEventTheme(JSON.parse(JSON.stringify(theme))), theme);
 });
+test("dark source identity stays dark instead of becoming a pale category theme", () => {
+  const theme = themes.createImportedEventTheme({
+    ...fixture,
+    branding: {
+      ...source,
+      colors: ["#111a3a", "#ff4ba8", "#82ead2"],
+      font: "Anton, sans-serif",
+      tone: "dark",
+    },
+  });
+  assert.equal(theme.colors.page, "#111a3a");
+  assert.equal(theme.colors.accent, "#ff4ba8");
+  assert.equal(theme.font, "athletic");
+  assert.ok(colorContrast(theme.colors.ink, theme.colors.page) >= 4.5);
+  assert.ok(themes.readImportedEventTheme(theme));
+});
 test("sports profiles work across organizers and sports without inventing a city", () => {
   for (const [sport, motif] of [
     ["gymnastics", "gymnastics"],

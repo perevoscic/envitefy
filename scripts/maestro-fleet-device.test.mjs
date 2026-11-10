@@ -29,6 +29,51 @@ test('visible launch preserves the assigned device and userdata arguments', () =
   assert.ok(!visible.args.includes('-wipe-data'));
 });
 
+test('boot diagnostics are explicit, valueless and limited to QA04 or QA10 start requests', () => {
+  for (const alias of ['QA04', 'QA10']) {
+    assert.deepEqual(parseFleetDeviceArgs(['start', alias, '--boot-diagnostics']),
+      { command: 'start', alias, visible: false, bootDiagnostics: true });
+    for (const options of [['--visible', '--boot-diagnostics'], ['--boot-diagnostics', '--visible']]) {
+      assert.deepEqual(parseFleetDeviceArgs(['start', alias, ...options]),
+        { command: 'start', alias, visible: true, bootDiagnostics: true });
+    }
+    for (const command of ['stop', 'inspect', 'screen']) {
+      assert.throws(() => parseFleetDeviceArgs([command, alias, '--boot-diagnostics']), /start only/);
+    }
+  }
+  for (let index = 1; index <= 13; index++) {
+    if (![4, 10].includes(index)) assert.throws(() => parseFleetDeviceArgs(['start', `QA${String(index).padStart(2, '0')}`, '--boot-diagnostics']), /QA04 or QA10 start only/);
+  }
+  for (const args of [
+    ['stop', 'QA04', '--boot-diagnostics'], ['inspect', 'QA04', '--boot-diagnostics'], ['screen', 'QA04', '--boot-diagnostics'],
+    ['start', 'QA04', '--boot-diagnostics', '--boot-diagnostics'], ['start', 'QA04', '--visible', '--visible', '--boot-diagnostics'],
+    ['start', 'QA04', '--boot-diagnostics=true'], ['start', 'QA04', '--boot-diagnostics', 'true'],
+    ['start', 'QA04', '--boot-diagnostics', '-logcat', '*:v'], ['start', 'QA04', '--boot-diagnostics', '--wipe-data'],
+    ['--boot-diagnostics'], ['start', '--boot-diagnostics', 'QA04'],
+    ['start', 'QA10', '--boot-diagnostics', '--boot-diagnostics'], ['start', 'QA10', '--boot-diagnostics=true'],
+    ['start', 'QA10', '--boot-diagnostics', '--wipe-data'],
+  ]) assert.throws(() => parseFleetDeviceArgs(args), /Usage/);
+});
+
+test('QA04 and QA10 diagnostics only append fixed logging flags to unchanged headless or visible arguments', () => {
+  for (const [avdName, port] of [['Envitefy_Fleet_QA04', 5566], ['Envitefy_Fleet_QA10', 5578]]) {
+    for (const visible of [false, true]) {
+      const ordinary = buildFleetEmulatorLaunch(avdName, port, visible);
+      const diagnostic = buildFleetEmulatorLaunch(avdName, port, visible, true);
+      assert.deepEqual(diagnostic, {
+        args: [...ordinary.args, '-show-kernel', '-logcat', '*:s init:i adbd:i', '-debug', 'init,time'],
+        windowsHide: ordinary.windowsHide,
+      });
+      assert.deepEqual(buildFleetEmulatorLaunch(avdName, port, visible, false), ordinary);
+      for (const flag of ['-wipe-data', '-shell', '-shell-serial', '-qemu', '-writable-system']) assert.ok(!diagnostic.args.includes(flag));
+    }
+  }
+  for (const [avdName, port] of [['Envitefy_Fleet_QA03', 5566], ['Envitefy_Fleet_QA04', 5564], ['Envitefy_Fleet_QA04', '5566'],
+    ['Envitefy_Fleet_QA10', 5566], ['Envitefy_Fleet_QA04', 5578], ['Envitefy_Fleet_QA10', '5578'], ['Envitefy_Fleet_QA11', 5578]]) {
+    assert.throws(() => buildFleetEmulatorLaunch(avdName, port, false, true), /exact assigned QA04 or QA10/);
+  }
+});
+
 // Reduced, non-account fixture from the QA03 Pixel Fold display inventories.
 const inner = '4619827259835644672';
 const outer = '4619827551948147201';

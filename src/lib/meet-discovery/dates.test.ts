@@ -58,6 +58,31 @@ test("abbreviated visible dates override conflicting metadata without choosing t
   }
 });
 
+test("a nearby meet on the same weekend cannot enter the pasted event crawl", () => {
+  const fingerprint = __testUtils.buildEventFingerprint(
+    new URL("https://www.vaultgymnastics.com/meets/tampa-bay-turners-invitational/2027"),
+    "Tampa Bay Turners Invitational 2027",
+    "",
+    "Tampa Bay Turners Invitational 2027\nJanuary 15-17, 2027\nBradenton Area Convention Center\nPalmetto, FL",
+  );
+  const unrelated = __testUtils.scoreEventResourceMatch(
+    fingerprint,
+    "",
+    "Presidential Classic Orlando, FL - January 15-17, 2027",
+    "https://www.vaultgymnastics.com/meets/presidential-classic/2027",
+  );
+  const related = __testUtils.scoreEventResourceMatch(
+    fingerprint,
+    "",
+    "Tampa Bay Turners Invitational 2027 host information",
+    "https://www.vaultgymnastics.com/meets/tampa-bay-turners-invitational/2027/details",
+  );
+
+  assert.equal(unrelated.passes, false);
+  assert.match(unrelated.reason, /date_only_match/);
+  assert.equal(related.passes, true);
+});
+
 const packets = [
   { file: "2026wgaspparentinfo.pdf", title: "Gasparilla Classic", label: "March 6-8, 2026", start: "2026-03-06", end: "2026-03-08", exclusiveEnd: "2026-03-09", venue: "Tampa Convention Center", address: "333 S Franklin St, Tampa, FL 33602", street: "333 S Franklin St", city: "Tampa", zip: "33602", latitude: 27.9423, longitude: -82.4537 },
   { file: "Xcel-BSG-State-2026-Info-Schedule-Updated-3.22-Afternoon.pdf", title: "Florida Xcel State Championships", label: "April 10 - 12, 2026", start: "2026-04-10", end: "2026-04-12", exclusiveEnd: "2026-04-13", venue: "Alachua County Sports & Events Center", address: "4870 Celebration Pointe Ave, Gainesville, FL 32608", street: "4870 Celebration Pointe Ave", city: "Gainesville", zip: "32608", latitude: 29.6248, longitude: -82.3977 },

@@ -66,10 +66,10 @@ export default function EventOwnerView({
   }
 
   const actionClassName =
-    "min-h-11 min-w-11 items-center justify-start gap-2 rounded-xl px-3 text-sm font-semibold transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current lg:justify-center lg:rounded-full";
+    "min-h-11 min-w-11 items-center justify-start gap-2 rounded-xl px-3 text-sm font-semibold transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current @min-[1600px]:justify-center @min-[1600px]:rounded-full";
 
   const actions = (
-    <div role="group" aria-label="Event actions" className="flex min-w-0 flex-col items-stretch gap-1 lg:flex-row lg:items-center lg:gap-2">
+    <div role="group" aria-label="Event actions" className="flex min-w-0 flex-col items-stretch gap-1 @min-[1600px]:flex-row @min-[1600px]:items-center @min-[1600px]:gap-2">
       <Link href={buildOwnerEventPreviewHref(publicHref)} aria-label="Preview event" title="Preview event" className={`inline-flex ${actionClassName}`}>
         <Eye size={19} aria-hidden="true" />
         <span>Preview</span>

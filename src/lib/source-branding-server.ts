@@ -1,12 +1,21 @@
 import sharp from "sharp";
 import { readSourceBranding, type SourceBranding } from "./imported-event-theme";
 
+function luminance(hex: string) {
+  const channels = [1, 3, 5].map((index) => {
+    const value = parseInt(hex.slice(index, index + 2), 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+}
+
 function usefulColor(hex: string) {
   const channels = [1, 3, 5].map((index) => parseInt(hex.slice(index, index + 2), 16));
   return Math.max(...channels) - Math.min(...channels) > 35 && Math.max(...channels) > 55;
 }
 export function brandingFromCss(css: string, sourceUrl?: string): SourceBranding {
   const votes = new Map<string, number>();
+  const backgroundVotes = new Map<string, number>();
   for (const match of css
     .slice(0, 350_000)
     .matchAll(
@@ -26,6 +35,8 @@ export function brandingFromCss(css: string, sourceUrl?: string): SourceBranding
       (votes.get(color) || 0) +
         (/brand|accent|primary|header|navigation|theme-color/i.test(context) ? 5 : 1),
     );
+    if (/background(?:-color)?\s*:/i.test(match[0]))
+      backgroundVotes.set(color, (backgroundVotes.get(color) || 0) + 1);
   }
   const colors = [...votes]
     .sort((a, b) => b[1] - a[1])
@@ -35,7 +46,24 @@ export function brandingFromCss(css: string, sourceUrl?: string): SourceBranding
     .match(/font-family\s*:\s*([^;}<>]{3,100})/i)?.[1]
     .replace(/["']/g, "")
     .trim();
-  return readSourceBranding({ version: 1, origin: "website", colors, font, sourceUrl })!;
+  const backgrounds = [...backgroundVotes].sort((a, b) => b[1] - a[1]);
+  const dark = backgrounds.reduce(
+    (sum, [color, count]) => sum + (luminance(color) < 0.18 ? count : 0),
+    0,
+  );
+  const light = backgrounds.reduce(
+    (sum, [color, count]) => sum + (luminance(color) > 0.72 ? count : 0),
+    0,
+  );
+  const tone =
+    dark > light * 1.25
+      ? "dark"
+      : light > dark * 1.25
+        ? "light"
+        : backgrounds.length
+          ? "mixed"
+          : undefined;
+  return readSourceBranding({ version: 1, origin: "website", colors, font, tone, sourceUrl })!;
 }
 
 /** Read at most two likely brand stylesheets, including public CDNs, through the URL guard. */
@@ -116,7 +144,7 @@ export async function brandingFromWebsite(
     );
     colors = (await brandingFromImages(rasters, "image")).colors;
   }
-  return { ...inline, colors, font: inline.font || linked.font };
+  return { ...inline, colors, font: inline.font || linked.font, tone: inline.tone || linked.tone };
 }
 export async function brandingFromImages(
   images: string[],
@@ -124,6 +152,9 @@ export async function brandingFromImages(
   sourceUrl?: string,
 ): Promise<SourceBranding> {
   const votes = new Map<string, number>();
+  let darkPixels = 0;
+  let lightPixels = 0;
+  let sampledPixels = 0;
   for (const image of images.slice(0, 2)) {
     const data = image.match(/^data:image\/(?:png|jpeg|webp);base64,([\s\S]+)$/)?.[1];
     if (!data) continue;
@@ -137,6 +168,13 @@ export async function brandingFromImages(
         .raw()
         .toBuffer({ resolveWithObject: true });
       for (let offset = 0; offset < pixels.length; offset += info.channels) {
+        const brightness =
+          pixels[offset] * 0.2126 +
+          pixels[offset + 1] * 0.7152 +
+          pixels[offset + 2] * 0.0722;
+        sampledPixels++;
+        if (brightness < 72) darkPixels++;
+        if (brightness > 210) lightPixels++;
         const color = `#${[0, 1, 2]
           .map((channel) =>
             Math.min(255, Math.round(pixels[offset + channel] / 32) * 32)
@@ -169,5 +207,19 @@ export async function brandingFromImages(
     colors.push(color);
     if (colors.length === 6) break;
   }
-  return { version: 1, origin, colors, ...(sourceUrl ? { sourceUrl } : {}) };
+  const tone =
+    darkPixels > sampledPixels * 0.55
+      ? "dark"
+      : lightPixels > sampledPixels * 0.55
+        ? "light"
+        : sampledPixels
+          ? "mixed"
+          : undefined;
+  return {
+    version: 1,
+    origin,
+    colors,
+    ...(tone ? { tone } : {}),
+    ...(sourceUrl ? { sourceUrl } : {}),
+  };
 }

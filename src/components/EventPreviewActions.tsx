@@ -67,7 +67,7 @@ export default function EventPreviewActions({
   const content = (
     <div
       ref={root}
-      className="pointer-events-auto relative col-start-3 row-start-1 justify-self-end lg:justify-self-start"
+      className="pointer-events-auto relative col-start-3 row-start-1 justify-self-end @min-[1600px]:justify-self-start"
       onKeyDown={(event) => {
         if (event.key !== "Escape" || !open) return;
         event.preventDefault();
@@ -84,14 +84,14 @@ export default function EventPreviewActions({
         aria-expanded={open}
         aria-controls={id}
         onClick={() => setOpen((previous) => !previous)}
-        className="inline-flex size-11 items-center justify-center rounded-full border border-current/15 shadow-sm backdrop-blur-xl transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current lg:hidden"
+        className="inline-flex size-11 items-center justify-center rounded-full border border-current/15 shadow-sm backdrop-blur-xl transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current @min-[1600px]:hidden"
         style={surfaceStyle}
       >
         <MoreVertical size={21} aria-hidden="true" />
       </button>
       <div
         id={id}
-        className={`${open ? "block" : "hidden"} absolute right-0 top-[calc(100%+0.5rem)] w-48 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-current/15 p-1.5 shadow-lg backdrop-blur-xl lg:static lg:block lg:w-auto lg:max-w-none lg:rounded-full lg:p-1 lg:shadow-sm`}
+        className={`${open ? "block" : "hidden"} absolute right-0 top-[calc(100%+0.5rem)] w-48 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-current/15 p-1.5 shadow-lg backdrop-blur-xl @min-[1600px]:static @min-[1600px]:block @min-[1600px]:w-auto @min-[1600px]:max-w-none @min-[1600px]:rounded-full @min-[1600px]:p-1 @min-[1600px]:shadow-sm`}
         style={surfaceStyle}
         onClick={(event) => {
           // Portalled confirmation dialogs also bubble through this component.

@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import test from "node:test";
 import {
   buildFleetFlow,
+  buildFleetMaestroArgs,
   classifyFleetSessionResult,
   credentialEvidence,
   expectedFleetDevice,
@@ -26,6 +28,32 @@ test("no command selects a live action implicitly and code/signup steps cannot b
     assert.throws(() => parseFleetSessionArgs(["--account", "QA01", "--step", step]), /explicit supported --step/);
   }
   assert.throws(() => parseFleetSessionArgs(["--account", "QA01", "--step", "smoke", "--account", "QA02"]), /each once/);
+});
+
+test("driver reuse requires the explicit valueless option exactly once", () => {
+  const base = ["--account", "QA01", "--step", "app-browse"];
+  assert.deepEqual(parseFleetSessionArgs(base), { account: "QA01", step: "app-browse" });
+  assert.deepEqual(parseFleetSessionArgs([...base, "--reuse-installed-driver"]),
+    { account: "QA01", step: "app-browse", reuseInstalledDriver: true });
+  assert.equal(parseFleetSessionArgs(["--reuse-installed-driver", ...base, "--serial", "emulator-5560"]).serial, "emulator-5560");
+  for (const extra of [["--reuse-installed-driver", "--reuse-installed-driver"],
+    ["--reuse-installed-driver=true"], ["--reuse-installed-driver", "true"], ["--reuse-installed-driver", "false"]])
+    assert.throws(() => parseFleetSessionArgs([...base, ...extra]));
+  assert.throws(() => parseFleetSessionArgs(["--account", "QA01", "--reuse-installed-driver"]), /explicit supported --step/);
+});
+
+test("default Maestro argv is preserved and explicit reuse is placed after the test subcommand", () => {
+  const inputs = { serial: "emulator-5560", dir: path.join("synthetic", "evidence"), flow: path.join("synthetic", "evidence", "flow.yaml") };
+  const original = ["--device", inputs.serial, "test", "--no-ansi", "--format", "JUNIT",
+    "--output", path.join(inputs.dir, "junit.xml"), "--test-output-dir", inputs.dir, "--debug-output", inputs.dir, inputs.flow];
+  assert.deepEqual(buildFleetMaestroArgs(inputs), original);
+  assert.deepEqual(buildFleetMaestroArgs({ ...inputs, reuseInstalledDriver: false }), original);
+  const parsed = parseFleetSessionArgs(["--account", "QA01", "--step", "app-browse", "--reuse-installed-driver"]);
+  const actual = buildFleetMaestroArgs({ ...inputs, reuseInstalledDriver: parsed.reuseInstalledDriver });
+  assert.deepEqual(actual, [...original.slice(0, 3), "--no-reinstall-driver", ...original.slice(3)]);
+  assert.equal(actual.filter(x => x === "--no-reinstall-driver").length, 1);
+  for (const value of ["true", "false", 1, null])
+    assert.throws(() => buildFleetMaestroArgs({ ...inputs, reuseInstalledDriver: value }), /explicit boolean/);
 });
 
 test("QA13 works without an event fixture but neither legacy nor another account's serial can be used", () => {
@@ -248,4 +276,77 @@ test("every fleet identity check opens the current mobile Profile detail and ver
       assert.match(after, /assertVisible: "Sign-in email"/);
     }
   }
+});
+
+test("observed password form is an explicit phase and requires Chrome foreground", async () => {
+  assert.equal(parseFleetSessionArgs(["--account", "QA04", "--step", "chrome-password-observed"]).step,
+    "chrome-password-observed");
+  for (const invalid of ["chrome-password-observed=true", "chrome-password-anywhere"]) {
+    assert.throws(() => parseFleetSessionArgs(["--account", "QA04", "--step", invalid]), /explicit supported/);
+  }
+  const fake = (output) => async () => ({ exitCode: 0, output });
+  await assert.rejects(verifyPasswordForeground("chrome-password-observed", "emulator-5566", "fake-adb",
+    fake("mResumedActivity: ActivityRecord{0 u0 com.google.android.gms/.Login t1}")), /expected Google/);
+  await verifyPasswordForeground("chrome-password-observed", "emulator-5566", "fake-adb",
+    fake("mResumedActivity: ActivityRecord{0 u0 com.android.chrome/.Main t1}"));
+});
+
+test("observed password phase uses exact recorded IDs with one input and one non-retrying submission", async () => {
+  const source = await buildFleetFlow("chrome-password-observed");
+  const input = source.indexOf("- inputText: ${MAESTRO_PASSWORD}");
+  const next = source.indexOf('- tapOn:\n    id: "^passwordNext$"');
+  assert.ok(input > 0 && next > input);
+  assert.match(source.slice(0, input), /visible:\n      id: "\^password\$"\n    timeout: 30000/);
+  assert.match(source.slice(0, input), /- tapOn:\n    id: "\^password\$"\n    retryTapIfNoChange: false/);
+  assert.match(source.slice(next), /^- tapOn:\n    id: "\^passwordNext\$"\n    retryTapIfNoChange: false/);
+  assert.equal((source.match(/- inputText:/g) || []).length, 1);
+  assert.equal((source.match(/- tapOn:/g) || []).length, 2);
+  assert.doesNotMatch(source, /Enter your password|Введите пароль|retry:|launchApp:|openLink:|clearState:|MAESTRO_EMAIL\}/);
+  assert.doesNotMatch(source, /tapOn:[^\n]*(?:Continue|Продолжить|Cancel|Skip|Accept|I agree|Send.*code|Try another way)/);
+});
+
+test("observed password guards every input and submission boundary and stops after a bounded outcome", async () => {
+  const source = await buildFleetFlow("chrome-password-observed");
+  const input = source.indexOf("- inputText: ${MAESTRO_PASSWORD}");
+  const next = source.indexOf('- tapOn:\n    id: "^passwordNext$"');
+  const outcome = source.indexOf("- takeScreenshot: chrome-credential-outcome");
+  assert.ok(outcome > next);
+  for (const part of [source.slice(0, input), source.slice(input, next), source.slice(outcome)]) {
+    for (const guard of ["owner-verification-required", "captcha-owner-action-required",
+      "signup-consent-not-authorized", "browser-association-not-authorized",
+      "account-recovery-owner-action-required", "google-credentials-rejected",
+      "Set up screen lock to use passkeys", "google-terms-owner-action-required"]) {
+      assert.ok(part.includes(guard), `Missing ${guard} at credential boundary`);
+    }
+    assert.match(part, /assertVisible: 'accounts\\\.google\\\.com'/);
+    assert.match(part, /assertVisible: '\.\*\$\{MAESTRO_EMAIL_PATTERN\}\.\*'/);
+  }
+  assert.match(source.slice(next, outcome), /timeout: 90000/);
+  assert.equal((source.match(/^---$/gm) || []).length, 1);
+  assert.doesNotMatch(source.slice(outcome), /tapOn:|inputText:/);
+});
+
+test("observed password submission never establishes identity or a completed credential phase without terminal evidence", () => {
+  const step = "chrome-password-observed";
+  const success = { exitCode: 0, timedOut: false };
+  const submitted = ["run/google-oauth-password-result.png", "run/chrome-credential-outcome.png"];
+  assert.deepEqual(credentialEvidence(step, submitted), {
+    credentialsSubmitted: true, credentialOutcomeObserved: true,
+    oauthConsentReady: false, dashboardObserved: false, googleSessionVerified: false,
+  });
+  assert.equal(classifyFleetSessionResult(step, success, submitted).classification, "unverified_credential_terminal_state");
+  const consent = [...submitted, "run/chrome-oauth-consent-ready.png"];
+  assert.equal(classifyFleetSessionResult(step, success, consent).terminalState, "envitefy_oauth_consent");
+  assert.equal(credentialEvidence(step, consent).googleSessionVerified, false);
+  assert.equal(Object.hasOwn(credentialEvidence(step, consent), "identityVerified"), false);
+  assert.equal(classifyFleetSessionResult(step, success, ["run/chrome-oauth-consent-ready.png"]).passed, false);
+  assert.equal(classifyFleetSessionResult(step, { exitCode: 0, timedOut: true }, consent).passed, false);
+  for (const gate of ["owner-verification-required", "captcha-owner-action-required", "account-recovery-owner-action-required",
+    "signup-consent-not-authorized", "google-terms-owner-action-required"]) {
+    const result = classifyFleetSessionResult(step, success, [...consent, `run/${gate}.png`]);
+    assert.equal(result.status, "owner_action_required");
+    assert.equal(result.passed, false);
+  }
+  assert.equal(classifyFleetSessionResult(step, success, [...consent, "run/browser-association-not-authorized.png"]).classification,
+    "unsupported_browser_association_prompt");
 });

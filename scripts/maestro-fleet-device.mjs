@@ -10,7 +10,7 @@ import { buildFleetEmulatorLaunch, parseFleetDeviceArgs } from './lib/maestro-fl
 
 const execFileAsync = promisify(execFile);
 const base = path.join(ROOT, 'output/maestro/device-fleet');
-const { command, alias, visible } = parseFleetDeviceArgs(process.argv.slice(2));
+const { command, alias, visible, bootDiagnostics } = parseFleetDeviceArgs(process.argv.slice(2));
 const manifest = JSON.parse(await fs.readFile(path.join(base, 'manifest.json'), 'utf8'));
 const profile = manifest.profiles.find(p => p.account === alias);
 const expectedHome = path.join(ROOT, '.tools/android/account-fleet/avd');
@@ -35,6 +35,15 @@ const release = await acquireAndroidUiLock('emulator-5556', { kind: `fleet-devic
 const dir = path.join(base, 'devices', alias, `${command}-${Date.now()}`);
 await fs.mkdir(dir, { recursive: true });
 const state = { account: alias, avdName: expectedName, serial, command, startedAt: new Date().toISOString(), noDataReset: true, noAppActivityCounted: true };
+if (bootDiagnostics) state.bootDiagnostics = {
+  requested: true,
+  flags: ['-show-kernel', '-logcat', '*:s init:i adbd:i', '-debug', 'init,time'],
+  stdoutFile: path.join(dir, 'emulator-stdout.log'),
+  stderrFile: path.join(dir, 'emulator-stderr.log'),
+  bootCheckTimeoutMs: 180000,
+  logScope: 'Kernel output, init/adbd information and emulator init/time diagnostics; capture lasts until normal emulator shutdown.',
+  nextStep: 'Boot-only diagnostic: normally stop this AVD before any app or authentication phase. A successful boot does not authorize app checks in this diagnostic launch.',
+};
 const save = () => fs.writeFile(path.join(dir, 'state.json'), JSON.stringify(state, null, 2));
 const runAdb = (args, timeoutMs = 10000) => runProcess(adb, args, { timeoutMs });
 const readLease = async () => {
@@ -61,6 +70,7 @@ try {
     const other = connected.filter(item => item[1] !== serial);
     if (other.length) throw new Error(`Another emulator is connected (${other.map(x => x[1]).join(', ')}). It was not stopped; finish it before starting this account.`);
     if (connected.some(item => item[1] === serial)) {
+      if (bootDiagnostics) throw new Error('--boot-diagnostics requires a new QA04 or QA10 launch; diagnostic flags cannot be added to an already-running AVD. No restart was performed.');
       await assertRunningIdentity();
       if (visible && lease?.windowMode !== 'visible') {
         throw new Error('--visible applies only to a new launch. The existing AVD was not restarted; finish its work and stop it normally before starting it with --visible.');
@@ -72,7 +82,7 @@ try {
       if (lease) throw new Error('This account has an unresolved launch with no ADB registration. Inspect its saved process and boot logs; a second instance was not started.');
       const processes = await emulatorProcesses();
       if (processes.length) throw new Error('An emulator process is still running without the selected ADB registration. Finish or recover it before starting another device.');
-      const { args, windowsHide } = buildFleetEmulatorLaunch(expectedName, expectedPort, visible);
+      const { args, windowsHide } = buildFleetEmulatorLaunch(expectedName, expectedPort, visible, bootDiagnostics);
       state.windowMode = visible ? 'visible' : 'headless';
       const stdoutFd = openSync(path.join(dir, 'emulator-stdout.log'), 'a');
       const stderrFd = openSync(path.join(dir, 'emulator-stderr.log'), 'a');
