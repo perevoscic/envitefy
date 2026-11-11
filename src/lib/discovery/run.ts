@@ -219,7 +219,7 @@ export async function runDiscoveryPipeline(eventId: string, options?: { signal?:
     if (!completed("enrich") || !current.enrichment) {
     // Prepare the original hero once while the mapped private draft is already editable.
     const themeRow = await getEventHistoryById(eventId);
-    if (!themeRow?.data?.templateEditor && !themeRow?.data?.manualEditor)
+    if (current.workflow === "gymnastics" || (!themeRow?.data?.templateEditor && !themeRow?.data?.manualEditor))
       await generateImportedEventArtwork(eventId, themeRow?.data?.importedTheme, { applyToImport: true });
     await assertActive(eventId, options?.signal, actorUserId);
     current = await enterStage(current, "enrich");

@@ -282,9 +282,11 @@ export async function persistDiscoveryEventSnapshot(params: {
     params.workflow === "gymnastics"
       ? provided !== undefined ? provided : parsed !== undefined ? parsed : previous ?? null
       : provided ?? parsed ?? previous ?? null;
+  const initialTemplateArtwork = params.workflow === "gymnastics" && current.importedTheme === null && builderEvent.importedTheme?.preserveTemplateStyle;
   const nextData = {
     ...current,
-    ...(Object.hasOwn(current, "importedTheme") ? { importedTheme: current.importedTheme } : builderEvent.importedTheme ? { importedTheme: builderEvent.importedTheme } : {}),
+    ...(Object.hasOwn(current, "importedTheme") && !initialTemplateArtwork
+      ? { importedTheme: current.importedTheme } : builderEvent.importedTheme ? { importedTheme: builderEvent.importedTheme } : {}),
     title: nextTitle,
     startISO: snapshotDate(params.startISO, builderEvent.startISO, current.startISO),
     startAt: snapshotDate(params.startISO, builderEvent.startISO, current.startAt),
@@ -379,7 +381,7 @@ export async function persistDiscoveryEventSnapshot(params: {
   };
   const explicitlyEdited = Boolean(current.manualEditor || current.templateEditor);
   const prepared = prepareEventHistoryData(explicitlyEdited
-    ? { ...current, pipelineSummary: nextData.pipelineSummary }
+    ? { ...current, pipelineSummary: nextData.pipelineSummary, ...(initialTemplateArtwork ? { importedTheme: nextData.importedTheme } : {}) }
     : await storePublicEventMedia(nextData, params.eventId));
   // A cancelled import or concurrent explicit editor save must win over a slow worker.
   const result = await query<EventHistoryRow>(`UPDATE event_history SET data=$2::jsonb,title=$4

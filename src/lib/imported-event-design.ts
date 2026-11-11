@@ -14,7 +14,7 @@ export function activeImportedTheme(value: unknown) {
 }
 export function importedThemeStyle(value: unknown): CSSProperties | undefined {
   const theme = activeImportedTheme(value);
-  if (!theme) return undefined;
+  if (!theme || theme.preserveTemplateStyle) return undefined;
   const { colors: c } = theme;
   const readableAccent = colorContrast(c.accent, c.page) >= 4.5 ? c.accent : c.ink;
   return {

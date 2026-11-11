@@ -20,7 +20,9 @@ export type ImportedEventTheme = {
   id: string;
   revision: number;
   name: string;
-  context: { title: string; sport: string; city: string; seed: string };
+  context: { title: string; sport: string; city: string; seed: string; venue?: string; date?: string };
+  /** Generate original artwork while retaining a deliberately selected template's presentation. */
+  preserveTemplateStyle?: true;
   branding: SourceBranding | null;
   colors: {
     page: string;
@@ -132,7 +134,10 @@ export function readImportedEventTheme(value: unknown): ImportedEventTheme | nul
       sport: clean(raw.context.sport, 60),
       city: clean(raw.context.city, 100),
       seed: clean(raw.context.seed),
+      ...(clean(raw.context.venue, 240) ? { venue: clean(raw.context.venue, 240) } : {}),
+      ...(clean(raw.context.date, 160) ? { date: clean(raw.context.date, 160) } : {}),
     },
+    ...(raw.preserveTemplateStyle === true ? { preserveTemplateStyle: true as const } : {}),
     branding: readSourceBranding(raw.branding),
     colors,
     font: raw.font,
@@ -186,6 +191,8 @@ export function createImportedEventTheme(input: {
   title: string;
   sport: string;
   city?: string;
+  venue?: string;
+  date?: string;
   seed: string;
   branding?: unknown;
   hostNotes?: string;
@@ -196,10 +203,12 @@ export function createImportedEventTheme(input: {
     sport: clean(input.sport, 60) || "sport",
     city: clean(input.city, 100),
     seed: clean(input.seed),
+    ...(clean(input.venue, 240) ? { venue: clean(input.venue, 240) } : {}),
+    ...(clean(input.date, 160) ? { date: clean(input.date, 160) } : {}),
   };
   const revision = Math.min(1000, Math.max(0, Math.trunc(input.revision || 0)));
   const hash = themeHash(
-    `${context.seed}|${context.title}|${context.sport}|${context.city}|${revision}`,
+    `${context.seed}|${context.title}|${context.sport}|${context.city}|${revision}${context.venue || context.date ? `|${context.venue || ""}|${context.date || ""}` : ""}`,
   );
   const shapeIndex =
     (themeHash(`${context.seed}|${context.title}|${context.sport}|${context.city}|0`) + revision) %
@@ -286,22 +295,30 @@ export function attachImportedEventTheme(input: {
   branding?: unknown;
 }) {
   const { currentData, mappedData } = input;
-  if (Object.hasOwn(currentData, "importedTheme"))
+  const hasSelectedTemplate = Boolean(currentData.templateEditor || currentData.manualEditor);
+  // Native gymnastics drafts start with null before any import or image choice.
+  const initialGymTemplate = input.workflow === "gymnastics" && hasSelectedTemplate && currentData.importedTheme === null;
+  if (Object.hasOwn(currentData, "importedTheme") && !initialGymTemplate)
     return { ...mappedData, importedTheme: currentData.importedTheme };
-  if (currentData.templateEditor || currentData.manualEditor) return mappedData;
+  if (hasSelectedTemplate && input.workflow !== "gymnastics") return mappedData;
   return {
     ...mappedData,
-    importedTheme: createImportedEventTheme({
-      title: mappedData.title || currentData.title || "Sports event",
-      sport:
-        input.activityProfile ||
-        mappedData.activityProfile ||
-        (input.workflow === "sports" ? mappedData.customFields?.sport : input.workflow) ||
-        "sport",
-      city: mappedData.city || "",
-      branding: input.branding,
-      hostNotes: input.hostNotes,
-      seed: `${input.sourceUrl || "document"}|${mappedData.date || mappedData.startAt || ""}|${themeHash(input.sourceText || "")}`,
-    }),
+    importedTheme: {
+      ...createImportedEventTheme({
+        title: mappedData.title || currentData.title || "Sports event",
+        sport:
+          input.activityProfile ||
+          mappedData.activityProfile ||
+          (input.workflow === "sports" ? mappedData.customFields?.sport : input.workflow) ||
+          "sport",
+        city: mappedData.city || "",
+        venue: mappedData.venue || mappedData.address || "",
+        date: mappedData.date || mappedData.startISO || mappedData.startAt || "",
+        branding: input.branding,
+        hostNotes: input.hostNotes,
+        seed: `${input.sourceUrl || "document"}|${mappedData.date || mappedData.startAt || ""}|${themeHash(input.sourceText || "")}`,
+      }),
+      ...(hasSelectedTemplate ? { preserveTemplateStyle: true as const } : {}),
+    },
   };
 }

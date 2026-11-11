@@ -43,12 +43,22 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce", timezoneId: "America/Chicago" });
   page.setDefaultTimeout(15000);
-  const base = "http://localhost:43129", records = new Map(), writes = [], errors = [];
+  const base = "http://localhost:43129", records = new Map(), writes = [], errors = [], artwork = new Map(), imageRequests = [];
   page.on("pageerror", error => errors.push(error.stack || error.message));
   page.on("dialog", dialog => dialog.accept());
   await page.route("**/*", async route => {
     const request = route.request(), url = new URL(request.url());
     if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: script });
+    if (/\/api\/events\/[^/]+\/theme-artwork$/.test(url.pathname)) {
+      const id = url.pathname.split("/")[3];
+      if (request.method() === "POST") {
+        const body = request.postDataJSON();
+        imageRequests.push({ id, ...body });
+        artwork.set(id, { themeId: body.theme.id, status: "ready", imageUrl: `/media/event-media/${id}/original.webp`, updatedAt: new Date().toISOString() });
+        return route.fulfill({ status: 202, contentType: "application/json", body: JSON.stringify({ artwork: { themeId: body.theme.id, status: "generating" } }) });
+      }
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ artwork: artwork.get(id) || null }) });
+    }
     if (url.pathname.startsWith("/api/history/")) {
       const id = url.pathname.split("/")[3], previous = records.get(id);
       if (request.method() === "GET") return route.fulfill({ contentType: "application/json", body: JSON.stringify(previous) });
@@ -91,6 +101,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       });
       records.set(id, { id, title: event.title, revision: `${id}-initial`, data, permissions: { canManageCollaborators: variant !== "v2" } });
       await page.goto(`${base}/event/gymnastics/customize?edit=${id}`);
+      await preview.getByRole("tab", { name: "Venue & Parking", exact: true }).click();
       await preview.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
       const before = await regionText();
       assert.ok(before.some(section => /Venue Details/.test(section.name) && /East, Central and West Halls/.test(section.text)));
@@ -112,9 +123,19 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       records.get(id).data.createdManually = true;
       await page.reload();
       await page.waitForURL(`**/gymnastics/templates/airborne-atlas/customize?edit=${id}`);
+      await preview.getByRole("tab", { name: "Venue & Parking", exact: true }).click();
       await preview.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
       assert.deepEqual(await regionText(), before, `${variant}: imported sections, list formatting and links survive the template redirect`);
       assert.equal(writes.length, count + 1, "reopening never persists automatically");
+
+      await preview.getByRole("button", { name: "Generate event image", exact: true }).click();
+      await preview.locator(`img[src="/media/event-media/${id}/original.webp"]`).waitFor();
+      assert.equal(writes.length, count + 1, "image generation updates editor memory without saving the event");
+      const imageRequest = imageRequests.at(-1);
+      assert.equal(imageRequest.theme.context.title, event.title);
+      assert.equal(imageRequest.theme.context.venue, event.venue);
+      assert.equal(imageRequest.theme.context.date, event.date);
+      assert.equal(imageRequest.theme.preserveTemplateStyle, true);
 
       // A subsequent wrapper save must retain explicit clears and native fields.
       await preview.getByRole("button", { name: "Edit welcome message", exact: true }).click();
@@ -126,6 +147,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       assert.equal(writes.at(-1).data.createdVia, data.createdVia, "explicit saving repairs an older import's creation marker");
       assert.equal(writes.at(-1).data.createdManually, false);
       await page.reload();
+      await preview.getByRole("tab", { name: "Venue & Parking", exact: true }).click();
       await preview.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
       await preview.getByRole("button", { name: "Edit welcome message", exact: true }).click();
       assert.equal(await preview.getByLabel("Welcome message", { exact: true }).inputValue(), "");
@@ -152,7 +174,9 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       await page.getByRole("heading", { level: 1, name: correctedTitle, exact: true }).waitFor();
       await page.getByText(correctedVenue, { exact: true }).first().waitFor();
       assert.equal(await page.getByText(event.address, { exact: true }).count(), 0, "saved guest rendering does not revive the old address");
+      await page.getByRole("tab", { name: "Venue & Parking", exact: true }).click();
       await page.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
+      await page.locator(`img[src="/media/event-media/${id}/original.webp"]`).waitFor();
       await page.goto(`${base}/gymnastics/templates/airborne-atlas/customize?edit=${id}`);
       await preview.getByRole("button", { name: "Edit address", exact: true }).click();
       assert.equal(await preview.getByLabel("Address", { exact: true }).inputValue(), "");

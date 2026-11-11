@@ -134,12 +134,25 @@ test("pipeline refresh preserves disabled themes, explicit opt-outs, saved desig
         .importedTheme,
       null,
     );
-    assert.equal(
-      themes.attachImportedEventTheme({ ...input, currentData: { templateEditor: true } })
-        .importedTheme,
-      undefined,
-    );
+    const selected = themes.attachImportedEventTheme({ ...input, currentData: { templateEditor: true } }).importedTheme;
+    if (workflow === "gymnastics") {
+      assert.equal(selected.preserveTemplateStyle, true);
+      assert.equal(design.importedThemeStyle(selected), undefined);
+    } else assert.equal(selected, undefined);
   }
+});
+
+test("gymnastics template imports prepare original artwork without replacing their chosen layout, palette or upload", () => {
+  const mappedData = { title: "Turners Invitational", venue: "Bradenton Area Convention Center", city: "Palmetto", date: "2027-01-15", pageTemplateId: "moonbeam-balance", heroImage: "/uploads/host.webp" };
+  const result = themes.attachImportedEventTheme({ workflow: "gymnastics", currentData: { templateEditor: true, importedTheme: null }, mappedData });
+  assert.equal(result.importedTheme.preserveTemplateStyle, true);
+  assert.equal(design.importedThemeStyle(result.importedTheme), undefined);
+  assert.equal(result.pageTemplateId, mappedData.pageTemplateId);
+  assert.equal(result.heroImage, mappedData.heroImage);
+  const ready = { ...result.importedTheme, artworkUrl: "https://assets.test/this-meet.webp" };
+  assert.equal(design.importedArtworkSrc(ready, undefined, "/templates/default.webp"), ready.artworkUrl);
+  assert.equal(design.importedArtworkSrc(ready, mappedData.heroImage, "/templates/default.webp"), mappedData.heroImage);
+  assert.equal(themes.readImportedEventTheme(ready).preserveTemplateStyle, true);
 });
 test("the shared map stage carries URL/PDF branding into every sports builder", async () => {
   const { runDiscoveryMapStage } = loadTs("src/lib/discovery/map.ts", {

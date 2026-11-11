@@ -115,7 +115,8 @@ test("sports briefs specify apparatus contact and never derive demographics from
   assert.match(prompt, /complete feet, their contact with the beam/);
   assert.match(prompt, /Never infer or select an athlete's race/);
   assert.match(prompt, /no racial group is required or excluded/);
-  assert.ok(!prompt.includes("Atlanta Invitational"));
+  assert.ok(prompt.includes("Atlanta Invitational"));
+  assert.match(prompt, /context only, never words to print/);
   for (const sport of ["football", "soccer", "basketball", "swimming", "cycling", "running", "rowing"])
     assert.match(state.importedArtworkPrompt({ ...gym, context: { ...gym.context, sport } }), /ground|planted|equipment-centered/);
 });
@@ -161,4 +162,15 @@ test("the image brief includes verified context and prevents lettering and inven
     assert.ok(prompt.includes(text), text);
   await state.generateImportedEventArtwork("event", { ...theme, enabled: false });
   assert.equal(state.calls(), 0);
+});
+
+test("different meet editions and locations produce different briefs with their own verified venue and date", async () => {
+  const state = await fixture();
+  const first = createImportedEventTheme({ title: "Tampa Bay Turners Invitational 2027", sport: "gymnastics", city: "Palmetto, FL", venue: "Bradenton Area Convention Center", date: "January 15–17, 2027", seed: "meet-one" });
+  const second = createImportedEventTheme({ ...first.context, title: "Coastal Invitational 2028", city: "Sarasota, FL", date: "January 21–23, 2028", seed: "meet-two" });
+  const prompt = state.importedArtworkPrompt(first);
+  for (const value of [first.context.title, first.context.city, first.context.venue, first.context.date]) assert.ok(prompt.includes(value));
+  assert.notEqual(prompt, state.importedArtworkPrompt(second));
+  assert.notEqual(first.id, second.id);
+  assert.deepEqual(require("../../scripts/lib/event-messages-test-loader.cjs")("src/lib/imported-event-theme.ts").readImportedEventTheme(first).context, first.context);
 });

@@ -84,12 +84,16 @@ export default function GymnasticsProgram({
     sectionLayout,
   );
   const availableTabs = eventInformationTabs(navigation, sectionLayout);
-  const tabbed =
-    availableTabs.length > 1 &&
-    sections.some((section) =>
-      ["schedule-availability", "participating-clubs", "attractions"].includes(section.id),
-    );
+  const tabbed = availableTabs.length > 1;
   const activeTab = availableTabs.find((tab) => tab.id === selectedTab) || availableTabs[0];
+  const tabSource = (id: string) => {
+    const tab = availableTabs.find(tab => tab.id === id)!;
+    return navigation.find(section => section.id === (tab.sectionIds.includes(id) ? id : tab.sectionIds[0]));
+  };
+  const tabLabel = (id: string, fallback: string) => {
+    const source = tabSource(id);
+    return pageTextOverrides?.[`section:${encodeURIComponent(source?.id || id)}:label`] ?? fallback;
+  };
   // useId keeps links local even when multiple previews are mounted together.
   const sectionId = (id: string) => `${instanceId}-program-${id}`;
   if (!ordered.length && !additionalSections.length && !builder) return null;
@@ -97,24 +101,34 @@ export default function GymnasticsProgram({
   return (
     <div className={styles.program} data-tabbed={tabbed || undefined}>
       {tabbed ? (
+        <>
+        {pageTextOverrides?.programIndex ? <span className={styles.indexLabel}>{pageText("programIndex", "Inside the meet")}</span> : null}
         <ResponsiveEventNavigation
-          items={availableTabs.map(tab => ({ ...tab, panelId: `${instanceId}-tab-panel` }))}
+          items={availableTabs.map(tab => ({ ...tab, label: tabLabel(tab.id, tab.label), panelId: `${instanceId}-tab-panel` }))}
           activeId={activeTab?.id}
           onSelect={setSelectedTab}
           tabbed
           ariaLabel="Event information"
           background="var(--gym-paper)"
           foreground="var(--gym-ink)"
+          renderItem={(item, control) => {
+            const source = tabSource(item.id);
+            return pageText(`section:${encodeURIComponent(source?.id || item.id)}:label`, item.label, `${source?.label || item.label} navigation label`, () => control);
+          }}
         >
           <div className={styles.tabs} role="tablist" aria-label="Event information">
-            {availableTabs.map((tab, index) => (
+            {availableTabs.map((tab, index) => pageText(
+              `section:${encodeURIComponent(tabSource(tab.id)?.id || tab.id)}:label`,
+              tab.label,
+              `${tabSource(tab.id)?.label || tab.label} navigation label`,
+              (label) => (
               <button
                 key={tab.id}
                 type="button"
                 role="tab"
                 id={`${instanceId}-tab-${tab.id}`}
                 aria-controls={`${instanceId}-tab-panel`}
-                aria-label={tab.label}
+                aria-label={label}
                 aria-selected={activeTab?.id === tab.id}
                 tabIndex={activeTab?.id === tab.id ? 0 : -1}
                 ref={(node) => {
@@ -142,11 +156,12 @@ export default function GymnasticsProgram({
                   });
                 }}
               >
-                {tab.label}
+                {label}
               </button>
-            ))}
+            )))}
           </div>
         </ResponsiveEventNavigation>
+        </>
       ) : navigation.length > 1 && !builder ? (
         <ResponsiveEventNavigation
           items={navigation.map(section => ({ id: section.id, label: pageTextOverrides?.[`section:${encodeURIComponent(section.id)}:label`] ?? section.navLabel ?? section.label, href: `#${sectionId(section.id)}` }))}

@@ -9,7 +9,7 @@ const readSource = (relativePath) =>
   fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
 for (const relativePath of [
-  "src/components/gym-meet-templates/GymMeetDiscoveryContent.tsx",
+  // Gymnastics uses EventPlaceCard; its adaptive density is exercised in generated-gymnastics-layout-browser.test.cjs.
   "src/components/gym-meet-templates/ShowcaseDiscoveryContent.tsx",
 ]) {
   test(`${path.basename(relativePath)} uses hotel-specific auto-fit grid and bottom-pinned CTA layout`, () => {

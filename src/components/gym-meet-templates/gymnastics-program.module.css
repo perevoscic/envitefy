@@ -16,6 +16,7 @@
 .tabPanel { min-width: 0; }
 .tabPanel:focus-visible { outline: 2px solid var(--gym-ink); outline-offset: 4px; }
 .tabs { display: flex; gap: 0.4rem; min-width: 0; overflow-x: auto; padding: 0.4rem; border: 1px solid var(--program-line); border-radius: 1rem; background: var(--gym-paper); }
+.tabs > span { flex: 1; }
 .tabs button { flex: 1; min-height: 48px; padding: 0.65rem 0.8rem; border-radius: 0.65rem; color: var(--gym-ink); font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
 .tabs button[aria-selected="true"] { background: var(--gym-ink); color: var(--gym-paper); }
 .tabs button:hover { text-decoration: underline; text-underline-offset: 4px; }
@@ -55,10 +56,10 @@
 .detailCard > p:first-child { font-size: 0.72rem; opacity: 0.8; }
 .detailCard > p:nth-child(2) { line-height: 1.25; }
 .design [data-program-cards] { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 1rem; }
-.design [data-program-cards="hotels"] { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
 .design :is([data-program-cards="hotels"], [data-program-cards="attractions"]) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 24px; }
+.design [data-program-cards="hotels"] { grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--place-card-min, 340px)), 1fr)); gap: 28px; }
 /* Place details get a quiet surface across designs, without nested tinted panels. */
-.design[data-gym-design] .chapter:is([data-section-kind="hotels"], [data-section-kind="attractions"]) { border: 0; border-radius: 0; background: transparent; box-shadow: none; padding: 0; }
+.design[data-gym-design] .chapter:is([data-section-kind="hotels"], [data-section-kind="attractions"]) { display: block; margin: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; padding: 0; }
 .design[data-gym-design] .chapter:is([data-section-kind="hotels"], [data-section-kind="attractions"]) .chapterHeading { border: 0; padding: 0; margin-bottom: 24px; }
 .teamSupport { display: grid; gap: var(--program-gap); }
 .teamSupport > div { min-width: 0; }

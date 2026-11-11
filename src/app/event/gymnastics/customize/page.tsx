@@ -54,7 +54,7 @@ import {
 import GymnasticsLauncher from "@/components/event-create/GymnasticsLauncher";
 import ImportedThemeControls from "@/components/event-create/ImportedThemeControls";
 import ImportedThemeArtwork from "@/components/event-create/ImportedThemeArtwork";
-import { readImportedEventTheme } from "@/lib/imported-event-theme";
+import { createImportedEventTheme, readImportedEventTheme } from "@/lib/imported-event-theme";
 import WebsiteImportCoverage from "@/components/event-create/WebsiteImportCoverage";
 import GymnasticsDesignGallery from "@/components/gym-meet-templates/GymnasticsDesignGallery";
 import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
@@ -1963,9 +1963,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const designsHref = templateEditor ? `/${templateEditor.category}/templates` : `/event/gymnastics/customize?${new URLSearchParams({ ...(data.date ? { d: data.date } : {}), ...(demoMode ? { demo: "1" } : {}) }).toString()}`;
 
+    const eventImageTheme = readImportedEventTheme(data.importedTheme) || {
+      ...createImportedEventTheme({ title: data.title, sport: "gymnastics", city: data.city, venue: data.venue, date: data.date, seed: editEventId || templateEditor?.eventId || editor.eventId || data.title }),
+      preserveTemplateStyle: true as const,
+    };
     const renderHeroImageEditor = (className?: string) => (
+      <div className={`flex flex-wrap items-center justify-center gap-2 ${className || ""}`}>
       <HeroImageEditor
-        className={className}
         value={data.hero}
         onChange={(hero) => setData((prev) => ({
           ...prev,
@@ -1977,6 +1981,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         settings={normalizeHeroImageSettings(data.heroImageSettings)}
         onSettingsChange={(heroImageSettings) => setData((prev) => ({ ...prev, heroImageSettings }))}
       />
+      <ImportedThemeArtwork
+        compact
+        eventId={editEventId || templateEditor?.eventId || editor.eventId}
+        value={{ ...eventImageTheme, context: { ...eventImageTheme.context, title: data.title, city: data.city || eventImageTheme.context.city, venue: data.venue, date: data.date } }}
+        onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))}
+        onUseImage={() => setData(prev => ({ ...prev, hero: "", heroImageSettings: { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY: 50 } }))}
+      />
+      </div>
     );
 
     const renderMainMenu = () => (

@@ -9,9 +9,7 @@ import { Check } from "lucide-react";
 import React from "react";
 import FloatingActionStrip from "../FloatingActionStrip";
 import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
-import { useEventSectionBuilder } from "@/components/events/EventSectionBuilder";
 import GymnasticsSchedule from "../GymnasticsSchedule";
-import { GymnasticsPageBody } from "../GymnasticsProgram";
 import type { GymnasticsPresentation } from "../gymnasticsPresentations";
 import { GymMeetTemplateRendererProps } from "../types";
 import { useGymnasticsPageText } from "../useGymnasticsPageText";
@@ -101,7 +99,6 @@ export default function MeetPageContent({
   };
 }) {
   const nameId = React.useId();
-  const sectionBuilder = useEventSectionBuilder();
   const [previewRsvpConfirmation, setPreviewRsvpConfirmation] = React.useState(false);
   const pageText = useGymnasticsPageText(model.gymnasticsPageText, onPageTextChange);
   const copy = (key: GymnasticsPageTextKey, fallback: string) =>
@@ -188,7 +185,6 @@ export default function MeetPageContent({
             </div>
           </Section>
         ) : null;
-  const teamContent = rosterContent || practiceContent ? <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">{rosterContent}{practiceContent}</div> : null;
   const supportContent =
     gearItems.length > 0 ||
     model.gear?.uniform ||
@@ -463,7 +459,7 @@ export default function MeetPageContent({
           ) : null}
 
           {hero}
-          {sectionBuilder || model.sectionLayout ? <div className="py-5">
+          <div className="py-5">
             <GymMeetDiscoveryContent model={model} variant={variant} presentation={presentation} onPageTextChange={onPageTextChange}
               additionalSections={[
                 ...(Object.values(model.guestPlanning || {}).some(Boolean) ? [{ id: "guest-planning", label: "Guest information", editorId: "details", content: <EventGuestPlanningNotes value={model.guestPlanning} /> }] : []),
@@ -474,24 +470,7 @@ export default function MeetPageContent({
                 ...(attendanceContent ? [{ id: "rsvp", label: "Attendance / RSVP", editorId: "rsvp", content: attendanceContent }] : []),
               ]} />
             {footer}
-          </div> : <>
-          <EventGuestPlanningNotes value={model.guestPlanning} />
-          <GymnasticsPageBody
-            presentation={presentation}
-            discovery={
-              <GymMeetDiscoveryContent
-                model={model}
-                variant={variant}
-                presentation={presentation}
-                onPageTextChange={onPageTextChange}
-              />
-            }
-            team={teamContent}
-            support={supportContent}
-            attendance={attendanceContent}
-            footer={footer}
-          />
-          </>}
+          </div>
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ import {
 import Image from "next/image";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import StaticMap from "@/components/StaticMap";
-import EventPlaceCard from "@/components/event-create/EventPlaceCard";
+import EventPlaceCard, { placeCardGridStyle } from "@/components/event-create/EventPlaceCard";
 import placeStyles from "@/components/event-create/event-place-card.module.css";
 import { splitGuidanceSentences } from "./displayText";
 import GymnasticsProgram from "./GymnasticsProgram";
@@ -337,6 +337,10 @@ export default function GymMeetDiscoveryContent({
             ) : null}
             <div
               data-program-cards={block.id === "hotel-cards" ? "hotels" : block.id === "attraction-cards" ? "attractions" : "details"}
+              style={block.id === "hotel-cards" ? placeCardGridStyle((block.cards || []).map((card, index) => ({
+                name: model.gymnasticsPageText?.[`card:${encodeURIComponent(getCollectionItemKey(block.id, card?.key, index))}:label`] ?? card.label ?? "",
+                values: (card.highlights || []).map(highlight => String(highlight.value || "")),
+              }))) : undefined}
               className={
                 (block.id === "hotel-cards" || block.id === "attraction-cards") ? placeStyles.grid : gridClassForColumns(block.columns)
               }

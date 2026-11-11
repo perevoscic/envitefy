@@ -61,6 +61,16 @@ test("new snapshots persist theme metadata and later workers retain the host's t
   assert.deepEqual(state.read().data.importedTheme, hostTheme);
 });
 
+test("a gymnastics template's initial null theme can adopt an artwork-only import without replacing its saved design", async () => {
+  const state = fixture();
+  state.save({ ...state.read(), data: { ...state.read().data, importedTheme: null, templateEditor: { version: 1 } } });
+  const generated = { version: 1, id: "event-theme-original-art", enabled: true, revision: 0, preserveTemplateStyle: true };
+  state.snapshot.builderDraft.event.importedTheme = generated;
+  await state.persist(state.snapshot);
+  assert.deepEqual(state.read().data.importedTheme, generated);
+  assert.equal(state.read().data.pageTemplateId, "airborne-atlas");
+});
+
 test("an explicit host save while background completion is preparing media wins atomically", async () => {
   const state = fixture();
   let entered;

@@ -1,7 +1,17 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import styles from "./event-place-card.module.css";
+
+/** Give long place names and rate descriptions more reading room before adding a column. */
+export function placeCardGridStyle(places: Array<{ name: string; values?: string[] }>): CSSProperties {
+  const preferredWidth = places.reduce((width, place) => Math.max(
+    width,
+    place.name.length * 6.25,
+    ...(place.values || []).map(value => value.length * 6.5),
+  ), 340);
+  return { "--place-card-min": `${Math.min(500, Math.ceil(preferredWidth))}px` } as CSSProperties;
+}
 
 /** Imported places keep their details and links without republishing source photography. */
 export default function EventPlaceCard({

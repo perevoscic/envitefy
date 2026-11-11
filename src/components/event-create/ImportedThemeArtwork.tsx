@@ -17,15 +17,20 @@ export default function ImportedThemeArtwork({
   value,
   onChange,
   syncOnly = false,
+  compact = false,
+  onUseImage,
 }: {
   eventId?: string | null;
   value: unknown;
   onChange: (theme: ImportedEventTheme) => void;
   syncOnly?: boolean;
+  compact?: boolean;
+  onUseImage?: () => void;
 }) {
   const theme = readImportedEventTheme(value);
-  const current = useRef({ theme, onChange });
-  current.current = { theme, onChange };
+  const current = useRef({ theme, onChange, onUseImage });
+  current.current = { theme, onChange, onUseImage };
+  const requestedThemeId = useRef<string | null>(null);
   const [artwork, setArtwork] = useState<Artwork | null>(null);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
@@ -51,12 +56,14 @@ export default function ImportedThemeArtwork({
         }
         if (next?.themeId === themeId) {
           setArtwork(next);
-          if (
-            next.status === "ready" &&
-            next.imageUrl &&
-            current.current.theme.artworkUrl !== next.imageUrl
-          )
-            current.current.onChange({ ...current.current.theme, artworkUrl: next.imageUrl });
+          if (next.status === "ready" && next.imageUrl) {
+            if (current.current.theme.artworkUrl !== next.imageUrl)
+              current.current.onChange({ ...current.current.theme, artworkUrl: next.imageUrl });
+            if (requestedThemeId.current === themeId) {
+              requestedThemeId.current = null;
+              current.current.onUseImage?.();
+            }
+          }
           if (next.status !== "generating") return;
         }
         if (next?.themeId === themeId || ++missingChecks < 4) timer = setTimeout(check, 3000);
@@ -72,6 +79,7 @@ export default function ImportedThemeArtwork({
   }, [eventId, theme?.id, theme?.enabled, refresh]);
   async function generate(requestTheme = theme) {
     if (!eventId || !requestTheme) return;
+    requestedThemeId.current = requestTheme.id;
     setError("");
     setArtwork({ themeId: requestTheme.id, status: "generating" });
     try {
@@ -89,20 +97,24 @@ export default function ImportedThemeArtwork({
         );
       setRefresh((value) => value + 1);
     } catch (reason) {
+      requestedThemeId.current = null;
       setArtwork(null);
       setError(reason instanceof Error ? reason.message : "Image generation could not be started.");
     }
   }
   if (syncOnly || !theme?.enabled) return null;
   return (
-    <div className="mt-3 border-t border-slate-200 pt-3">
+    <div className={compact ? "rounded-xl bg-white px-3 py-2 font-sans text-slate-900 shadow-md" : "mt-3 border-t border-slate-200 pt-3"}>
       {artwork?.status === "ready" &&
       artwork.themeId !== theme.id &&
       artwork.imageUrl !== theme.artworkUrl ? (
         <button
           type="button"
           className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold hover:bg-slate-50"
-          onClick={() => onChange({ ...theme, artworkUrl: artwork.imageUrl })}
+          onClick={() => {
+            onChange({ ...theme, artworkUrl: artwork.imageUrl });
+            onUseImage?.();
+          }}
         >
           Use generated image
         </button>

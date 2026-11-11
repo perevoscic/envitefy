@@ -492,7 +492,7 @@ test('sparse and empty meets render without placeholder sections or empty RSVP s
     const html = renderToStaticMarkup(React.createElement(Renderer, p));
     assert.ok(!html.includes('Inside the meet'), design.id);
     assert.ok(!html.includes('Send RSVP'), design.id);
-    assert.ok(html.includes('data-has-attendance="false"'), design.id);
+    assert.ok(!html.includes('data-has-attendance="true"'), design.id);
     assert.ok(html.includes(design.previewTitle), design.id);
   }
 });

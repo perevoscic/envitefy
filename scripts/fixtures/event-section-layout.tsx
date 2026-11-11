@@ -10,8 +10,10 @@ import type { GymMeetDiscoverySection } from "../../src/components/gym-meet-temp
 import type { EventPageComposition } from "../../src/lib/event-page-composition";
 import type { EventSectionLayout } from "../../src/lib/event-section-layout";
 import programStyles from "../../src/components/gym-meet-templates/gymnastics-program.module.css";
+import EventPlaceCard, { placeCardGridStyle } from "../../src/components/event-create/EventPlaceCard";
+import placeStyles from "../../src/components/event-create/event-place-card.module.css";
 
-const sections: GymMeetDiscoverySection[] = [
+const sourceSections: GymMeetDiscoverySection[] = [
   ["details", "Meet Details", "Arrive at Tampa Convention Center by 8 AM. Check in with your coach before warming up."],
   ["schedule", "Competition Schedule", "Doors open at 7:30 AM. The first session begins at 9 AM, followed by awards."],
   ["parking", "Parking and Arrival", "Use the convention center parking garage. Allow extra time to walk to the main entrance."],
@@ -24,14 +26,28 @@ function App() {
   const search = new URLSearchParams(location.search);
   const selected = search.get("layout") || "template";
   const editing = search.has("editing");
+  // Geometry checks exercise multiple rows within one tab; the tabs case uses real section identities.
+  const sections = sourceSections.map(section => search.has("tabs") ? section : {
+    ...section, id: section.id === "schedule" ? "timing" : section.id === "parking" ? "arrival" : section.id,
+  });
+  const hotelNames = search.get("hotels") === "short"
+    ? ["River Hotel", "Park Inn", "Garden Suites", "Bay Hotel", "The Lodge"]
+    : ["Embassy Suites Lake Buena Vista", "Embassy Suites Orlando I–Drive Convention Center", "Fairfield by Marriott Inn & Suites Orlando I–Drive/Convention Center", "Hilton Grand Vacations Club Tuscany Village", "Hyatt House Orlando/International Drive"];
+  if (search.has("hotels")) sections.push({
+    id: "hotels", label: "Hotels & Travel", kind: "hotels", priority: 40, hasContent: true,
+    blocks: [{ id: "hotel-cards", type: "card-grid", cards: hotelNames.map((label, index) => ({
+      key: String(index), label, presentation: "hotel", highlights: [{ label: "Nightly rate", value: search.get("hotels") === "short" ? "$190 + tax" : "1-Bedroom Suite: $224.00 + tax (per night); 2-Bedroom Suite: $299.00 + tax (per night)" }],
+      details: [{ label: "Distance", value: "4.2 miles" }], action: { label: "Book hotel", url: "https://hotel.example.test/booking?group=meet" },
+    })) }],
+  });
   const initialLayout: EventSectionLayout | undefined = search.get("explicit") === "split"
     ? {
         version: 1,
         order: sections.map(({ id }) => id),
         hidden: [],
         added: [],
-        widths: { details: 6, schedule: 6 },
-        pairs: [["details", "schedule"]],
+        widths: { details: 6, [sections[1].id]: 6 },
+        pairs: [["details", sections[1].id]],
       }
     : undefined;
   const [layout, setLayout] = useState<EventSectionLayout | undefined>(initialLayout);
@@ -50,7 +66,14 @@ function App() {
       sections={sections}
       presentation={presentation}
       sectionLayout={layout}
-      renderBlock={(block) => block.type === "text" ? <p>{block.text}</p> : null}
+      renderBlock={(block) => block.type === "text" ? <p>{block.text}</p> : block.type === "card-grid" ? (
+        <div data-program-cards="hotels" className={placeStyles.grid} style={placeCardGridStyle((block.cards || []).map(card => ({ name: card.label || "", values: card.highlights?.map(item => item.value) })))}>
+          {block.cards?.map(card => <EventPlaceCard key={card.key} name={card.label || ""} eyebrow="Host hotel"
+            highlights={card.highlights?.map(item => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}
+            details={card.details?.map(item => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}
+            action={<a href={card.action?.url}>Book hotel</a>} />)}
+        </div>
+      ) : null}
     />
   );
   return (
@@ -66,8 +89,8 @@ function App() {
         width: `min(${Number(search.get("width")) || 1240}px, calc(100% - 32px))`,
         margin: "24px auto",
         container: "gym / inline-size",
-        "--gym-ink": "#1c3041",
-        "--gym-paper": "#f6f0e5",
+        "--gym-ink": search.has("dark") ? "#fff8f4" : "#1c3041",
+        "--gym-paper": search.has("dark") ? "#111a3a" : "#f6f0e5",
         "--gym-accent": "#a16e44",
         "--gym-font": "Georgia, serif",
       } as CSSProperties}

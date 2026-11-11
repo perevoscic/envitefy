@@ -39,7 +39,7 @@ test("generated gymnastics chapters stay single-column until the host pairs sect
       return route.fulfill({ contentType: "text/javascript", body: script });
     return route.fulfill({
       contentType: "text/html",
-      body: `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}*{box-sizing:border-box}body{margin:0}</style></head><body><main id="root"></main><script src="/fixture.js"></script></body></html>`,
+      body: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:${url.searchParams.has("dark") ? "#111a3a" : "#f6f0e5"}}button{background:transparent;border:0;font-family:inherit}a{color:inherit}</style></head><body><main id="root"></main><script src="/fixture.js"></script></body></html>`,
     });
   });
 
@@ -88,6 +88,42 @@ test("generated gymnastics chapters stay single-column until the host pairs sect
     const phone = await geometry();
     assert.equal(phone.chapters.length, 3);
     assert.equal(phone.overflow, 0);
+
+    for (const viewport of [{ width: 1440, height: 1000 }, { width: 768, height: 1024 }, { width: 375, height: 812 }, { width: 812, height: 375 }]) {
+      await page.setViewportSize(viewport);
+      for (const dark of [false, true]) {
+        for (const editing of [false, true]) {
+          for (const content of ["short", "long"]) {
+            const context = `${viewport.width}/${dark ? "dark" : "light"}/${editing ? "editor" : "guest"}/${content}`;
+            await open(`tabs&hotels=${content}&width=1400${dark ? "&dark" : ""}${editing ? "&editing" : ""}`);
+            await page.getByRole("tab", { name: "Overview", exact: true }).click();
+            assert.equal(await page.getByRole("heading", { name: "Hotels & Travel", exact: true }).isVisible(), false, context);
+            const hotelTab = page.getByRole("tab", { name: "Hotels", exact: true });
+            await hotelTab.click();
+            await page.getByRole("heading", { name: "Hotels & Travel", exact: true }).waitFor();
+            assert.equal(await page.getByRole("heading", { name: "Meet Details", exact: true }).isVisible(), false, context);
+            const cards = await page.locator("[data-place-card]").evaluateAll(elements => elements.map(element => {
+              const rect = element.getBoundingClientRect();
+              return { x: rect.x, y: rect.y, width: rect.width, overflow: element.scrollWidth - element.clientWidth, title: element.querySelector("h4").textContent };
+            }));
+            assert.equal(cards.length, 5, context);
+            assert.ok(cards.every(card => card.overflow <= 1), context);
+            assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, context);
+            if (viewport.width === 1440) {
+              const firstRow = cards.filter(card => Math.abs(card.y - cards[0].y) < 1);
+              assert.equal(firstRow.length, content === "long" ? 2 : 3, `${context}: density follows content`);
+              if (content === "long") assert.ok(cards.every(card => card.width > 500), context);
+            }
+            if (!editing && content === "long" && [1440, 375].includes(viewport.width))
+              await page.screenshot({ path: path.join(output, `hotels-${viewport.width}-${dark ? "dark" : "light"}.png`), fullPage: true });
+            await hotelTab.focus();
+            await page.keyboard.press("Home");
+            assert.equal(await page.getByRole("tab", { name: "Overview", exact: true }).getAttribute("aria-selected"), "true", context);
+            assert.equal(await page.getByRole("heading", { name: "Meet Details", exact: true }).isVisible(), true, context);
+          }
+        }
+      }
+    }
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
