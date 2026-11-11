@@ -55,7 +55,7 @@ function FavoriteIcon({ id }: { id: string }) {
                   ? Home
                   : id === "religious-events"
                     ? Sparkles
-                    : id === "holidays-seasonal"
+                    : id === "holidays-seasonal" || id.startsWith("holidays-seasonal:")
                       ? CalendarDays
                       : id === "general"
                         ? Users

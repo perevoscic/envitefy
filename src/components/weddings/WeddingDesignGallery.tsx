@@ -1,4 +1,5 @@
 "use client";
+import EventCategoryFavoriteButton from "@/components/events/EventCategoryFavoriteButton";
 import SeasonalGalleryControls from "@/components/events/SeasonalGalleryControls";
 import { useSeasonalTemplates } from "@/hooks/useSeasonalTemplates";
 import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
@@ -110,6 +111,7 @@ export default function WeddingDesignGallery() {
           </Link>
           <div className="grid items-center gap-10 xl:grid-cols-[minmax(0,0.82fr)_minmax(620px,1.18fr)] xl:gap-14">
             <div className="max-w-4xl">
+              <div className="mb-5"><EventCategoryFavoriteButton category="weddings" /></div>
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#dfcfb5] bg-[#f5eddf] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.28em] text-[#80613b]">
                 <Gem className="h-3.5 w-3.5" aria-hidden="true" />
                 {weddingDesignCatalog.length} wedding website designs

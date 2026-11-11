@@ -94,7 +94,7 @@ export default function CategoryInterestPicker({
       access,
     ),
   );
-  const options = CATEGORY_FAVORITES.filter((favorite) => allowed.has(favorite.id));
+  const options = CATEGORY_FAVORITES.filter((favorite) => !favorite.occasion && favorite.id !== "sport-events" && allowed.has(favorite.id));
   const selected = new Set(value);
   const sports = options.filter((favorite) => sportIds.has(favorite.id));
   const events = options

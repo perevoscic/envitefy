@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import styles from "@/components/navigation/navigation-appearance.module.css";
@@ -11,6 +11,10 @@ import { useCategoryFavorites } from "@/hooks/useCategoryFavorites";
 import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 import { isCategoryFavoriteActive } from "@/lib/category-favorites";
 import { type CreationAccess, resolveCreationAccess } from "@/lib/creation-access";
+import CategoryScrollPicker from "@/app/create/CategoryScrollPicker";
+import EventCategoryFavoriteButton from "@/components/events/EventCategoryFavoriteButton";
+import createStyles from "@/app/create/create-workspace.module.css";
+import { applyAppearance } from "@/lib/appearance";
 
 type Status = "authenticated" | "unauthenticated" | "loading";
 type Configuration = {
@@ -18,6 +22,8 @@ type Configuration = {
   signupSource?: string;
   access?: CreationAccess;
   dark?: boolean;
+  eventFavorites?: boolean;
+  phone?: boolean;
 };
 const configuration: Configuration = (window as any).categoryFavoritesConfiguration || {};
 let state = {
@@ -92,8 +98,11 @@ let result: ReturnType<typeof useCategoryFavorites>;
   },
 };
 if (configuration.dark) document.documentElement.classList.add("dark");
+if (configuration.eventFavorites) applyAppearance(configuration.dark ? "dark" : "light", false);
 
 function App() {
+  const introPlayed = useRef(true);
+  const [selected, setSelected] = useState("none");
   const current = useSyncExternalStore(subscribe, () => state);
   const preferences = useFeatureVisibility();
   result = useCategoryFavorites({
@@ -158,7 +167,19 @@ function App() {
           onRetry={result.retry}
         />
       </nav>
-      <main tabIndex={-1}>Fixture content</main>
+      <main tabIndex={-1} className={configuration.eventFavorites ? createStyles.page : undefined} style={{ flex: 1, minWidth: 0, containerType: "inline-size", containerName: "creation" }}>
+        {configuration.eventFavorites ? <>
+          <CategoryScrollPicker choices={[
+            { category: "birthdays", sport: null },
+            { category: "holidays-seasonal", sport: null, occasion: "veterans-day" },
+            { category: "holidays-seasonal", sport: null, occasion: "fall-harvest" },
+            { category: "holidays-seasonal", sport: null, occasion: "mlk-day" },
+            { category: "holidays-seasonal", sport: null, occasion: "day-of-the-dead" },
+          ]} favorites={{ ...result, authenticated: current.session.status === "authenticated" }} query="" introPlayed={introPlayed} onSelect={choice => setSelected(choice.category)} />
+          <p data-fixture-selected>{selected}</p>
+          <div data-fixture-landing><EventCategoryFavoriteButton category="holidays-seasonal" occasion="veterans-day" /></div>
+        </> : "Fixture content"}
+      </main>
     </Sidebar>
   );
 }

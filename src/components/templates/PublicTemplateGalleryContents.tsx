@@ -9,6 +9,7 @@ import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop
 import CreateWithEnvitefyCallout from "@/components/events/CreateWithEnvitefyCallout";
 import { categoryGalleryPageClassName } from "@/components/events/category-gallery-page";
 import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
+import EventCategoryFavoriteButton from "@/components/events/EventCategoryFavoriteButton";
 import SeasonalGalleryControls from "@/components/events/SeasonalGalleryControls";
 import TemplateAutoLoader from "@/components/events/TemplateAutoLoader";
 import {
@@ -137,6 +138,7 @@ export default function PublicTemplateGalleryContents({
       className={`${featured ? styles.featured : `${categoryGalleryPageClassName(category)} ${styles.publicSection}`} scroll-mt-24 px-5 py-14 text-[#342d38] sm:px-8 lg:px-12 ${heroStyles?.gallery || ""}`}
     >
       <div className={heroStyles?.shell || "mx-auto max-w-[1500px]"}>
+        {!featured && <div className="relative z-10 mb-5 flex justify-end"><EventCategoryFavoriteButton category={category} /></div>}
         {weddingGallery ? (
           <WeddingTemplateGalleryHero templates={templates}>
             <EventCustomThemeLauncher category={category} presentation="hero" />

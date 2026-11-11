@@ -6,6 +6,7 @@ import {
 } from "./creation-access";
 import { normalizeSignupIntent } from "./signup-intent";
 import { SPORT_ACTIVITY_PROFILES } from "./sports-discovery/profiles";
+import { HOLIDAY_OCCASIONS } from "./holiday-occasions";
 
 export type CategoryFavorite = {
   id: string;
@@ -13,6 +14,7 @@ export type CategoryFavorite = {
   href: string;
   category?: CreationCategory;
   product?: CreationProduct;
+  occasion?: string;
 };
 
 // Store stable catalog identities. Destinations and permissions stay app-owned.
@@ -75,6 +77,7 @@ export const CATEGORY_FAVORITES: CategoryFavorite[] = [
     category: "general",
   },
   { id: "general", label: "General events", href: "/event/general", category: "general" },
+  { id: "sport-events", label: "Sports", href: "/event/sport-events", category: "sport-events" },
   ...SPORT_ACTIVITY_PROFILES.map((sport): CategoryFavorite => {
     const id = sport.key === "dance" ? "dance-ballet" : sport.key;
     const category: CreationCategory = [
@@ -102,9 +105,32 @@ export const CATEGORY_FAVORITES: CategoryFavorite[] = [
     href: "/signup-forms/templates",
     product: "signup_form",
   },
+  ...HOLIDAY_OCCASIONS.map((occasion): CategoryFavorite => ({
+    id: `holidays-seasonal:${occasion.id}`,
+    label: occasion.name,
+    href: `/event/general?collection=holidays-seasonal&occasion=${encodeURIComponent(occasion.id)}`,
+    category: "general",
+    occasion: occasion.id,
+  })),
 ];
 
 const byId = new Map(CATEGORY_FAVORITES.map((favorite) => [favorite.id, favorite]));
+
+/** Resolve the same identity from Create choices, native galleries and landing pages. */
+export function categoryFavoriteFor(target: {
+  category: string;
+  sport?: string | null;
+  occasion?: string | null;
+  collection?: string | null;
+}): CategoryFavorite | null {
+  let id = target.category;
+  if (id === "sports" || id === "sport-events") id = target.sport || "sport-events";
+  if (id === "dance") id = "dance-ballet";
+  if (id === "general" && target.collection) id = target.collection;
+  if (id === "baby-showers" && target.occasion === "bridal-shower") id = "bridal-showers";
+  if (id === "holidays-seasonal" && target.occasion) id += `:${target.occasion}`;
+  return byId.get(id) || null;
+}
 
 export function normalizePinnedCategoryIds(value: unknown): string[] {
   return Array.isArray(value)
@@ -174,7 +200,12 @@ export function isCategoryFavoriteActive(
   if (favorite.id === "school" && pathname === "/event/school") return true;
   if (favorite.category === "general") {
     if (!matchesGallery(pathname, "/event/general")) return false;
-    return (search?.get("collection") || "general") === favorite.id;
+    if (favorite.occasion) {
+      return search?.get("collection") === "holidays-seasonal" &&
+        search?.get("occasion") === favorite.occasion;
+    }
+    return (search?.get("collection") || "general") === favorite.id &&
+      (favorite.id !== "holidays-seasonal" || !search?.get("occasion"));
   }
   const [base, query] = favorite.href.split("?");
   if (!matchesGallery(pathname, base)) return false;

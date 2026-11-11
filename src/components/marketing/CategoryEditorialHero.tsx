@@ -4,6 +4,7 @@ import styles from "./CategoryEditorialHero.module.css";
 import { categoryLandingThemes, type EditorialCategory } from "./category-landing-themes";
 import type { MarketingHeroProps } from "./MarketingHero";
 import PublicCreationLink from "./PublicCreationLink";
+import EventCategoryFavoriteButton from "@/components/events/EventCategoryFavoriteButton";
 
 /** Shared editorial rhythm, with a different photographic and stationery treatment per occasion. */
 export default function CategoryEditorialHero({
@@ -68,6 +69,7 @@ export default function CategoryEditorialHero({
               <p className={styles.lead}>{lead || theme.lead}</p>
               <p className={styles.description}>{description}</p>
               <div className={styles.actions}>
+                <EventCategoryFavoriteButton category={category} />
                 <PrimaryLink href={primaryHref} label={primaryLabel} className={styles.primary} />
                 {secondaryHref && secondaryLabel && (
                   <ArrowFillLink

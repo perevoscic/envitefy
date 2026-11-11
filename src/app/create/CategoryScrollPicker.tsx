@@ -7,12 +7,15 @@ import { eventTypeChoiceKey, eventTypeChoiceLabel } from "@/lib/create/event-typ
 import { categoryTitlePalette } from "./category-title-palettes";
 import { useCategoryScrollHandoff } from "./useCategoryScrollHandoff";
 import styles from "./category-scroll-picker.module.css";
+import { CategoryFavoriteButton, CategoryFavoriteFeedback, type EventCategoryFavorites } from "@/components/events/EventCategoryFavoriteButton";
+import { categoryFavoriteFor } from "@/lib/category-favorites";
 
-export default function CategoryScrollPicker({ choices, onSelect, query, introPlayed }: {
+export default function CategoryScrollPicker({ choices, onSelect, query, introPlayed, favorites }: {
   choices: CreateGuess[];
   onSelect: (choice: CreateGuess) => void;
   query: string;
   introPlayed: RefObject<boolean>;
+  favorites: EventCategoryFavorites;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLUListElement>(null);
@@ -66,6 +69,23 @@ export default function CategoryScrollPicker({ choices, onSelect, query, introPl
       for (const fit of fits) {
         if (fit) fit.button.style.setProperty("--category-fit-size", `${fit.size}px`);
       }
+      // On intermediate desktop widths, reserving a star can add a wrapped
+      // line. Retain the largest type that fits the existing row height.
+      for (const button of buttons) {
+        const label = button.firstElementChild as HTMLElement;
+        if (getComputedStyle(label).whiteSpace === "nowrap") continue;
+        const rowHeight = button.parentElement!.clientHeight;
+        if (button.getBoundingClientRect().height <= rowHeight + 1) continue;
+        let high = parseFloat(getComputedStyle(button).fontSize);
+        let low = Math.min(20, high);
+        for (let step = 0; step < 8; step++) {
+          const size = (low + high) / 2;
+          button.style.setProperty("--category-fit-size", `${size}px`);
+          if (button.getBoundingClientRect().height <= rowHeight) low = size;
+          else high = size;
+        }
+        button.style.setProperty("--category-fit-size", `${low}px`);
+      }
     };
     const scheduleFit = () => {
       if (disposed) return;
@@ -83,7 +103,7 @@ export default function CategoryScrollPicker({ choices, onSelect, query, introPl
       window.cancelAnimationFrame(frame);
       document.fonts.removeEventListener("loadingdone", scheduleFit);
     };
-  }, [choiceKeys]);
+  }, [choiceKeys, favorites.available.length]);
 
   useEffect(() => {
     const viewport = scroller.current;
@@ -187,6 +207,7 @@ export default function CategoryScrollPicker({ choices, onSelect, query, introPl
         <ul ref={list} className={styles.list} data-category-list>
           {choices.map((choice, index) => {
             const palette = categoryTitlePalette(choice);
+            const favorite = categoryFavoriteFor(choice);
             return (
               <li key={eventTypeChoiceKey(choice)} className={styles.row}>
                 <button
@@ -216,6 +237,7 @@ export default function CategoryScrollPicker({ choices, onSelect, query, introPl
                   <span>{eventTypeChoiceLabel(choice)}<span aria-hidden="true">.</span></span>
                   <ArrowUpRight className={styles.arrow} aria-hidden="true" />
                 </button>
+                {favorite && <CategoryFavoriteButton favorite={favorite} favorites={favorites} iconOnly className={styles.favorite} />}
               </li>
             );
           })}
@@ -225,6 +247,7 @@ export default function CategoryScrollPicker({ choices, onSelect, query, introPl
         <ArrowDown size={14} aria-hidden="true" />
         Scroll to explore. Choose one to begin.
       </p>
+      <CategoryFavoriteFeedback favorites={favorites} />
     </div>
   );
 }

@@ -106,7 +106,7 @@ test("favorite visibility follows current product and category grants, including
       ["soccer", "gymnastics", "basketball", "sport-events"],
       otherSports,
     ),
-    ["basketball"],
+    ["basketball", "sport-events"],
   );
   const formsOnly = resolveCreationAccess({
     policy: "restricted",
@@ -138,7 +138,7 @@ test("query-aware active favorites do not highlight different collections or spo
   assert.deepEqual(active("/event/general"), ["general"]);
   assert.deepEqual(active("/event/sport-events", "sport=soccer"), ["soccer"]);
   assert.deepEqual(active("/event/sport-events/customize", "sport=dance"), ["dance-ballet"]);
-  assert.deepEqual(active("/event/sport-events"), []);
+  assert.deepEqual(active("/event/sport-events"), ["sport-events"]);
   assert.deepEqual(active("/bridal-showers/templates"), ["bridal-showers"]);
   assert.deepEqual(active("/bridal-showers/templates/design-id/customize"), ["bridal-showers"]);
   assert.deepEqual(active("/bridal-showers/templates/private-saved-event"), []);
@@ -146,9 +146,29 @@ test("query-aware active favorites do not highlight different collections or spo
     "bridal-showers",
   ]);
   assert.deepEqual(active("/event/baby-showers"), ["baby-showers"]);
+  assert.deepEqual(active("/event/general", "collection=holidays-seasonal&occasion=veterans-day"), ["holidays-seasonal:veterans-day"]);
+  assert.deepEqual(active("/event/general/customize", "collection=holidays-seasonal&occasion=fall-harvest"), ["holidays-seasonal:fall-harvest"]);
+  assert.deepEqual(active("/event/general", "collection=holidays-seasonal"), ["holidays-seasonal"]);
   assert.deepEqual(active("/event/private-saved-event"), []);
   assert.deepEqual(active("/signup-forms/templates"), ["signup-forms"]);
   assert.equal(isCreateEventRoute("/bridal-showers/templates"), true);
   assert.equal(isCreateEventRoute("/bridal-showers/templates/design-id/customize"), true);
   assert.equal(isCreateEventRoute("/bridal-showers/templates/private-saved-event"), false);
+});
+
+test("Create and landing targets resolve exact permitted holiday, collection and sport favorites", () => {
+  const id = target => favorites.categoryFavoriteFor(target)?.id;
+  assert.equal(id({ category: "holidays-seasonal", occasion: "veterans-day" }), "holidays-seasonal:veterans-day");
+  assert.equal(id({ category: "general", collection: "holidays-seasonal", occasion: "fall-harvest" }), "holidays-seasonal:fall-harvest");
+  assert.equal(id({ category: "sports", sport: "dance" }), "dance-ballet");
+  assert.equal(id({ category: "sport-events", sport: "soccer" }), "soccer");
+  assert.equal(id({ category: "sports" }), "sport-events");
+  assert.equal(id({ category: "general", collection: "graduations" }), "graduations");
+  assert.equal(id({ category: "baby-showers", occasion: "bridal-shower" }), "bridal-showers");
+  assert.equal(id({ category: "holidays-seasonal", occasion: "invalid" }), undefined);
+  const target = favorites.categoryFavoriteFor({ category: "holidays-seasonal", occasion: "veterans-day" });
+  assert.equal(target.href, "/event/general?collection=holidays-seasonal&occasion=veterans-day");
+  assert.deepEqual(favorites.filterPinnedCategoryIds([target.id], resolveCreationAccess({
+    policy: "restricted", products: ["event_page"], categories: ["gymnastics"],
+  })), []);
 });

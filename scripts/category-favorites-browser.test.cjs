@@ -93,7 +93,9 @@ test("category favorites persist shortcuts without changing event permissions or
     get,
   } = {}) {
     const page = await browser.newPage({
-      viewport: { width: 1440, height: 900 },
+      viewport: configuration.phone ? { width: 375, height: 812 } : { width: 1440, height: 900 },
+      hasTouch: Boolean(configuration.phone),
+      isMobile: Boolean(configuration.phone),
       reducedMotion: "reduce",
     });
     const writes = [];
@@ -144,6 +146,12 @@ test("category favorites persist shortcuts without changing event permissions or
           });
         return route.fulfill({ json: records[account] || preferences([]) });
       }
+      if (url.pathname === "/api/user/creation-access") {
+        return route.fulfill({ json: { access: configuration.access || {
+          policy: "standard", allowedProducts: ["event_page", "signup_form"],
+          allowedCategories: ["birthdays", "general", "gymnastics", "sport-events"],
+        } } });
+      }
       if (url.origin === "http://category-favorites.test")
         return route.fulfill({
           contentType: "text/html",
@@ -175,6 +183,63 @@ test("category favorites persist shortcuts without changing event permissions or
       ids,
     );
   try {
+    await t.test("Create stars save without selecting and landing buttons share exact holiday favorites", async () => {
+      for (const phone of [false, true]) for (const dark of [false, true]) {
+        const { page, writes } = await fixture({ configuration: { eventFavorites: true, phone, dark } });
+        try {
+          // Keep navigation available without narrowing the touch fixture's content.
+          if (phone) await page.locator('nav[aria-label="Main navigation"]').evaluate(el => el.style.display = "none");
+          const list = page.locator("[data-category-list]");
+          const birthday = list.locator('[data-event-category-favorite="birthdays"]');
+          await birthday.waitFor();
+          if (phone) {
+            for (const width of [320, 375, 640, 768, 1024]) {
+              await page.setViewportSize({ width, height: 812 });
+              await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+              const overflow = await list.locator('[data-creation-event-type]').evaluateAll(buttons => buttons.filter(button => {
+                const label = button.firstElementChild;
+                return label.scrollWidth > label.clientWidth + 1 || button.scrollWidth > button.clientWidth + 1 ||
+                  button.getBoundingClientRect().height > button.parentElement.getBoundingClientRect().height + 1;
+              }).map(button => button.getAttribute('aria-label')));
+              assert.deepEqual(overflow, [], `favorite controls leave space for long labels at ${width}px`);
+            }
+            await page.setViewportSize({ width: 375, height: 812 });
+          }
+          if (phone) assert.equal(await birthday.evaluate(el => getComputedStyle(el).opacity), "1");
+          else {
+            await page.mouse.move(0, 0);
+            assert.equal(await birthday.evaluate(el => getComputedStyle(el).opacity), "0");
+            await list.getByRole("button", { name: "Birthday", exact: true }).focus();
+            assert.equal(await birthday.evaluate(el => getComputedStyle(el).opacity), "1", "keyboard focus reveals the star");
+            await birthday.focus();
+            await page.keyboard.press("Enter");
+          }
+          if (phone) await birthday.tap();
+          await waitForIds(page, ["birthdays"]);
+          assert.equal(await page.locator("[data-fixture-selected]").innerText(), "none");
+          const veterans = list.locator('[data-event-category-favorite="holidays-seasonal:veterans-day"]');
+          if (!phone) await veterans.locator("..").hover();
+          await veterans.click();
+          await waitForIds(page, ["birthdays", "holidays-seasonal:veterans-day"]);
+          const landing = page.locator("[data-fixture-landing] button");
+          await page.waitForFunction(() => document.querySelector('[data-fixture-landing] button')?.getAttribute("aria-pressed") === "true");
+          assert.equal(await list.locator('[data-event-category-favorite="holidays-seasonal:fall-harvest"]').getAttribute("aria-pressed"), "false");
+          assert.equal(await page.locator("[data-fixture-selected]").innerText(), "none");
+          await page.reload();
+          if (phone) await page.locator('nav[aria-label="Main navigation"]').evaluate(el => el.style.display = "none");
+          await waitForIds(page, ["birthdays", "holidays-seasonal:veterans-day"]);
+          await landing.waitFor();
+          await page.waitForFunction(() => document.querySelector('[data-fixture-landing] button')?.getAttribute("aria-pressed") === "true");
+          const box = await landing.boundingBox();
+          assert.ok(box.width >= 44 && box.height >= 44);
+          await page.screenshot({ path: path.join(output, `event-favorites-${phone ? "phone" : "desktop"}-${dark ? "dark" : "light"}.png`), fullPage: true });
+          await landing.click();
+          await waitForIds(page, ["birthdays"]);
+          await page.waitForFunction(() => document.querySelector('[data-category-list] [data-event-category-favorite="holidays-seasonal:veterans-day"]')?.getAttribute("aria-pressed") === "false");
+          assert.deepEqual(writes.map(write => write.payload.pinnedCategoryIds), [["birthdays"], ["birthdays", "holidays-seasonal:veterans-day"], ["birthdays"]]);
+        } finally { await page.close(); }
+      }
+    });
     await t.test(
       "desktop and phone keyboard pinning persists after reload and keeps Create event available",
       async () => {

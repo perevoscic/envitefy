@@ -50,7 +50,7 @@ export function useCategoryFavorites({
     source: string;
   }> | null>(null);
   const [failure, setFailure] = useState<AccountValue<string> | null>(null);
-  const [pending, setPending] = useState<AccountValue<boolean> | null>(null);
+  const [pending, setPending] = useState<AccountValue<string | null> | null>(null);
   const request = useRef<{ identity: string; epoch: number; controller: AbortController } | null>(
     null,
   );
@@ -72,14 +72,16 @@ export function useCategoryFavorites({
     ready && access
       ? categoryFavoritesFor(ids, access).filter((favorite) => favorite.id !== defaultCategory?.id)
       : [];
-  const options =
+  const available =
     ready && access
       ? categoryFavoritesFor(
           CATEGORY_FAVORITES.map((favorite) => favorite.id),
           access,
-        ).filter((favorite) => favorite.id !== defaultCategory?.id)
+        )
       : [];
-  const saving = isCurrent(pending) && pending.value;
+  const options = available.filter((favorite) => favorite.id !== defaultCategory?.id);
+  const savingId = isCurrent(pending) ? pending.value : null;
+  const saving = Boolean(savingId);
   const error =
     (isCurrent(failure) ? failure.value : "") ||
     (identity && !preferences.hasLoadedPreferences ? preferences.error || "" : "");
@@ -97,7 +99,7 @@ export function useCategoryFavorites({
 
   const toggle = useCallback(
     async (id: string) => {
-      if (!ready || !access || !options.some((favorite) => favorite.id === id)) return;
+      if (!ready || !access || !available.some((favorite) => favorite.id === id)) return;
       if (request.current?.identity === identity && request.current.epoch === epoch) return;
       request.current?.controller.abort();
       const controller = new AbortController();
@@ -107,7 +109,7 @@ export function useCategoryFavorites({
       const nextIds = currentIds.includes(id)
         ? currentIds.filter((value) => value !== id)
         : [...currentIds, id];
-      setPending({ identity, epoch, value: true });
+      setPending({ identity, epoch, value: id });
       setFailure({ identity, epoch, value: "" });
       const ownsRequest = () =>
         request.current === active &&
@@ -160,15 +162,15 @@ export function useCategoryFavorites({
         clearTimeout(timeoutTimer);
         if (ownsRequest()) {
           request.current = null;
-          setPending({ identity, epoch, value: false });
+          setPending({ identity, epoch, value: null });
         }
       }
     },
-    [access, epoch, identity, ids, options, ready],
+    [access, epoch, identity, ids, available, ready],
   );
 
   const retry = useCallback(async () => {
     await preferences.refresh?.();
   }, [preferences.refresh]);
-  return { favorites, options, defaultCategory, loading, saving, error, toggle, retry };
+  return { favorites, options, available, pinnedIds: ids, defaultCategory, loading, saving, savingId, error, toggle, retry };
 }

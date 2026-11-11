@@ -58,6 +58,9 @@ import { snapUploadForCreateSource } from "@/lib/create/snap-source-handoff";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
 import { validateClientUploadFile } from "@/utils/media-upload-client";
 import CategoryScrollPicker from "./CategoryScrollPicker";
+import { EventCategoryFavoriteControl } from "@/components/events/EventCategoryFavoriteButton";
+import { useCategoryFavorites } from "@/hooks/useCategoryFavorites";
+import { categoryFavoriteFor } from "@/lib/category-favorites";
 import EventTypeFilter from "./EventTypeFilter";
 import EventTypeSearch from "./EventTypeSearch";
 import LinkImportPreview from "./LinkImportPreview";
@@ -94,6 +97,16 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
   const [workspaceOwner, setWorkspaceOwner] = useState(ownerId);
   const menu = useMenuOptional(),
     access = useCreationAccess(initialCreationAccess);
+  const favoritesState = useCategoryFavorites({
+    access: access.access,
+    preferences: menu?.featureVisibility || { hasLoadedPreferences: false },
+  });
+  const favorites = {
+    ...favoritesState,
+    authenticated: status === "authenticated",
+    error: favoritesState.error || access.error,
+    retry: async () => { await Promise.all([access.reload(), favoritesState.retry()]); },
+  };
   const [mode, setMode] = useState<Mode>("scratch");
   const modeIntakes = useRef<Partial<Record<Mode, CreationIntake>>>({});
   const changingMode = useRef(false);
@@ -184,6 +197,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
     (!access.access || (candidate === "scratch" ? canCreatePage || canCreateSignup : canCreatePage)) && !restoring;
   const sourceAvailable = sourceModeAvailable(mode);
   const guess = intake?.guess || intake?.classification;
+  const favorite = guess ? categoryFavoriteFor(guess) : null;
   const personalCapture =
     guess?.category === "medical-appointments" || guess?.category === "appointments";
   const signupIntent = guess?.category === "signup-forms";
@@ -1127,6 +1141,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
                           />
                           {visibleTypes.length ? (
                             <CategoryScrollPicker
+                              favorites={favorites}
                               choices={visibleTypes}
                               query={typeQuery}
                               introPlayed={categoryIntroPlayed}
@@ -1530,6 +1545,7 @@ export default function UnifiedCreatePageClient({ initialCreationAccess }: { ini
               <>
                 <div className={styles.galleryHeading}>
                   <h2>{manualCreation ? "Made for your event" : "Change the design"}</h2>
+                  {favorite && <EventCategoryFavoriteControl favorite={favorite} favorites={favorites} />}
                   {!manualCreation && templates[0] ? (
                     <button
                       type="button"

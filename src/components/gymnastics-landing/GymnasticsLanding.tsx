@@ -20,6 +20,7 @@ import styles from "@/components/marketing/ProductSportsLanding.module.css";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import PublicConciergeWidget from "@/components/navigation/PublicConciergeWidget";
 import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
+import EventCategoryFavoriteButton from "@/components/events/EventCategoryFavoriteButton";
 import ArrowFillButton from "@/components/ui/ArrowFillButton";
 import ArrowFillLink from "@/components/ui/ArrowFillLink";
 import { marketingPageNavLinks } from "@/config/navigation";
@@ -227,6 +228,7 @@ export default function GymnasticsLanding() {
                   with every family.
                 </p>
                 <div className={hero.actions}>
+                  <EventCategoryFavoriteButton category="gymnastics" />
                   <ArrowFillLink
                     href="/gymnastics/templates"
                     className={hero.primary}

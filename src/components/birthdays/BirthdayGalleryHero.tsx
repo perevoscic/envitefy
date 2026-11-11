@@ -2,6 +2,7 @@ import { BIRTHDAY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import { CakeSlice, Sparkles } from "lucide-react";
 import Link from "next/link";
 import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
+import EventCategoryFavoriteButton from "@/components/events/EventCategoryFavoriteButton";
 
 export default function BirthdayGalleryHero() {
   return (
@@ -18,6 +19,7 @@ export default function BirthdayGalleryHero() {
         </Link>
 
         <div className="mt-10 max-w-[720px] sm:mt-11 lg:mt-12">
+          <div className="mb-5"><EventCategoryFavoriteButton category="birthdays" /></div>
           <div className="inline-flex items-center gap-2 rounded-full border border-[#e4c8b7] bg-white/80 px-4 py-2.5 text-[9px] font-bold uppercase tracking-[0.24em] text-[#87562d] backdrop-blur-sm sm:px-5 sm:text-[10px]">
             <CakeSlice className="h-3.5 w-3.5" aria-hidden="true" />
             {BIRTHDAY_DESIGN_CATALOG.length} complete event-page designs

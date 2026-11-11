@@ -1,5 +1,6 @@
 "use client";
 import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
+import EventCategoryFavoriteButton from "@/components/events/EventCategoryFavoriteButton";
 
 import { Sparkles, Trophy } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -32,6 +33,7 @@ export default function SportEventsPageClient() {
                 <CategoryGalleryBackdrop category={galleryCategory} />
                 <div className="relative z-10 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
                   <div>
+                    <EventCategoryFavoriteButton category="sports" sport={selectedSport.key} />
                     <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#5f55ff]">
                       <Sparkles className="h-4 w-4" /> Smart {selectedSport.shortLabel} builder
                     </p>
