@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import { cleanGitEnvironment, parsePushUpdates, readCandidateSnapshot, readValidationPolicy, REQUIRED_PUSH_CHECKS, runValidationCheck, validatePush, validationChromiumPath, versionToolInvocation, workflowRunCommands } from "./lib/push-validation.mjs";
+import { CI_INTEGRITY_CHECKS, cleanGitEnvironment, LOCAL_PUSH_CHECKS, parsePushUpdates, readCandidateSnapshot, readValidationPolicy, runValidationCheck, validatePush, validationChromiumPath, versionToolInvocation, workflowRunCommands } from "./lib/push-validation.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const fixtureRoot = path.join(root, "output/push-validation-tests");
@@ -31,9 +31,9 @@ function fixture(t) {
   const directory = mkdtempSync(path.join(fixtureRoot, "candidate-"));
   const repository = path.join(directory, "repo with spaces");
   mkdirSync(path.join(repository, ".github/workflows"), { recursive: true });
-  writeFileSync(path.join(repository, "package.json"), JSON.stringify({ scripts: Object.fromEntries(REQUIRED_PUSH_CHECKS.map((name) => [name, `echo ${name}`])) }));
+  writeFileSync(path.join(repository, "package.json"), JSON.stringify({ scripts: Object.fromEntries(CI_INTEGRITY_CHECKS.map((name) => [name, `echo ${name}`])) }));
   writeFileSync(path.join(repository, "package-lock.json"), "{}\n");
-  writeFileSync(path.join(repository, ".github/workflows/create-fact-integrity.yml"), REQUIRED_PUSH_CHECKS.map((name) => `      - run: npm run ${name}`).join("\n"));
+  writeFileSync(path.join(repository, ".github/workflows/create-fact-integrity.yml"), CI_INTEGRITY_CHECKS.map((name) => `      - run: npm run ${name}`).join("\n"));
   git(repository, "init", "--quiet");
   git(repository, "config", "user.name", "Push Validation Test");
   git(repository, "config", "user.email", "push-validation@example.test");
@@ -58,8 +58,10 @@ function fixture(t) {
   return { repository, options, calls, receiptPath, versions: (next) => { versions = next; } };
 }
 
-test("push policy is exactly the CI npm check list and fails closed when it drifts", (t) => {
-  assert.deepEqual(readValidationPolicy(root).checks.map((check) => check.name), REQUIRED_PUSH_CHECKS);
+test("local push checks stay the fast prefix of the CI npm check list and fail closed when CI drifts", (t) => {
+  const policy = readValidationPolicy(root);
+  assert.deepEqual(policy.checks.map((check) => check.name), LOCAL_PUSH_CHECKS);
+  assert.deepEqual(policy.ciChecks, CI_INTEGRITY_CHECKS);
   const { repository } = fixture(t);
   writeFileSync(path.join(repository, ".github/workflows/create-fact-integrity.yml"), "run: npm run typecheck\n");
   assert.throws(() => readValidationPolicy(repository), /does not match/);
@@ -89,16 +91,17 @@ test("pre-push ref parsing handles no-ops, deletion, multiple refs and malformed
   for (const input of ["not git ref data", `refs/heads/main nope refs/heads/main ${b}`]) assert.throws(() => parsePushUpdates(input), /malformed/);
 });
 
-test("exact clean candidate receipt reuses all four passed checks without changing files or index", async (t) => {
+test("exact clean candidate receipt reuses the local push checks without changing files or index", async (t) => {
   const { repository, options, calls, receiptPath } = fixture(t);
   const before = readFileSync(path.join(repository, ".git/index"));
   const receipt = await validatePush(options);
   assert.equal(receipt.status, "passed");
-  assert.deepEqual(calls, REQUIRED_PUSH_CHECKS);
-  assert.equal(receipt.checks.length, 4);
+  assert.deepEqual(calls, LOCAL_PUSH_CHECKS);
+  assert.equal(receipt.checks.length, LOCAL_PUSH_CHECKS.length);
+  assert.equal(receipt.validationDay, undefined);
   assert.ok(existsSync(receiptPath));
   await validatePush(options);
-  assert.equal(calls.length, 4, "only an identical fully tested candidate is cached");
+  assert.equal(calls.length, LOCAL_PUSH_CHECKS.length, "only an identical locally tested candidate is cached");
   assert.deepEqual(readFileSync(path.join(repository, ".git/index")), before);
   assert.equal(git(repository, "status", "--porcelain"), "");
 });
@@ -110,13 +113,13 @@ test("different HEAD invalidates proof even with an identical tree, and a change
   const second = await validatePush(options);
   assert.equal(first.snapshot.tree, second.snapshot.tree);
   assert.notEqual(first.snapshot.head, second.snapshot.head);
-  assert.equal(calls.length, 8);
+  assert.equal(calls.length, LOCAL_PUSH_CHECKS.length * 2);
   writeFileSync(path.join(repository, "source.txt"), "new source\n");
   git(repository, "add", ".");
   git(repository, "commit", "--quiet", "-m", "Changed tree");
   const third = await validatePush(options);
   assert.notEqual(second.snapshot.tree, third.snapshot.tree);
-  assert.equal(calls.length, 12);
+  assert.equal(calls.length, LOCAL_PUSH_CHECKS.length * 3);
 });
 
 test("runtime identity and CI command definitions are part of proof", async (t) => {
@@ -125,7 +128,7 @@ test("runtime identity and CI command definitions are part of proof", async (t) 
   versions({ node: "24.test", bun: "1.3.12", npm: "11.test" });
   const second = await validatePush(options);
   assert.notEqual(first.fingerprint, second.fingerprint);
-  assert.equal(calls.length, 8);
+  assert.equal(calls.length, LOCAL_PUSH_CHECKS.length * 2);
   const filename = path.join(repository, "package.json");
   const data = JSON.parse(readFileSync(filename, "utf8"));
   data.scripts.typecheck = "echo changed implementation";
@@ -134,7 +137,7 @@ test("runtime identity and CI command definitions are part of proof", async (t) 
   git(repository, "commit", "--quiet", "-m", "Changed validation command");
   const third = await validatePush(options);
   assert.equal(third.checks[1].script, "echo changed implementation");
-  assert.equal(calls.length, 12);
+  assert.equal(calls.length, LOCAL_PUSH_CHECKS.length * 3);
 });
 
 test("failed, skipped, incomplete and timed-out checks invalidate old proof and stop the pipeline", async (t) => {
@@ -151,7 +154,7 @@ test("failed, skipped, incomplete and timed-out checks invalidate old proof and 
     assert.equal(invoked, 1, "a failed check cannot be skipped while later suites pass");
     assert.equal(existsSync(receiptPath), false);
     await validatePush(options);
-    assert.equal(calls.length, 8, "failed proof never permits a later push without revalidation");
+    assert.equal(calls.length, LOCAL_PUSH_CHECKS.length * 2, "failed proof never permits a later push without revalidation");
   }
 });
 
@@ -160,10 +163,10 @@ test("corrupt and partial receipts cannot authorize a push", async (t) => {
   const valid = await validatePush(options);
   writeFileSync(receiptPath, "not json");
   await validatePush(options);
-  assert.equal(calls.length, 8);
-  writeFileSync(receiptPath, JSON.stringify({ ...valid, checks: valid.checks.slice(0, 3) }));
+  assert.equal(calls.length, LOCAL_PUSH_CHECKS.length * 2);
+  writeFileSync(receiptPath, JSON.stringify({ ...valid, checks: valid.checks.slice(0, -1) }));
   await validatePush(options);
-  assert.equal(calls.length, 12);
+  assert.equal(calls.length, LOCAL_PUSH_CHECKS.length * 3);
 });
 
 test("cached success rejects skipped, signaled or errored proof records", async (t) => {
@@ -173,20 +176,16 @@ test("cached success rejects skipped, signaled or errored proof records", async 
     writeFileSync(receiptPath, JSON.stringify({ ...valid, checks: valid.checks.map((check, index) => index ? check : { ...check, ...marker }) }));
     valid = await validatePush(options);
   }
-  assert.equal(calls.length, 16, "every invalid proof forces all four real checks again");
+  assert.equal(calls.length, LOCAL_PUSH_CHECKS.length * 4, "every invalid proof forces the local checks again");
 });
 
-test("success proof expires when the UTC validation day changes", async (t) => {
-  const { options, calls } = fixture(t);
-  let clock = "2026-10-28T23:59:00Z";
-  const run = () => validatePush({ ...options, now: () => clock });
-  await run();
-  await run();
-  assert.equal(calls.length, 4);
-  clock = "2026-10-29T00:01:00Z";
-  const next = await run();
-  assert.equal(next.validationDay, "2026-10-29");
-  assert.equal(calls.length, 8);
+test("success proof stays valid for the same commit across later runs", async (t) => {
+  const { options, calls, receiptPath } = fixture(t);
+  const receipt = await validatePush(options);
+  await validatePush(options);
+  assert.equal(calls.length, LOCAL_PUSH_CHECKS.length);
+  assert.equal(JSON.parse(readFileSync(receiptPath, "utf8")).validationDay, undefined);
+  assert.equal(receipt.validationDay, undefined);
 });
 
 test("a forced preflight failure revokes existing proof before policy or runtime probes", async (t) => {
@@ -198,7 +197,7 @@ test("a forced preflight failure revokes existing proof before policy or runtime
     }), /unavailable/);
     assert.equal(existsSync(receiptPath), false);
     await validatePush(options);
-    assert.equal(calls.length, 8, "restored tools must run checks instead of reusing revoked success");
+    assert.equal(calls.length, LOCAL_PUSH_CHECKS.length * 2, "restored tools must run checks instead of reusing revoked success");
   }
 });
 
@@ -259,7 +258,7 @@ test("receipt for HEAD cannot authorize another commit, including a mixed multi-
   git(repository, "tag", "-a", "-m", "Annotated HEAD", "v1");
   const tag = git(repository, "rev-parse", "v1");
   await validatePush({ ...options, updates: [update(tag, "refs/tags/v1")] });
-  assert.equal(calls.length, 4, "a tag resolving to the tested commit can reuse its proof");
+  assert.equal(calls.length, LOCAL_PUSH_CHECKS.length, "a tag resolving to the tested commit can reuse its proof");
 });
 
 test("validation refuses an initially dirty checkout without changing the index", async (t) => {
@@ -271,6 +270,10 @@ test("validation refuses an initially dirty checkout without changing the index"
   assert.equal(calls.length, 0);
   assert.deepEqual(readFileSync(path.join(repository, ".git/index")), before);
   assert.equal(readFileSync(path.join(repository, "source.txt"), "utf8"), "pending\n");
+});
+
+test("explicit push validation reuses a matching receipt", () => {
+  assert.doesNotMatch(readFileSync(path.join(root, "scripts/validate-push.mjs"), "utf8"), /force:\s*true/);
 });
 
 test("hook-launched fixture environments cannot retain another checkout's Git metadata", () => {

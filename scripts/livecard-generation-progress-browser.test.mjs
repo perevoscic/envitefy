@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import http from "node:http";
-import { execSync } from "node:child_process";
 import { chromium } from "playwright";
+import ensureLiveCardBuilderFixture from "./lib/ensure-livecard-builder-fixture.cjs";
 
 test("Live Card generation has one working cancel action and no timing diagnostics on desktop and phones", { timeout: 60000 }, async () => {
-  execSync("bun scripts/build-livecard-builder-fixture.mjs", { timeout: 60000, stdio: "pipe" });
+  ensureLiveCardBuilderFixture();
   const out = path.resolve("output/livecard-builder");
   const server = http.createServer(async (req, res) => {
     const pathname = new URL(req.url, "http://localhost").pathname;

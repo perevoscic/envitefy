@@ -1,5 +1,7 @@
 name: Create event fact integrity
 
+# Local pre-push runs test:git-hooks and typecheck. This workflow is the run of
+# test:create-remediation and test:create-browser, on pull requests and on main.
 on:
   pull_request:
   push:

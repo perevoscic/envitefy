@@ -5,12 +5,14 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createRequire } from "node:module";
 
-export const REQUIRED_PUSH_CHECKS = Object.freeze([
-  "test:git-hooks", "typecheck", "test:create-remediation", "test:create-browser",
+export const LOCAL_PUSH_CHECKS = Object.freeze([
+  "test:git-hooks", "typecheck",
+]);
+export const CI_INTEGRITY_CHECKS = Object.freeze([
+  ...LOCAL_PUSH_CHECKS, "test:create-remediation", "test:create-browser",
 ]);
 const TIMEOUTS = Object.freeze({
   "test:git-hooks": 300000, typecheck: 300000,
-  "test:create-remediation": 1200000, "test:create-browser": 1800000,
 });
 const GIT_CONTEXT = ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_PREFIX", "GIT_CONFIG", "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT", "GIT_GRAFT_FILE", "GIT_SHALLOW_FILE", "GIT_NAMESPACE"];
 const digest = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -74,16 +76,18 @@ export function readValidationPolicy(root) {
       throw new Error(`Unrecognized CI run command: ${JSON.stringify(command)}. Add its validation to the shared push policy before pushing.`);
     }
   }
-  if (JSON.stringify(ciChecks) !== JSON.stringify(REQUIRED_PUSH_CHECKS)) {
-    throw new Error(`Push validation does not match Create event fact integrity CI. CI runs: ${ciChecks.join(", ")}. Update the required checks and their regression test before pushing.`);
+  if (JSON.stringify(ciChecks) !== JSON.stringify(CI_INTEGRITY_CHECKS)) {
+    throw new Error(`Push validation does not match Create event fact integrity CI. CI runs: ${ciChecks.join(", ") || "(none)"}. Update the CI workflow and its regression test before pushing.`);
   }
   const { scripts = {} } = JSON.parse(packageText);
-  for (const name of REQUIRED_PUSH_CHECKS) if (typeof scripts[name] !== "string" || !scripts[name].trim()) throw new Error(`Missing npm script: ${name}`);
+  for (const name of CI_INTEGRITY_CHECKS) if (typeof scripts[name] !== "string" || !scripts[name].trim()) throw new Error(`Missing npm script: ${name}`);
+  for (const name of LOCAL_PUSH_CHECKS) if (!TIMEOUTS[name]) throw new Error(`Missing push timeout: ${name}`);
   const lock = readFileSync(path.join(root, "package-lock.json"), "utf8");
   const localConfiguration = readdirSync(root).filter((name) => /^\.env(?:\.|$)/.test(name))
     .sort().map((name) => [name, readFileSync(path.join(root, name), "utf8")]);
   return {
-    checks: REQUIRED_PUSH_CHECKS.map((name) => ({ name, script: scripts[name], timeoutMs: TIMEOUTS[name] })),
+    checks: LOCAL_PUSH_CHECKS.map((name) => ({ name, script: scripts[name], timeoutMs: TIMEOUTS[name] })),
+    ciChecks: CI_INTEGRITY_CHECKS,
     configHash: digest({ packageText, workflow, lock, localConfiguration }),
   };
 }
@@ -164,7 +168,7 @@ export function captureValidationRuntime(root) {
     node: process.versions.node, nodePath: process.execPath, platform: process.platform, arch: process.arch,
     npm: probe(npm.command, npm.args), bun: probe("bun", ["--version"]),
     ffmpeg: probe("ffmpeg", ["-version"]), ffprobe: probe("ffprobe", ["-version"]), packages,
-    chromium: { path: browser, size: browserFile.size, mtimeMs: browserFile.mtimeMs },
+    chromium: { path: browser, size: browserFile.size },
     installedDependencies: existsSync(installedLock) ? digest(readFileSync(installedLock, "utf8")) : null,
     environment: Object.fromEntries(["NODE_OPTIONS", "NODE_ENV", "CI", "PLAYWRIGHT_CHROMIUM_EXECUTABLE", "PLAYWRIGHT_BROWSERS_PATH", "FFMPEG_PATH", "FFPROBE_PATH"].map((name) => [name, process.env[name] || ""])),
   };
@@ -176,7 +180,6 @@ function privateDirectory(root) {
 
 export function receiptMatches(receipt, candidate) {
   return receipt?.version === 1 && receipt.status === "passed" && receipt.fingerprint === candidate.fingerprint
-    && receipt.validationDay === candidate.validationDay
     && JSON.stringify(receipt.snapshot) === JSON.stringify(candidate.snapshot)
     && JSON.stringify(receipt.runtime) === JSON.stringify(candidate.runtime)
     && receipt.checks?.length === candidate.policy.checks.length
@@ -230,7 +233,7 @@ export function runValidationCheck(check, { root, logPath, signal }) {
 
 export async function validatePush({ root = process.cwd(), updates = [], force = false,
   snapshot = readCandidateSnapshot, policy = readValidationPolicy, runtime = captureValidationRuntime,
-  execute = runValidationCheck, storageDirectory, report = console.log, signal, now = () => new Date(),
+  execute = runValidationCheck, storageDirectory, report = console.log, signal,
 } = {}) {
   const initial = snapshot(root);
   assertPushCandidate(root, updates, initial);
@@ -241,12 +244,10 @@ export async function validatePush({ root = process.cwd(), updates = [], force =
   if (signal?.aborted) throw new Error("Push validation interrupted");
   const required = policy(root);
   const runtimes = runtime(root);
-  const validationDay = new Date(now()).toISOString().slice(0, 10);
-  const candidate = { snapshot: initial, policy: required, runtime: runtimes, validationDay };
+  const candidate = { snapshot: initial, policy: required, runtime: runtimes };
   candidate.fingerprint = digest(candidate);
   const assertUnchanged = () => {
     if (signal?.aborted) throw new Error("Push validation interrupted");
-    if (new Date(now()).toISOString().slice(0, 10) !== validationDay) throw new Error("UTC validation day changed; validate the current candidate again.");
     if (JSON.stringify(snapshot(root)) !== JSON.stringify(initial)) throw new Error("The checkout or HEAD changed during push validation. Validate the final committed candidate again.");
   };
   let previous;
@@ -261,7 +262,7 @@ export async function validatePush({ root = process.cwd(), updates = [], force =
   await rm(receiptPath, { force: true });
   const runDirectory = path.join(directory, new Date().toISOString().replaceAll(":", "-"));
   await mkdir(runDirectory, { recursive: true });
-  const evidence = { version: 1, status: "running", fingerprint: candidate.fingerprint, snapshot: initial, runtime: runtimes, validationDay, checks: [], startedAt: new Date().toISOString() };
+  const evidence = { version: 1, status: "running", fingerprint: candidate.fingerprint, snapshot: initial, runtime: runtimes, checks: [], startedAt: new Date().toISOString() };
   const evidencePath = path.join(runDirectory, "result.json");
   try {
     for (const check of required.checks) {

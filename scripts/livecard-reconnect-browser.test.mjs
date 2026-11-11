@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import http from "node:http";
-import buildBunFixture from "./lib/build-bun-fixture.cjs";
+import ensureLiveCardBuilderFixture from "./lib/ensure-livecard-builder-fixture.cjs";
 import { createRequire } from "node:module";
 import { chromium } from "playwright";
 import sharp from "sharp";
@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 const loadTs = require("./lib/event-messages-test-loader.cjs");
 
 test("artistic font cards recover HTML status and ambiguous starts without duplicate generation on phones", { timeout: 90000 }, async () => {
-  buildBunFixture("scripts/build-livecard-builder-fixture.mjs");
+  ensureLiveCardBuilderFixture();
   const image = await sharp({ create: { width: 1000, height: 1500, channels: 3, background: "#ddd3b7" } }).png().toBuffer();
   const { renderCardFontLettering } = loadTs("src/lib/card-font-lettering.ts");
   const design = { version: 1, backgroundUrl: `data:image/png;base64,${image.toString("base64")}`, typography: "botanical", font: "classic", ink: "#24482e", accent: "#ac7d22", surface: "#fff8ed" };

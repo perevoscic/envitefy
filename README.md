@@ -27,16 +27,17 @@ worktree; the check never deletes or stashes your work. To install it after usin
 `npm install --ignore-scripts`, run `npm run prepare`. Generated Chromium
 `debug.log` files stay local and are ignored.
 
-Every outgoing push also requires the complete Create event fact integrity
-checks: `test:git-hooks`, `typecheck`, `test:create-remediation`, and
-`test:create-browser`. After committing the intended candidate, run
-`npm run validate:push`, then push. The hook runs missing validation automatically
-and reuses successful evidence only for that exact clean commit, configuration,
-runtime identity and UTC day. Evidence and individual command logs stay in the
-checkout's private Git directory under `envitefy-push-validation/`.
-Use Node 24, Bun, FFmpeg/ffprobe and Playwright Chromium as configured in
-`.github/workflows/create-fact-integrity.yml`. A failed or unavailable check
-blocks the push; targeted tests and a production build do not replace this gate.
+Every outgoing push runs `test:git-hooks` and `typecheck`. After committing
+the intended candidate, run `npm run validate:push`, then push. The hook runs
+missing local validation automatically and reuses successful evidence for that
+exact clean commit, configuration and runtime versions. The UTC day and the
+Chromium file timestamp do not invalidate it. Evidence and individual command
+logs stay in the checkout's private Git directory under
+`envitefy-push-validation/`. `test:create-remediation` and `test:create-browser`
+run in `.github/workflows/create-fact-integrity.yml` on pull requests and on
+pushes to `main`. Use Node 24, Bun, FFmpeg/ffprobe and Playwright Chromium as
+configured there. A failed or unavailable local check blocks the push; targeted
+tests and a production build do not replace this gate.
 
 2. Configure environment
 
