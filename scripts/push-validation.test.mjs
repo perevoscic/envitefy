@@ -58,6 +58,17 @@ function fixture(t) {
   return { repository, options, calls, receiptPath, versions: (next) => { versions = next; } };
 }
 
+test("browser and media installs retry transient Ubuntu archive failures", () => {
+  const commands = workflowRunCommands(readFileSync(path.join(root, ".github/workflows/create-fact-integrity.yml"), "utf8"));
+  const chromium = commands.find((command) => command.includes("playwright install"));
+  const ffmpeg = commands.find((command) => command.includes("ffprobe"));
+  assert.match(chromium, /while \[ "\$attempt" -le 3 \]/);
+  assert.match(chromium, /npx playwright install --with-deps --only-shell chromium/);
+  assert.match(ffmpeg, /while \[ "\$attempt" -le 3 \]/);
+  assert.match(ffmpeg, /sudo apt-get install --yes --no-install-recommends ffmpeg/);
+  assert.doesNotThrow(() => readValidationPolicy(root));
+});
+
 test("local push checks stay the fast prefix of the CI npm check list and fail closed when CI drifts", (t) => {
   const policy = readValidationPolicy(root);
   assert.deepEqual(policy.checks.map((check) => check.name), LOCAL_PUSH_CHECKS);

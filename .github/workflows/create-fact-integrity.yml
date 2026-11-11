@@ -39,16 +39,38 @@ jobs:
           key: ${{ runner.os }}-playwright-headless-${{ hashFiles('package-lock.json') }}
       - name: Install Chromium for isolated campaign checks
         id: chromium
-        run: npx playwright install --with-deps --only-shell chromium
+        run: |
+          attempt=1
+          while [ "$attempt" -le 3 ]; do
+            if npx playwright install --with-deps --only-shell chromium; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            echo "Chromium install failed on attempt ${attempt}; retrying after the Ubuntu archive lookup."
+            sleep $((attempt * 15))
+            attempt=$((attempt + 1))
+          done
       - name: Install and verify FFmpeg for artwork checks
         id: ffmpeg
         run: |
-          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
-            sudo apt-get update
-            sudo apt-get install --yes --no-install-recommends ffmpeg
-          fi
-          ffmpeg -version
-          ffprobe -version
+          attempt=1
+          while [ "$attempt" -le 3 ]; do
+            if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+              sudo apt-get update
+              sudo apt-get install --yes --no-install-recommends ffmpeg
+            fi
+            if ffmpeg -version && ffprobe -version; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            echo "FFmpeg install failed on attempt ${attempt}; retrying after the Ubuntu archive lookup."
+            sleep $((attempt * 15))
+            attempt=$((attempt + 1))
+          done
       - name: Check Create facts, prompts, output contracts and guest actions offline
         run: npm run test:create-remediation
       - name: Check rendered previews and RSVP recovery with external requests blocked
