@@ -58,14 +58,13 @@ function fixture(t) {
   return { repository, options, calls, receiptPath, versions: (next) => { versions = next; } };
 }
 
-test("browser and media installs retry transient Ubuntu archive failures", () => {
-  const commands = workflowRunCommands(readFileSync(path.join(root, ".github/workflows/create-fact-integrity.yml"), "utf8"));
-  const chromium = commands.find((command) => command.includes("playwright install"));
-  const ffmpeg = commands.find((command) => command.includes("ffprobe"));
-  assert.match(chromium, /while \[ "\$attempt" -le 3 \]/);
-  assert.match(chromium, /npx playwright install --with-deps --only-shell chromium/);
-  assert.match(ffmpeg, /while \[ "\$attempt" -le 3 \]/);
-  assert.match(ffmpeg, /sudo apt-get install --yes --no-install-recommends ffmpeg/);
+test("fact-integrity installs Chromium and FFmpeg without Ubuntu package archives", () => {
+  const workflow = readFileSync(path.join(root, ".github/workflows/create-fact-integrity.yml"), "utf8");
+  const commands = workflowRunCommands(workflow);
+  assert.equal(commands.includes("npx playwright install --only-shell chromium"), true);
+  assert.equal(commands.includes("node scripts/ci-host-tools.mjs"), true);
+  assert.doesNotMatch(workflow, /apt-get|playwright install --with-deps/);
+  assert.doesNotMatch(readFileSync(path.join(root, "scripts/ci-host-tools.mjs"), "utf8"), /apt-get/);
   assert.doesNotThrow(() => readValidationPolicy(root));
 });
 

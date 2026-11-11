@@ -36,38 +36,8 @@ function git(root, args) {
 const CI_SETUP_COMMANDS = new Set([
   "npm ci",
   "bun --version",
-  [
-    "attempt=1",
-    'while [ "$attempt" -le 3 ]; do',
-    "if npx playwright install --with-deps --only-shell chromium; then",
-    "exit 0",
-    "fi",
-    'if [ "$attempt" -eq 3 ]; then',
-    "exit 1",
-    "fi",
-    'echo "Chromium install failed on attempt ${attempt}; retrying after the Ubuntu archive lookup."',
-    "sleep $((attempt * 15))",
-    "attempt=$((attempt + 1))",
-    "done",
-  ].join("\n"),
-  [
-    "attempt=1",
-    'while [ "$attempt" -le 3 ]; do',
-    "if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then",
-    "sudo apt-get update",
-    "sudo apt-get install --yes --no-install-recommends ffmpeg",
-    "fi",
-    "if ffmpeg -version && ffprobe -version; then",
-    "exit 0",
-    "fi",
-    'if [ "$attempt" -eq 3 ]; then',
-    "exit 1",
-    "fi",
-    'echo "FFmpeg install failed on attempt ${attempt}; retrying after the Ubuntu archive lookup."',
-    "sleep $((attempt * 15))",
-    "attempt=$((attempt + 1))",
-    "done",
-  ].join("\n"),
+  "npx playwright install --only-shell chromium",
+  "node scripts/ci-host-tools.mjs",
 ]);
 
 export function workflowRunCommands(workflow) {
@@ -190,7 +160,7 @@ export function captureValidationRuntime(root) {
   const require = createRequire(path.join(root, "package.json"));
   const packages = Object.fromEntries(["playwright", "typescript"].map((name) => [name, require(`${name}/package.json`).version]));
   const browser = validationChromiumPath(root);
-  if (!browser || !existsSync(browser)) throw new Error("Required Chromium is missing. Install it with npx playwright install --with-deps --only-shell chromium.");
+  if (!browser || !existsSync(browser)) throw new Error("Required Chromium is missing. Install it with npx playwright install --only-shell chromium.");
   const browserFile = statSync(browser);
   if (!browserFile.isFile()) throw new Error(`Chromium executable is not a file: ${browser}`);
   const installedLock = path.join(root, "node_modules/.package-lock.json");
