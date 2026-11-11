@@ -173,6 +173,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "chrome-launcher": "1.2.1",
+    "ffprobe-static": "3.1.0",
     "jsqr": "^1.4.0",
     "lighthouse": "13.4.1",
     "playwright": "^1.59.0",

@@ -3,26 +3,33 @@ import { createRequire } from "node:module";
 import { chmodSync, copyFileSync, mkdirSync, appendFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
-const require = createRequire(path.join(process.cwd(), "package.json"));
-const destination = path.join(os.homedir(), ".local", "bin");
-mkdirSync(destination, { recursive: true });
+const require = createRequire(import.meta.url);
 
-function installBinary(source, name) {
-  const target = path.join(destination, name);
-  copyFileSync(source, target);
-  chmodSync(target, 0o755);
-  execFileSync(target, ["-version"], { stdio: "inherit" });
+export function installHostTools({
+  destination = path.join(os.homedir(), ".local", "bin"),
+  githubPath = process.env.GITHUB_PATH,
+} = {}) {
+  mkdirSync(destination, { recursive: true });
+
+  function installBinary(source, name) {
+    if (!source) throw new Error(`${name}-static did not provide a binary for this platform.`);
+    const target = path.join(destination, `${name}${process.platform === "win32" ? ".exe" : ""}`);
+    copyFileSync(source, target);
+    chmodSync(target, 0o755);
+    execFileSync(target, ["-version"], { stdio: "pipe", timeout: 15000, windowsHide: true });
+    console.log(`Verified ${name}: ${target}`);
+    return target;
+  }
+
+  // Both packages are installed by npm ci from the lockfile. npm exec only adds
+  // temporary package binaries to PATH; it does not make their modules requireable.
+  const ffmpeg = installBinary(require("ffmpeg-static"), "ffmpeg");
+  const ffprobe = installBinary(require("ffprobe-static").path, "ffprobe");
+
+  if (githubPath) appendFileSync(githubPath, `${destination}\n`);
+  return { ffmpeg, ffprobe };
 }
 
-const ffmpeg = require("ffmpeg-static");
-if (!ffmpeg) throw new Error("ffmpeg-static did not provide a binary. npm ci installs it without apt.");
-installBinary(ffmpeg, "ffmpeg");
-
-const ffprobe = execFileSync("npm", [
-  "exec", "--yes", "--package=ffprobe-static@3.1.0", "--",
-  process.execPath, "-p", "require('ffprobe-static').path",
-], { encoding: "utf8" }).trim().split(/\r?\n/).filter(Boolean).at(-1);
-installBinary(ffprobe, "ffprobe");
-
-if (process.env.GITHUB_PATH) appendFileSync(process.env.GITHUB_PATH, `${destination}\n`);
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) installHostTools();

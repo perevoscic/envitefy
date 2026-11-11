@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { installHostTools } from "./ci-host-tools.mjs";
 import { CI_INTEGRITY_CHECKS, cleanGitEnvironment, LOCAL_PUSH_CHECKS, parsePushUpdates, readCandidateSnapshot, readValidationPolicy, runValidationCheck, validatePush, validationChromiumPath, versionToolInvocation, workflowRunCommands } from "./lib/push-validation.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -66,6 +67,30 @@ test("fact-integrity installs Chromium and FFmpeg without Ubuntu package archive
   assert.doesNotMatch(workflow, /apt-get|playwright install --with-deps/);
   assert.doesNotMatch(readFileSync(path.join(root, "scripts/ci-host-tools.mjs"), "utf8"), /apt-get/);
   assert.doesNotThrow(() => readValidationPolicy(root));
+});
+
+test("CI host tools install real locked binaries and probe media without a temporary npm package", (t) => {
+  mkdirSync(fixtureRoot, { recursive: true });
+  const directory = mkdtempSync(path.join(fixtureRoot, "host-tools-"));
+  t.after(() => {
+    assert.equal(path.dirname(directory), fixtureRoot);
+    assert.ok(path.basename(directory).startsWith("host-tools-"));
+    rmSync(directory, { recursive: true, force: true });
+  });
+  const destination = path.join(directory, "bin with spaces");
+  const githubPath = path.join(directory, "github-path");
+  const binaries = installHostTools({ destination, githubPath });
+  assert.equal(readFileSync(githubPath, "utf8"), `${destination}\n`);
+  const media = path.join(directory, "sample.wav");
+  const generated = spawnSync(binaries.ffmpeg, ["-f", "lavfi", "-i", "sine=frequency=440:duration=0.1", media], {
+    encoding: "utf8", windowsHide: true, timeout: 15000,
+  });
+  assert.equal(generated.status, 0, generated.error?.message || generated.stderr);
+  const probed = spawnSync(binaries.ffprobe, ["-v", "error", "-show_streams", "-of", "json", media], {
+    encoding: "utf8", windowsHide: true, timeout: 15000,
+  });
+  assert.equal(probed.status, 0, probed.error?.message || probed.stderr);
+  assert.equal(JSON.parse(probed.stdout).streams[0].codec_type, "audio");
 });
 
 test("local push checks stay the fast prefix of the CI npm check list and fail closed when CI drifts", (t) => {
