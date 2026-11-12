@@ -154,6 +154,9 @@ export async function uploadBlobAsset(params: UploadBlobParams): Promise<BlobAss
     blob = await put(params.pathname, params.bytes, {
       access: preferredAccess,
       contentType: params.contentType || "application/octet-stream",
+      // Saves and co-host edits can upload under the same event/usage path.
+      // Keep each candidate separate so an unsaved edit cannot replace saved media.
+      addRandomSuffix: true,
     });
   } catch (error) {
     if (!isBlobStoreAccessError(error)) {
@@ -163,6 +166,7 @@ export async function uploadBlobAsset(params: UploadBlobParams): Promise<BlobAss
     blob = await put(params.pathname, params.bytes, {
       access: resolvedAccess,
       contentType: params.contentType || "application/octet-stream",
+      addRandomSuffix: true,
     });
   }
   detectedBlobStoreAccess = resolvedAccess;

@@ -7,8 +7,9 @@ import sharp from "sharp";
 import ts from "typescript";
 
 const require = createRequire(import.meta.url);
-function harness({ pdfPreview } = {}) {
+function harness({ pdfPreview, storeAccess } = {}) {
   const uploads = [];
+  const stored = new Map();
   const pdfLoads = [];
   const modules = new Map();
   function loadSource(file) {
@@ -26,12 +27,25 @@ function harness({ pdfPreview } = {}) {
       module,
       exports: module.exports,
       Buffer,
+      Error,
       console: { log() {} },
       require: (specifier) =>
         specifier === "@vercel/blob"
           ? {
               put: async (pathname, bytes, options) => {
                 uploads.push({ pathname, bytes, options });
+                if (storeAccess) {
+                  if (options.access !== storeAccess) {
+                    throw new Error(`Cannot use ${options.access} access on a ${storeAccess} store`);
+                  }
+                  if (options.addRandomSuffix) {
+                    pathname = pathname.replace(/(\.[^/.]+)?$/, `-upload-${uploads.length}$1`);
+                  }
+                  if (stored.has(pathname) && !options.allowOverwrite) {
+                    throw new Error("Vercel Blob: This blob already exists");
+                  }
+                  stored.set(pathname, Buffer.from(bytes));
+                }
                 return { pathname, url: `https://assets.example.test/${pathname}` };
               },
             }
@@ -61,6 +75,7 @@ function harness({ pdfPreview } = {}) {
     ...loadSource("./media-upload.ts"),
     imageUploads: loadSource("./media-upload-image.ts"),
     uploads,
+    stored,
     pdfLoads,
   };
 }
@@ -100,6 +115,36 @@ test("PNG/JPEG attachments upload only two WebPs and return matching names, type
     assert.equal(result.stored.source.width, 160);
     assert.equal(result.stored.source.height, 100);
     if (format === "png") assert.equal((await sharp(h.uploads[0].bytes).metadata()).hasAlpha, true);
+  }
+});
+
+test("repeated and concurrent event photo uploads preserve saved assets on public and private stores", async () => {
+  for (const storeAccess of ["public", "private"]) {
+    const h = harness({ storeAccess });
+    const original = await fixture("webp", 160, 100);
+    const replacement = await fixture("webp", 180, 120);
+    const upload = (bytes) => h.processBufferUpload({
+      bytes,
+      fileName: "gymnastics-hero.webp",
+      mimeType: "image/webp",
+      usage: "header",
+      eventId: "shared-meet",
+    });
+    const first = await upload(original);
+    const savedAssets = new Map(h.stored);
+    const next = await Promise.all([upload(replacement), upload(original)]);
+    const urls = [first, ...next].map((result) => result.stored.display.url);
+    assert.equal(new Set(urls).size, 3, storeAccess);
+    assert.equal(h.stored.size, 6, storeAccess);
+    for (const [pathname, bytes] of savedAssets) {
+      assert.deepEqual(h.stored.get(pathname), bytes, `${storeAccess}: saved asset is unchanged`);
+    }
+    for (const attempt of h.uploads) {
+      assert.equal(attempt.options.allowOverwrite, undefined);
+    }
+    if (storeAccess === "private") {
+      assert.ok(urls.every((url) => url.startsWith("/api/blob/event-media/shared-meet/header/display-upload-")));
+    }
   }
 });
 
