@@ -4,6 +4,8 @@ const http = require("node:http");
 const path = require("node:path");
 const test = require("node:test");
 const { chromium } = require("playwright");
+const loadTs = require("./lib/event-messages-test-loader.cjs");
+const { buildAppearanceBootstrap } = loadTs("src/lib/appearance.ts");
 const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
 
@@ -27,7 +29,7 @@ test("owner access controls and invited signup/login preserve the event and expl
   const script = fs.readFileSync(path.join(output, "fixture.js"));
   const server = http.createServer((req, res) => {
     if (req.url === "/fixture.js") { res.setHeader("Content-Type", "text/javascript"); res.end(script); }
-    else { res.setHeader("Content-Type", "text/html"); res.end(`<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body style="background:#f4f3fa"><main id="root"></main><script src="/fixture.js"></script></body></html>`); }
+    else { res.setHeader("Content-Type", "text/html"); res.end(`<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body style="background:var(--background)"><script>${buildAppearanceBootstrap()}</script><main id="root"></main><script src="/fixture.js"></script></body></html>`); }
   });
   await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -74,6 +76,46 @@ test("owner access controls and invited signup/login preserve the event and expl
     await Promise.all(readReplies);
     assert.equal(await page.getByText("new@test.com", { exact: true }).count(), 1, "a late initial GET cannot erase the newly created invitation");
     assert.deepEqual(actions[0], { email: "new@test.com" });
+    for (const appearance of ["light", "dark"]) {
+      await page.evaluate((value) => localStorage.setItem("envitefy:appearance:v1", value), appearance);
+      await page.evaluate(buildAppearanceBootstrap());
+      for (const viewport of [{ width: 1280, height: 900 }, { width: 375, height: 812 }, { width: 812, height: 375 }]) {
+        await page.setViewportSize(viewport);
+        await page.evaluate(() => Promise.all(document.getAnimations().filter(animation => animation.effect.getTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {}))));
+        const expiry = dialog.getByText("Invites expire after 7 days.", { exact: true });
+        await expiry.scrollIntoViewIfNeeded();
+        const contrast = await expiry.evaluate((element) => {
+          const context = document.createElement("canvas").getContext("2d");
+          const rgb = (color) => {
+            context.clearRect(0, 0, 1, 1);
+            context.fillStyle = color;
+            context.fillRect(0, 0, 1, 1);
+            return [...context.getImageData(0, 0, 1, 1).data];
+          };
+          const luminance = (channels) => channels.slice(0, 3).map(value => value / 255)
+            .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+            .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+          const background = rgb(getComputedStyle(element.parentElement).backgroundColor);
+          if (background[3] !== 255) return 0;
+          const ink = luminance(rgb(getComputedStyle(element).color));
+          const paper = luminance(background);
+          return (Math.max(ink, paper) + 0.05) / (Math.min(ink, paper) + 0.05);
+        });
+        assert.ok(contrast >= 4.5, `${appearance} ${viewport.width}px expiry contrast: ${contrast.toFixed(2)}:1`);
+        const panel = await dialog.boundingBox();
+        assert.ok(panel.x >= 0 && panel.x + panel.width <= viewport.width && panel.y >= 0 && panel.y + panel.height <= viewport.height);
+        assert.ok(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth), "dialog must not overflow horizontally");
+        const done = await dialog.getByRole("button", { name: "Done", exact: true }).boundingBox();
+        assert.ok(done.width >= 44 && done.height >= 44);
+        assert.ok(done.y + done.height <= viewport.height, "footer action remains on screen");
+        await page.screenshot({ path: path.join(output, `access-${appearance}-${viewport.width}.png`) });
+      }
+    }
+    await page.evaluate(() => { document.documentElement.style.fontSize = "24px"; });
+    assert.ok(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth), "enlarged text must not overflow");
+    await page.evaluate(() => { document.documentElement.style.fontSize = ""; localStorage.setItem("envitefy:appearance:v1", "light"); });
+    await page.evaluate(buildAppearanceBootstrap());
+    await page.setViewportSize({ width: 390, height: 844 });
     const bounds = await dialog.boundingBox(); assert.ok(bounds.x >= 0 && bounds.x+bounds.width <= 391);
     const close = await page.getByRole("button", { name: "Close manage access" }).boundingBox(); assert.ok(close.height >= 44 && close.width >= 44);
     await page.keyboard.press("Escape");

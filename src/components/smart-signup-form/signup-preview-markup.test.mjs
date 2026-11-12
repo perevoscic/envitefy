@@ -1078,7 +1078,7 @@ test("theme dialog isolates generated options, supports refinement and only acce
   });
   assert.equal(dialog.button("Use this theme"), undefined);
   dialog.describe("Woodland with sage green");
-  await dialog.button("Create with Envitefy").props.onClick();
+  await dialog.button("Create theme").props.onClick();
   assert.deepEqual(form, original);
   assert.equal(accepted.length, 0);
   assert.equal(requests[0].generateArtwork, false);
@@ -1122,7 +1122,7 @@ test("cancel aborts generation and a late response cannot apply a theme", async 
     },
   });
   dialog.describe("Quiet woodland");
-  const generation = dialog.button("Create with Envitefy").props.onClick();
+  const generation = dialog.button("Create theme").props.onClick();
   assert.ok(dialog.button("Cancel generation"));
   dialog.button("Cancel generation").props.onClick();
   assert.equal(signal.aborted, true);
@@ -1150,7 +1150,7 @@ test("new theme previews use display placeholders without putting demo content i
     },
   });
   dialog.describe("Woodland volunteer signup");
-  await dialog.button("Create with Envitefy").props.onClick();
+  await dialog.button("Create signup form").props.onClick();
   const page = dialog.render().find((node) => node.props.form?.appearance?.customTheme);
   assert.equal(page.props.form.title, "Your event title");
   dialog.button("Use this theme").props.onClick();
@@ -1210,7 +1210,7 @@ test("new signup briefs survive preview, refinement, undo and acceptance without
     },
   });
   dialog.describe(details.description);
-  await dialog.button("Create with Envitefy").props.onClick();
+  await dialog.button("Create signup form").props.onClick();
   let preview = dialog.render().find((node) => node.props.form?.appearance?.customTheme).props.form;
   assert.equal(preview.title, details.title);
   assert.equal(preview.header.creatorName, details.organizerName);

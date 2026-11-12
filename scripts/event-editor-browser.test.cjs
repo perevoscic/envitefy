@@ -1526,13 +1526,12 @@ test.describe("Event Page editor saves and navigation", () => {
         await gymImageTools.getByRole("button", { name: "Change hero image", exact: true }).waitFor();
       }
       assert.match(await preview.locator("h1").evaluate((element) => element.style.fontFamily), /Gym Montserrat/);
-      await preview.getByRole("button", { name: "Preview event", exact: true }).click();
-      const fullscreen = page.getByRole("dialog", { name: "Event preview", exact: true });
-      await fullscreen.waitFor();
-      assert.equal(await fullscreen.locator('button[aria-label^="Edit "]').count(), 0, "fullscreen preview has no wording editors");
-      assert.equal(await fullscreen.getByRole("button", { name: "Change hero image", exact: true }).count(), 0);
-      await click("Close preview");
-      if (width === 390) await viewActions.getByRole("button", { name: "Page settings", exact: true }).click();
+      if (width !== 390) await viewActions.getByRole("button", { name: "Close settings", exact: true }).click();
+      assert.equal(await preview.getByRole("button", { name: "Preview event", exact: true }).count(), 0, "the page canvas replaces the separate fullscreen preview");
+      assert.equal(await page.getByRole("dialog", { name: "Event preview", exact: true }).count(), 0);
+      await preview.getByRole("button", { name: "Edit event title", exact: true }).waitFor();
+      await gymImageTools.getByRole("button", { name: "Change hero image", exact: true }).waitFor();
+      await viewActions.getByRole("button", { name: "Page settings", exact: true }).click();
       assert.equal(await page.getByLabel("Title font", { exact: true }).inputValue(), "montserrat");
       await click("Save draft");
       await page.getByText("Draft saved.", { exact: true }).waitFor();

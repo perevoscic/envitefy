@@ -115,7 +115,13 @@ test("gymnastics previews prefer current uploaded or imported artwork over the t
   );
   assert.equal(
     resolveEventShareImage({ ...event, importedTheme: { ...event.importedTheme, enabled: false } })?.url,
-    GYM_MEET_TEMPLATE_LIBRARY[0].artwork,
+    "/media/event-media/imported/design.webp",
+    "changing theme styling retains the generated meet artwork",
+  );
+  assert.equal(
+    resolveEventShareImage({ ...event, heroImage: "/uploads/host-selected.webp", importedTheme: { ...event.importedTheme, enabled: false } })?.url,
+    "/uploads/host-selected.webp",
+    "an explicit image replacement takes precedence with theme styling disabled",
   );
 });
 

@@ -16,7 +16,7 @@ import { type FormEvent, type ReactNode, useCallback, useEffect, useRef, useStat
 import type { EventAccessPerson } from "@/lib/event-collaboration-types";
 
 const button =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50";
 function accessStatus(person: EventAccessPerson): { label: string; pill: string } {
   if (person.status === "accepted")
     return { label: "Co-host", pill: "border-emerald-200 bg-emerald-50 text-emerald-700" };
@@ -32,7 +32,7 @@ function accessStatus(person: EventAccessPerson): { label: string; pill: string 
 function StatusPill({ className, children }: { className: string; children: ReactNode }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-md border px-1.5 py-px text-[11px] font-medium leading-4 ${className}`}
+      className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-medium leading-4 ${className}`}
     >
       {children}
     </span>
@@ -42,14 +42,14 @@ function StatusPill({ className, children }: { className: string; children: Reac
 function Avatar({ text, tone }: { text: string; tone: "owner" | "member" | "invite" }) {
   const style =
     tone === "owner"
-      ? "bg-slate-900 text-white"
+      ? "bg-foreground text-background"
       : tone === "member"
-        ? "bg-violet-100 text-violet-800"
-        : "border border-dashed border-slate-300 bg-white text-slate-500";
+        ? "bg-surface-alt text-foreground"
+        : "border border-dashed border-border bg-surface text-muted-foreground";
   return (
     <span
       aria-hidden="true"
-      className={`grid size-9 shrink-0 place-items-center rounded-full text-[13px] font-semibold ${style}`}
+      className={`grid size-10 shrink-0 place-items-center rounded-full text-sm font-semibold ${style}`}
     >
       {text}
     </span>
@@ -187,12 +187,12 @@ export default function EventAccessDialog({
             event.preventDefault();
             trigger.current?.focus();
           }}
-          className="fixed left-1/2 top-1/2 z-[91] flex max-h-[88dvh] w-[calc(100%_-_2rem)] max-w-[32rem] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-white text-slate-950 shadow-[0_24px_70px_-16px_rgba(15,23,42,0.45)] ring-1 ring-slate-900/[0.08]"
+          className="fixed left-1/2 top-1/2 z-[91] flex max-h-[88dvh] w-[calc(100%_-_2rem)] max-w-[34rem] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-3xl border border-border bg-surface font-sans text-foreground shadow-[0_24px_70px_-16px_rgba(15,23,42,0.45)]"
         >
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <div className="relative px-5 pt-5 sm:px-6 sm:pt-6">
+            <div className="relative px-5 pt-6 sm:px-7 sm:pt-7">
               <Dialog.Close
-                className={`${button} absolute right-2.5 top-2.5 min-w-11 text-slate-400 hover:bg-slate-100 hover:text-slate-700`}
+                className={`${button} absolute right-2.5 top-2.5 min-w-11 text-muted-foreground hover:bg-surface-alt hover:text-foreground`}
                 aria-label="Close manage access"
               >
                 <X size={18} />
@@ -200,34 +200,34 @@ export default function EventAccessDialog({
               <div className="flex items-start gap-3.5 pr-10">
                 <span
                   aria-hidden="true"
-                  className="grid size-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm"
+                  className="grid size-11 shrink-0 place-items-center rounded-2xl border border-border bg-surface-raised text-foreground"
                 >
                   <Users size={18} />
                 </span>
                 <div className="min-w-0">
-                  <Dialog.Title className="text-[17px] font-semibold leading-6 tracking-tight">
+                  <Dialog.Title className="font-sans text-xl font-semibold leading-7 tracking-tight">
                     Manage access
                   </Dialog.Title>
-                  <Dialog.Description className="mt-0.5 text-[13px] leading-5 text-slate-500">
+                  <Dialog.Description className="mt-1 text-sm leading-6 text-muted-foreground">
                     Invite co-hosts to help run{" "}
-                    <span className="font-medium text-slate-800">{eventTitle}</span>.
+                    <span className="font-medium text-foreground">{eventTitle}</span>.
                   </Dialog.Description>
                 </div>
               </div>
               {resourceType === "signup" && (
-                <p className="mt-3 text-[13px] leading-5 text-slate-600">
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
                   Co-hosts can edit and publish this form, view and manage participants, export responses and open or close signups. Only you can manage co-host access or delete the form.
                 </p>
               )}
-              <form onSubmit={submit} className="mt-6">
+              <form onSubmit={submit} className="mt-7">
                 <label
                   htmlFor={`cohost-email-${eventId}`}
-                  className="text-[13px] font-medium text-slate-700"
+                  className="text-sm font-medium text-foreground"
                 >
                   Co-host email
                 </label>
-                <div className="mt-1.5 flex items-center gap-1 rounded-xl border border-slate-300 bg-white p-1 pl-3 shadow-sm transition focus-within:border-slate-900 focus-within:ring-4 focus-within:ring-slate-900/10">
-                  <Mail size={16} aria-hidden="true" className="shrink-0 text-slate-400" />
+                <div className="mt-2 flex items-center gap-1 rounded-2xl border border-input bg-field-background p-1.5 pl-3.5 transition focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
+                  <Mail size={17} aria-hidden="true" className="shrink-0 text-muted-foreground" />
                   <input
                     id={`cohost-email-${eventId}`}
                     type="email"
@@ -237,13 +237,13 @@ export default function EventAccessDialog({
                     placeholder="name@example.com"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    className="h-10 min-w-0 flex-1 bg-transparent px-1.5 text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-sm"
+                    className="h-11 min-w-0 flex-1 rounded-lg bg-transparent px-1.5 text-base text-foreground outline-none placeholder:text-muted-foreground sm:text-sm"
                   />
                   <button
                     type="submit"
                     disabled={busy}
                     aria-label="Invite co-host"
-                    className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 disabled:opacity-50"
+                    className={`${button} shrink-0 rounded-xl bg-foreground px-4 text-background hover:bg-foreground/90`}
                   >
                     {busy && (
                       <Loader2
@@ -275,16 +275,16 @@ export default function EventAccessDialog({
                 </p>
               )}
             </div>
-            <div className="px-5 pb-2 pt-6 sm:px-6">
+            <div className="mx-5 mt-7 border-t border-border pb-3 pt-5 sm:mx-7">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="flex items-center gap-2 text-[13px] font-semibold text-slate-900">
+                <h3 className="flex items-center gap-2 font-sans text-sm font-semibold text-foreground">
                   People with access
-                  <span className="rounded-full bg-slate-100 px-1.5 py-px text-[11px] font-medium tabular-nums text-slate-600">
+                  <span className="grid min-h-5 min-w-5 place-items-center rounded-full bg-surface-alt px-1.5 text-xs font-medium tabular-nums text-muted-foreground">
                     {people.length + 1}
                   </span>
                 </h3>
                 {loading && (
-                  <p role="status" className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <p role="status" className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Loader2
                       size={12}
                       className="animate-spin motion-reduce:animate-none"
@@ -294,28 +294,28 @@ export default function EventAccessDialog({
                   </p>
                 )}
               </div>
-              <ul className="mt-1.5">
-                <li className="flex items-center gap-3 py-2.5">
+              <ul className="mt-2 divide-y divide-border">
+                <li className="flex items-center gap-3 py-3.5">
                   <Avatar text="Y" tone="owner" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-900">You</p>
-                    <p className="text-xs text-slate-500">{resourceType === "signup" ? "Form owner" : "Event owner"}</p>
+                    <p className="text-sm font-medium text-foreground">You</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{resourceType === "signup" ? "Form owner" : "Event owner"}</p>
                   </div>
-                  <StatusPill className="mr-1 border-violet-200 bg-violet-50 text-violet-700">
+                  <StatusPill className="mr-1 border-border bg-surface-raised text-muted-foreground">
                     Owner
                   </StatusPill>
                 </li>
                 {people.map((person) => {
                   const status = accessStatus(person);
                   return (
-                    <li key={person.id} className="flex items-center gap-3 py-2.5">
+                    <li key={person.id} className="flex items-center gap-2 py-3.5 sm:gap-3">
                       <Avatar
                         text={(person.name || person.email).trim().charAt(0).toUpperCase()}
                         tone={person.status === "accepted" ? "member" : "invite"}
                       />
                       <div className="min-w-0 flex-1">
                         <p
-                          className="truncate text-sm font-medium text-slate-900"
+                          className="break-words text-sm font-medium text-foreground [overflow-wrap:anywhere]"
                           title={person.name || person.email}
                         >
                           {person.name || person.email}
@@ -323,7 +323,7 @@ export default function EventAccessDialog({
                         <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
                           <StatusPill className={status.pill}>{status.label}</StatusPill>
                           {person.name && (
-                            <span className="truncate text-xs text-slate-500" title={person.email}>
+                            <span className="truncate text-xs text-muted-foreground" title={person.email}>
                               {person.email}
                             </span>
                           )}
@@ -337,7 +337,7 @@ export default function EventAccessDialog({
                             aria-label="Resend"
                             title="Resend invitation"
                             onClick={() => void request("POST", person.email)}
-                            className={`${button} min-w-11 rounded-lg px-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900`}
+                            className={`${button} min-w-11 rounded-xl px-2 text-muted-foreground hover:bg-surface-alt hover:text-foreground`}
                           >
                             <RotateCw size={15} aria-hidden="true" />
                           </button>
@@ -352,7 +352,7 @@ export default function EventAccessDialog({
                             person.status === "accepted" ? "Remove access" : "Cancel invitation"
                           }
                           onClick={() => void request("DELETE", undefined, person.id)}
-                          className={`${button} min-w-11 rounded-lg px-2 text-slate-500 hover:bg-rose-50 hover:text-rose-700`}
+                          className={`${button} min-w-11 rounded-xl px-2 text-muted-foreground hover:bg-rose-50 hover:text-rose-700`}
                         >
                           <Trash2 size={15} aria-hidden="true" />
                         </button>
@@ -362,16 +362,16 @@ export default function EventAccessDialog({
                 })}
               </ul>
               {loaded && !loading && !people.length && (
-                <p className="pb-2 text-xs text-slate-500">No co-hosts yet.</p>
+                <p className="pb-2 text-xs text-muted-foreground">No co-hosts yet.</p>
               )}
             </div>
           </div>
-          <div className="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/80 px-5 py-3 sm:px-6">
-            <p className="flex items-center gap-1.5 text-xs text-slate-500">
-              <Clock size={13} className="shrink-0" aria-hidden="true" />
+          <div className="flex shrink-0 items-center justify-between gap-4 border-t border-border bg-surface-raised px-5 py-4 sm:px-7">
+            <p className="flex items-center gap-2 text-[13px] font-medium leading-5 text-foreground">
+              <Clock size={15} className="shrink-0 text-muted-foreground" aria-hidden="true" />
               Invites expire after 7 days.
             </p>
-            <Dialog.Close className="inline-flex min-h-9 shrink-0 items-center rounded-lg border border-slate-300 bg-white px-3.5 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600">
+            <Dialog.Close className={`${button} min-w-20 shrink-0 border border-border bg-surface px-5 text-foreground hover:bg-surface-alt`}>
               Done
             </Dialog.Close>
           </div>

@@ -116,13 +116,17 @@ function browser(t, navigator) {
   return calls;
 }
 
-test("the full saved event renders Share and the shared calendar above the hero", () => {
+test("the full saved event renders Share and the shared calendar inside the hero", () => {
   for (const viewerKind of ["owner", "guest", "readonly"]) {
     const { html, actions } = render({ viewerKind, isOwner: viewerKind === "owner" });
     assert.ok(html.includes("Fright Invite"));
-    assert.ok(html.indexOf('aria-label="Share event"') < html.indexOf("<h1"));
+    const heroActions = html.match(/<div\b[^>]*data-gym-hero-actions[^>]*>([\s\S]*?)<\/div>/)?.[1];
+    assert.ok(heroActions, "guest actions remain grouped inside the gymnastics hero");
+    assert.match(heroActions, /aria-label="Share event"/);
+    assert.equal((html.match(/aria-label="Share event"/g) || []).length, 1);
     assert.equal(typeof actions.onShare, "function");
-    assert.ok(html.indexOf('aria-label="Add to calendar"') < html.indexOf("<h1"));
+    assert.match(heroActions, /aria-label="Add to calendar"/);
+    assert.equal((html.match(/aria-label="Add to calendar"/g) || []).length, 1);
     assert.match(actions.calendarLinks.google, /^https:\/\/calendar.google.com\//);
     assert.equal(new URL(actions.calendarLinks.outlook).searchParams.get("enddt"), null);
   }
