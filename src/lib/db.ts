@@ -561,6 +561,16 @@ export async function getUserById(id: string): Promise<AppUserRow | null> {
 // Ensure admin/metrics columns exist for compatibility with older DBs
 async function ensureUsersHasAdminAndMetricsColumns(): Promise<void> {
   await ensureOnce("users_admin_metrics_columns", async () => {
+    // Even IF NOT EXISTS takes an exclusive table lock. Cold reads should only
+    // inspect the catalog when the schema is already installed.
+    const ready = await query<{ ready: boolean }>(`
+      select count(*) = 11 as ready from pg_attribute
+      where attrelid = to_regclass('public.users') and not attisdropped and atthasdef
+        and attname in ('is_admin', 'scans_total', 'scans_birthdays', 'scans_weddings',
+          'shares_sent', 'scans_sport_events', 'scans_appointments',
+          'scans_doctor_appointments', 'scans_play_days', 'scans_general_events', 'scans_car_pool')
+    `);
+    if (ready.rows[0]?.ready) return;
     await query(`
       alter table users add column if not exists is_admin boolean;
       alter table users alter column is_admin set default false;
@@ -1074,6 +1084,13 @@ async function ensureUsersHasFeatureVisibilityColumn(): Promise<void> {
 
 async function ensureUsersHasProductScopeColumns(): Promise<void> {
   await ensureOnce("users_product_scope_columns", async () => {
+    const ready = await query<{ ready: boolean }>(`
+      select count(*) = 2 as ready from pg_attribute
+      where attrelid = to_regclass('public.users') and not attisdropped
+        and attname in ('primary_signup_source', 'product_scopes')
+        and (attname <> 'product_scopes' or atthasdef)
+    `);
+    if (ready.rows[0]?.ready) return;
     await query(`
       alter table users add column if not exists primary_signup_source text;
       alter table users add column if not exists product_scopes text[];
@@ -1084,6 +1101,13 @@ async function ensureUsersHasProductScopeColumns(): Promise<void> {
 
 async function ensureUsersHasAvatarUrlColumn(): Promise<void> {
   await ensureOnce("users_avatar_url_column", async () => {
+    const ready = await query<{ ready: boolean }>(`
+      select count(*) = 2 as ready from pg_attribute
+      where attrelid = to_regclass('public.users') and not attisdropped
+        and attname in ('avatar_url', 'avatar_user_set')
+        and (attname <> 'avatar_user_set' or (atthasdef and attnotnull))
+    `);
+    if (ready.rows[0]?.ready) return;
     await query(`
       alter table users add column if not exists avatar_url text;
       alter table users add column if not exists avatar_user_set boolean not null default false;
@@ -2747,6 +2771,8 @@ async function listProjectedDashboardHistoryRowsByIds(
   });
   if (!requestedRows.length) return [];
 
+  // JSON key reads each detoast a stored document. Force one detoast per selected
+  // event before extracting many small fields, including legacy inline artwork.
   const res = await client.query<DashboardProjectionQueryRow>(
     `with requested_ids as (
        select requested_id, requested_ownership, requested_share_status, ord
@@ -2760,6 +2786,11 @@ async function listProjectedDashboardHistoryRowsByIds(
          requested_share_status,
          ord
        )
+     ), requested_events as materialized (
+       select eh.id, eh.user_id, eh.title, eh.public_slug, eh.created_at,
+         (eh.data || '{}'::jsonb) as data
+       from requested_ids r
+       join event_history eh on eh.id = r.requested_id
      )
      select
        eh.id,
@@ -2843,7 +2874,7 @@ async function listProjectedDashboardHistoryRowsByIds(
        coalesce(eh.data, '{}'::jsonb)#>'{event,locationLng}' as event_location_lng,
        (jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'signupForm') = 'object') as has_signup_form
      from requested_ids r
-     join event_history eh on eh.id = r.requested_id
+     join requested_events eh on eh.id = r.requested_id
      order by r.ord`,
     [
       requestedRows.map((row) => row.id),
@@ -2895,6 +2926,11 @@ async function listProjectedSidebarHistoryRowsByIds(
          requested_share_status,
          ord
        )
+     ), requested_events as materialized (
+       select eh.id, eh.user_id, eh.title, eh.public_slug, eh.created_at,
+         (eh.data || '{}'::jsonb) as data
+       from requested_ids r
+       join event_history eh on eh.id = r.requested_id
      )
      select
        eh.id,
@@ -2960,7 +2996,7 @@ async function listProjectedSidebarHistoryRowsByIds(
        coalesce(eh.data, '{}'::jsonb)#>'{event,color}' as event_color,
        (jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'signupForm') = 'object') as has_signup_form
      from requested_ids r
-     join event_history eh on eh.id = r.requested_id
+     join requested_events eh on eh.id = r.requested_id
      order by r.ord`,
     [
       requestedRows.map((row) => row.id),
