@@ -2309,9 +2309,9 @@ test("unified creation retains sources, recommends native templates and protects
 
       await page.goto(`${base}/gallery?d=2027-06-04&customTheme=1`);
       const dialog = page.getByRole("dialog");
-      await dialog.getByLabel("Describe your event and design", { exact: true }).fill("A garden birthday with botanical artwork and warm paper");
+      await dialog.getByLabel("Your event details", { exact: true }).fill("A garden birthday with botanical artwork and warm paper");
       explicitCustomDesign = true;
-      await dialog.getByRole("button", { name: "Create with Envitefy", exact: true }).click();
+      await dialog.getByRole("button", { name: "Create event page", exact: true }).click();
       await dialog.getByRole("button", { name: "Use this design", exact: true }).waitFor();
       assert.equal(generatedDesigns.length, 1, "custom generation starts only from the explicit design action");
       await dialog.getByRole("button", { name: "Use this design", exact: true }).click();

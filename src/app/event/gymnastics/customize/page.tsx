@@ -8,7 +8,7 @@ import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
 import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "@/lib/event-history-client";
-import { EventSectionBuilderProvider, EventSectionsReadOnly } from "@/components/events/EventSectionBuilder";
+import { EventSectionBuilderProvider } from "@/components/events/EventSectionBuilder";
 import { GYMNASTICS_SECTION_CATALOG, normalizeEventSectionLayout } from "@/lib/event-section-layout";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
@@ -18,7 +18,6 @@ import { GYMNASTICS_TITLE_FONTS, normalizeGymnasticsTitleFont } from "@/lib/gymn
 
 import FileUploadInput from "@/components/ui/FileUploadInput";
 import EventCanvas from "@/components/EventCanvas";
-import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 
 import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
@@ -31,15 +30,12 @@ import { type EventGuestPlanning, normalizeEventGuestPlanning, getEventEndLocal 
 import { buildGymnasticsEventDateTimes, hydrateGymnasticsEventDates } from "@/lib/gymnastics-event-dates";
 import {
   CalendarDays,
-  ChevronLeft,
-  Eye,
   ListPlus,
   Link2,
   MoveVertical,
   Lock,
   Palette,
   PanelsTopLeft,
-  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -53,9 +49,8 @@ import {
 } from "@/components/gym-meet-templates/registry";
 import GymnasticsLauncher from "@/components/event-create/GymnasticsLauncher";
 import ImportedThemeControls from "@/components/event-create/ImportedThemeControls";
-import ImportedThemeArtwork from "@/components/event-create/ImportedThemeArtwork";
-import { createImportedEventTheme, readImportedEventTheme } from "@/lib/imported-event-theme";
-import WebsiteImportCoverage from "@/components/event-create/WebsiteImportCoverage";
+import ImportedThemeArtwork, { type ImportedArtworkStatus } from "@/components/event-create/ImportedThemeArtwork";
+import { createImportedEventTheme, importedArtworkCity, readImportedEventTheme } from "@/lib/imported-event-theme";
 import GymnasticsDesignGallery from "@/components/gym-meet-templates/GymnasticsDesignGallery";
 import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
 import SimpleTemplateView from "@/components/SimpleTemplateView";
@@ -603,6 +598,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const isNewDraft = search?.get("new") === "1";
     const defaultDate = search?.get("d") ?? undefined;
     const [demoAuthOpen, setDemoAuthOpen] = useState(false);
+    const [imageStatus, setImageStatus] = useState<ImportedArtworkStatus | null>(null);
     const [demoAuthMode, setDemoAuthMode] = useState<"login" | "signup">("signup");
     const initialDate = useMemo(() => {
       if (!defaultDate) {
@@ -837,40 +833,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const {
       mobileMenuOpen,
       openMobileMenu,
-      closeMobileMenu,
       dismissMobileMenu,
       previewTouchHandlers,
       drawerTouchHandlers,
-    } = useMobileDrawer(false, "event-actions", true);
-    const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
+    } = useMobileDrawer(!demoMode, "event-actions", true);
     const handlePageTextChange = useCallback<GymnasticsPageTextChange>((key, value) => {
       setData((prev) => applyGymnasticsPageTextChange(prev, key, value));
     }, [setData]);
-    const fullscreenPreviewRef = useRef<HTMLDialogElement>(null);
-    const fullscreenMenuWasOpen = useRef(false);
-    const openFullscreenPreview = useCallback(() => {
-      fullscreenMenuWasOpen.current = mobileMenuOpen;
-      dismissMobileMenu();
-      setFullscreenPreviewOpen(true);
-    }, [dismissMobileMenu, mobileMenuOpen]);
-    const closeFullscreenPreview = useCallback(() => {
-      fullscreenPreviewRef.current?.close();
-      setFullscreenPreviewOpen(false);
-      if (window.innerWidth < 768 && fullscreenMenuWasOpen.current) openMobileMenu();
-    }, [openMobileMenu]);
-    useEffect(() => {
-      const dialog = fullscreenPreviewRef.current;
-      if (!dialog) return;
-      if (fullscreenPreviewOpen && !dialog.open) dialog.showModal();
-      else if (!fullscreenPreviewOpen && dialog.open) dialog.close();
-      if (!fullscreenPreviewOpen) return;
-      const root = document.documentElement;
-      const previousOverflow = root.style.overflow;
-      root.style.overflow = "hidden";
-      return () => {
-        root.style.overflow = previousOverflow;
-      };
-    }, [fullscreenPreviewOpen]);
     const setAdvancedSectionState = useCallback((id: string, updater: any) => {
       setAdvancedState((prev: Record<string, any>) => {
         const current = prev?.[id];
@@ -1636,7 +1605,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, []);
 
     const handleTemplateSelection = useCallback((pageTemplateId: string) => {
-      setData((prev) => ({ ...prev, pageTemplateId, importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: false } : null }));
+      setData((prev) => ({
+        ...prev,
+        pageTemplateId,
+        hero: prev.hero === getGymMeetTemplateMeta(resolveGymMeetTemplateId(prev)).artwork ? "" : prev.hero,
+        importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: true, preserveTemplateStyle: true } : null,
+      }));
     }, []);
 
     const buildEventPayload = useCallback(async () => {
@@ -1961,10 +1935,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     };
 
-    const designsHref = templateEditor ? `/${templateEditor.category}/templates` : `/event/gymnastics/customize?${new URLSearchParams({ ...(data.date ? { d: data.date } : {}), ...(demoMode ? { demo: "1" } : {}) }).toString()}`;
 
     const eventImageTheme = readImportedEventTheme(data.importedTheme) || {
-      ...createImportedEventTheme({ title: data.title, sport: "gymnastics", city: data.city, venue: data.venue, date: data.date, seed: editEventId || templateEditor?.eventId || editor.eventId || data.title }),
+      ...createImportedEventTheme({ title: data.title, sport: "gymnastics", city: importedArtworkCity(data.city, data.address), venue: data.venue, address: data.address, date: data.date, seed: editEventId || templateEditor?.eventId || editor.eventId || data.title }),
       preserveTemplateStyle: true as const,
     };
     const renderHeroImageEditor = (className?: string) => (
@@ -1981,19 +1954,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         settings={normalizeHeroImageSettings(data.heroImageSettings)}
         onSettingsChange={(heroImageSettings) => setData((prev) => ({ ...prev, heroImageSettings }))}
       />
+      </div>
+    );
+    const renderEventImageControls = () => (
       <ImportedThemeArtwork
-        compact
         eventId={editEventId || templateEditor?.eventId || editor.eventId}
-        value={{ ...eventImageTheme, context: { ...eventImageTheme.context, title: data.title, city: data.city || eventImageTheme.context.city, venue: data.venue, date: data.date } }}
+        value={{ ...eventImageTheme, context: { ...eventImageTheme.context, title: data.title, city: importedArtworkCity(data.city, data.address) || eventImageTheme.context.city, venue: data.venue, address: data.address, date: data.date } }}
+        onStatusChange={setImageStatus}
         onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))}
         onUseImage={() => setData(prev => ({ ...prev, hero: "", heroImageSettings: { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY: 50 } }))}
       />
-      </div>
     );
 
     const renderMainMenu = () => (
       <div className="flex flex-col gap-6 pb-8 animate-fade-in">
-        <WebsiteImportCoverage value={loadedDiscoverySource?.websiteImport} />
         {!useParseDrivenSections && (
           templateEditor && !templateEditor.authenticated ? (
             <section aria-label="Import meet details" className="rounded-2xl bg-[linear-gradient(140deg,#2b2150_0%,#4a3a8a_100%)] p-4 text-white shadow-[0_12px_30px_rgba(43,33,80,0.22)]">
@@ -2294,6 +2268,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <div className="flex justify-between text-xs text-slate-500"><span>Top</span><span>Bottom</span></div>
               <p className="mt-3 text-sm text-slate-500">Fill the frame to adjust the crop, or drag the image directly on your page.</p>
             </div>
+            {renderEventImageControls()}
           </div>
         </GymnasticsEditorLayout>
       );
@@ -2723,6 +2698,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         heroImageSettings: normalizeHeroImageSettings(data.heroImageSettings),
         gymnasticsPageText: normalizeGymnasticsPageText(data.gymnasticsPageText),
         importedTheme: data.importedTheme,
+        importedThemeArtwork: imageStatus,
           gymnasticsTitleFont: normalizeGymnasticsTitleFont(data.gymnasticsTitleFont),
             sectionLayout: data.sectionLayout || { version: 1, order: [], hidden: [], added: [] },
         time: data.time,
@@ -2747,6 +2723,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             : {}),
       };
     }, [data.heroImageFilterEnabled,
+      imageStatus,
       advancedState,
       config.category,
       config.categoryLabel,
@@ -2868,34 +2845,25 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           const section = config.advancedSections?.find((item) => item.id === id);
           return <>{id === "meet" ? renderDetailsEditor() : null}{section ? renderAdvancedEditor(section) : null}</>;
         }}>
-        <ImportedThemeArtwork syncOnly eventId={editEventId || templateEditor?.eventId || editor.eventId} value={data.importedTheme} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} />
+        <ImportedThemeArtwork syncOnly refreshKey={`${imageStatus?.themeId || ""}:${imageStatus?.status || ""}`} onStatusChange={setImageStatus} eventId={editEventId || templateEditor?.eventId || editor.eventId} value={data.importedTheme} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} />
         {children}
       </EventSectionBuilderProvider>
     );
 
     const sectionEditors = { "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "image-position": renderImagePositionEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) };
 
-    const sidebarPanel = (headerAction: React.ReactNode) => (
-      <div className="min-h-full">
-        <div className="sticky top-0 z-20 flex min-h-[60px] items-center justify-between gap-3 border-b border-[#ece6f3] bg-[#faf8ff]/95 px-4 py-2 backdrop-blur md:px-6">
-          {activeView === "main" && !editEventId ? (
-            <button type="button" onClick={() => router.push(designsHref)} className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-[#5b4a86] transition hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2">
-              <ChevronLeft size={17} aria-hidden="true" /> All designs
-            </button>
-          ) : (
-            <p className="text-sm font-semibold text-[#3a3150]">{editEventId ? "Edit meet page" : "Meet page"}</p>
-          )}
+    const sidebarHeader = (headerAction: React.ReactNode) => (
+        <div className="flex min-h-[60px] items-center justify-between gap-3 px-4 py-2 md:px-6">
+          <p className="text-sm font-semibold text-[var(--foreground)]">Edit meet page</p>
           <div className="flex items-center gap-2">
-            {!isEmbed && <button
-              type="button"
-              onClick={openFullscreenPreview}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#d9cfea] bg-white px-3 text-[13px] font-semibold text-[#493d5c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
-            >
-              <Eye size={17} aria-hidden="true" /> Preview
-            </button>}
             {headerAction}
           </div>
-        </div><div
+        </div>
+    );
+
+    const sidebarPanel = () => (
+      <div className="min-h-full">
+        <div
           ref={sidebarScrollRef}
           data-gym-editor-scroll="true"
           className="min-h-0"
@@ -3029,7 +2997,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           if (activeView === "main" || activeView === "images") return false;
           setActiveView("main");
           return true;
-        }} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} sectionEditors={sectionEditors} artwork={data.hero} controls={(headerAction) => <>{renderHeroImageEditor("px-4 pt-4 md:px-6")}{sidebarPanel(headerAction)}</>} />
+        }} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} sectionEditors={sectionEditors} artwork={data.hero} controlsHeader={sidebarHeader} controls={<>{renderHeroImageEditor("px-4 pt-4 md:px-6")}{sidebarPanel()}</>} />
       );
     }
 
@@ -3063,7 +3031,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 <SimpleTemplateView
                   key={`preview-${previewEventId}`}
                   onMobileEdit={mobileMenuOpen ? undefined : openMobileMenu}
-                  onPreview={openFullscreenPreview}
                   onPageTextChange={handlePageTextChange}
                   onHeroImagePositionChange={(positionY) => setData((prev) => ({
                     ...prev,
@@ -3089,51 +3056,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
           </div>
         </EventCanvas>}
+ controlsHeader={sidebarHeader}
  controls={sidebarPanel}
 
-><dialog
-          ref={fullscreenPreviewRef}
-          aria-label="Event preview"
-          onCancel={(event) => {
-            event.preventDefault();
-            closeFullscreenPreview();
-          }}
-          onClose={() => setFullscreenPreviewOpen(false)}
-          className="fixed inset-0 m-0 h-[100dvh] max-h-none w-full max-w-none overflow-x-hidden overflow-y-auto overscroll-contain border-0 bg-transparent p-0"
-        >
-          {fullscreenPreviewOpen ? (
-            <EventSectionsReadOnly><EventCanvas
-              initialColor={getGymMeetTemplateMeta(resolveGymMeetTemplateId(data)).background}
-              className="min-h-full w-full pb-[env(safe-area-inset-bottom)]"
-              style={{ color: getGymMeetTemplateMeta(resolveGymMeetTemplateId(data)).foreground }}
-            >
-              <OwnerPreviewMobileTopbarSuppressor />
-              <div className="pointer-events-none sticky top-0 z-30 flex justify-end px-3 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5">
-                <button
-                  type="button"
-                  onClick={closeFullscreenPreview}
-                  aria-label="Close preview"
-                  title="Close preview"
-                  className="pointer-events-auto inline-flex size-11 items-center justify-center rounded-full border border-current/15 bg-[var(--event-canvas-color)] text-inherit shadow-sm transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
-                >
-                  <X size={21} aria-hidden="true" />
-                </button>
-              </div>
-              <SimpleTemplateView
-                eventId={previewEventId}
-                eventData={previewEventData}
-                eventTitle={data.title || config.displayName}
-                isOwner={false}
-                isReadOnly
-                viewerKind="readonly"
-                shareUrl=""
-                sessionEmail={null}
-                disableProtectedSectionLocks
-                hideOwnerActions
-              />
-            </EventCanvas></EventSectionsReadOnly>
-          ) : null}
-        </dialog></EventEditorWorkspace>
+/>
     );
   };
 }

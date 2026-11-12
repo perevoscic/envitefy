@@ -108,6 +108,24 @@ test("generated gymnastics chapters stay single-column until the host pairs sect
             }));
             assert.equal(cards.length, 5, context);
             assert.ok(cards.every(card => card.overflow <= 1), context);
+            const detailLayouts = await page.locator("[data-place-card] dl:last-of-type").evaluateAll(elements => elements.map(element => {
+              const rows = [...element.children].map(row => {
+                const rect = row.getBoundingClientRect();
+                return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, overflow: row.scrollWidth - row.clientWidth };
+              });
+              return { cardWidth: element.closest("[data-place-card]").clientWidth, rows };
+            }));
+            for (const { cardWidth, rows } of detailLayouts) {
+              assert.equal(rows.length, 4, context);
+              assert.ok(rows.every(row => row.overflow <= 1), `${context}: detail text stays within its column`);
+              if (cardWidth >= 360) {
+                assert.ok(Math.abs(rows[0].y - rows[1].y) <= 1, `${context}: parking and breakfast share a row`);
+                assert.ok(Math.abs(rows[2].y - rows[3].y) <= 1, `${context}: booking deadline and phone share a row`);
+                assert.ok(rows[1].x >= rows[0].right, `${context}: detail columns do not overlap`);
+              } else {
+                assert.ok(rows[1].y >= rows[0].bottom, `${context}: narrow cards stack their details`);
+              }
+            }
             assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, context);
             if (viewport.width === 1440) {
               const firstRow = cards.filter(card => Math.abs(card.y - cards[0].y) < 1);
@@ -123,6 +141,18 @@ test("generated gymnastics chapters stay single-column until the host pairs sect
           }
         }
       }
+    }
+    // Changing the available card width must reflow details without navigation or a saved layout choice.
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await open("tabs&hotels=long&width=1400");
+    await page.getByRole("tab", { name: "Hotels", exact: true }).click();
+    const firstCard = page.locator("[data-place-card]").first();
+    for (const width of [300, 420, 300]) {
+      await firstCard.evaluate((card, width) => { card.style.width = `${width}px`; }, width);
+      const rows = await firstCard.locator("dl:last-of-type > div").evaluateAll(elements =>
+        elements.map(element => element.getBoundingClientRect().y));
+      assert.equal(Math.abs(rows[0] - rows[1]) <= 1, width >= 360,
+        `details automatically reflow at ${width}px without reloading`);
     }
     assert.deepEqual(errors, []);
   } finally {

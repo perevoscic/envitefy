@@ -13,6 +13,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useOptionalEventHydration } from "@/lib/event-hydration";
 import type { PendingCoHostInvitation } from "@/lib/event-collaboration-types";
 
 type InvitationState = {
@@ -40,6 +41,7 @@ export default function CoHostInvitationProvider({
   children: ReactNode;
 }) {
   const { data: session, status } = useSession();
+  const eventsReady = useOptionalEventHydration();
   const identity =
     active && status === "authenticated" ? session?.user?.email?.trim().toLowerCase() || "" : "";
   const [snapshot, setSnapshot] = useState<{
@@ -119,10 +121,11 @@ export default function CoHostInvitationProvider({
     setNotice(null);
     setError(null);
     setLoading(false);
-    if (!identity) return;
+    if (!identity || eventsReady === false) return;
     void refresh();
     const update = () => {
-      if (document.visibilityState === "visible") void refresh();
+      if (document.visibilityState !== "visible" || request.current) return;
+      void refresh();
     };
     const timer = window.setInterval(update, 30_000);
     window.addEventListener("focus", update);
@@ -134,7 +137,7 @@ export default function CoHostInvitationProvider({
       request.current?.abort();
       request.current = null;
     };
-  }, [identity, refresh]);
+  }, [eventsReady, identity, refresh]);
   useEffect(() => {
     if (!notice) return;
     const timer = window.setTimeout(() => setNotice(null), 5_000);

@@ -9,6 +9,13 @@ export const DEFAULT_DISCOVERY_URL_ENRICH_BUDGET_MS = 60_000;
 const DEFAULT_DISCOVERY_FILE_PARSE_TIMEOUT_MS = 300_000;
 /** Slack beyond URL core+enrich crawl budgets so client abort does not race a finishing server parse. */
 const DEFAULT_DISCOVERY_URL_PARSE_TIMEOUT_BUFFER_MS = 120_000;
+/** Intake opens the public page before it returns a draft id. */
+export const DISCOVERY_INTAKE_URL_READ_TIMEOUT_MS = 20_000;
+/**
+ * Slack for a cold route compile, creation access, and draft persistence.
+ * The client must outlast the page check or it discards a successful intake.
+ */
+const DEFAULT_DISCOVERY_INGEST_CLIENT_BUFFER_MS = 25_000;
 
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -59,4 +66,13 @@ export function resolveDiscoveryClientParseTimeoutMs(
     resolveDiscoveryBudget("enrich", "url", env) +
     bufferMs
   );
+}
+
+export function resolveDiscoveryClientIngestTimeoutMs(
+  env: Record<string, string | undefined> = process.env,
+): number {
+  const bufferMs =
+    parsePositiveInt(env.DISCOVERY_INGEST_CLIENT_BUFFER_MS) ??
+    DEFAULT_DISCOVERY_INGEST_CLIENT_BUFFER_MS;
+  return DISCOVERY_INTAKE_URL_READ_TIMEOUT_MS + bufferMs;
 }

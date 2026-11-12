@@ -352,6 +352,7 @@ export default function Dashboard({
     dashboardLoading,
     dashboardError,
     isIdentityReady: eventCacheIdentityReady,
+    isHydrated: eventsHydrated,
     refreshDashboard,
     setDashboardMetricsCache,
   } = useEventCache();
@@ -644,7 +645,7 @@ export default function Dashboard({
   }, [originIdentity]);
 
   useEffect(() => {
-    if (!isSignedIn) return;
+    if (!isSignedIn || !eventsHydrated || dashboardLoading) return;
     if (!dashboardData?.nextEvent?.id) return;
     let cancelled = false;
     const enrich = async () => {
@@ -695,6 +696,8 @@ export default function Dashboard({
     };
   }, [
     isSignedIn,
+    eventsHydrated,
+    dashboardLoading,
     dashboardData?.nextEvent?.id,
     dashboardData?.nextEvent?.startAt,
     dashboardData?.nextEvent?.locationLat,

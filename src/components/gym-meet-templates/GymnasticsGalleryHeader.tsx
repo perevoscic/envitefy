@@ -1,8 +1,10 @@
 import { Check, Sparkles } from "lucide-react";
 import GymnasticsLauncher from "@/components/event-create/GymnasticsLauncher";
 import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
+import EventCustomThemeLauncher from "@/components/events/EventCustomThemeLauncher";
+import EventCategoryFavoriteButton from "@/components/events/EventCategoryFavoriteButton";
 
-const IMPORTED_DETAILS = ["Sessions & schedule", "Venue, parking & hotels", "Admission & results"];
+const IMPORTED_DETAILS = ["Overview & details", "Sessions & schedule", "Venue, parking & hotels", "Admission"];
 
 export default function GymnasticsGalleryHeader({
   count,
@@ -14,12 +16,15 @@ export default function GymnasticsGalleryHeader({
   return (
     <header className="relative isolate overflow-hidden border-b border-[#e4ddea] bg-transparent px-5 py-8 text-foreground sm:px-8 lg:px-12 lg:py-10">
       <CategoryGalleryBackdrop category="gymnastics" />
-      <div className="relative z-10 mx-auto grid max-w-[1500px] gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(360px,440px)] lg:items-center lg:gap-12">
+      <div className="relative z-10 mx-auto grid max-w-[1500px] gap-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] xl:items-center xl:gap-10">
         <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2" data-meet-gallery-badges>
           <p className="inline-flex items-center gap-2 rounded-full border border-[#e1d6e9] bg-white/90 px-4 py-2 text-xs font-semibold text-[#796189]">
             <Sparkles className="h-4 w-4" aria-hidden="true" />
             {count} meet designs
           </p>
+          <EventCategoryFavoriteButton category="gymnastics" iconOnly />
+          </div>
           <h1 className="mt-5 text-4xl font-normal tracking-tight [font-family:var(--font-playfair),Georgia,serif] sm:text-5xl lg:text-6xl">
             Gymnastics
           </h1>
@@ -36,12 +41,15 @@ export default function GymnasticsGalleryHeader({
             ))}
           </ul>
         </div>
-        <GymnasticsLauncher
-          variant="panel"
-          forwardQueryString={forwardQueryString}
-          panelTitle="Start from your meet details"
-          panelDescription="Upload the meet packet or paste the organizer’s link. We’ll build an editable draft you can review before publishing."
-        />
+        <div className="grid min-w-0 items-stretch gap-4 md:grid-cols-2">
+          <GymnasticsLauncher
+            variant="panel"
+            forwardQueryString={forwardQueryString}
+            panelTitle="Start from your meet details"
+            panelDescription="Upload the meet packet or paste the organizer’s link. We’ll build an editable draft you can review before publishing."
+          />
+          <EventCustomThemeLauncher category="gymnastics" presentation="tile" />
+        </div>
       </div>
     </header>
   );

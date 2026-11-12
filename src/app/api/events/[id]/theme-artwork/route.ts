@@ -47,9 +47,11 @@ export async function POST(request: Request, context: Context) {
   if (!theme?.enabled)
     return NextResponse.json({ error: "Choose an event theme first." }, { status: 400 });
   const existing = importedArtworkState(data.importedThemeArtwork);
+  if (theme.motif === "gymnastics" && theme.artworkUrl && body?.replace !== true)
+    return NextResponse.json({ artwork: { themeId: theme.id, status: "ready", imageUrl: theme.artworkUrl, updatedAt: existing?.updatedAt || new Date().toISOString() } });
   if (existing?.themeId === theme.id && (existing.status !== "failed" || body?.retry !== true))
     return NextResponse.json({ artwork: existing });
-  after(() => generateImportedEventArtwork(result.row.id, theme, { retry: body?.retry === true }));
+  after(() => generateImportedEventArtwork(result.row.id, theme, { retry: body?.retry === true, replace: body?.replace === true }));
   return NextResponse.json(
     { artwork: { themeId: theme.id, status: "generating", updatedAt: new Date().toISOString() } },
     { status: 202 },

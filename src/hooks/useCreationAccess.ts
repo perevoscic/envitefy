@@ -1,6 +1,7 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
+import { EventHydrationContext } from "@/lib/event-hydration";
 import { invalidateCreationAccess, loadCreationAccess, type InitialCreationAccess } from "@/lib/create/creation-access-client";
 import { notifyFeatureVisibilityChanged } from "./useFeatureVisibility";
 
@@ -21,6 +22,7 @@ export function useCreationAccess(initialCreationAccess?: InitialCreationAccess)
   const previousAccess = useRef(initialCreationAccess
     ? { identity: initialCreationAccess.identity, signature: JSON.stringify(initialCreationAccess.access) } : null);
   const access = status === "authenticated" && snapshot?.identity === identity ? snapshot.access : null;
+  const eventsReady = useContext(EventHydrationContext);
 
   const reload = useCallback(async () => {
     const current = ++sequence.current;
@@ -57,18 +59,21 @@ export function useCreationAccess(initialCreationAccess?: InitialCreationAccess)
     if (status !== "loading") {
       setSnapshot(previous => status === "authenticated" && previous?.identity === identity ? previous : null);
     }
+    // Signed-in event lists use the database first. Create fills in after that read settles.
+    if (status === "authenticated" && eventsReady === false) return () => { sequence.current += 1; };
     void reload();
     return () => { sequence.current += 1; };
-  }, [identity, status, reload]);
+  }, [eventsReady, identity, status, reload]);
 
   useEffect(() => {
+    if (eventsReady === false) return;
     const update = () => void reload();
     window.addEventListener(CREATION_ACCESS_UPDATED_EVENT, update);
     return () => window.removeEventListener(CREATION_ACCESS_UPDATED_EVENT, update);
-  }, [reload]);
+  }, [eventsReady, reload]);
 
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (status !== "authenticated" || eventsReady === false) return;
     const update = () => { if (document.visibilityState === "visible") void reload(); };
     window.addEventListener("online", update);
     window.addEventListener("focus", update);
@@ -80,7 +85,7 @@ export function useCreationAccess(initialCreationAccess?: InitialCreationAccess)
       document.removeEventListener("visibilitychange", update);
       if (timer) window.clearInterval(timer);
     };
-  }, [status, access?.policy, reload]);
+  }, [eventsReady, status, access?.policy, reload]);
 
   // Background failures retain the current account's verified choices. Initial
   // failures still expose a retry, without ever fabricating creation grants.

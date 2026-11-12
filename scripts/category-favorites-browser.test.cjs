@@ -641,9 +641,10 @@ test("category favorites persist shortcuts without changing event permissions or
             await page.getByRole("button", { name: "Unpin Gymnastics", exact: true }).isEnabled(),
             true,
           );
-          await page.getByRole("button", { name: "Unpin Gymnastics", exact: true }).click();
+          await page.evaluate(() => window.categoryFavoritesFixture.retry());
           await waitForIds(page, []);
           assert.equal(writes.length, 2);
+          assert.deepEqual(writes[0].payload, writes[1].payload, "retry repeats the intended selection after an ambiguous timeout");
         } finally {
           gate.resolve();
           await page.close();

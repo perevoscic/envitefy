@@ -20,7 +20,7 @@ export type ImportedEventTheme = {
   id: string;
   revision: number;
   name: string;
-  context: { title: string; sport: string; city: string; seed: string; venue?: string; date?: string };
+  context: { title: string; sport: string; city: string; seed: string; venue?: string; address?: string; date?: string };
   /** Generate original artwork while retaining a deliberately selected template's presentation. */
   preserveTemplateStyle?: true;
   branding: SourceBranding | null;
@@ -135,6 +135,7 @@ export function readImportedEventTheme(value: unknown): ImportedEventTheme | nul
       city: clean(raw.context.city, 100),
       seed: clean(raw.context.seed),
       ...(clean(raw.context.venue, 240) ? { venue: clean(raw.context.venue, 240) } : {}),
+      ...(clean(raw.context.address, 400) ? { address: clean(raw.context.address, 400) } : {}),
       ...(clean(raw.context.date, 160) ? { date: clean(raw.context.date, 160) } : {}),
     },
     ...(raw.preserveTemplateStyle === true ? { preserveTemplateStyle: true as const } : {}),
@@ -192,6 +193,7 @@ export function createImportedEventTheme(input: {
   sport: string;
   city?: string;
   venue?: string;
+  address?: string;
   date?: string;
   seed: string;
   branding?: unknown;
@@ -204,11 +206,12 @@ export function createImportedEventTheme(input: {
     city: clean(input.city, 100),
     seed: clean(input.seed),
     ...(clean(input.venue, 240) ? { venue: clean(input.venue, 240) } : {}),
+    ...(clean(input.address, 400) ? { address: clean(input.address, 400) } : {}),
     ...(clean(input.date, 160) ? { date: clean(input.date, 160) } : {}),
   };
   const revision = Math.min(1000, Math.max(0, Math.trunc(input.revision || 0)));
   const hash = themeHash(
-    `${context.seed}|${context.title}|${context.sport}|${context.city}|${revision}${context.venue || context.date ? `|${context.venue || ""}|${context.date || ""}` : ""}`,
+    `${context.seed}|${context.title}|${context.sport}|${context.city}|${revision}${context.venue || context.date ? `|${context.venue || ""}|${context.date || ""}` : ""}${context.address ? `|${context.address}` : ""}`,
   );
   const shapeIndex =
     (themeHash(`${context.seed}|${context.title}|${context.sport}|${context.city}|0`) + revision) %
@@ -275,12 +278,28 @@ export function createImportedEventTheme(input: {
   };
 }
 export function redesignImportedEventTheme(theme: ImportedEventTheme) {
-  return createImportedEventTheme({
+  const next = createImportedEventTheme({
     ...theme.context,
     branding: theme.branding,
     hostNotes: `palette: ${theme.colors.accent}, ${theme.colors.secondary}`,
     revision: theme.revision + 1,
   });
+  return theme.motif === "gymnastics" && theme.artworkUrl ? { ...next, artworkUrl: theme.artworkUrl } : next;
+}
+
+/** Read a locality printed in an address; never infer it from a meet or venue name. */
+export function importedArtworkCity(city: unknown, address?: unknown): string {
+  const explicit = clean(city, 100);
+  if (explicit) return explicit;
+  const parts = (typeof address === "string" ? address.slice(0, 500) : "")
+    .split(/[,\r\n]+/).map((part) => clean(part, 100)).filter(Boolean);
+  const states = /^(?:AL|AK|AZ|AR|CA|CO|CT|DE|DC|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)(?:\s+\d{5}(?:-\d{4})?)?$/i;
+  for (let index = 1; index < parts.length; index++) {
+    const locality = parts[index - 1];
+    if (states.test(parts[index]) && /^[\p{L}][\p{L} .'-]{1,79}$/u.test(locality))
+      return `${locality}, ${parts[index].slice(0, 2).toUpperCase()}`;
+  }
+  return "";
 }
 
 /** Add identity once. An explicit save, a host's choice or a retained theme always wins. */
@@ -295,6 +314,7 @@ export function attachImportedEventTheme(input: {
   branding?: unknown;
 }) {
   const { currentData, mappedData } = input;
+  const city = importedArtworkCity(mappedData.city, mappedData.address);
   const hasSelectedTemplate = Boolean(currentData.templateEditor || currentData.manualEditor);
   // Native gymnastics drafts start with null before any import or image choice.
   const initialGymTemplate = input.workflow === "gymnastics" && hasSelectedTemplate && currentData.importedTheme === null;
@@ -303,6 +323,7 @@ export function attachImportedEventTheme(input: {
   if (hasSelectedTemplate && input.workflow !== "gymnastics") return mappedData;
   return {
     ...mappedData,
+    ...(city ? { city } : {}),
     importedTheme: {
       ...createImportedEventTheme({
         title: mappedData.title || currentData.title || "Sports event",
@@ -311,8 +332,9 @@ export function attachImportedEventTheme(input: {
           mappedData.activityProfile ||
           (input.workflow === "sports" ? mappedData.customFields?.sport : input.workflow) ||
           "sport",
-        city: mappedData.city || "",
-        venue: mappedData.venue || mappedData.address || "",
+        city,
+        venue: mappedData.venue || "",
+        address: mappedData.address || "",
         date: mappedData.date || mappedData.startISO || mappedData.startAt || "",
         branding: input.branding,
         hostNotes: input.hostNotes,

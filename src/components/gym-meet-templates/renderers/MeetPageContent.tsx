@@ -70,8 +70,6 @@ export default function MeetPageContent({
   onPreview,
   onPageTextChange,
   mobileEditHref,
-  onShare,
-  calendarLinks,
   variant,
   presentation,
 }: GymMeetTemplateRendererProps & {
@@ -445,19 +443,16 @@ export default function MeetPageContent({
         ) : null}
 
         <div className={variant.shellClass}>
-          {!suppressActionStrip ? (
+          {!suppressActionStrip && (onMobileEdit || onPreview || mobileEditHref) ? (
             <div className="relative z-20 mb-4 px-3 sm:px-6">
               <FloatingActionStrip
                 onMobileEdit={onMobileEdit}
                 onPreview={onPreview}
                 mobileEditHref={mobileEditHref}
                 buttonClass={variant.secondaryButtonClass}
-                onShare={onShare}
-                calendarLinks={calendarLinks}
               />
             </div>
           ) : null}
-
           {hero}
           <div className="py-5">
             <GymMeetDiscoveryContent model={model} variant={variant} presentation={presentation} onPageTextChange={onPageTextChange}

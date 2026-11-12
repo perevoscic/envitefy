@@ -83,7 +83,8 @@ test("sports profiles work across organizers and sports without inventing a city
     assert.equal(theme.motif, motif);
     assert.equal(theme.context.city, "");
     assert.ok(themes.readImportedEventTheme(theme));
-    assert.match(design.importedArtworkSrc(theme), /^data:image\/svg\+xml/);
+    if (sport === "gymnastics") assert.equal(design.importedArtworkSrc(theme), undefined);
+    else assert.match(design.importedArtworkSrc(theme), /^data:image\/svg\+xml/);
   }
 });
 test("every palette keeps readable body and button text, including light source colors", () => {
@@ -211,7 +212,7 @@ test("untrusted source values cannot become executable CSS or SVG", () => {
     },
   });
   assert.equal(theme.colors.accent, "#127c94");
-  const svg = decodeURIComponent(design.importedArtworkSrc(theme).split(",")[1]);
+  const svg = decodeURIComponent(design.importedArtworkSrc({ ...theme, motif: "field" }).split(",")[1]);
   assert.ok(!svg.includes("<script>"));
   assert.ok(!JSON.stringify(design.importedThemeStyle(theme)).includes("<script>"));
   assert.equal(
@@ -227,12 +228,39 @@ test("custom and uploaded artwork stays intact while template artwork can adopt 
   );
   assert.equal(
     design.importedArtworkSrc(theme, "/templates/default.webp", "/templates/default.webp"),
-    "/templates/default.webp",
+    undefined,
   );
   assert.equal(
     design.importedArtworkSrc({ ...theme, enabled: false }, "/uploads/original.png"),
     "/uploads/original.png",
   );
+});
+test("gymnastics artwork survives redesign and template styling while explicit uploads still win", () => {
+  const artworkUrl = "https://assets.test/venue-original.webp";
+  const original = { ...themes.createImportedEventTheme(fixture), artworkUrl };
+  const next = themes.redesignImportedEventTheme(original);
+  assert.notEqual(next.id, original.id);
+  assert.equal(next.artworkUrl, artworkUrl);
+  for (const theme of [original, next, { ...original, enabled: false }, { ...next, preserveTemplateStyle: true }]) {
+    for (const template of ["/templates/old.webp", "/templates/new.webp"])
+      assert.equal(design.importedArtworkSrc(theme, "", template), artworkUrl);
+    assert.equal(design.importedArtworkSrc(theme, "/uploads/new.webp", "/templates/new.webp"), "/uploads/new.webp");
+  }
+});
+test("artwork locality comes from an explicit city or printed US address, never a meet title", () => {
+  for (const [address, expected] of [
+    ["One Haben Blvd., Palmetto, FL, 34221", "Palmetto, FL"],
+    ["333 S Franklin St, Tampa, FL 33602", "Tampa, FL"],
+    ["100 Arena Dr\nAtlanta, GA 30303, USA", "Atlanta, GA"],
+    ["100 Arena Dr", ""], ["Tampa Bay Turners Invitational", ""],
+    ["100 Arena Dr, Unknown, ZZ 12345", ""],
+  ]) assert.equal(themes.importedArtworkCity("", address), expected, address);
+  assert.equal(themes.importedArtworkCity("Palmetto", "333 S Franklin St, Tampa, FL 33602"), "Palmetto");
+  const result = themes.attachImportedEventTheme({ currentData: {}, workflow: "gymnastics", mappedData: {
+    title: "Tampa Bay Turners Invitational", address: "One Haben Blvd., Palmetto, FL, 34221",
+  } });
+  assert.equal(result.city, "Palmetto, FL");
+  assert.equal(result.importedTheme.context.city, "Palmetto, FL");
 });
 test("website branding reads inline styles and prioritizes two brand stylesheets through guarded reads", async () => {
   const reads = [];

@@ -6,6 +6,7 @@ import { normalizeCreateImage, readPublicCreateUrl } from "@/lib/create/read-sou
 import { normalizeCreationCategory } from "@/lib/creation-access";
 import { requireCreationAccess } from "@/lib/creation-access-server";
 import { validDiscoveryIntakeKey, withIdempotentDiscoveryIntake } from "./intake-recovery";
+import { DISCOVERY_INTAKE_URL_READ_TIMEOUT_MS } from "@/lib/discovery-budget";
 import { createDiscoveryShell } from "@/lib/discovery/persist";
 import { createDiscoveryPipelineState } from "@/lib/discovery/shared";
 import type { DiscoveryDocument, DiscoverySourceRecord, DiscoveryWorkflow } from "@/lib/discovery/types";
@@ -149,7 +150,10 @@ export async function intakeDiscovery(params: {
       normalizedUrl = new URL(rawUrl).toString();
       // Validate public addressing and redirects before this URL reaches the specialty crawler.
       if (params.validatedUrl !== normalizedUrl)
-        await readPublicCreateUrl(normalizedUrl, AbortSignal.any([params.request.signal, AbortSignal.timeout(20_000)]));
+        await readPublicCreateUrl(
+          normalizedUrl,
+          AbortSignal.any([params.request.signal, AbortSignal.timeout(DISCOVERY_INTAKE_URL_READ_TIMEOUT_MS)]),
+        );
       title = suffixTitleForWorkflow(
         new URL(normalizedUrl).hostname.replace(/^www\./i, ""),
         workflow,

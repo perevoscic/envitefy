@@ -7,7 +7,10 @@ import DiscoveryProgressPanel, {
   type DiscoveryProgressTheme,
 } from "@/components/event-create/DiscoveryProgressPanel";
 import { getDiscoveryStageLabel } from "@/components/event-create/discovery-progress";
-import { resolveDiscoveryClientParseTimeoutMs } from "@/lib/discovery-budget";
+import {
+  resolveDiscoveryClientIngestTimeoutMs,
+  resolveDiscoveryClientParseTimeoutMs,
+} from "@/lib/discovery-budget";
 
 type FootballLauncherProps = {
   forwardQueryString?: string;
@@ -17,7 +20,7 @@ type FootballLauncherProps = {
 type DiscoveryInput = { file?: File; url?: string };
 type DiscoveryProgressHandler = (progress: number, status: string) => void;
 const FOOTBALL_DISCOVERY_LOG_PREFIX = "[football-launcher]";
-const INGEST_REQUEST_TIMEOUT_MS = 15_000;
+const INGEST_REQUEST_TIMEOUT_MS = resolveDiscoveryClientIngestTimeoutMs();
 const FOOTBALL_DISCOVERY_PROGRESS_THEME: DiscoveryProgressTheme = {
   badgeBackground: "rgba(255,255,255,0.12)",
   badgeBorder: "rgba(255,255,255,0.22)",

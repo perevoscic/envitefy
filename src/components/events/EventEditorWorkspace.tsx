@@ -1,9 +1,7 @@
 "use client";
 
-import { ArrowLeft, ExternalLink, Eye, Link2, ListPlus, PanelsTopLeft, Pencil, Save, Share2, Trash2, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ArrowLeft, Check, CircleAlert, ExternalLink, Eye, Link2, ListPlus, PanelsTopLeft, Pencil, Save, Share2, Trash2, X } from "lucide-react";
 import EventDeleteModal from "@/components/EventDeleteModal";
-import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
 import { resolveNativeShareData } from "@/utils/native-share";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
@@ -31,6 +29,48 @@ type Drawer = Pick<
   | "previewTouchHandlers"
   | "drawerTouchHandlers"
 >;
+
+function EditorToast({ message, error }: { message: string; error: boolean }) {
+  const [dismissed, setDismissed] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (error || dismissed || hovered || focused) return;
+    const timer = window.setTimeout(() => setDismissed(true), 6000);
+    return () => window.clearTimeout(timer);
+  }, [error, dismissed, hovered, focused]);
+
+  if (dismissed) return null;
+  return (
+    <div
+      className={styles.toast}
+      data-editor-toast={error ? "error" : "success"}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+      }}
+    >
+      <span className={styles.toastIcon} aria-hidden="true">
+        {error ? <CircleAlert size={24} /> : <Check size={24} strokeWidth={2.5} />}
+      </span>
+      <div className={styles.toastCopy} role={error ? "alert" : "status"} aria-atomic="true">
+        {error && <strong>Action needed</strong>}
+        <p>{message}</p>
+      </div>
+      <button
+        type="button"
+        className={styles.toastDismiss}
+        aria-label="Dismiss notification"
+        onClick={() => setDismissed(true)}
+      >
+        <X size={18} aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
 
 function PreviewOwnerActions({ editor }: { editor: EventPageEditorSession }) {
   const [copied, setCopied] = useState(false);
@@ -85,10 +125,11 @@ export function EventEditorActions({
         <button
           type="button"
           disabled={disabled}
+          aria-busy={editor.saveIntent === "draft"}
           onClick={() => void editor.saveDraft().catch(() => {})}
         >
           <Save size={17} aria-hidden="true" />
-          Save draft
+          {editor.saveIntent === "draft" ? "Saving draft…" : "Save draft"}
         </button>
       )}
       {actions.showPrimary && (
@@ -96,9 +137,12 @@ export function EventEditorActions({
           type="button"
           className={styles.primary}
           disabled={disabled}
+          aria-busy={editor.saveIntent === "publish" || editor.saveIntent === "changes"}
           onClick={() => void editor.saveChanges().catch(() => {})}
         >
-          {editor.busy ? "Saving…" : actions.primaryLabel}
+          {editor.saveIntent === "publish"
+            ? "Publishing…"
+            : editor.saveIntent === "changes" ? "Saving…" : actions.primaryLabel}
           {!editor.published && <ExternalLink size={17} aria-hidden="true" />}
         </button>
       )}
@@ -128,6 +172,7 @@ export default function EventEditorWorkspace({
   editor,
   preview,
   controls,
+  controlsHeader,
   children,
   drawer,
   embedded = false,
@@ -145,6 +190,7 @@ export default function EventEditorWorkspace({
   editor: EventPageEditorSession;
   preview: ReactNode;
   controls: ReactNode | ((headerAction: ReactNode) => ReactNode);
+  controlsHeader?: ReactNode | ((headerAction: ReactNode) => ReactNode);
   templatesHref?: string;
   drawer?: Drawer;
   embedded?: boolean;
@@ -164,9 +210,6 @@ export default function EventEditorWorkspace({
   /** Return true after going back within the controls; shared tools request the main menu. */
   onBackWithinControls?: (toMainMenu?: boolean) => boolean;
 }) {
-  const router = useRouter();
-  const template = useTemplateEditor();
-  const guestExit = !embedded && template && !template.authenticated;
   const nativeBuilder = useEventSectionBuilder();
   const panelRef = useRef<HTMLElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -196,7 +239,7 @@ export default function EventEditorWorkspace({
       sectionEditors?.[alias]?.() || (typeof controls === "function" ? controls(null) : controls)
     );
   };
-  const [editing, setEditing] = useState(embedded || !pageEditing);
+  const [editing, setEditing] = useState(true);
   const [mobile, setMobile] = useState(false);
   const [mobileImageControls, setMobileImageControls] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -223,6 +266,13 @@ export default function EventEditorWorkspace({
     setEditing(false);
     drawer?.dismissMobileMenu();
     requestAnimationFrame(() => previewRef.current?.focus({ preventScroll: true }));
+  };
+  const cancelEditing = () => {
+    if (!embedded && !editor.dirty) {
+      showPage();
+      return;
+    }
+    editor.cancel();
   };
   const focusControlsMenu = () => {
     requestAnimationFrame(() => {
@@ -253,7 +303,7 @@ export default function EventEditorWorkspace({
     }
     editor.cancel();
   };
-  const inlineHeader = typeof controls === "function";
+  const inlineHeader = typeof controls === "function" || typeof controlsHeader === "function";
   const viewActions = !embedded && (
     <div className={styles.views} role="group" aria-label="Editor view" data-owner-actions={!currentEditing && Boolean(editor.ownerActions)}>
       {currentEditing ? (
@@ -298,16 +348,6 @@ export default function EventEditorWorkspace({
       data-bottom-settings={settingsInFooter}
       data-page-editing={pageEditing}
     >
-      {editor.error && (
-        <p className={styles.error} role="alert">
-          {editor.error}
-        </p>
-      )}
-      {editor.message && (
-        <p className={styles.message} role="status">
-          {editor.message}
-        </p>
-      )}
       {notices}
       <div className={styles.body}>
         {!embedded && pageEditing && (
@@ -342,6 +382,9 @@ export default function EventEditorWorkspace({
             data-inline-header={inlineHeader}
             inert={editor.busy ? true : undefined}
           >
+            {typeof controlsHeader === "function"
+              ? controlsHeader(pageEditing ? viewActions : null)
+              : controlsHeader}
             <div ref={setMobileImageControls} className={styles.mobileImageControls} />
             {compositionMenu === "cards" &&
               ((editor.setComposition && sectionEditors) ||
@@ -446,18 +489,28 @@ export default function EventEditorWorkspace({
           </div>
         </aside>
         <footer className={styles.footer} data-bottom-settings={settingsInFooter}>
+          {(editor.error || editor.message) && (
+            <div className={styles.toastPosition}>
+              <EditorToast
+                key={`${editor.error}:${editor.message}`}
+                message={editor.error || editor.message}
+                error={Boolean(editor.error)}
+              />
+            </div>
+          )}
           {pageEditing && viewActions}
           <EventEditorActions editor={editor} onBack={goBack}>
-            {guestExit && (
+            {!pageEditing && viewActions}
+            {(currentEditing || editor.dirty) && (
               <button
                 type="button"
-                disabled={editor.busy || !editor.ready}
-                onClick={() => router.push(`/${template.category}/templates`)}
+                disabled={editor.busy}
+                onClick={cancelEditing}
               >
+                {pageEditing && <X size={17} aria-hidden="true" />}
                 Cancel
               </button>
             )}
-            {!pageEditing && viewActions}
           </EventEditorActions>
         </footer>
       </div>

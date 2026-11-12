@@ -19,7 +19,7 @@ export default function GymnasticsDesignGallery() {
           forwardQueryString={date ? new URLSearchParams({ d: date }).toString() : undefined}
         />
       }
-      customThemePlacement="toolbar"
+      customThemePlacement="header"
       designs={GYM_MEET_TEMPLATE_LIBRARY}
       getHref={(design) => {
         const params = new URLSearchParams({ templateId: design.id });

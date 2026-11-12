@@ -65,9 +65,11 @@ export default function ImportedThemeControls({
         <button
           type="button"
           className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
-          onClick={() => onChange({ ...theme, enabled: !theme.enabled })}
+          onClick={() => onChange(theme.motif === "gymnastics"
+            ? { ...theme, enabled: true, preserveTemplateStyle: theme.enabled && !theme.preserveTemplateStyle ? true : undefined }
+            : { ...theme, enabled: !theme.enabled })}
         >
-          {theme.enabled ? "Use template style" : "Use event theme"}
+          {theme.enabled && !(theme.motif === "gymnastics" && theme.preserveTemplateStyle) ? "Use template style" : "Use event theme"}
         </button>
       </div>
       <ImportedThemeArtwork eventId={eventId} value={theme} onChange={onChange} />

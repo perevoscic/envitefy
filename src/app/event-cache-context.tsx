@@ -20,6 +20,7 @@ import {
   withoutRemovedEvents,
   writeEventRemovalKeys,
 } from "@/lib/event-cache-removals";
+import { EventHydrationContext } from "@/lib/event-hydration";
 
 export const EVENT_CACHE_INVALIDATE_EVENT = "envitefy:events:invalidate";
 export const EVENT_CACHE_RESET_EVENT = "envitefy:events:reset";
@@ -104,6 +105,8 @@ type EventCacheContextValue = {
   isIdentityReady: boolean;
   isHydrated: boolean;
   refreshHistory: (opts?: { force?: boolean }) => Promise<void>;
+  loadPastHistory: () => Promise<void>;
+  pastHistoryLoading: boolean;
   refreshDashboard: (opts?: { force?: boolean }) => Promise<void>;
   refreshAll: (opts?: EventCacheRefreshOptions) => Promise<void>;
   invalidateEventCache: (detail?: EventCacheInvalidateDetail) => void;
@@ -169,6 +172,10 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     | { email?: string | null; id?: string | null }
     | null;
   const [historySidebarItems, setHistorySidebarItems] = useState<HistoryRow[]>([]);
+  const [pastHistoryLoading, setPastHistoryLoading] = useState(false);
+  const pastRowsRef = useRef<HistoryRow[]>([]);
+  const pastLoadedRef = useRef(false);
+  const pastRequestRef = useRef<Promise<void> | null>(null);
   const [historyDiagnostics, setHistoryDiagnostics] =
     useState<HistoryDiagnostics | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -223,10 +230,14 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     refreshPromiseRef.current = null;
     pendingRefreshOptionsRef.current = null;
     historyRef.current = [];
+    pastRowsRef.current = [];
+    pastLoadedRef.current = false;
+    pastRequestRef.current = null;
     dashboardRef.current = null;
     dashboardRefreshPromiseRef.current = null;
     isHydratedRef.current = false;
     setHistorySidebarItems([]);
+    setPastHistoryLoading(false);
     setHistoryDiagnostics(null);
     setDashboardData(null);
     setHistoryLoading(false);
@@ -258,33 +269,48 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     }
   }, [sessionIdentityKey]);
 
+  const readSidebarHistory = useCallback(async (time: "upcoming" | "past", force?: boolean) => {
+    const params = new URLSearchParams({
+      view: "sidebar",
+      limit: "200",
+      time,
+    });
+    if (force) params.set("refresh", "1");
+    const res = await fetch(`/api/history?${params.toString()}`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (res.status === 304 || !res.ok) return null;
+    const json = await res.json().catch(() => null);
+    return {
+      items: Array.isArray(json?.items) ? (json.items as HistoryRow[]) : [],
+      diagnostics:
+        json?.diagnostics && typeof json.diagnostics === "object"
+          ? (json.diagnostics as HistoryDiagnostics)
+          : null,
+    };
+  }, []);
+
   const refreshHistory = useCallback(async (opts?: { force?: boolean }) => {
     if (!sessionIdentityKey || identityKeyRef.current !== sessionIdentityKey) return;
     const revision = cacheRevisionRef.current;
     const resetEpoch = historyResetEpochRef.current;
     setHistoryLoading(true);
     try {
-      const params = new URLSearchParams({
-        view: "sidebar",
-        limit: "200",
-        time: "all",
-      });
-      if (opts?.force) params.set("refresh", "1");
-      const res = await fetch(`/api/history?${params.toString()}`, {
-        credentials: "include",
-        cache: "no-store",
-      });
-      if (res.status === 304 || !res.ok) return;
-      const json = await res.json().catch(() => null);
-      if (resetEpoch !== historyResetEpochRef.current) return;
-      const items = Array.isArray(json?.items)
-        ? (json.items as HistoryRow[])
-        : historyRef.current;
-      setHistoryDiagnostics(
-        json?.diagnostics && typeof json.diagnostics === "object"
-          ? (json.diagnostics as HistoryDiagnostics)
-          : null
-      );
+      const upcomingResult = await readSidebarHistory("upcoming", opts?.force);
+      if (!upcomingResult || resetEpoch !== historyResetEpochRef.current) return;
+      let past = pastLoadedRef.current ? pastRowsRef.current : [];
+      if (pastLoadedRef.current) {
+        const pastResult = await readSidebarHistory("past", opts?.force);
+        if (resetEpoch !== historyResetEpochRef.current) return;
+        if (pastResult) {
+          past = pastResult.items;
+          pastRowsRef.current = past;
+        }
+      }
+      const pastIds = new Set(past.map((row) => row.id));
+      const items = [...upcomingResult.items.filter((row) => !pastIds.has(row.id)), ...past];
+      setHistoryDiagnostics(upcomingResult.diagnostics);
       setHistorySidebarItems((prev) => {
         // An older read can still fill the rest of the sidebar without replacing
         // the event just seeded by a save. Identity resets discard the read above.
@@ -294,14 +320,51 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
           revision !== cacheRevisionRef.current,
           getRemovedKeys(),
         );
-        return sortHistoryRows(rows).slice(0, 200);
+        return sortHistoryRows(rows).slice(0, 400);
       });
     } catch {
       // Keep the last good history state on transient failures.
     } finally {
       if (resetEpoch === historyResetEpochRef.current) setHistoryLoading(false);
     }
-  }, [getRemovedKeys, sessionIdentityKey]);
+  }, [getRemovedKeys, readSidebarHistory, sessionIdentityKey]);
+
+  const loadPastHistory = useCallback(async () => {
+    if (!sessionIdentityKey || identityKeyRef.current !== sessionIdentityKey) return;
+    if (pastLoadedRef.current) return;
+    if (pastRequestRef.current) return pastRequestRef.current;
+    const revision = cacheRevisionRef.current;
+    const resetEpoch = historyResetEpochRef.current;
+    setPastHistoryLoading(true);
+    const request = (async () => {
+      try {
+        const pastResult = await readSidebarHistory("past");
+        if (!pastResult || resetEpoch !== historyResetEpochRef.current) return;
+        pastRowsRef.current = pastResult.items;
+        pastLoadedRef.current = true;
+        setHistorySidebarItems((prev) => {
+          const pastIds = new Set(pastResult.items.map((row) => row.id));
+          const current = prev.filter((row) => !pastIds.has(row.id));
+          const rows = mergeEventHistoryRefresh(
+            [...current, ...pastResult.items],
+            prev,
+            revision !== cacheRevisionRef.current,
+            getRemovedKeys(),
+          );
+          return sortHistoryRows(rows).slice(0, 400);
+        });
+      } catch {
+        pastLoadedRef.current = false;
+      }
+    })();
+    pastRequestRef.current = request;
+    try {
+      await request;
+    } finally {
+      if (pastRequestRef.current === request) pastRequestRef.current = null;
+      if (resetEpoch === historyResetEpochRef.current) setPastHistoryLoading(false);
+    }
+  }, [getRemovedKeys, readSidebarHistory, sessionIdentityKey]);
 
   const refreshDashboard = useCallback(async (opts?: { force?: boolean }) => {
     if (!sessionIdentityKey || identityKeyRef.current !== sessionIdentityKey) return;
@@ -420,6 +483,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     persistRemovedKeys(removed);
     cacheRevisionRef.current += 1;
     historyRef.current = withoutRemovedEvents(historyRef.current, removed);
+    pastRowsRef.current = withoutRemovedEvents(pastRowsRef.current, removed);
     setHistorySidebarItems((prev) => withoutRemovedEvents(prev, removed));
     const includeDashboard = Boolean(dashboardRef.current || dashboardRefreshPromiseRef.current);
     dashboardRefreshPromiseRef.current = null;
@@ -597,6 +661,8 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       historySidebarItems: isIdentityReady ? historySidebarItems : [],
       historyDiagnostics: isIdentityReady ? historyDiagnostics : null,
       historyLoading: isIdentityReady && historyLoading,
+      loadPastHistory,
+      pastHistoryLoading: isIdentityReady && pastHistoryLoading,
       dashboardData: isIdentityReady ? dashboardData : null,
       dashboardLoading: isIdentityReady && dashboardLoading,
       dashboardError: isIdentityReady ? dashboardError : null,
@@ -616,6 +682,8 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       historyDiagnostics,
       historyLoading,
       historySidebarItems,
+      loadPastHistory,
+      pastHistoryLoading,
       invalidateEventCache,
       removeUnavailableEvent,
       isIdentityReady,
@@ -629,7 +697,9 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
 
   return (
     <EventCacheContext.Provider value={value}>
-      {children}
+      <EventHydrationContext.Provider value={value.isHydrated}>
+        {children}
+      </EventHydrationContext.Provider>
     </EventCacheContext.Provider>
   );
 }

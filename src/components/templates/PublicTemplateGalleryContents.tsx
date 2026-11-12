@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
 import CreateWithEnvitefyCallout from "@/components/events/CreateWithEnvitefyCallout";
 import { categoryGalleryPageClassName } from "@/components/events/category-gallery-page";
@@ -49,12 +49,14 @@ export default function PublicTemplateGalleryContents({
   featured = false,
   customThemeRequested = false,
   customThemeExpired = false,
+  header,
 }: {
   templates: PublicTemplate[];
   category: TemplateCategory;
   featured?: boolean;
   customThemeRequested?: boolean;
   customThemeExpired?: boolean;
+  header?: ReactNode;
 }) {
   const [customThemeOpen, setCustomThemeOpen] = useState(customThemeRequested);
   const { status } = useSession();
@@ -138,8 +140,10 @@ export default function PublicTemplateGalleryContents({
       className={`${featured ? styles.featured : `${categoryGalleryPageClassName(category)} ${styles.publicSection}`} scroll-mt-24 px-5 py-14 text-[#342d38] sm:px-8 lg:px-12 ${heroStyles?.gallery || ""}`}
     >
       <div className={heroStyles?.shell || "mx-auto max-w-[1500px]"}>
-        {!featured && <div className="relative z-10 mb-5 flex justify-end"><EventCategoryFavoriteButton category={category} /></div>}
-        {weddingGallery ? (
+        {!featured && !header && <div className="relative z-10 mb-5 flex justify-end"><EventCategoryFavoriteButton category={category} /></div>}
+        {header ? (
+          <div className={`-mx-5 mb-8 sm:-mx-8 lg:-mx-12 ${category === "gymnastics" ? styles.gymnasticsHero : ""}`}>{header}</div>
+        ) : weddingGallery ? (
           <WeddingTemplateGalleryHero templates={templates}>
             <EventCustomThemeLauncher category={category} presentation="hero" />
           </WeddingTemplateGalleryHero>
@@ -206,6 +210,7 @@ export default function PublicTemplateGalleryContents({
           </div>
         )}
         {!featured &&
+          !header &&
           !weddingGallery &&
           !birthdayGallery &&
           !babyShowerGallery &&

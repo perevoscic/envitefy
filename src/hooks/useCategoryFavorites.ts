@@ -51,6 +51,7 @@ export function useCategoryFavorites({
   }> | null>(null);
   const [failure, setFailure] = useState<AccountValue<string> | null>(null);
   const [pending, setPending] = useState<AccountValue<string | null> | null>(null);
+  const failedSave = useRef<AccountValue<{ id: string; ids: string[] }> | null>(null);
   const request = useRef<{ identity: string; epoch: number; controller: AbortController } | null>(
     null,
   );
@@ -97,18 +98,16 @@ export function useCategoryFavorites({
     [identity, epoch],
   );
 
-  const toggle = useCallback(
-    async (id: string) => {
+  const save = useCallback(
+    async (id: string, requestedIds: string[]) => {
       if (!ready || !access || !available.some((favorite) => favorite.id === id)) return;
       if (request.current?.identity === identity && request.current.epoch === epoch) return;
       request.current?.controller.abort();
       const controller = new AbortController();
       const active = { identity, epoch, controller };
       request.current = active;
-      const currentIds = filterPinnedCategoryIds(ids, access);
-      const nextIds = currentIds.includes(id)
-        ? currentIds.filter((value) => value !== id)
-        : [...currentIds, id];
+      const nextIds = filterPinnedCategoryIds(requestedIds, access);
+      failedSave.current = null;
       setPending({ identity, epoch, value: id });
       setFailure({ identity, epoch, value: "" });
       const ownsRequest = () =>
@@ -150,6 +149,7 @@ export function useCategoryFavorites({
         notifyFeatureVisibilityChanged();
       } catch {
         if (ownsRequest() && (!controller.signal.aborted || timedOut)) {
+          failedSave.current = { identity, epoch, value: { id, ids: nextIds } };
           setFailure({
             identity,
             epoch,
@@ -166,11 +166,23 @@ export function useCategoryFavorites({
         }
       }
     },
-    [access, epoch, identity, ids, available, ready],
+    [access, epoch, identity, available, ready],
   );
 
+  const toggle = useCallback(async (id: string) => {
+    if (!access) return;
+    const currentIds = filterPinnedCategoryIds(ids, access);
+    await save(id, currentIds.includes(id) ? currentIds.filter(value => value !== id) : [...currentIds, id]);
+  }, [access, ids, save]);
+
   const retry = useCallback(async () => {
-    await preferences.refresh?.();
-  }, [preferences.refresh]);
+    const failed = failedSave.current;
+    if (failed && failed.identity === identity && failed.epoch === epoch) {
+      await save(failed.value.id, failed.value.ids);
+    } else {
+      setFailure(null);
+      await preferences.refresh?.();
+    }
+  }, [epoch, identity, preferences.refresh, save]);
   return { favorites, options, available, pinnedIds: ids, defaultCategory, loading, saving, savingId, error, toggle, retry };
 }

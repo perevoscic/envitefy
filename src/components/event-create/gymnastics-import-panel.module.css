@@ -136,8 +136,101 @@
   opacity: 0.7;
 }
 
+.importActions {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr);
+  align-items: stretch;
+  gap: 8px;
+  transition: grid-template-columns 180ms ease;
+}
+
+.importActions:has(.linkPrompt:focus-within) {
+  grid-template-columns: 44px minmax(0, 1fr);
+}
+
+.importActions:has(.linkPrompt:focus-within) .uploadLabel {
+  display: none;
+}
+
+.linkPrompt {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  border: 1px solid #ffffff52;
+  border-radius: 24px;
+  padding: 3px;
+  background: linear-gradient(110deg, #ffffff14, #ffffff24, #ffffff14);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 2px 10px #00000014;
+  transition: box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.linkPrompt:hover,
+.linkPrompt:focus-within {
+  border-color: #d6b5ff;
+  box-shadow: 0 0 0 1px #9333ea33, 0 0 12px #ec48992b, 0 0 22px #3b82f61a;
+}
+
+.linkPrompt:focus-within {
+  outline: 2px solid var(--meet-panel-ink);
+  outline-offset: 2px;
+}
+
+.panel .linkPrompt .urlInput:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.linkPrompt > label {
+  display: block;
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.panel .linkPrompt .urlInput {
+  box-sizing: border-box;
+  min-width: 0;
+  border: 0;
+  border-radius: 20px;
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--meet-panel-ink);
+  -webkit-text-fill-color: var(--meet-panel-ink);
+  caret-color: var(--meet-panel-ink);
+}
+
+.panel .linkPrompt .urlInput::placeholder {
+  color: var(--meet-panel-muted);
+  -webkit-text-fill-color: var(--meet-panel-muted);
+}
+
+.panel .linkPrompt .urlInput:autofill {
+  -webkit-text-fill-color: var(--meet-panel-ink);
+  box-shadow: 0 0 0 1000px #49365d inset;
+}
+
+.panel .linkSubmit {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ffffff52;
+  border-radius: 50%;
+  background: #221b32;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.panel .linkSubmit:hover:not(:disabled) { background: #352745; }
+.panel .linkSubmit:disabled { cursor: not-allowed; opacity: 0.65; }
+.panel .linkSubmit:focus-visible { outline: 2px solid var(--meet-panel-ink); outline-offset: 2px; }
+
 @media (prefers-reduced-motion: reduce) {
-  .panel .button {
+  .panel .button,
+  .linkPrompt,
+  .importActions {
     transition: none;
   }
 }

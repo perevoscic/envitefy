@@ -71,11 +71,10 @@ export async function listDashboardEventsForUser(
   const safeLimit = Math.max(1, Math.floor(limit));
   const rowLimit = Math.max(1, Math.min(DASHBOARD_HISTORY_ROW_CAP, safeLimit));
   try {
-    const rows = [...await listCollaborativeEvents(userId), ...await listDashboardHistoryWindowForUser(userId, rowLimit)];
+    const rows = [...await listCollaborativeEvents(userId), ...await listDashboardHistoryWindowForUser(userId, rowLimit, "upcoming")];
     const windowResult = rowsToDashboardEvents(rows);
     const events = windowResult.events;
-    // The database orders the user's full event history by event date before
-    // limiting the result, so older-created upcoming events are included here.
+    // Past events stay out of this read. The sidebar loads them when Show past events is pressed.
 
     return {
       events,
@@ -98,7 +97,8 @@ export async function listDashboardEventsForUser(
     const fallbackRows = [...await listCollaborativeEvents(userId), ...await listDashboardHistoryFallbackForUser(
       userId,
       safeLimit,
-      safeLimit
+      safeLimit,
+      "upcoming",
     )];
     const fallbackResult = rowsToDashboardEvents(fallbackRows);
     return {

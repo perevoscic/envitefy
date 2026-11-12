@@ -33,6 +33,7 @@ function cancelHarness(query, embedded = false, {
   published = true,
   unifiedCreationEnabled = true,
   cancelHref,
+  template,
 } = {}) {
   const navigations = [];
   const resets = [];
@@ -45,6 +46,7 @@ function cancelHarness(query, embedded = false, {
     isEmbed: embedded,
     search: new URLSearchParams(query + (embedded ? "&embed=1" : "")),
     cancelHref,
+    template,
     published,
     UNIFIED_CREATION_ENABLED: unifiedCreationEnabled,
     id: { current: savedEventId },
@@ -108,6 +110,14 @@ test("draft Cancel retains the legacy creation destination when unified creation
   });
   editor.cancel();
   assert.deepEqual(editor.navigations, ["/"]);
+});
+
+test("guest template Cancel returns to its public gallery without requiring sign-in", () => {
+  for (const category of ["gymnastics", "birthdays"]) {
+    const editor = cancelHarness("", false, { published: false, template: { category, authenticated: false } });
+    editor.cancel();
+    assert.deepEqual(editor.navigations, [`/${category}/templates`]);
+  }
 });
 
 test("embedded draft Cancel waits for unsaved-change resolution before resetting and exiting to Create", () => {

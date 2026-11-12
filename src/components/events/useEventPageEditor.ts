@@ -36,6 +36,7 @@ export type EventPageEditorSession = {
   published: boolean;
   dirty: boolean;
   busy: boolean;
+  saveIntent?: "draft" | "publish" | "changes" | null;
   ready: boolean;
   authenticated: boolean;
   error: string;
@@ -102,6 +103,7 @@ export function useEventPageEditor({
   const savedEventId = eventId || template?.eventId;
   if (savedEventId && savedEventId !== id.current) id.current = savedEventId;
   const [busy, setBusy] = useState(false);
+  const [saveIntent, setSaveIntent] = useState<EventPageEditorSession["saveIntent"]>(null);
   const [urlBusy, setUrlBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -197,6 +199,7 @@ export function useEventPageEditor({
     }
     saving.current = true;
     setBusy(true);
+    setSaveIntent(publish ? (published ? "changes" : "publish") : "draft");
     onBusyChange?.(true);
     setError("");
     setMessage("");
@@ -265,6 +268,7 @@ export function useEventPageEditor({
           id.current = await template.persist(payload, "published", {
             navigate: false,
             snapshot: capturedSnapshot,
+            showMessage: false,
           });
           const row = historyClient.read(`/api/history/${encodeURIComponent(id.current)}`);
           href = row
@@ -289,7 +293,7 @@ export function useEventPageEditor({
             Intl.DateTimeFormat().resolvedOptions().timeZone,
           ),
           "draft",
-          { navigate: false, snapshot: capturedSnapshot },
+          { navigate: false, snapshot: capturedSnapshot, showMessage: false },
         );
       } else {
         id.current = await saveManualEventProgress({
@@ -309,7 +313,7 @@ export function useEventPageEditor({
         void getSession().then(session => attachCreationIntakeEvent(creationIntakeOwner(session?.user), intakeId, savedId)).catch(() => {});
       }
       window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: id.current } }));
-      setMessage(publish ? "Changes saved." : "Draft saved.");
+      setMessage(publish ? (published ? "Changes saved." : "Event published.") : "Draft saved.");
       if (navigate && publish && href)
         progress.allowNavigation(() => {
           if (search?.get("embed") === "1" && window.parent !== window)
@@ -342,6 +346,7 @@ export function useEventPageEditor({
     } finally {
       saving.current = false;
       setBusy(false);
+      setSaveIntent(null);
       onBusyChange?.(false);
     }
   };
@@ -364,7 +369,9 @@ export function useEventPageEditor({
     },
   });
   const cancel = () => {
-    const creationHref = UNIFIED_CREATION_ENABLED ? "/create" : "/";
+    const creationHref = template && !template.authenticated
+      ? `/${template.category}/templates`
+      : UNIFIED_CREATION_ENABLED ? "/create" : "/";
     // An explicit draft save creates an identity, but not a published page to return to.
     const href = published
       ? cancelHref ||
@@ -395,6 +402,7 @@ export function useEventPageEditor({
     published,
     dirty: progress.dirty,
     busy: busy || externalBusy || urlBusy,
+    saveIntent,
     ready: editorReady,
     authenticated: template?.authenticated ?? true,
     error,

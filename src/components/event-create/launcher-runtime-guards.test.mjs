@@ -12,7 +12,7 @@ test("launcher URL sync flows add explicit timeout handling and start logs", () 
   const gymnasticsSource = readSource("src/components/event-create/GymnasticsLauncher.tsx");
   const footballSource = readSource("src/components/event-create/FootballLauncher.tsx");
 
-  assert.match(gymnasticsSource, /const INGEST_REQUEST_TIMEOUT_MS = 15_000;/);
+  assert.match(gymnasticsSource, /const INGEST_REQUEST_TIMEOUT_MS = resolveDiscoveryClientIngestTimeoutMs\(\);/);
   assert.match(gymnasticsSource, /resolveDiscoveryClientParseTimeoutMs\(inputType\)/);
   assert.match(gymnasticsSource, /resolveParseTimeoutMs\(file \? "file" : "url"\)/);
   assert.match(gymnasticsSource, /resolveGymnasticsPipelineProgress\(sourceType, "ingested"\)/);
@@ -24,7 +24,7 @@ test("launcher URL sync flows add explicit timeout handling and start logs", () 
   assert.match(gymnasticsSource, /requestDiscoveryCancel/);
   assert.match(gymnasticsSource, /\/api\/discovery\/\$\{eventId\}\/cancel/);
 
-  assert.match(footballSource, /const INGEST_REQUEST_TIMEOUT_MS = 15_000;/);
+  assert.match(footballSource, /const INGEST_REQUEST_TIMEOUT_MS = resolveDiscoveryClientIngestTimeoutMs\(\);/);
   assert.match(footballSource, /from "@\/lib\/discovery-budget"/);
   assert.match(footballSource, /resolveDiscoveryClientParseTimeoutMs\(inputType\)/);
   assert.match(footballSource, /resolveParseTimeoutMs\(file \? "file" : "url"\)/);

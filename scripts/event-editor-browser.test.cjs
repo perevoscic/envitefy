@@ -173,6 +173,8 @@ async function createEditorHarness() {
         body,
         revision: body.expectedRevision,
       });
+      state.onSave?.();
+      if (state.saveGate) await state.saveGate;
       assert.equal(req.headers()["if-match"], undefined, "event revisions must bypass HTTP entity preconditions");
       if (state.failSave)
         return route.fulfill({
@@ -385,6 +387,266 @@ function editorCase(name, run, timeout = 30000) {
 }
 
 test.describe("Event Page editor saves and navigation", () => {
+  editorCase("draft and publication progress belongs to the selected action on desktop and phone", async ({ page, state, writes, records, base, openControls }) => {
+    for (const width of [1440, 390]) for (const route of [
+      "/event/general/customize?mode=manual",
+      "/gymnastics/templates/airborne-atlas/customize",
+      "/event/general/customize?mode=create",
+    ]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${base}${route}`);
+      await openControls();
+      if (route.includes("mode=manual")) {
+        await page.getByRole("button", { name: /^Headline/ }).click();
+        await page.getByRole("textbox", { name: "Headline", exact: true }).fill("Publication test event");
+      }
+      const actions = page.getByRole("group", { name: "Save event", exact: true });
+      const runHeldSave = async (action, pending, other, fail = false) => {
+        let release;
+        state.saveGate = new Promise(resolve => { release = resolve; });
+        const started = new Promise(resolve => { state.onSave = resolve; });
+        state.failSave = fail;
+        const before = writes.length;
+        try {
+          await actions.getByRole("button", { name: action, exact: true }).click();
+          const active = actions.getByRole("button", { name: pending, exact: true });
+          await active.waitFor();
+          assert.equal(await active.isDisabled(), true);
+          assert.equal(await active.getAttribute("aria-busy"), "true");
+          const inactive = actions.getByRole("button", { name: other, exact: true });
+          assert.equal(await inactive.isDisabled(), true, "the other action cannot start a competing save");
+          assert.equal(await inactive.getAttribute("aria-busy"), "false", "only the selected action reports progress");
+          await started;
+          assert.equal(writes.length, before + 1, "one click starts one write");
+          await page.screenshot({ path: path.join(output, `save-progress-${width}-${route.includes("gymnastics") ? "gymnastics" : route.includes("create") ? "custom" : "native"}-${action === "Publish" ? "publish" : "draft"}.png`) });
+        } finally {
+          release();
+          state.saveGate = undefined;
+          state.onSave = undefined;
+        }
+      };
+      await runHeldSave("Save draft", "Saving draft…", "Publish");
+      await page.getByText("Draft saved.", { exact: true }).waitFor();
+      const id = writes.at(-1).path.split("/")[3] || new URL(page.url()).searchParams.get("edit");
+      assert.equal(records.get(id).data.status, "draft");
+      await actions.getByRole("button", { name: "Save draft", exact: true }).waitFor();
+      assert.equal(await actions.getByRole("button", { name: "Publish", exact: true }).isEnabled(), true);
+
+      await runHeldSave("Publish", "Publishing…", "Save draft", true);
+      await page.getByRole("alert").filter({ hasText: "Another co-host saved" }).waitFor();
+      assert.equal(records.get(id).data.status, "draft", "failed publication preserves the saved draft");
+      assert.equal(await actions.getByRole("button", { name: "Publish", exact: true }).isEnabled(), true, "failed publication clears its progress state for retry");
+      assert.equal(await actions.getByRole("button", { name: "Save draft", exact: true }).isEnabled(), true);
+
+      await runHeldSave("Publish", "Publishing…", "Save draft");
+      await page.locator("[data-destination]").waitFor();
+      assert.equal(records.get(id).data.status, "published");
+      assert.match(new URL(page.url()).pathname, new RegExp(`^/event/(?:[a-z0-9-]+-)?${id}$`), "publication opens the saved event with its public title slug");
+    }
+  }, 60000);
+
+  editorCase("first publication and published updates report distinct success feedback", async ({ page, state, records, base, saved }) => {
+    const id = "publication-feedback";
+    records.set(id, { ...structuredClone(saved), id, public_slug: id, data: { ...structuredClone(saved.data), status: "draft", draftStatus: "draft" } });
+    await page.route(`${base}/editor-frame-host`, route => route.fulfill({
+      contentType: "text/html",
+      body: `<script>window.editorMessages=[];window.addEventListener("message",event=>window.editorMessages.push(event.data));</script><iframe title="Embedded editor" style="width:1440px;height:900px" src="/event/general/customize?edit=${id}&embed=1"></iframe>`,
+    }));
+    await page.goto(`${base}/editor-frame-host`);
+    const frame = page.frameLocator('iframe[title="Embedded editor"]');
+    await frame.getByRole("button", { name: "Publish", exact: true }).click();
+    await frame.getByText("Event published.", { exact: true }).waitFor();
+    assert.equal(records.get(id).data.status, "published");
+    assert.equal(await frame.getByText("Changes saved.", { exact: true }).count(), 0);
+    await frame.getByRole("button", { name: /Event details/ }).click();
+    await frame.getByLabel("Event title", { exact: true }).fill("Updated published event");
+    let release;
+    state.saveGate = new Promise(resolve => { release = resolve; });
+    try {
+      await frame.getByRole("button", { name: "Save changes", exact: true }).click();
+      const saving = frame.getByRole("button", { name: "Saving…", exact: true });
+      await saving.waitFor();
+      assert.equal(await saving.getAttribute("aria-busy"), "true");
+      assert.equal(await frame.getByRole("button", { name: "Publishing…", exact: true }).count(), 0);
+    } finally {
+      release();
+      state.saveGate = undefined;
+    }
+    await frame.getByText("Changes saved.", { exact: true }).waitFor();
+    assert.equal(records.get(id).data.fields.title, "Updated published event");
+    await page.waitForFunction(() => window.editorMessages.filter(message => message.type === "envitefy:discovery-edit-saved").length === 2);
+  });
+
+  editorCase("gymnastics clean Cancel closes settings and dirty Cancel prompts on desktop and phone", async ({ page, writes, base, openControls, preview }) => {
+    const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+    const actions = page.getByRole("group", { name: "Save event", exact: true });
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      const href = `${base}/gymnastics/templates/airborne-atlas/customize`;
+      await page.goto(href);
+      await openControls();
+      await actions.getByRole("button", { name: "Cancel", exact: true }).click();
+      await controls.waitFor({ state: "hidden" });
+      await preview.waitFor();
+      assert.equal(new URL(page.url()).pathname, new URL(href).pathname, "clean Cancel shows the meet canvas like X");
+      assert.equal(await page.getByRole("dialog").count(), 0);
+      assert.equal(await actions.getByRole("button", { name: "Cancel", exact: true }).count(), 0, "clean preview has no redundant Cancel action");
+
+      await page.goto(href);
+      await openControls();
+      await controls.getByRole("button", { name: /^Event basics/ }).click();
+      const title = page.getByLabel("Event Title", { exact: true });
+      const pending = `Pending meet ${width}`;
+      await title.fill(pending);
+      await controls.getByRole("button", { name: "Close settings", exact: true }).click();
+      await controls.waitFor({ state: "hidden" });
+      await preview.waitFor();
+      assert.equal(await page.getByRole("dialog").count(), 0, "X changes the view without discarding");
+      assert.equal(new URL(page.url()).pathname, new URL(href).pathname);
+      await openControls();
+      assert.equal(await title.inputValue(), pending, "X retains pending title edits");
+      await actions.getByRole("button", { name: "Cancel", exact: true }).click();
+      await page.getByRole("dialog", { name: "Save your progress?", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+      assert.equal(await title.inputValue(), pending, "Keep editing retains pending edits");
+      await actions.getByRole("button", { name: "Cancel", exact: true }).click();
+      await page.getByRole("button", { name: "Discard and leave", exact: true }).click();
+      await page.locator("[data-destination]").waitFor();
+      assert.equal(new URL(page.url()).pathname, "/create");
+      assert.equal(writes.length, 0, "Cancel and X never save or publish");
+    }
+  }, 60000);
+
+  editorCase("Cancel protects saved content across every native Event Page category", async ({ page, writes, records, base, openControls }) => {
+    const categories = ["general", "appointments", "workshops", "special-events", "cheerleading", "dance-ballet", "soccer", "football-season", "sport-events", "weddings", "birthdays", "anniversaries", "baby-showers", "bridal-showers", "gender-reveal", "gymnastics"];
+    const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+    const cancel = page.getByRole("group", { name: "Save event", exact: true }).getByRole("button", { name: "Cancel", exact: true });
+    for (const width of [1440, 390]) for (const category of categories) {
+      await page.setViewportSize({ width, height: 900 });
+      const id = `cancel-${category}-${width}`;
+      const original = {
+        title: "Original event", status: "published", draftStatus: "published", createdVia: "simple-template", category,
+        date: "2027-04-10", time: "09:30", timezone: "America/Chicago", venue: "Original venue",
+        pageTemplateId: category === "gymnastics" ? "airborne-atlas" : undefined,
+        rsvpEnabled: false, rsvp: { isEnabled: false }, numberOfGuests: 7,
+      };
+      records.set(id, { id, title: "Original event", public_slug: id, revision: "original", data: original });
+      const routeCategory = category === "bridal-showers" ? "baby-showers" : category;
+      const href = `${base}/event/${routeCategory}/customize?edit=${id}${category === "gymnastics" ? "&mode=gymnastics" : `&toolsAudit=${category}`}${category === "bridal-showers" ? "&occasion=bridal-shower" : ""}`;
+      const before = writes.length;
+      await page.goto(href);
+      await openControls();
+      await controls.getByRole("button", { name: /^(RSVP|Attendance|Reminders)/ }).click();
+      await controls.getByRole("switch").first().waitFor();
+      const editorUrl = page.url();
+      await cancel.click();
+      await controls.waitFor({ state: "hidden" });
+      assert.equal(page.url(), editorUrl, `${category}: clean Cancel closes settings on the same canvas at ${width}px`);
+      assert.equal(await page.getByRole("dialog").count(), 0);
+
+      await page.goto(href);
+      await openControls();
+      await controls.getByRole("button", { name: /^(RSVP|Attendance|Reminders)/ }).click();
+      const toggle = controls.getByRole("switch").first();
+      await toggle.click();
+      assert.equal(await toggle.isChecked(), true);
+      await cancel.click();
+      await page.getByRole("dialog", { name: "Save your progress?", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+      assert.equal(await toggle.isChecked(), true, `${category}: Keep editing retains the pending change`);
+      await cancel.click();
+      await page.getByRole("button", { name: "Discard and leave", exact: true }).click();
+      await page.locator("[data-destination]").waitFor();
+      assert.equal(new URL(page.url()).pathname, `/event/${id}`);
+      assert.equal(writes.length, before, `${category}: Cancel never writes content`);
+      assert.deepEqual(records.get(id).data, original, `${category}: discarding preserves saved content and responses`);
+    }
+  }, 180000);
+
+  editorCase("Cancel remains available after a meet loading failure", async ({ page, writes, base, workspace }) => {
+    await page.route("**/api/history/unavailable-meet", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "History unavailable" }) }));
+    await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics&edit=unavailable-meet`);
+    await workspace.waitFor();
+    const actions = page.getByRole("group", { name: "Save event", exact: true });
+    await actions.getByRole("button", { name: "Save draft", exact: true }).waitFor();
+    assert.equal(await actions.getByRole("button", { name: "Save draft", exact: true }).isDisabled(), true);
+    assert.equal(await actions.getByRole("button", { name: "Cancel", exact: true }).isEnabled(), true, "leaving does not depend on successfully loading editable content");
+    await actions.getByRole("button", { name: "Cancel", exact: true }).click();
+    await page.getByRole("complementary", { name: "Event editing controls", exact: true }).waitFor({ state: "hidden" });
+    assert.equal(new URL(page.url()).searchParams.get("edit"), "unavailable-meet", "Cancel closes settings even if content cannot load");
+    assert.equal(writes.length, 0);
+  });
+
+  editorCase("Cancel in generated and uploaded editors preserves drafts and failed saves", async ({ page, writes, records, state, base, openControls }) => {
+    const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+    const cancel = page.getByRole("group", { name: "Save event", exact: true }).getByRole("button", { name: "Cancel", exact: true });
+    for (const width of [1440, 390]) for (const mode of ["create", "upload"]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${base}/event/general/customize?mode=${mode}`);
+      await openControls();
+      await page.getByRole("button", { name: "Save draft", exact: true }).click();
+      await page.getByText("Draft saved.", { exact: true }).waitFor();
+      const id = new URL(page.url()).searchParams.get("edit");
+      const original = structuredClone(records.get(id).data);
+      const before = writes.length;
+      const editorUrl = page.url();
+      await cancel.click();
+      await controls.waitFor({ state: "hidden" });
+      assert.equal(page.url(), editorUrl, "Cancel after an explicit save closes settings without leaving the canvas");
+      assert.equal(await page.getByRole("dialog").count(), 0);
+      assert.equal(writes.length, before, "clean Cancel does not resave the draft");
+
+      await page.goto(`${base}/event/general/customize?mode=${mode}&edit=${id}`);
+      await openControls();
+      await controls.getByRole("button", { name: /^Event details/ }).click();
+      const title = page.getByLabel("Event title", { exact: true });
+      await title.fill(`Pending custom event ${width} ${mode}`);
+      await cancel.click();
+      await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+      assert.equal(await title.inputValue(), `Pending custom event ${width} ${mode}`);
+      await cancel.click();
+      state.failSave = true;
+      await page.getByRole("button", { name: "Save and leave", exact: true }).click();
+      await page.getByRole("dialog").getByRole("alert").waitFor();
+      assert.equal(await page.locator("[data-destination]").count(), 0, "failed Save and leave stays in the editor");
+      assert.deepEqual(records.get(id).data, original, "failed save preserves the previous draft");
+      state.failSave = false;
+      const afterFailure = writes.length;
+      await page.getByRole("button", { name: "Discard and leave", exact: true }).click();
+      await page.locator("[data-destination]").waitFor();
+      assert.equal(new URL(page.url()).pathname, "/create");
+      assert.equal(writes.length, afterFailure, "discard does not retry the failed save");
+      assert.deepEqual(records.get(id).data, original);
+    }
+  }, 90000);
+
+  editorCase("guest template clean Cancel closes settings and protects pending edits", async ({ page, writes, base, openControls }) => {
+    const cancel = page.getByRole("group", { name: "Save event", exact: true }).getByRole("button", { name: "Cancel", exact: true });
+    for (const width of [1440, 390]) for (const category of ["birthdays", "gymnastics"]) {
+      await page.setViewportSize({ width, height: 900 });
+      const href = category === "birthdays"
+        ? `${base}/birthdays/templates/candy-dreams/customize?mode=template&signedOut=1`
+        : `${base}/gymnastics/templates/airborne-atlas/customize?signedOut=1`;
+      await page.goto(href);
+      await openControls();
+      await cancel.click();
+      await page.getByRole("complementary", { name: "Event editing controls", exact: true }).waitFor({ state: "hidden" });
+      assert.equal(page.url(), href, "clean guest Cancel stays on the template canvas");
+      assert.equal(await page.getByRole("dialog").count(), 0);
+      await page.goto(href);
+      await openControls();
+      const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+      await controls.getByRole("button", { name: category === "birthdays" ? /^Headline/ : /^Event basics/ }).click();
+      await page.getByLabel(category === "birthdays" ? "Child's Name" : "Event Title", { exact: true }).fill("Unsaved guest event");
+      await cancel.click();
+      await page.getByRole("dialog", { name: "Save your progress?", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Discard and leave", exact: true }).click();
+      await page.locator("[data-destination]").waitFor();
+      assert.equal(new URL(page.url()).pathname, `/${category}/templates`);
+      assert.equal(writes.length, 0, "guest exits do not save or publish");
+    }
+  }, 60000);
+
   editorCase("RSVP enable/save/reopen/disable across five categories on desktop and phone", async ({ page, records, base, openControls }) => {
     // RSVP remains reachable even when disabled and survives an explicit save/reopen.
     for (const width of [1440, 390]) {
@@ -437,9 +699,9 @@ test.describe("Event Page editor saves and navigation", () => {
       assert.equal(await preview.getByRole("button", { name: "Add section", exact: true }).count(), 0, "clean page hides section editing tools");
       assert.equal(await preview.getByRole("button", { name: "Change hero image", exact: true }).count(), 0, "clean page hides artwork replacement controls");
       assert.equal(await preview.locator("[data-hero-image-control]").count(), 0, "initial page omits the artwork editing surface");
-      const checkTouchActions = async () => {
+      const checkTouchActions = async (expectCancel = true) => {
         const actions = page.getByRole("group", { name: "Save event", exact: true });
-        assert.deepEqual(await actions.getByRole("button").allTextContents(), [await viewActions.getByRole("button").innerText(), "Save draft", "Publish"], "draft actions show the view toggle, Save draft and Publish in order");
+        assert.deepEqual(await actions.getByRole("button").allTextContents(), [await viewActions.getByRole("button").innerText(), ...(expectCancel ? ["Cancel"] : []), "Save draft", "Publish"], "draft actions expose Cancel only while settings or pending edits can be cancelled");
         for (const button of await actions.getByRole("button").all()) {
           if (!(await button.isVisible())) continue;
           const bounds = await button.boundingBox();
@@ -448,7 +710,7 @@ test.describe("Event Page editor saves and navigation", () => {
         }
         await checkActionPlacement();
       };
-      await checkTouchActions();
+      await checkTouchActions(false);
       await page.screenshot({ path: path.join(output, `preview-${width}-${height}.png`) });
       await leave();
       await page.locator("[data-destination]").waitFor();
@@ -735,7 +997,7 @@ test.describe("Event Page editor saves and navigation", () => {
       assert.equal(await page.evaluate(() => window.__previewShared.url), `${base}/event/school-trip`);
       await remove.click();
       await page.getByRole("heading", { name: "Delete Event", exact: true }).waitFor();
-      await page.getByRole("button", { name: "Cancel", exact: true }).click();
+      await page.getByRole("dialog", { name: "Delete Event", exact: true }).getByRole("button", { name: "Cancel", exact: true }).click();
       assert.equal(writes.length, 0, "preview sharing and cancelling deletion never save or publish");
       await page.screenshot({ path: path.join(output, `preview-owner-actions-${width}.png`) });
     }

@@ -5,7 +5,7 @@ import {
   redesignImportedEventTheme,
   type ImportedEventTheme,
 } from "@/lib/imported-event-theme";
-type Artwork = {
+export type ImportedArtworkStatus = {
   themeId: string;
   status: "generating" | "ready" | "failed";
   imageUrl?: string;
@@ -19,6 +19,8 @@ export default function ImportedThemeArtwork({
   syncOnly = false,
   compact = false,
   onUseImage,
+  onStatusChange,
+  refreshKey,
 }: {
   eventId?: string | null;
   value: unknown;
@@ -26,14 +28,19 @@ export default function ImportedThemeArtwork({
   syncOnly?: boolean;
   compact?: boolean;
   onUseImage?: () => void;
+  onStatusChange?: (artwork: ImportedArtworkStatus | null) => void;
+  refreshKey?: string;
 }) {
   const theme = readImportedEventTheme(value);
   const current = useRef({ theme, onChange, onUseImage });
   current.current = { theme, onChange, onUseImage };
   const requestedThemeId = useRef<string | null>(null);
-  const [artwork, setArtwork] = useState<Artwork | null>(null);
+  const [artwork, setArtwork] = useState<ImportedArtworkStatus | null>(null);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
+  useEffect(() => {
+    onStatusChange?.(artwork);
+  }, [artwork, onStatusChange]);
   useEffect(() => {
     if (!eventId || !theme?.enabled) return;
     let active = true;
@@ -76,10 +83,11 @@ export default function ImportedThemeArtwork({
       active = false;
       clearTimeout(timer);
     };
-  }, [eventId, theme?.id, theme?.enabled, refresh]);
+  }, [eventId, theme?.id, theme?.enabled, refresh, refreshKey]);
   async function generate(requestTheme = theme) {
     if (!eventId || !requestTheme) return;
     requestedThemeId.current = requestTheme.id;
+    current.current.onChange(requestTheme);
     setError("");
     setArtwork({ themeId: requestTheme.id, status: "generating" });
     try {
@@ -87,7 +95,7 @@ export default function ImportedThemeArtwork({
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme: requestTheme, retry: artwork?.status === "failed" }),
+        body: JSON.stringify({ theme: requestTheme, retry: artwork?.status === "failed", replace: Boolean(requestTheme.artworkUrl) }),
       });
       const result = await response.json().catch(() => null);
       if (!response.ok || !result)
@@ -95,6 +103,7 @@ export default function ImportedThemeArtwork({
           result?.error ||
             `The image request could not be started (${response.status}). Your current image is kept.`,
         );
+      onStatusChange?.({ themeId: requestTheme.id, status: "generating" });
       setRefresh((value) => value + 1);
     } catch (reason) {
       requestedThemeId.current = null;

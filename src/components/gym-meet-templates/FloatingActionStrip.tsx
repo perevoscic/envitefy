@@ -4,21 +4,37 @@
 
 import type { EventCalendarLinks } from "@/lib/calendar-preference";
 
-import { ExternalLink, Eye, Pencil, Share2 } from "lucide-react";
+import { CalendarPlus, ExternalLink, Eye, Pencil, Share2 } from "lucide-react";
 import CalendarAction from "@/components/CalendarAction";
+import styles from "./gymnastics-collection.module.css";
+
+export function GymnasticsHeroActions({ onShare, calendarLinks }: {
+  onShare: () => void;
+  calendarLinks?: EventCalendarLinks | null;
+}) {
+  const buttonClass = `${styles.secondaryButton} ${styles.heroIconButton}`;
+  return (
+    <div className={styles.heroActions} data-gym-hero-actions>
+      <button type="button" onClick={onShare} className={buttonClass} aria-label="Share event" title="Share event">
+        <Share2 size={16} aria-hidden="true" />
+      </button>
+      {calendarLinks ? (
+        <CalendarAction className={buttonClass} links={calendarLinks}>
+          {() => <CalendarPlus size={16} aria-hidden="true" />}
+        </CalendarAction>
+      ) : null}
+    </div>
+  );
+}
 
 export default function FloatingActionStrip({
   buttonClass,
-  onShare,
-  calendarLinks,
   onMobileEdit,
   onPreview,
   mobileEditHref,
   resourcesHref,
 }: {
   buttonClass: string;
-  onShare: () => void;
-  calendarLinks?: EventCalendarLinks | null;
   onMobileEdit?: () => void;
   onPreview?: () => void;
   mobileEditHref?: string;
@@ -28,21 +44,6 @@ export default function FloatingActionStrip({
 
   return (
     <div className="flex w-full flex-wrap justify-end gap-2">
-      <button
-        type="button"
-        onClick={onShare}
-        className={resolvedButtonClass}
-        aria-label="Share event"
-        title="Share event"
-      >
-        <Share2 size={16} aria-hidden="true" />
-        <span className="hidden sm:inline">Share</span>
-      </button>
-      {calendarLinks ? <CalendarAction
-        className={resolvedButtonClass}
-        labelClassName="hidden sm:inline"
-        links={calendarLinks}
-      /> : null}
       {onMobileEdit ? (
         <span className="md:hidden">
           <button

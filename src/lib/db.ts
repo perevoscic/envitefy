@@ -1893,6 +1893,42 @@ function buildHistoryEventStartAtSql(startRawSql: string): string {
   return buildEventStartAtTsSql(startRawSql);
 }
 
+function buildHistoryEventEndRawSql(dataSql: string): string {
+  return `nullif(
+    trim(
+      coalesce(
+        ${dataSql}->>'endAt',
+        ${dataSql}->>'endISO',
+        ${dataSql}->>'end',
+        ${dataSql}->'fieldsGuess'->>'end',
+        ${dataSql}->'event'->>'end',
+        ''
+      )
+    ),
+    ''
+  )`;
+}
+
+function buildFastHistoryScopeSql(timeFilter: HistoryTimeFilter, alias: string): string {
+  if (timeFilter === "upcoming") {
+    return `(
+      ${alias}.status_text = 'draft'
+      or ${alias}.event_start_at is null
+      or ${alias}.event_start_at >= now()
+      or ${alias}.event_end_at >= now()
+    )`;
+  }
+  if (timeFilter === "past") {
+    return `(
+      ${alias}.status_text <> 'draft'
+      and ${alias}.event_start_at is not null
+      and ${alias}.event_start_at < now()
+      and (${alias}.event_end_at is null or ${alias}.event_end_at < now())
+    )`;
+  }
+  return "true";
+}
+
 function buildHistoryStatusSql(dataSql: string): string {
   return `case when ${legacyDiscoveryDraftSql(dataSql)} then 'draft' else lower(trim(coalesce(${dataSql}->>'status', ''))) end`;
 }
@@ -4329,7 +4365,10 @@ export async function listEventHistoryByUser(
   return res.rows;
 }
 
-function buildDashboardFastHistoryQuery(includeShared: boolean): string {
+function buildDashboardFastHistoryQuery(
+  includeShared: boolean,
+  timeFilter: HistoryTimeFilter = "all",
+): string {
   // Select across the user's history before applying the result limit. A recent
   // created_at window can be filled by drafts and hide older-created future events.
   // Materialize parsed dates once so sorting does not repeatedly parse the JSON.
@@ -4355,6 +4394,7 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
           eh.id,
           eh.created_at,
           ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
+          ${buildHistoryEventStartAtSql(buildHistoryEventEndRawSql(ownDataSql))} as event_end_at,
           ${ownStatusSql} as status_text,
           0 as relation_rank,
           false as shared,
@@ -4375,6 +4415,7 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
         ownership,
         share_status
       from own_rows
+      where ${buildFastHistoryScopeSql(timeFilter, "own_rows")}
       order by ${buildFastHistoryOrderBySql("own_rows")}
       limit $2
     `;
@@ -4400,6 +4441,7 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
         eh.id,
         eh.created_at,
         ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
+        ${buildHistoryEventStartAtSql(buildHistoryEventEndRawSql(ownDataSql))} as event_end_at,
         ${ownStatusSql} as status_text,
         0 as relation_rank,
         false as shared,
@@ -4416,6 +4458,7 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
           eh.id,
           eh.created_at,
           ${buildHistoryEventStartAtSql(sharedStartRawSql)} as event_start_at,
+          ${buildHistoryEventStartAtSql(buildHistoryEventEndRawSql(sharedDataSql))} as event_end_at,
           ${sharedStatusSql} as status_text,
           case when es.status = 'accepted' then 1 else 2 end as relation_rank,
           true as shared,
@@ -4450,12 +4493,16 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
       ownership,
       share_status
     from combined
+    where ${buildFastHistoryScopeSql(timeFilter, "combined")}
     order by ${buildFastHistoryOrderBySql("combined")}
     limit $2
   `;
 }
 
-function buildSidebarFastHistoryQuery(includeShared: boolean): string {
+function buildSidebarFastHistoryQuery(
+  includeShared: boolean,
+  timeFilter: HistoryTimeFilter = "all",
+): string {
   const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
   const ownStartRawSql = buildHistoryEventStartRawSql(ownDataSql);
   const ownStatusSql = buildHistoryStatusSql(ownDataSql);
@@ -4488,6 +4535,7 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
           eh.id,
           eh.created_at,
           ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
+          ${buildHistoryEventStartAtSql(buildHistoryEventEndRawSql(ownDataSql))} as event_end_at,
           ${ownStatusSql} as status_text,
           0 as relation_rank,
           false as shared,
@@ -4508,6 +4556,7 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
         ownership,
         share_status
       from own_rows
+      where ${buildFastHistoryScopeSql(timeFilter, "own_rows")}
       order by ${buildFastHistoryOrderBySql("own_rows")}
       limit $2
     `;
@@ -4535,6 +4584,7 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
         eh.id,
         eh.created_at,
         ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
+        ${buildHistoryEventStartAtSql(buildHistoryEventEndRawSql(ownDataSql))} as event_end_at,
         ${ownStatusSql} as status_text,
         0 as relation_rank,
         false as shared,
@@ -4551,6 +4601,7 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
           eh.id,
           eh.created_at,
           ${buildHistoryEventStartAtSql(sharedStartRawSql)} as event_start_at,
+          ${buildHistoryEventStartAtSql(buildHistoryEventEndRawSql(sharedDataSql))} as event_end_at,
           ${sharedStatusSql} as status_text,
           case when es.status = 'accepted' then 1 else 2 end as relation_rank,
           true as shared,
@@ -4585,6 +4636,7 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
       ownership,
       share_status
     from combined
+    where ${buildFastHistoryScopeSql(timeFilter, "combined")}
     order by ${buildFastHistoryOrderBySql("combined")}
     limit $2
   `;
@@ -4593,12 +4645,13 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
 export async function listDashboardHistoryWindowForUser(
   userId: string,
   limit: number = HISTORY_DASHBOARD_ROW_CAP,
+  timeFilter: HistoryTimeFilter = "all",
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(HISTORY_DASHBOARD_ROW_CAP, limit));
   try {
     return await withStatementTimeout(HISTORY_DASHBOARD_QUERY_TIMEOUT_MS, async (client) => {
       const res = await client.query<FastHistoryCandidateQueryRow>(
-        buildDashboardFastHistoryQuery(true),
+        buildDashboardFastHistoryQuery(true, timeFilter),
         [userId, safeLimit],
       );
       const candidates = res.rows || [];
@@ -4610,7 +4663,7 @@ export async function listDashboardHistoryWindowForUser(
     if (!isTableMissingError(err)) throw err;
     return await withStatementTimeout(HISTORY_DASHBOARD_QUERY_TIMEOUT_MS, async (client) => {
       const res = await client.query<FastHistoryCandidateQueryRow>(
-        buildDashboardFastHistoryQuery(false),
+        buildDashboardFastHistoryQuery(false, timeFilter),
         [userId, safeLimit],
       );
       const candidates = res.rows || [];
@@ -4625,12 +4678,13 @@ export async function listDashboardHistoryFallbackForUser(
   userId: string,
   ownLimit: number = HISTORY_OWN_ROW_CAP,
   sharedLimit: number = 200,
+  timeFilter: HistoryTimeFilter = "all",
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(HISTORY_OWN_ROW_CAP, Math.max(ownLimit, sharedLimit)));
   try {
     const rows = await withStatementTimeout(HISTORY_DASHBOARD_QUERY_TIMEOUT_MS, async (client) => {
       const res = await client.query<FastHistoryCandidateQueryRow>(
-        buildDashboardFastHistoryQuery(true),
+        buildDashboardFastHistoryQuery(true, timeFilter),
         [userId, safeLimit],
       );
       const candidates = res.rows || [];
@@ -4643,7 +4697,7 @@ export async function listDashboardHistoryFallbackForUser(
     if (!isTableMissingError(err)) throw err;
     const rows = await withStatementTimeout(HISTORY_DASHBOARD_QUERY_TIMEOUT_MS, async (client) => {
       const res = await client.query<FastHistoryCandidateQueryRow>(
-        buildDashboardFastHistoryQuery(false),
+        buildDashboardFastHistoryQuery(false, timeFilter),
         [userId, safeLimit],
       );
       const candidates = res.rows || [];
@@ -4735,12 +4789,13 @@ export async function listHistoryForUser(params: {
 export async function listSidebarHistoryForUserFast(
   userId: string,
   limit = 200,
+  timeFilter: HistoryTimeFilter = "all",
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(200, Math.floor(limit || 40)));
   try {
     const rows = await withStatementTimeout(HISTORY_SIDEBAR_QUERY_TIMEOUT_MS, async (client) => {
       const res = await client.query<FastHistoryCandidateQueryRow>(
-        buildSidebarFastHistoryQuery(true),
+        buildSidebarFastHistoryQuery(true, timeFilter),
         [userId, safeLimit],
       );
       const candidates = res.rows || [];
@@ -4753,7 +4808,7 @@ export async function listSidebarHistoryForUserFast(
     if (!isTableMissingError(err)) throw err;
     const rows = await withStatementTimeout(HISTORY_SIDEBAR_QUERY_TIMEOUT_MS, async (client) => {
       const res = await client.query<FastHistoryCandidateQueryRow>(
-        buildSidebarFastHistoryQuery(false),
+        buildSidebarFastHistoryQuery(false, timeFilter),
         [userId, safeLimit],
       );
       const candidates = res.rows || [];

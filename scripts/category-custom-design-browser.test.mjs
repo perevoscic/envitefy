@@ -62,8 +62,10 @@ test("category callouts and dialogs preserve category, authentication, responsiv
     venue: "",
     location: "",
     host: "",
+    rsvpName: "",
     rsvpEmail: "",
     rsvpPhone: "",
+    rsvpDeadline: "",
     rsvpEnabled: false,
     sections: [],
     registryLinks: [],
@@ -138,8 +140,11 @@ test("category callouts and dialogs preserve category, authentication, responsiv
       await goto(category);
       const profile = await page.evaluate((category) => window.fixture.profile(category), category);
       const callout = page.locator(`[data-custom-design-category="${category}"]`);
-      await callout.getByRole("heading", { name: profile.headline, exact: true }).waitFor();
-      assert.equal(await callout.locator("svg").count(), 1);
+      const entryLabel = category === "signup-forms" ? "Generate with Envitefy" : "Create with Envitefy";
+      if (category !== "signup-forms") {
+        await callout.getByRole("heading", { name: profile.headline, exact: true }).waitFor();
+        assert.equal(await callout.locator("svg").count(), 1);
+      }
       for (const [width, height] of [
         [1280, 900],
         [640, 900],
@@ -147,7 +152,7 @@ test("category callouts and dialogs preserve category, authentication, responsiv
       ]) {
         await page.setViewportSize({ width, height });
         await noOverflow();
-        const button = callout.getByRole("button", { name: "Create with Envitefy", exact: true });
+        const button = callout.getByRole("button", { name: entryLabel, exact: true });
         const box = await button.boundingBox();
         assert.ok(box.height >= 44 && box.x >= 0 && box.x + box.width <= width, category);
         if (
@@ -158,7 +163,8 @@ test("category callouts and dialogs preserve category, authentication, responsiv
         }
       }
       const before = requests.length;
-      await callout.getByRole("button", { name: "Create with Envitefy", exact: true }).focus();
+      const createLabel = category === "signup-forms" ? "Create signup form" : "Create event page";
+      await callout.getByRole("button", { name: entryLabel, exact: true }).focus();
       await page.keyboard.press("Enter");
       const dialog = page.getByRole("dialog");
       await dialog.getByRole("heading", { name: profile.headline, exact: true }).waitFor();
@@ -185,31 +191,53 @@ test("category callouts and dialogs preserve category, authentication, responsiv
           category,
         );
         const action = await dialog
-          .getByRole("button", { name: "Create with Envitefy", exact: true })
+          .getByRole("button", { name: createLabel, exact: true })
           .boundingBox();
         assert.ok(
           action.y + action.height <= height && action.x + action.width <= width,
           `${category} footer`,
         );
       }
-      if (["weddings", "football", "signup-forms"].includes(category)) {
-        const a11y = await new AxeBuilder({ page })
-          .include('[role="dialog"]')
-          .withTags(["wcag2a", "wcag2aa"])
-          .analyze();
-        assert.deepEqual(
-          a11y.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })),
-          [],
-          category,
-        );
-        await page.screenshot({ path: path.join(out, `${category}-dialog.png`) });
+      if (["gymnastics", "weddings", "football", "signup-forms"].includes(category)) {
+        for (const appearance of ["light", "dark"]) {
+          await page.evaluate((mode) => window.fixture.applyAppearance(mode, false), appearance);
+          // Check optional controls too, including the native file-picker button.
+          if (category !== "signup-forms") await dialog.locator("summary").click();
+          for (const width of [1280, 375]) {
+            await page.setViewportSize({ width, height: 900 });
+            await noOverflow();
+            const a11y = await new AxeBuilder({ page })
+              .include('[role="dialog"]')
+              .withTags(["wcag2a", "wcag2aa"])
+              .analyze();
+            assert.deepEqual(
+              a11y.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })),
+              [],
+              `${category} ${appearance} ${width}`,
+            );
+            await page.screenshot({ path: path.join(out, `${category}-${appearance}-dialog-${width}.png`) });
+          }
+          if (category !== "signup-forms") await dialog.locator("summary").click();
+        }
+        await page.evaluate(() => window.fixture.applyAppearance("light", false));
+      }
+      if (category === "gymnastics") {
+        const file = { name: "meet-packet.webp", mimeType: "image/webp", buffer: image };
+        await dialog.getByLabel(/Meet packet or flyer photos/).setInputFiles(file);
+        await dialog.getByText("meet-packet.webp", { exact: true }).waitFor();
+        assert.equal(await dialog.locator("details").getAttribute("open"), null);
+        await dialog.locator("summary").click();
+        await dialog.getByLabel(/Reference image/).setInputFiles({ ...file, name: "inspiration.webp" });
+        await dialog.getByRole("radio", { name: "Use as inspiration", exact: true }).check();
+        await dialog.locator("summary").click();
+        assert.equal(requests.length, before, "choosing source photos or artwork must not generate");
       }
       await dialog
         .locator("textarea")
         .fill(
           "Use midnight navy and gold with clean modern lettering. Title: An evening together. Bring your own picnic.",
         );
-      await dialog.getByRole("button", { name: "Create with Envitefy", exact: true }).click();
+      await dialog.getByRole("button", { name: createLabel, exact: true }).click();
       const signup = category === "signup-forms";
       const accept = dialog.getByRole("button", {
         name: signup ? "Use this theme →" : "Use this design",
@@ -221,6 +249,11 @@ test("category callouts and dialogs preserve category, authentication, responsiv
         signup ? "/api/signup-themes/generate" : "/api/event-themes/generate",
       );
       if (!signup) assert.equal(requests.at(-1).body.category, category);
+      if (category === "gymnastics") {
+        assert.deepEqual(requests.at(-1).body.informationImages, [imageUrl]);
+        assert.equal(requests.at(-1).body.referenceImage, imageUrl);
+        assert.equal(requests.at(-1).body.referenceImageMode, "inspire");
+      }
       assert.equal(requests.at(-1).body.prompt.includes(profile.placeholder), false);
       if (category === "weddings") {
         await dialog.getByRole("button", { name: "Describe a change", exact: true }).click();
@@ -233,11 +266,11 @@ test("category callouts and dialogs preserve category, authentication, responsiv
       await accept.click();
       await page.waitForFunction(() => window.navigations?.length);
       const handoff = await page.evaluate(
-        ({ category, signup }) => {
+        async ({ category, signup }) => {
           const url = new URL(window.navigations.at(-1), location.origin);
           return signup
             ? window.fixture.takeSignupTheme(url.searchParams.get("themePreview"))
-            : window.fixture.takeCustomEventPage(url.searchParams.get("themePreview"), category);
+            : (await window.fixture.readCreationIntake("category-fixture", url.searchParams.get("intake")))?.customPage;
         },
         { category, signup },
       );
@@ -250,14 +283,19 @@ test("category callouts and dialogs preserve category, authentication, responsiv
       }
     }
     for (const category of ["football", "signup-forms"]) {
+      const entryLabel = category === "signup-forms" ? "Generate with Envitefy" : "Create with Envitefy";
       await goto(category, "&status=unauthenticated");
       const callout = page.locator("[data-custom-design-category]");
-      assert.ok(
-        await callout
-          .getByRole("button", { name: "Create with Envitefy", exact: true })
-          .isDisabled(),
-      );
-      await callout.getByRole("button", { name: "Sign in to generate" }).click();
+      if (category === "signup-forms") {
+        await callout.getByRole("button", { name: entryLabel, exact: true }).click();
+      } else {
+        assert.ok(
+          await callout
+            .getByRole("button", { name: entryLabel, exact: true })
+            .isDisabled(),
+        );
+        await callout.getByRole("button", { name: "Sign in to generate" }).click();
+      }
       await page.getByRole("button", { name: "Continue test sign-in" }).click();
       await page.getByRole("dialog").waitFor();
       assert.equal(await page.getByRole("dialog").locator("textarea").inputValue(), "");
@@ -271,7 +309,7 @@ test("category callouts and dialogs preserve category, authentication, responsiv
         .click();
       await goto(category, "&status=loading");
       assert.ok(
-        await page.getByRole("button", { name: "Create with Envitefy", exact: true }).isDisabled(),
+        await page.getByRole("button", { name: entryLabel, exact: true }).isDisabled(),
       );
       assert.equal(await page.getByRole("button", { name: "Sign in to generate" }).count(), 0);
     }
@@ -288,7 +326,7 @@ test("category callouts and dialogs preserve category, authentication, responsiv
     console.error({
       url: page.url(),
       errors,
-      activeElement: await page.evaluate(() => document.activeElement?.outerHTML),
+      activeElement: await page.evaluate(() => document.activeElement?.outerHTML.slice(0, 500)),
     });
     await page.screenshot({ path: path.join(out, "failure.png") });
     throw error;

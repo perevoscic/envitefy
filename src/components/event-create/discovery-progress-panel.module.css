@@ -1,0 +1,133 @@
+.panel {
+  --flux-from: #1d6ffb;
+  --flux-to: #74e1ff;
+  color: var(--meet-panel-ink, var(--foreground, #2b1b16));
+}
+
+.loader {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.labelStage {
+  display: grid;
+  min-height: 52px;
+  align-items: center;
+  perspective: 1000px;
+}
+
+.label {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(18px, 4vw, 24px);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+  transform-style: preserve-3d;
+  animation: flux-label-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.word {
+  display: inline-block;
+  white-space: pre;
+  max-width: 100%;
+}
+
+.letter {
+  display: inline-block;
+  animation: flux-letter-in 450ms cubic-bezier(0.22, 1, 0.36, 1) var(--letter-delay) both;
+}
+
+.track {
+  position: relative;
+  height: 20px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e5ed;
+  box-shadow: inset 0 2px 3px #00000017, inset 0 -1px 2px #ffffffb3;
+}
+
+:global(html.dark) .track {
+  background: #343444;
+  box-shadow: inset 0 2px 3px #00000073, inset 0 -1px 2px #ffffff0d;
+}
+
+.fill {
+  position: relative;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--flux-from) 0%, #489ffb 35%, var(--flux-to) 55%, #489ffb 78%, var(--flux-from) 100%);
+  box-shadow: 0 0 18px #1d6ffb8c, 0 0 32px #74e1ff66, inset 0 1.5px 0 #ffffff80, inset 0 -2px 3px #00287859;
+  transition: width 550ms cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+}
+
+.sheen {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 50%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent 0%, #ffffff8c 50%, transparent 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: flux-sheen 1.6s linear infinite;
+}
+
+.indeterminate {
+  animation: flux-sweep 1.8s ease-in-out infinite alternate;
+}
+
+.details {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.cancel {
+  min-height: 44px;
+}
+
+.cancel:hover {
+  background-color: var(--cancel-hover-background) !important;
+}
+
+.cancel:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.cancel:disabled { cursor: default; opacity: 0.5; }
+
+@keyframes flux-label-in {
+  0% { opacity: 0; transform: translateZ(-380px) scale(0.65); filter: blur(14px); }
+  50% { opacity: 1; transform: translateZ(60px) scale(1.08); filter: blur(0); }
+  75% { transform: translateZ(-8px) scale(0.985); }
+  100% { opacity: 1; transform: translateZ(0) scale(1); filter: blur(0); }
+}
+
+@keyframes flux-letter-in {
+  from { opacity: 0; transform: translateY(12px); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes flux-sheen {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(210%); }
+}
+
+@keyframes flux-sweep {
+  from { transform: translateX(0); }
+  to { transform: translateX(164%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .label, .letter, .sheen, .indeterminate { animation: none; }
+  .fill, .cancel { transition: none; }
+  .sheen { display: none; }
+}

@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import { pickNextRandomPhrase } from "@/components/event-create/gym-discovery-status-phrases";
+import styles from "./discovery-progress-panel.module.css";
 
 export type DiscoveryProgressTheme = {
   badgeBackground: string;
@@ -21,6 +22,7 @@ export type DiscoveryProgressTheme = {
 };
 
 type DiscoveryProgressPanelProps = {
+  cancelDisabled?: boolean;
   cancelLabel: string;
   expectation?: string;
   indeterminate?: boolean;
@@ -33,9 +35,8 @@ type DiscoveryProgressPanelProps = {
   theme: DiscoveryProgressTheme;
 };
 
-const MINIMUM_VISIBLE_PROGRESS = 14;
-
 export default function DiscoveryProgressPanel({
+  cancelDisabled = false,
   cancelLabel,
   expectation,
   indeterminate = false,
@@ -46,12 +47,9 @@ export default function DiscoveryProgressPanel({
   showDetails = true,
   theme,
 }: DiscoveryProgressPanelProps) {
-  const clampedProgress = Math.max(0, Math.min(100, Math.round(progress)));
-  const visibleProgress = indeterminate
-    ? 100
-    : clampedProgress > 0
-      ? Math.max(MINIMUM_VISIBLE_PROGRESS, clampedProgress)
-      : MINIMUM_VISIBLE_PROGRESS;
+  const clampedProgress = Number.isFinite(progress)
+    ? Math.max(0, Math.min(100, Math.round(progress)))
+    : 0;
 
   const useRotation = Boolean(rotatingStatusPhrases?.length);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -84,72 +82,57 @@ export default function DiscoveryProgressPanel({
   const statusText = useRotation ? displayPhrase : label;
 
   return (
-    <div className="space-y-3">
-      <div
-        className="relative overflow-hidden rounded-2xl border shadow-[0_14px_30px_rgba(15,25,53,0.12)]"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        style={{
-          backgroundColor: theme.baseBackground,
-          borderColor: theme.borderColor,
-        }}
-      >
+    <div className={`space-y-3 ${styles.panel}`}>
+      <div className={styles.loader}>
+        <div className={styles.labelStage} aria-hidden="true">
+          <p key={statusText} className={styles.label}>
+            {statusText.split(" ").map((word, wordIndex) => (
+              <span key={wordIndex} className={styles.word}>
+                {Array.from(word).map((character, index) => (
+                  <span
+                    key={index}
+                    className={styles.letter}
+                    style={{ "--letter-delay": `${0.18 + Math.min(wordIndex * 4 + index, 16) * 0.035}s` } as CSSProperties}
+                  >
+                    {character}
+                  </span>
+                ))}
+                {" "}
+              </span>
+            ))}
+          </p>
+        </div>
+        <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {statusText}
+        </span>
         <div
-          className="absolute inset-0 opacity-50"
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 100%)",
-          }}
-        />
-        <div
-          className={`absolute inset-y-0 left-0 overflow-hidden ${
-            indeterminate ? "" : "transition-[width] duration-500 ease-out"
-          }`}
-          style={{ width: `${visibleProgress}%` }}
+          className={styles.track}
+          role="progressbar"
+          aria-label={cancelLabel === "Cancel upload" ? "Upload progress" : "Import progress"}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={indeterminate ? undefined : clampedProgress}
+          aria-valuetext={indeterminate ? statusText : `${clampedProgress}% – ${statusText}`}
         >
           <div
-            ref={animRef}
-            className={`h-full w-full ${
-              indeterminate ? "launcher-progress-indeterminate" : "launcher-progress-shimmer"
-            }`}
-            style={{
-              backgroundImage: `linear-gradient(90deg, ${theme.fillStart} 0%, ${theme.fillMiddle} 58%, ${theme.fillEnd} 100%)`,
-              backgroundSize: "200% 100%",
-            }}
-          />
-        </div>
-        <div className="relative px-4 py-3.5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="min-w-0 text-sm font-semibold" style={{ color: theme.textColor }}>
-              {statusText}
-            </p>
-            <span
-              className="shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em]"
-              style={{
-                backgroundColor: theme.badgeBackground,
-                borderColor: theme.badgeBorder,
-                color: theme.textColor,
-              }}
-            >
-              {indeterminate ? "Live" : `${clampedProgress}%`}
-            </span>
+            className={`${styles.fill} ${indeterminate ? styles.indeterminate : ""}`}
+            style={{ width: indeterminate ? "38%" : `${clampedProgress}%` }}
+          >
+            <div ref={animRef} className={styles.sheen} />
           </div>
-          {showDetails ? (
-            <div
-              className="mt-2 flex items-center justify-between gap-3 text-[10px] font-medium opacity-75"
-              style={{ color: theme.textColor }}
-            >
-              <span>{expectation || "Building an editable draft"}</span>
-              <span className="shrink-0 tabular-nums">{elapsedSeconds}s elapsed</span>
-            </div>
-          ) : null}
         </div>
+        {showDetails ? (
+          <div className={styles.details}>
+            <span>{expectation || "Building an editable draft"}</span>
+            <span className="shrink-0 tabular-nums">{elapsedSeconds}s elapsed</span>
+          </div>
+        ) : null}
       </div>
       <button
         type="button"
+        disabled={cancelDisabled}
         onClick={onCancel}
-        className="discovery-progress-cancel inline-flex w-full items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-xs font-semibold transition"
+        className={`discovery-progress-cancel ${styles.cancel} inline-flex w-full items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-xs font-semibold transition`}
         style={
           {
             "--cancel-hover-background": theme.cancelHoverBackground,
@@ -159,36 +142,9 @@ export default function DiscoveryProgressPanel({
           } as CSSProperties
         }
       >
-        <X className="h-3.5 w-3.5" />
+        <X aria-hidden="true" className="h-3.5 w-3.5" />
         {cancelLabel}
       </button>
-      <style jsx>{`
-        @keyframes launcher-progress-shimmer {
-          0% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        @keyframes launcher-progress-indeterminate {
-          0% {
-            background-position: 200% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        .launcher-progress-shimmer {
-          animation: launcher-progress-shimmer 2.2s ease-in-out infinite;
-        }
-        .launcher-progress-indeterminate {
-          animation: launcher-progress-indeterminate 1.2s ease-in-out infinite alternate;
-        }
-        .discovery-progress-cancel:hover {
-          background-color: var(--cancel-hover-background);
-        }
-      `}</style>
     </div>
   );
 }

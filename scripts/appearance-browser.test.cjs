@@ -23,18 +23,35 @@ const appearanceSwitch = (scope) => scope.getByRole("switch", { name: "Dark mode
 
 async function assertMeetImportPalette(page, output, theme) {
   const panel = page.getByRole("region", { name: "Import meet details", exact: true });
-  const paste = panel.getByRole("button", { name: "Paste link", exact: true });
-  if (await paste.getAttribute("aria-expanded") !== "true") await paste.click();
   const field = panel.getByRole("textbox", { name: "Public meet URL", exact: true });
-  await field.fill("https://meet-site.test/retained-details");
+  assert.equal(await field.isVisible(), true);
+  assert.equal(await field.getAttribute("placeholder"), "Paste link");
   const upload = panel.getByRole("button", { name: "Upload packet", exact: true });
-  for (const control of [upload, paste, panel.getByRole("button", { name: "Import", exact: true }), field]) {
+  const submit = panel.getByRole("button", { name: "Import meet link", exact: true });
+  await upload.focus();
+  const resting = await field.locator("xpath=../..").boundingBox();
+  assert.equal(await upload.locator("span").isVisible(), true);
+  await field.focus();
+  const [uploadBox, formBox] = await Promise.all([upload.boundingBox(), field.locator("xpath=../..").boundingBox()]);
+  assert.ok(formBox.width > resting.width, "focusing the link field expands it to the left");
+  assert.ok(Math.abs(uploadBox.width - 44) < 1, "Upload packet becomes a 44px icon button");
+  assert.equal(await upload.locator("span").isVisible(), false);
+  assert.ok(Math.abs(uploadBox.y + uploadBox.height / 2 - formBox.y - formBox.height / 2) < 1, "upload and link entry share one row");
+  await field.fill("https://meet-site.test/retained-details");
+  const [inputBounds, submitBounds] = await Promise.all([field.boundingBox(), submit.boundingBox()]);
+  assert.ok(inputBounds.x + inputBounds.width <= submitBounds.x, "the text field never extends under its submit button");
+  for (const control of [upload, submit, field]) {
     const target = await control.boundingBox();
     assert.ok(target.height >= 44 && target.width >= 44, "meet import controls retain 44px targets");
     await control.focus();
-    assert.equal(await control.evaluate(element => parseFloat(getComputedStyle(element).outlineWidth) >= 2), true, "meet import keyboard focus stays visible");
+    const focused = await control.evaluate(element => {
+      const target = element.matches("input") ? element.closest("form") : element;
+      return parseFloat(getComputedStyle(target).outlineWidth) >= 2;
+    });
+    assert.equal(focused, true, "meet import keyboard focus stays visible on the control or shared input frame");
   }
-  for (const hovered of [null, upload, paste]) {
+  assert.equal(await field.evaluate(element => getComputedStyle(element).outlineStyle), "none", "the input has no overlapping inner focus outline");
+  for (const hovered of [null, upload, submit]) {
     if (hovered) await hovered.hover();
     const measurements = await panel.evaluate(element => {
       const canvas = document.createElement("canvas");
@@ -93,6 +110,44 @@ async function assertPreviewControlContrast(controls) {
   for (const result of measurements) assert.ok(result.ratio >= result.minimum, `${result.name} contrast ${result.ratio.toFixed(2)}:1 must reach ${result.minimum}:1`);
 }
 
+async function assertMeetCreationTiles(page, output, theme) {
+  const gallery = page.getByTestId("meet-import-gallery");
+  const imported = gallery.getByRole("region", { name: "Import meet details", exact: true });
+  const generated = gallery.getByRole("region", { name: "Generate with Envitefy", exact: true });
+  const button = generated.getByRole("button", { name: "Generate with Envitefy", exact: true });
+  assert.equal(await button.count(), 1);
+  assert.match(await generated.innerText(), /page for coaches and families/);
+  const [left, right, target] = await Promise.all([imported.boundingBox(), generated.boundingBox(), button.boundingBox()]);
+  assert.ok(target.width >= 44 && target.height >= 44);
+  assert.ok(right.x >= 0 && right.x + right.width <= page.viewportSize().width);
+  if (page.viewportSize().width >= 1024) {
+    assert.ok(Math.abs(left.y - right.y) < 1, "desktop creation tiles sit beside each other");
+    assert.ok(Math.abs(left.height - right.height) < 1, "desktop creation tiles retain equal heights, including with the link field open");
+    assert.ok(right.x >= left.x + left.width, "desktop creation tiles do not overlap");
+  } else if (page.viewportSize().width < 768) {
+    assert.ok(right.y >= left.y + left.height, "phone creation tiles stack in reading order");
+  }
+  const panelColors = await Promise.all([imported, generated].map(panel => panel.evaluate(element => {
+    const style = getComputedStyle(element);
+    return { background: style.backgroundImage, color: style.color };
+  })));
+  assert.deepEqual(panelColors[1], panelColors[0], "both tiles use the original import panel palette");
+  assert.equal(await gallery.getByText("Your meet details, in one place.", { exact: true }).count(), 0, "the public gallery has no wide generation callout");
+  assert.equal(await gallery.getByRole("button", { name: "Create with Envitefy", exact: true }).count(), 0);
+  const favorite = gallery.locator('[data-event-category-favorite="gymnastics"]');
+  assert.equal(await favorite.count(), 1, "the gallery has one compact favorite control");
+  assert.equal((await favorite.innerText()).trim(), "", "favorite uses a compact star");
+  assert.equal(await gallery.locator('[data-meet-gallery-badges] [data-event-category-favorite="gymnastics"]').count(), 1);
+  const [badgeBox, favoriteBox] = await Promise.all([
+    gallery.locator("[data-meet-gallery-badges] p").boundingBox(), favorite.boundingBox(),
+  ]);
+  assert.ok(favoriteBox.width >= 44 && favoriteBox.height >= 44);
+  assert.ok(Math.abs((badgeBox.y + badgeBox.height / 2) - (favoriteBox.y + favoriteBox.height / 2)) < 1, "favorite sits next to the design count");
+  await button.focus();
+  assert.equal(await button.evaluate(element => parseFloat(getComputedStyle(element).outlineWidth) >= 2), true);
+  await gallery.locator("header").screenshot({ path: path.join(output, `meet-creation-${theme}-${page.viewportSize().width}.png`) });
+}
+
 async function assertAppearanceLayout(page) {
   const group = page.getByRole("group", { name: "Appearance", exact: true });
   assert.equal(await group.getByRole("switch", { name: "Dark mode", exact: true }).count(), 1);
@@ -126,7 +181,7 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     const compiler = compiled.webpack({ mode: "development", target: "web", devtool: false,
       entry: path.resolve("scripts/fixtures/appearance.tsx"), output: { path: output, filename: "fixture.js" },
       plugins: [new compiled.webpack.DefinePlugin({ "process.env": JSON.stringify({ NODE_ENV: "development" }) })],
-      resolve: { extensions: [".tsx", ".ts", ".js", ".json"], alias: { "@": path.resolve("src"), "next/navigation": path.resolve("scripts/fixtures/signup-editor/navigation.ts"), "next-auth/react": path.resolve("scripts/fixtures/signup-editor/auth.tsx"), "next/link": path.resolve("scripts/fixtures/concierge/navigation.tsx") } },
+      resolve: { extensions: [".tsx", ".ts", ".js", ".json"], alias: { "@/components/navigation/SignedOutPageChrome": path.resolve("scripts/fixtures/appearance-public-chrome.tsx"), "@/contexts/MenuContext": path.resolve("scripts/fixtures/appearance-public-chrome.tsx"), "@": path.resolve("src"), "next/navigation": path.resolve("scripts/fixtures/signup-editor/navigation.ts"), "next-auth/react": path.resolve("scripts/fixtures/appearance-auth.tsx"), "next/link": path.resolve("scripts/fixtures/concierge/navigation.tsx") } },
       module: { rules: [
         { test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") },
         { test: /\.css$/, use: path.resolve("scripts/lib/event-editor-css-loader.cjs") },
@@ -134,16 +189,33 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     });
     compiler.run((error, stats) => compiler.close(() => error || stats?.hasErrors() ? reject(error || new Error(stats.toString({ all: false, errors: true }))) : resolve()));
   });
-  const source = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none); @source "../../scripts/fixtures/appearance.tsx"; @source "../components/AppearanceSelector.tsx"; @source "../components/EventPreviewViewport.tsx"; @source "../components/EventPreviewActions.tsx"; @source "../components/event-create/GymnasticsLauncher.tsx"; @source "../components/event-create/DiscoveryProgressPanel.tsx"; @source "../components/gym-meet-templates/GymnasticsGalleryHeader.tsx";');
+  const source = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none); @source "../../scripts/fixtures/appearance.tsx"; @source "../components/AppearanceSelector.tsx"; @source "../components/EventPreviewViewport.tsx"; @source "../components/EventPreviewActions.tsx"; @source "../components/event-create/GymnasticsLauncher.tsx"; @source "../components/event-create/DiscoveryProgressPanel.tsx"; @source "../components/gym-meet-templates/GymnasticsGalleryHeader.tsx"; @source "../components/events/CreateWithEnvitefyCallout.tsx"; @source "../components/events/custom/EventCustomThemeDialog.tsx"; @source "../components/templates/PublicTemplateGalleryContents.tsx"; @source "../components/events/TemplateMasonryGallery.tsx";');
   const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process(source, { from: path.resolve("src/app/globals.css") })).css;
   const script = fs.readFileSync(path.join(output, "fixture.js"), "utf8");
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
   try {
     const context = await browser.newContext({ colorScheme: "dark", viewport: { width: 1200, height: 900 }, reducedMotion: "reduce" });
     const errors = [];
+    let pinnedCategoryIds = ["gymnastics"];
+    let failFavoriteSave = false;
     await context.route("http://appearance.test/**", async (route) => {
       const url = new URL(route.request().url());
+      if (url.pathname === "/api/user/creation-access") return route.fulfill({ json: {
+        access: { policy: "restricted", allowedProducts: ["event_page"], allowedCategories: ["gymnastics"] },
+      } });
+      if (url.pathname === "/api/user/feature-visibility") {
+        if (route.request().method() === "PUT") {
+          if (failFavoriteSave) return route.fulfill({ status: 503, json: { error: "Could not save preferences" } });
+          pinnedCategoryIds = route.request().postDataJSON().pinnedCategoryIds;
+          return route.fulfill({ json: { featureVisibility: { pinnedCategoryIds } } });
+        }
+        return route.fulfill({ json: { visibleTemplateKeys: [], pinnedCategoryIds } });
+      }
       if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "application/javascript; charset=utf-8", body: script });
+      if (url.pathname.endsWith(".js")) {
+        const chunk = path.join(output, path.basename(url.pathname));
+        if (fs.existsSync(chunk)) return route.fulfill({ contentType: "application/javascript; charset=utf-8", body: fs.readFileSync(chunk) });
+      }
       if (/\.(woff2?|ttf)$/.test(url.pathname)) return route.fulfill({ status: 404, body: "" });
       return route.fulfill({ contentType: "text/html", body: `<!doctype html><html><head><meta charset="utf-8"><meta name="theme-color" content="#8998ED"><meta name="color-scheme" content="light dark"><style>${css}</style></head><body><script>${buildAppearanceBootstrap()}</script><script>window.initialAppearance={theme:document.documentElement.dataset.theme,background:getComputedStyle(document.documentElement).getPropertyValue('--background')};</script><div id="root"></div><script src="/fixture.js"></script></body></html>` });
     });
@@ -168,6 +240,31 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     assert.deepEqual(await page.locator("#auth-email").evaluate((el) => ({ background: getComputedStyle(el).backgroundColor, border: getComputedStyle(el).borderColor, color: getComputedStyle(el).color })), { background: "rgb(48, 39, 56)", border: "rgb(133, 114, 148)", color: "rgb(242, 234, 250)" });
     assert.equal(await page.evaluate(() => localStorage.getItem("envitefy:appearance:v1")), null, "a fresh browser has no explicit appearance override");
     await assertMeetImportPalette(page, output, "dark");
+    await assertMeetCreationTiles(page, output, "dark");
+    const favorite = page.locator('[data-event-category-favorite="gymnastics"]');
+    await favorite.click();
+    await page.waitForFunction(() => document.querySelector('[data-event-category-favorite="gymnastics"]')?.getAttribute("aria-pressed") === "false");
+    assert.deepEqual(pinnedCategoryIds, [], "the compact star saves an explicit unpin");
+    await favorite.click();
+    await page.waitForFunction(() => document.querySelector('[data-event-category-favorite="gymnastics"]')?.getAttribute("aria-pressed") === "true");
+    assert.deepEqual(pinnedCategoryIds, ["gymnastics"]);
+    failFavoriteSave = true;
+    await favorite.click();
+    const retryFavorite = page.getByRole("button", { name: "Retry favorites", exact: true });
+    await retryFavorite.waitFor();
+    assert.match(await retryFavorite.getAttribute("title"), /Could not save your favorites/);
+    assert.equal(await page.locator("[data-meet-gallery-badges]").evaluate(element => element.getBoundingClientRect().height <= 44), true, "a failed save does not stretch the badge row");
+    failFavoriteSave = false;
+    await retryFavorite.click();
+    await page.waitForFunction(() => document.querySelector('[data-event-category-favorite="gymnastics"]')?.getAttribute("aria-pressed") === "false");
+    assert.deepEqual(pinnedCategoryIds, [], "Retry favorites resends the failed unpin instead of just reloading preferences");
+    await favorite.click();
+    await page.waitForFunction(() => document.querySelector('[data-event-category-favorite="gymnastics"]')?.getAttribute("aria-pressed") === "true");
+    await page.getByRole("region", { name: "Generate with Envitefy", exact: true }).getByRole("button", { name: "Generate with Envitefy", exact: true }).click();
+    await page.getByRole("dialog", { name: "Your meet details, in one place.", exact: true }).waitFor({ timeout: 5000 }).catch(error => {
+      throw new Error(`${error.message}\nBrowser errors: ${JSON.stringify(errors)}`);
+    });
+    await page.getByRole("button", { name: "Close custom design dialog", exact: true }).click();
     const chooserPromise = page.waitForEvent("filechooser");
     await page.getByRole("region", { name: "Import meet details", exact: true }).getByRole("button", { name: "Upload packet", exact: true }).click();
     const chooser = await chooserPromise;
@@ -178,20 +275,22 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     await page.route("**/api/discovery/intake", stallIntake);
     const importPanel = page.getByRole("region", { name: "Import meet details", exact: true });
     const intakeStarted = page.waitForRequest("**/api/discovery/intake");
-    await importPanel.getByRole("button", { name: "Import", exact: true }).click();
+    await importPanel.getByRole("button", { name: "Import meet link", exact: true }).click();
     await intakeStarted;
-    assert.equal(await importPanel.getByRole("button", { name: "Upload packet", exact: true }).isDisabled(), true);
-    assert.equal(await importPanel.getByRole("button", { name: "Paste link", exact: true }).isDisabled(), true);
-    assert.equal(await importPanel.getByRole("textbox", { name: "Public meet URL", exact: true }).isDisabled(), true);
-    const cancelImport = importPanel.getByRole("button", { name: "Cancel import", exact: true });
+    const busyPanel = page.locator('[aria-label="Import meet details"]');
+    assert.equal(await busyPanel.locator('button[aria-label="Upload packet"]').isDisabled(), true);
+    assert.equal(await busyPanel.locator('button[aria-label="Import meet link"]').isDisabled(), true);
+    assert.equal(await busyPanel.locator('input[type="url"]').isDisabled(), true);
+    const progressDialog = page.getByRole("dialog", { name: "Importing meet details", exact: true });
+    const cancelImport = progressDialog.getByRole("button", { name: "Cancel import", exact: true });
     await assertPreviewControlContrast(cancelImport);
     await cancelImport.hover();
     await assertPreviewControlContrast(cancelImport);
     await cancelImport.focus();
     assert.equal(await cancelImport.evaluate(element => parseFloat(getComputedStyle(element).outlineWidth) >= 2), true);
-    await importPanel.screenshot({ path: path.join(output, "meet-import-dark-busy.png") });
+    await progressDialog.screenshot({ path: path.join(output, "meet-import-dark-busy.png") });
     await cancelImport.click();
-    await importPanel.getByRole("button", { name: "Import", exact: true }).waitFor();
+    await importPanel.getByRole("button", { name: "Import meet link", exact: true }).waitFor();
     assert.equal(await importPanel.getByRole("button", { name: "Upload packet", exact: true }).isEnabled(), true);
     await pendingIntake?.abort().catch(() => {});
     await page.unroute("**/api/discovery/intake", stallIntake);
@@ -230,6 +329,7 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     await page.keyboard.press("Enter");
     assert.equal(await appearanceSwitch(page).isChecked(), false, "Enter returns to light appearance");
     assert.equal(await page.locator("#unsaved").inputValue(), "Unsaved host title");
+    await assertMeetCreationTiles(page, output, "light");
     await page.screenshot({ path: path.join(output, "light-desktop.png") });
     await page.getByText("Open event preview", { exact: true }).click();
     const frame = page.frameLocator('iframe[title="Authored iframe — event content"]');
@@ -297,23 +397,62 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     await page.screenshot({ path: path.join(output, "dark-desktop.png") });
     await page.setViewportSize({ width: 375, height: 812 });
     await assertAppearanceLayout(page);
+    await assertMeetCreationTiles(page, output, "dark");
     await page.screenshot({ path: path.join(output, "dark-mobile.png") });
     await appearanceSwitch(page).uncheck();
+    await assertMeetCreationTiles(page, output, "light");
     await page.screenshot({ path: path.join(output, "light-mobile.png") });
     await page.setViewportSize({ width: 320, height: 640 });
     await assertAppearanceLayout(page);
+    await assertMeetCreationTiles(page, output, "light");
     await page.screenshot({ path: path.join(output, "light-mobile-320.png") });
     assert.deepEqual(errors, []);
     const restricted = await browser.newContext({ colorScheme: "dark" });
     await restricted.addInitScript(() => { Object.defineProperty(window, "localStorage", { get() { throw new DOMException("Blocked", "SecurityError"); } }); });
     // Context routes are intentionally independent: copy the fixture route.
-    await restricted.route("http://appearance.test/**", async (route) => route.fulfill({ contentType: route.request().url().endsWith("fixture.js") ? "application/javascript" : "text/html", body: route.request().url().endsWith("fixture.js") ? script : `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body><script>${buildAppearanceBootstrap()}</script><div id="root"></div><script src="/fixture.js"></script></body></html>` }));
+    await restricted.route("http://appearance.test/**", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "application/javascript", body: script });
+      if (url.pathname.endsWith(".js")) {
+        const chunk = path.join(output, path.basename(url.pathname));
+        if (fs.existsSync(chunk)) return route.fulfill({ contentType: "application/javascript", body: fs.readFileSync(chunk) });
+      }
+      return route.fulfill({ contentType: "text/html", body: `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body><script>${buildAppearanceBootstrap()}</script><div id="root"></div><script src="/fixture.js"></script></body></html>` });
+    });
     const blocked = await restricted.newPage();
     await blocked.goto("http://appearance.test/");
     await blocked.getByTestId("appearance-state").filter({ hasText: "system:dark" }).waitFor();
     await appearanceSwitch(blocked).uncheck();
     await blocked.getByTestId("appearance-state").filter({ hasText: "light:light" }).waitFor();
     await restricted.close();
+    await page.setViewportSize({ width: 1662, height: 900 });
+    await page.goto("http://appearance.test/gymnastics/templates?publicLayout=1");
+    const countTop = await page.locator("[data-meet-gallery-badges]").evaluate(element => element.getBoundingClientRect().top);
+    assert.ok(countTop <= 128, `the public hero has reduced top padding: ${countTop}px`);
+    const ropePosition = await page.locator('[data-gallery-category="gymnastics"]').evaluate(backdrop => {
+      const svg = backdrop.querySelector("svg");
+      const rope = [...svg.querySelectorAll("path")].find(path => path.getAttribute("d") === "M617-1000V102M708-1000V102");
+      const matrix = rope.getScreenCTM();
+      const start = new DOMPoint(617, -1000).matrixTransform(matrix);
+      const end = new DOMPoint(617, 102).matrixTransform(matrix);
+      const ribbon = [...svg.querySelectorAll("path")].find(path => path.getAttribute("d")?.startsWith("M357 360"));
+      const ribbonEnd = new DOMPoint(357, 360).matrixTransform(ribbon.getScreenCTM());
+      const navBottom = document.querySelector("[data-fixture-public-nav]").getBoundingClientRect().bottom;
+      return { top: backdrop.getBoundingClientRect().top, bottom: backdrop.getBoundingClientRect().bottom, ribbonBottom: ribbonEnd.y, overflow: getComputedStyle(svg).overflow, start: start.y, end: end.y, x: start.x, navBottom };
+    });
+    assert.ok(ropePosition.top <= ropePosition.navBottom && ropePosition.overflow === "visible" && ropePosition.start <= ropePosition.navBottom,
+      `the rope reaches above the navigation's lower edge through the full public layout: ${JSON.stringify(ropePosition)}`);
+    assert.ok(ropePosition.end > ropePosition.navBottom && ropePosition.x > 0 && ropePosition.x < 1662, "the rope remains visible below the navigation");
+    assert.ok(Math.abs(ropePosition.ribbonBottom - ropePosition.bottom) < 1, "the ribbon reaches the header's bottom divider");
+    const publicTiles = page.getByRole("region", { name: /^(Import meet details|Generate with Envitefy)$/ });
+    const closedBoxes = await publicTiles.evaluateAll(elements => elements.map(element => element.getBoundingClientRect().height));
+    assert.ok(Math.abs(closedBoxes[0] - closedBoxes[1]) < 1, "public creation tiles have equal height while the link field is closed");
+    const publicField = page.getByRole("textbox", { name: "Public meet URL", exact: true });
+    await publicField.focus();
+    assert.equal(await publicField.evaluate(element => document.activeElement === element), true);
+    const openedBoxes = await publicTiles.evaluateAll(elements => elements.map(element => element.getBoundingClientRect().height));
+    assert.ok(Math.abs(openedBoxes[0] - openedBoxes[1]) < 1, "public creation tiles have equal height while the link field is focused");
+    await page.screenshot({ path: path.join(output, "gymnastics-full-public-layout.png") });
     await context.close();
   } finally { await browser.close(); }
 });

@@ -403,7 +403,7 @@ export default function SignupCustomThemeDialog({
                     {candidate
                       ? "Describe a change"
                       : isNew
-                        ? "Your idea or event description"
+                        ? "Your event and signup needs"
                         : "Your design idea"}
                   </label>
                   <textarea
@@ -582,7 +582,7 @@ export default function SignupCustomThemeDialog({
                       onClick={generate}
                     >
                       <Sparkles size={16} aria-hidden />{" "}
-                      {candidate ? "Update theme" : "Create with Envitefy"}
+                      {candidate ? "Update theme" : isNew ? "Create signup form" : "Create theme"}
                     </button>
                   </>
                 )}

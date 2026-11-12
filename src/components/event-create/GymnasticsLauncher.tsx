@@ -2,6 +2,7 @@
 
 import {
   ArrowRight,
+  ArrowUp,
   Check,
   CheckCircle2,
   Clock3,
@@ -18,9 +19,8 @@ import { getGymMeetTemplateMeta, isGymMeetTemplateId } from "@/components/gym-me
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import CopyButton from "@/components/CopyButton";
-import DiscoveryProgressPanel, {
-  type DiscoveryProgressTheme,
-} from "@/components/event-create/DiscoveryProgressPanel";
+import type { DiscoveryProgressTheme } from "@/components/event-create/DiscoveryProgressPanel";
+import DiscoveryProgressDialog from "@/components/event-create/DiscoveryProgressDialog";
 import {
   createDiscoveryStatusClientError,
   type DiscoveryUiError,
@@ -30,7 +30,10 @@ import {
   getDiscoveryStageLabel,
   resolveGymnasticsPipelineProgress,
 } from "@/components/event-create/discovery-progress";
-import { resolveDiscoveryClientParseTimeoutMs } from "@/lib/discovery-budget";
+import {
+  resolveDiscoveryClientIngestTimeoutMs,
+  resolveDiscoveryClientParseTimeoutMs,
+} from "@/lib/discovery-budget";
 import styles from "./gymnastics-import-panel.module.css";
 
 type GymnasticsLauncherProps = {
@@ -44,7 +47,7 @@ type GymnasticsLauncherProps = {
 type DiscoveryInput = { file?: File; url?: string };
 type DiscoveryProgressHandler = (progress: number, status: string) => void;
 const GYM_DISCOVERY_LOG_PREFIX = "[gymnastics-launcher]";
-const INGEST_REQUEST_TIMEOUT_MS = 15_000;
+const INGEST_REQUEST_TIMEOUT_MS = resolveDiscoveryClientIngestTimeoutMs();
 const GYMNASTICS_DEMO_DRAFT_STORAGE_KEY = "envitefy:gymnastics-demo-draft:v1";
 const LIGHT_RAISED_BUTTON_CLASS =
   "group inline-flex min-h-12 w-fit max-w-full items-center justify-center gap-2.5 rounded-full border border-white/90 bg-[#f0eef5] px-6 py-3 text-sm font-semibold shadow-[8px_8px_18px_rgba(45,38,74,0.18),-8px_-8px_18px_rgba(255,255,255,0.98)] transition-all duration-300 hover:scale-[0.98] hover:shadow-[4px_4px_10px_rgba(45,38,74,0.15),-4px_-4px_10px_rgba(255,255,255,0.94)] active:scale-95 active:shadow-[inset_2px_2px_5px_rgba(45,38,74,0.12),inset_-2px_-2px_5px_rgba(255,255,255,0.85)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6d35f5]/35 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100";
@@ -53,23 +56,14 @@ const GYM_DISCOVERY_PROGRESS_THEME: DiscoveryProgressTheme = {
   badgeBorder: "rgba(255,255,255,0.22)",
   baseBackground: "#4a526d",
   borderColor: "#5f6784",
-  cancelBorderColor: "#d7d9e5",
-  cancelHoverBackground: "#f7f3ff",
-  cancelTextColor: "#4c5370",
+  cancelBackground: "var(--card, #ffffff)",
+  cancelBorderColor: "var(--border, #d7d9e5)",
+  cancelHoverBackground: "var(--muted, #f7f3ff)",
+  cancelTextColor: "var(--card-foreground, #4c5370)",
   fillEnd: "#cab9ff",
   fillMiddle: "#8e63ff",
   fillStart: "#6d35f5",
   textColor: "#ffffff",
-};
-const GYM_DISCOVERY_PANEL_PROGRESS_THEME: DiscoveryProgressTheme = {
-  ...GYM_DISCOVERY_PROGRESS_THEME,
-  cancelBackground: "var(--meet-panel-action)",
-  cancelBorderColor: "var(--meet-panel-action)",
-  cancelHoverBackground: "var(--meet-panel-action-hover)",
-  cancelTextColor: "var(--meet-panel-action-ink)",
-  fillStart: "#643b9f",
-  fillMiddle: "#7548af",
-  fillEnd: "#865bb5",
 };
 
 function GradientCardBorder({
@@ -142,6 +136,9 @@ export default function GymnasticsLauncher({
   const [urlError, setUrlError] = useState<DiscoveryUiError | null>(null);
   const [meetUrl, setMeetUrl] = useState("");
   const discoveryBusy = uploadBusy || urlBusy;
+  const importTriggerRef = useRef<HTMLElement | null>(null);
+  const importInFlightRef = useRef(false);
+  const requestVersionRef = useRef(0);
   const uploadXhrRef = useRef<XMLHttpRequest | null>(null);
   const ingestAbortRef = useRef<AbortController | null>(null);
   const parseAbortRef = useRef<AbortController | null>(null);
@@ -245,6 +242,8 @@ export default function GymnasticsLauncher({
   const cancelDiscovery = () => {
     console.log(`${GYM_DISCOVERY_LOG_PREFIX} cancel requested`);
     cancelRequestedRef.current = true;
+    requestVersionRef.current++;
+    importInFlightRef.current = false;
     const eventId = currentDiscoveryEventIdRef.current;
     currentDiscoveryEventIdRef.current = null;
     void requestDiscoveryCancel(eventId);
@@ -274,6 +273,7 @@ export default function GymnasticsLauncher({
     url,
     onProgress,
   }: DiscoveryInput & { onProgress?: DiscoveryProgressHandler }) => {
+    const requestVersion = requestVersionRef.current;
     const traceId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const log = (message: string, detail?: unknown) => {
       if (detail === undefined) {
@@ -283,6 +283,7 @@ export default function GymnasticsLauncher({
       console.log(`${GYM_DISCOVERY_LOG_PREFIX} [${traceId}] ${message}`, detail);
     };
     const reportProgress = (progress: number, status: string) => {
+      if (requestVersion !== requestVersionRef.current) return;
       const bucket = Math.floor(progress / 10);
       const lastState = discoveryLogStateRef.current;
       if (lastState.status !== status || lastState.bucket !== bucket || progress === 100) {
@@ -293,7 +294,7 @@ export default function GymnasticsLauncher({
       onProgress(Math.max(0, Math.min(100, Math.round(progress))), status);
     };
     const throwIfCancelled = () => {
-      if (cancelRequestedRef.current) throw abortError();
+      if (cancelRequestedRef.current || requestVersion !== requestVersionRef.current) throw abortError();
     };
     log(
       "starting discovery",
@@ -342,7 +343,7 @@ export default function GymnasticsLauncher({
         };
 
         xhr.onload = () => {
-          uploadXhrRef.current = null;
+          if (uploadXhrRef.current === xhr) uploadXhrRef.current = null;
           try {
             const json = JSON.parse(xhr.responseText || "{}") as {
               eventId?: string;
@@ -390,7 +391,7 @@ export default function GymnasticsLauncher({
         throw err;
       } finally {
         window.clearTimeout(ingestTimeoutId);
-        ingestAbortRef.current = null;
+        if (requestVersion === requestVersionRef.current) ingestAbortRef.current = null;
       }
       ingestJson = await ingestRes.json().catch(() => ({}));
       if (!ingestRes.ok || !ingestJson?.eventId) {
@@ -464,12 +465,11 @@ export default function GymnasticsLauncher({
         throw buildTimeoutError("parse");
       }
     } finally {
-      parseAbortRef.current = null;
+      if (requestVersion === requestVersionRef.current) parseAbortRef.current = null;
     }
 
     log("routing to builder", { eventId });
     reportProgress(100, "Opening meet builder...");
-    await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
     currentDiscoveryEventIdRef.current = null;
     const builderParams = new URLSearchParams({ edit: eventId, new: "1" });
@@ -478,7 +478,7 @@ export default function GymnasticsLauncher({
     const baseUrl = `/event/gymnastics/customize?${builderParams.toString()}`;
     if (status === "authenticated") {
       router.push(baseUrl);
-      return;
+      return true;
     }
 
     try {
@@ -487,11 +487,14 @@ export default function GymnasticsLauncher({
       // best effort only
     }
     router.push(`${baseUrl}&demo=1`);
+    return true;
   };
 
   const handleUploadPick = async (pickedFile: File | null) => {
-    if (discoveryBusy) return;
+    if (discoveryBusy || importInFlightRef.current) return;
     if (!pickedFile) return;
+    importInFlightRef.current = true;
+    const requestVersion = ++requestVersionRef.current;
     setSelectedPath("upload");
     setUploadError(null);
     setUploadBusy(true);
@@ -503,8 +506,9 @@ export default function GymnasticsLauncher({
       sizeBytes: pickedFile.size,
       mimeType: pickedFile.type || "application/octet-stream",
     });
+    let openingDraft = false;
     try {
-      await startDiscovery({
+      openingDraft = await startDiscovery({
         file: pickedFile,
         onProgress: (progress, status) => {
           setUploadProgress(progress);
@@ -512,6 +516,7 @@ export default function GymnasticsLauncher({
         },
       });
     } catch (err: unknown) {
+      if (requestVersion !== requestVersionRef.current) return;
       if (isAbortError(err)) {
         console.log(`${GYM_DISCOVERY_LOG_PREFIX} discovery cancelled by user`);
         setUploadStatus("");
@@ -524,12 +529,12 @@ export default function GymnasticsLauncher({
       setUploadStatus("");
       currentDiscoveryEventIdRef.current = null;
     } finally {
-      setUploadBusy(false);
+      if (requestVersion === requestVersionRef.current && !openingDraft) { importInFlightRef.current = false; setUploadBusy(false); }
     }
   };
 
   const handleUrlSync = async () => {
-    if (discoveryBusy) return;
+    if (discoveryBusy || importInFlightRef.current) return;
     setSelectedPath("url");
     setUrlError(null);
     const trimmed = meetUrl.trim();
@@ -539,12 +544,15 @@ export default function GymnasticsLauncher({
     }
     try {
       // Validate before sending to API for a tighter UX loop.
-      new URL(trimmed);
+      if (!/^https?:$/.test(new URL(trimmed).protocol)) throw new Error("Invalid public URL");
     } catch {
       setUrlError({ message: "Enter a valid URL.", technicalDetails: null });
       return;
     }
 
+    importTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    importInFlightRef.current = true;
+    const requestVersion = ++requestVersionRef.current;
     setUrlBusy(true);
     setUrlProgress(0);
     setUrlStatus("");
@@ -553,8 +561,9 @@ export default function GymnasticsLauncher({
       ingestTimeoutMs: INGEST_REQUEST_TIMEOUT_MS,
       parseTimeoutMs: resolveParseTimeoutMs("url"),
     });
+    let openingDraft = false;
     try {
-      await startDiscovery({
+      openingDraft = await startDiscovery({
         url: trimmed,
         onProgress: (progress, status) => {
           setUrlProgress(progress);
@@ -562,6 +571,7 @@ export default function GymnasticsLauncher({
         },
       });
     } catch (err: unknown) {
+      if (requestVersion !== requestVersionRef.current) return;
       if (isAbortError(err)) {
         setUrlProgress(0);
         setUrlStatus("");
@@ -572,7 +582,7 @@ export default function GymnasticsLauncher({
       setUrlStatus("");
       currentDiscoveryEventIdRef.current = null;
     } finally {
-      setUrlBusy(false);
+      if (requestVersion === requestVersionRef.current && !openingDraft) { importInFlightRef.current = false; setUrlBusy(false); }
     }
   };
 
@@ -588,9 +598,19 @@ export default function GymnasticsLauncher({
     router.push(`/event/gymnastics/customize${qs ? `?${qs}` : ""}`);
   };
 
+  const progressDialog = <DiscoveryProgressDialog
+    open={discoveryBusy}
+    label={uploadBusy ? uploadStageLabel : urlStageLabel}
+    progress={uploadBusy ? uploadProgress : urlProgress}
+    theme={GYM_DISCOVERY_PROGRESS_THEME}
+    onCancel={cancelDiscovery}
+    onReturnFocus={() => importTriggerRef.current?.focus()}
+  />;
+
   if (variant === "panel") {
     return (
-      <section aria-label="Import meet details" className={`${styles.panel} w-full rounded-2xl p-4 text-left`}>
+      <>{progressDialog}
+      <section aria-label="Import meet details" className={`${styles.panel} flex h-full w-full flex-col rounded-2xl p-4 text-left`}>
         <div className="flex items-start gap-3">
           <span aria-hidden="true" className={`${styles.badge} flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/12`}>
             <WandSparkles className="h-[18px] w-[18px]" />
@@ -600,37 +620,31 @@ export default function GymnasticsLauncher({
             <p className={`${styles.description} mt-1 text-[13px] leading-5`}>{panelDescription}</p>
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={discoveryBusy} className={`${styles.button} ${styles.primaryButton}`}>
-            <Upload className="h-4 w-4" aria-hidden="true" /> Upload packet
+        <div className={`${styles.importActions} mt-auto pt-4`}>
+          <button type="button" aria-label="Upload packet" onClick={(event) => { importTriggerRef.current = event.currentTarget; fileInputRef.current?.click(); }} disabled={discoveryBusy} className={`${styles.button} ${styles.primaryButton}`}>
+            <Upload className="h-4 w-4 shrink-0" aria-hidden="true" /> <span className={styles.uploadLabel}>Upload packet</span>
           </button>
-          <button type="button" onClick={() => setSelectedPath(selectedPath === "url" ? "upload" : "url")} disabled={discoveryBusy} aria-expanded={selectedPath === "url"} aria-controls="gym-meet-import-url" className={`${styles.button} ${styles.secondaryButton}`}>
-            <Globe className="h-4 w-4" aria-hidden="true" /> Paste link
-          </button>
-        </div>
-        <input ref={fileInputRef} type="file" aria-label="Meet packet" accept=".pdf,image/png,image/jpeg,image/jpg" className="hidden" onChange={(event) => { const file = event.target.files?.[0] || null; event.target.value = ""; void handleUploadPick(file); }} />
-        {selectedPath === "url" ? (
-          <form id="gym-meet-import-url" className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); void handleUrlSync(); }}>
+          <form className={styles.linkPrompt} onSubmit={(event) => { event.preventDefault(); void handleUrlSync(); }}>
             <label className="min-w-0 flex-1">
               <span className="sr-only">Public meet URL</span>
-              <input type="url" value={meetUrl} onChange={(event) => setMeetUrl(event.target.value)} placeholder="https://meet-site.com/event" disabled={discoveryBusy} data-preserve-control-colors className={styles.urlInput} />
+              <input type="url" value={meetUrl} onChange={(event) => setMeetUrl(event.target.value)} placeholder="Paste link" disabled={discoveryBusy} data-preserve-control-colors className={styles.urlInput} />
             </label>
-            {!urlBusy ? <button type="submit" disabled={discoveryBusy} className={`${styles.button} ${styles.primaryButton} shrink-0`}>Import</button> : null}
+            <button type="submit" aria-label="Import meet link" disabled={discoveryBusy || !meetUrl.trim()} className={styles.linkSubmit}>
+              <ArrowUp size={18} aria-hidden="true" />
+            </button>
           </form>
-        ) : null}
-        {discoveryBusy ? (
-          <div className="mt-3">
-            <DiscoveryProgressPanel cancelLabel={uploadBusy ? "Cancel upload" : "Cancel import"} label={uploadBusy ? uploadStageLabel : urlStageLabel} progress={uploadBusy ? uploadProgress : urlProgress} onCancel={cancelDiscovery} showDetails={false} theme={GYM_DISCOVERY_PANEL_PROGRESS_THEME} />
-          </div>
-        ) : null}
+        </div>
+        <input ref={fileInputRef} type="file" aria-label="Meet packet" accept=".pdf,image/png,image/jpeg,image/jpg" className="hidden" onChange={(event) => { const file = event.target.files?.[0] || null; event.target.value = ""; void handleUploadPick(file); }} />
         {uploadFileName ? <p className={`${styles.fileName} mt-2 truncate text-xs`}>{uploadFileName}</p> : null}
         {renderDiscoveryError(uploadError)}
         {renderDiscoveryError(urlError)}
       </section>
+      </>
     );
   }
 
   return (
+    <>{progressDialog}
     <main className="relative min-h-screen overflow-hidden bg-[#f5f5fa] px-4 pb-5 pt-24 sm:px-6 sm:pb-10 sm:pt-24 lg:px-10 lg:pt-10">
       <div className="pointer-events-none absolute -top-40 right-[-8rem] h-[32rem] w-[32rem] rounded-full bg-[#a986ff]/15 blur-3xl" />
       <div className="pointer-events-none absolute bottom-[-14rem] left-[12%] h-[28rem] w-[28rem] rounded-full bg-[#7cc7ff]/10 blur-3xl" />
@@ -726,10 +740,10 @@ export default function GymnasticsLauncher({
                   PDF, JPG or PNG · Usually under 1 minute
                 </p>
               ) : null}
-              {!uploadBusy ? (
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(event) => {
+                    importTriggerRef.current = event.currentTarget;
                     setSelectedPath("upload");
                     fileInputRef.current?.click();
                   }}
@@ -742,16 +756,6 @@ export default function GymnasticsLauncher({
                     <span className="hidden sm:inline">Choose packet</span>
                   </span>
                 </button>
-              ) : (
-                <DiscoveryProgressPanel
-                  cancelLabel="Cancel upload"
-                  expectation="Core draft usually opens in under a minute"
-                  label={uploadStageLabel}
-                  onCancel={() => cancelDiscovery()}
-                  progress={uploadProgress}
-                  theme={GYM_DISCOVERY_PROGRESS_THEME}
-                />
-              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -829,6 +833,8 @@ export default function GymnasticsLauncher({
                 <input
                   type="url"
                   value={meetUrl}
+                  disabled={discoveryBusy}
+                  onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); void handleUrlSync(); } }}
                   onChange={(event) => setMeetUrl(event.target.value)}
                   onFocus={() => setSelectedPath("url")}
                   placeholder="https://meet-site.com/event"
@@ -836,16 +842,6 @@ export default function GymnasticsLauncher({
                 />
               </label>
               {renderDiscoveryError(urlError)}
-              {urlBusy ? (
-                <DiscoveryProgressPanel
-                  cancelLabel="Cancel sync"
-                  label={urlStageLabel}
-                  onCancel={() => cancelDiscovery()}
-                  progress={urlProgress}
-                  showDetails={false}
-                  theme={GYM_DISCOVERY_PROGRESS_THEME}
-                />
-              ) : (
                 <button
                   type="button"
                   onClick={() => void handleUrlSync()}
@@ -855,7 +851,6 @@ export default function GymnasticsLauncher({
                   Sync public page
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                 </button>
-              )}
             </div>
 
             <div className="mt-4 lg:hidden">
@@ -865,6 +860,8 @@ export default function GymnasticsLauncher({
                   <input
                     type="url"
                     value={meetUrl}
+                    disabled={discoveryBusy}
+                    onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); void handleUrlSync(); } }}
                     onChange={(event) => setMeetUrl(event.target.value)}
                     onFocus={() => setSelectedPath("url")}
                     placeholder="Paste public meet URL"
@@ -872,16 +869,6 @@ export default function GymnasticsLauncher({
                   />
                 </label>
                 {renderDiscoveryError(urlError)}
-                {urlBusy ? (
-                  <DiscoveryProgressPanel
-                    cancelLabel="Cancel sync"
-                    label={urlStageLabel}
-                    onCancel={() => cancelDiscovery()}
-                    progress={urlProgress}
-                    showDetails={false}
-                    theme={GYM_DISCOVERY_PROGRESS_THEME}
-                  />
-                ) : (
                   <button
                     type="button"
                     onClick={() => void handleUrlSync()}
@@ -891,7 +878,6 @@ export default function GymnasticsLauncher({
                     Build from this link
                     <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                   </button>
-                )}
               </div>
             </div>
           </section>
@@ -971,5 +957,6 @@ export default function GymnasticsLauncher({
         </p>
       </div>
     </main>
+    </>
   );
 }

@@ -146,7 +146,11 @@ export default function EventCustomThemeDialog({
     if (request.current || reading || readingInformation) return;
     setError("");
     if (prompt.trim().length < 5 && !information.length) {
-      setError("Describe the design you have in mind.");
+      setError(
+        candidate
+          ? "Describe the design change you have in mind."
+          : "Add event details or upload event information to create your page.",
+      );
       return;
     }
     if (status !== "authenticated") {
@@ -273,7 +277,7 @@ export default function EventCustomThemeDialog({
               ) : (
                 <div className={styles.brief}>
                   <label className={styles.field}>
-                    {candidate ? "Describe a design change" : "Describe your event and design"}
+                    {candidate ? "Describe a design change" : "Your event details"}
                     <textarea
                       ref={promptInput}
                       rows={6}
@@ -293,61 +297,86 @@ export default function EventCustomThemeDialog({
                     </p>
                   )}
                   <label className={styles.field}>
-                    Event information files (optional)
-                    <input type="file" multiple accept="image/png,image/jpeg,image/webp" disabled={busy || readingInformation} onChange={(event) => { void chooseInformation(Array.from(event.target.files || [])); event.target.value = ""; }} />
-                    <span className={styles.notice}>Upload photos of a flyer, schedule or printed document. Up to five JPG, PNG or WebP files, 2 MB each. We’ll read the details into your editable event page.</span>
-                  </label>
-                  {readingInformation && <p role="status">Reading files…</p>}
-                  {information.length > 0 && <div className={styles.notice}>
-                    <p>{information.map((file) => file.name).join(", ")}</p>
-                    <button type="button" className={styles.secondary} disabled={busy || readingInformation} onClick={() => setInformation([])}>Remove information files</button>
-                  </div>}
-                  <label className={styles.field}>
-                    Reference image (optional)
+                    {category === "gymnastics"
+                      ? "Meet packet or flyer photos (optional)"
+                      : "Event information photos (optional)"}
                     <input
                       type="file"
+                      multiple
                       accept="image/png,image/jpeg,image/webp"
-                      disabled={busy}
-                      onChange={(e) => chooseImage(e.target.files?.[0])}
+                      disabled={busy || readingInformation}
+                      onChange={(event) => {
+                        void chooseInformation(Array.from(event.target.files || []));
+                        event.target.value = "";
+                      }}
                     />
-                    <span className={styles.notice}>PNG, JPG or WebP, up to 2 MB.</span>
+                    <span className={styles.notice}>
+                      We’ll read the details into your page. Up to 5 JPG, PNG or WebP images, 2 MB each.
+                    </span>
                   </label>
-                  {reference && (
-                    <div className={styles.reference}>
-                      <img src={reference.dataUrl} alt="Your design reference" />
-                      <div>
-                        <p>{reference.name}</p>
-                        <label className={styles.check}>
-                          <input
-                            type="radio"
-                            name="reference-mode"
-                            checked={referenceMode === "use"}
-                            disabled={busy}
-                            onChange={() => setReferenceMode("use")}
-                          />
-                          Use this image
-                        </label>
-                        <label className={styles.check}>
-                          <input
-                            type="radio"
-                            name="reference-mode"
-                            checked={referenceMode === "inspire"}
-                            disabled={busy}
-                            onChange={() => setReferenceMode("inspire")}
-                          />
-                          Use as inspiration
-                        </label>
-                        <button
-                          type="button"
-                          className={styles.secondary}
-                          disabled={busy}
-                          onClick={() => setReference(null)}
-                        >
-                          Remove image
-                        </button>
-                      </div>
+                  {readingInformation && <p role="status">Reading files…</p>}
+                  {information.length > 0 && (
+                    <div className={styles.notice}>
+                      <p>{information.map((file) => file.name).join(", ")}</p>
+                      <button
+                        type="button"
+                        className={styles.secondary}
+                        disabled={busy || readingInformation}
+                        onClick={() => setInformation([])}
+                      >
+                        Remove information files
+                      </button>
                     </div>
                   )}
+                  <details className={styles.designOptions}>
+                    <summary>Artwork & inspiration (optional)</summary>
+                    <label className={styles.field}>
+                      Reference image (optional)
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        disabled={busy}
+                        onChange={(e) => chooseImage(e.target.files?.[0])}
+                      />
+                      <span className={styles.notice}>PNG, JPG or WebP, up to 2 MB.</span>
+                    </label>
+                    {reference && (
+                      <div className={styles.reference}>
+                        <img src={reference.dataUrl} alt="Your design reference" />
+                        <div>
+                          <p>{reference.name}</p>
+                          <label className={styles.check}>
+                            <input
+                              type="radio"
+                              name="reference-mode"
+                              checked={referenceMode === "use"}
+                              disabled={busy}
+                              onChange={() => setReferenceMode("use")}
+                            />
+                            Use this image
+                          </label>
+                          <label className={styles.check}>
+                            <input
+                              type="radio"
+                              name="reference-mode"
+                              checked={referenceMode === "inspire"}
+                              disabled={busy}
+                              onChange={() => setReferenceMode("inspire")}
+                            />
+                            Use as inspiration
+                          </label>
+                          <button
+                            type="button"
+                            className={styles.secondary}
+                            disabled={busy}
+                            onClick={() => setReference(null)}
+                          >
+                            Remove image
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </details>
                 </div>
               )}
             </div>
@@ -408,7 +437,7 @@ export default function EventCustomThemeDialog({
                     onClick={() => void generate()}
                   >
                     <Sparkles size={16} />
-                    {busy ? "Creating…" : candidate ? "Update design" : "Create with Envitefy"}
+                    {busy ? "Creating…" : candidate ? "Update design" : "Create event page"}
                   </button>
                 </>
               )}

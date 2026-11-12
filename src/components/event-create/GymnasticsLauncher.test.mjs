@@ -18,12 +18,12 @@ test("gymnastics launcher reports server stages and opens as soon as the core dr
     /statusJson\?\.draftReady === true \|\| statusJson\?\.builderReady === true/,
   );
   assert.match(source, /window\.setTimeout\(resolve, 1500\)/);
-  assert.match(source, /DiscoveryProgressPanel/);
-  assert.match(source, /expectation="Core draft usually opens in under a minute"/);
+  assert.match(source, /DiscoveryProgressDialog/);
+  const dialog = readSource("src/components/event-create/DiscoveryProgressDialog.tsx");
+  assert.match(dialog, /showDetails=\{false\}/);
   assert.doesNotMatch(source, /GYM_DISCOVERY_STATUS_PHRASES/);
   assert.doesNotMatch(source, /parseProgressTimerRef/);
   assert.doesNotMatch(source, /urlIndeterminate/);
-  assert.match(source, /showDetails=\{false\}/);
   assert.doesNotMatch(source, /Public pages may take a little longer to read/);
 });
 

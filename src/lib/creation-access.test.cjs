@@ -268,7 +268,7 @@ test("a previous account's cached grant snapshot is unavailable on the first ren
     const states = [{ identity: "owner@example.com", access: cached }, false, { identity: "", message: "" }];
     const refs = [0, null, "owner@example.com", { identity: "owner@example.com", signature: JSON.stringify(cached) }];
     const hook = loadTs("src/hooks/useCreationAccess.ts", {
-      react: { useState: () => [states[stateIndex++], () => {}], useRef: () => ({ current: refs[refIndex++] }), useEffect: () => {}, useCallback: (callback) => callback },
+      react: { useState: () => [states[stateIndex++], () => {}], useRef: () => ({ current: refs[refIndex++] }), useEffect: () => {}, useCallback: (callback) => callback, useContext: () => null, createContext: (value) => ({ Provider: "div", _currentValue: value }) },
       "next-auth/react": { useSession: () => ({ status, data: { user: { email } } }) },
       "./useFeatureVisibility": { notifyFeatureVisibilityChanged: () => {} },
     });

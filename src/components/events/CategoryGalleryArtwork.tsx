@@ -233,19 +233,19 @@ function Artwork({ kind }: { kind: GalleryArtwork }) {
         <>
           <g fill="none" strokeLinecap="round">
             <path
-              d="M357 299C698 305 778 154 584 153S430 72 641 38"
+              d="M357 360C698 360 778 154 584 153S430 72 641 38"
               strokeWidth="16"
               stroke="var(--gallery-glow)"
             />
             <path
-              d="M357 299C698 305 778 154 584 153S430 72 641 38"
+              d="M357 360C698 360 778 154 584 153S430 72 641 38"
               strokeWidth="2"
               strokeDasharray="2 9"
               opacity=".5"
             />
           </g>
           <g fill="none" strokeWidth="3" opacity=".52">
-            <path d="M617-10v112M708-10v112" />
+            <path d="M617-1000V102M708-1000V102" />
             <ellipse cx="617" cy="126" rx="20" ry="27" />
             <ellipse cx="708" cy="126" rx="20" ry="27" />
             <path d="m478 263 16-66h217l17 66M519 200l-16 63M682 200l15 63" />
@@ -472,6 +472,7 @@ export default function CategoryGalleryArtwork({
     <svg
       className={className}
       viewBox="0 0 800 360"
+      preserveAspectRatio={kind === "gymnastics" ? "xMidYMax meet" : undefined}
       fill="none"
       stroke="currentColor"
       aria-hidden="true"

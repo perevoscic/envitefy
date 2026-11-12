@@ -35,7 +35,7 @@ export default function EventCustomThemeLauncher({
   contained?: boolean;
   /** Render only the Create with Envitefy toolbar button, without the information upload. */
   compact?: boolean;
-  presentation?: "hero";
+  presentation?: "hero" | "tile";
 }) {
   const router = useRouter();
   const search = useSearchParams();
@@ -135,11 +135,13 @@ export default function EventCustomThemeLauncher({
   return (
     <div
       className={
-        compact || presentation === "hero"
-          ? "min-w-0"
-          : contained
-            ? "my-4 sm:my-8"
-            : "mx-auto max-w-[1500px] px-5 py-4 sm:px-8 sm:py-8 lg:px-12"
+        presentation === "tile"
+          ? "min-w-0 h-full"
+          : compact || presentation
+            ? "min-w-0"
+            : contained
+              ? "my-4 sm:my-8"
+              : "mx-auto max-w-[1500px] px-5 py-4 sm:px-8 sm:py-8 lg:px-12"
       }
     >
       {!importing && (

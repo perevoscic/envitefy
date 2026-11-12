@@ -51,6 +51,7 @@ import {
   type RefObject,
   type SetStateAction,
   Fragment,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -738,6 +739,7 @@ function EventListPanel({
   onRowClick,
   pastExpanded,
   setPastExpanded,
+  pastLoading = false,
   showPendingBadge,
   pastRowOpacityClass,
   onBack,
@@ -753,6 +755,7 @@ function EventListPanel({
   onRowClick: (item: GroupedEventItem) => void;
   pastExpanded: boolean;
   setPastExpanded: Dispatch<SetStateAction<boolean>>;
+  pastLoading?: boolean;
   showPendingBadge: boolean;
   pastRowOpacityClass: string;
   onBack: () => void;
@@ -852,7 +855,7 @@ function EventListPanel({
     <SidebarListPanel title={title} onBack={onBack}>
       <div className="space-y-3">
         {createAction}
-        {grouped.upcoming.length === 0 && grouped.past.length === 0 ? (
+        {grouped.upcoming.length === 0 && grouped.past.length === 0 && scheduleList ? (
           <div
             className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
           >
@@ -864,7 +867,7 @@ function EventListPanel({
               <div
                 className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
               >
-                {signupList ? "No upcoming sign-up forms." : "No upcoming events."}
+                {signupList ? "No upcoming sign-up forms." : scheduleList ? emptyStateCopy : "No upcoming events."}
               </div>
             ) : (
               <div className="space-y-1">
@@ -872,7 +875,7 @@ function EventListPanel({
               </div>
             )}
 
-            {grouped.past.length > 0 ? (
+            {scheduleList ? null : (
               <section className="space-y-1">
                 <div className="px-1 pt-2">
                   <div className="flex items-center justify-center">
@@ -893,7 +896,9 @@ function EventListPanel({
                 </div>
 
                 {pastExpanded ? (
-                  grouped.past.length === 0 ? (
+                  pastLoading && grouped.past.length === 0 ? (
+                    <p role="status" className="px-3 py-4 text-center text-sm text-[#7e76b9]">Loading…</p>
+                  ) : grouped.past.length === 0 ? (
                     <div
                       className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
                     >
@@ -906,7 +911,7 @@ function EventListPanel({
                   )
                 ) : null}
               </section>
-            ) : null}
+            )}
           </div>
         )}
       </div>
@@ -1156,7 +1161,7 @@ function FooterProfileMenu({
 export default function LeftSidebar() {
   const { data: session, status } = useSession();
   const menu = useMenu();
-  const { historySidebarItems } = useEventCache();
+  const { historySidebarItems, loadPastHistory, pastHistoryLoading } = useEventCache();
   const sidebar = useSidebar();
   const desktopHoverRef = useRef(false);
   const desktopFocusRef = useRef(false);
@@ -1193,6 +1198,25 @@ export default function LeftSidebar() {
     }
     sidebar.setDesktopPeek(viewModel.menuOpen || desktopHoverRef.current || desktopFocusRef.current);
   }, [viewModel.isDesktop, viewModel.menuOpen, sidebar.setDesktopPeek]);
+
+  const setPastMyEvents = useCallback((update: SetStateAction<boolean>) => {
+    viewModel.setShowPastMyEvents((prev) => {
+      const next = typeof update === "function" ? update(prev) : update;
+      if (next) void loadPastHistory();
+      return next;
+    });
+  }, [loadPastHistory, viewModel.setShowPastMyEvents]);
+  const setPastInvitedEvents = useCallback((update: SetStateAction<boolean>) => {
+    viewModel.setShowPastInvitedEvents((prev) => {
+      const next = typeof update === "function" ? update(prev) : update;
+      if (next) void loadPastHistory();
+      return next;
+    });
+  }, [loadPastHistory, viewModel.setShowPastInvitedEvents]);
+
+  useEffect(() => {
+    if (viewModel.showPastMyEvents || viewModel.showPastInvitedEvents) void loadPastHistory();
+  }, [loadPastHistory, viewModel.showPastInvitedEvents, viewModel.showPastMyEvents]);
 
   if (!viewModel.isReady) return null;
   if (viewModel.isEmbeddedEditMode) return null;
@@ -1503,7 +1527,8 @@ export default function LeftSidebar() {
                       isHistoryRowActive={viewModel.isHistoryRowActive}
                       onRowClick={viewModel.openOwnerEventContext}
                       pastExpanded={viewModel.showPastMyEvents}
-                      setPastExpanded={viewModel.setShowPastMyEvents}
+                      setPastExpanded={setPastMyEvents}
+                      pastLoading={pastHistoryLoading}
                       showPendingBadge={false}
                       pastRowOpacityClass="opacity-75 saturate-75"
                       onBack={viewModel.backToRoot}
@@ -1549,7 +1574,8 @@ export default function LeftSidebar() {
                       isHistoryRowActive={viewModel.isHistoryRowActive}
                       onRowClick={viewModel.openOwnerEventContext}
                       pastExpanded={viewModel.showPastMyEvents}
-                      setPastExpanded={viewModel.setShowPastMyEvents}
+                      setPastExpanded={setPastMyEvents}
+                      pastLoading={pastHistoryLoading}
                       showPendingBadge={false}
                       pastRowOpacityClass="opacity-75 saturate-75"
                       onBack={viewModel.backToRoot}
@@ -1584,7 +1610,8 @@ export default function LeftSidebar() {
                       isHistoryRowActive={viewModel.isHistoryRowActive}
                       onRowClick={viewModel.openGuestEventContext}
                       pastExpanded={viewModel.showPastInvitedEvents}
-                      setPastExpanded={viewModel.setShowPastInvitedEvents}
+                      setPastExpanded={setPastInvitedEvents}
+                      pastLoading={pastHistoryLoading}
                       showPendingBadge
                       pastRowOpacityClass="opacity-70 saturate-75"
                       onBack={viewModel.backToRoot}

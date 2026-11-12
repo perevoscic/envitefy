@@ -259,7 +259,9 @@
   border-radius: 24px;
   display: flex;
   flex-direction: column;
-  color: #342d38;
+  color: var(--create-ink, #342d38);
+  border: 1px solid var(--create-border, #e6deeb);
+  overflow: hidden;
   box-shadow: 0 30px 100px #0004;
 }
 .dialogHeader {
@@ -275,6 +277,7 @@
   font-family: Georgia, serif;
   font-size: clamp(24px, 3vw, 28px);
   line-height: 1.2;
+  color: var(--create-ink, #342d38);
 }
 .dialogHeader p {
   margin: 8px 0 0;
@@ -301,14 +304,17 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  border: 1px solid #ded4e4;
-  background: white;
+  border: 1px solid var(--create-border, #ded4e4);
+  background: var(--create-soft, #fff);
+  color: var(--create-ink, #342d38);
+  cursor: pointer;
 }
 .dialogBody {
   overflow: auto;
   min-height: 0;
   flex: 1;
   padding: 28px;
+  overscroll-behavior: contain;
 }
 .brief {
   max-width: 700px;
@@ -342,6 +348,54 @@
   resize: vertical;
   line-height: 1.7;
 }
+.dialog .field {
+  color: var(--create-ink, #342d38);
+  font-size: 14px;
+}
+.dialog .field :is(input, textarea, select) {
+  background: var(--field-background, #fff);
+  color: var(--create-ink, #342d38);
+  border-color: var(--input, #b7a9bf);
+  font-size: 16px;
+}
+.dialog .field textarea::placeholder {
+  color: var(--create-muted, #615563);
+  opacity: 1;
+}
+.dialog .field input[type="file"] {
+  font-size: 14px;
+  padding: 8px;
+}
+.dialog .field input::file-selector-button {
+  min-height: 44px;
+  margin-right: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--create-border, #d8cddf);
+  border-radius: 6px;
+  background: var(--create-soft, #f3edf7);
+  color: var(--create-ink, #342d38);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.designOptions {
+  border-top: 1px solid var(--create-border, #e6deeb);
+  padding-top: 8px;
+}
+.designOptions summary {
+  min-height: 44px;
+  align-content: center;
+  color: var(--create-ink, #342d38);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.designOptions[open] summary { margin-bottom: 12px; }
+.designOptions summary:focus-visible {
+  outline: 2px solid var(--create-accent, #72527e);
+  outline-offset: 4px;
+}
+.designOptions .reference { margin-top: 16px; }
 .field input[aria-invalid="true"],
 .field textarea[aria-invalid="true"] {
   border: 2px solid #b4233c;
@@ -433,6 +487,7 @@
 }
 .dialogFooter .primary {
   background: var(--create-accent);
+  color: var(--create-on-accent, #fff);
 }
 .dialogFooter .primary:enabled:hover {
   background: var(--create-hover);
@@ -441,6 +496,15 @@
   border-color: var(--create-border);
   color: var(--create-accent);
 }
+.dialog .secondary {
+  background: var(--create-soft, #fff);
+  color: var(--create-ink, #54465e);
+  border-color: var(--create-border, #d8cddf);
+}
+.dialog .notice { color: var(--create-muted, #615563); font-weight: 400; }
+.dialog .error { color: var(--error, #a7293b); }
+.dialog .close:hover { background: var(--create-border, #e6deeb); }
+.dialogHeader, .dialogFooter { flex-shrink: 0; }
 .dialog .close:focus-visible {
   outline: 2px solid var(--create-accent);
   outline-offset: 3px;
@@ -610,6 +674,7 @@
   }
   .dialog {
     inset: 0;
+    height: 100dvh;
     border-radius: 0;
   }
   .dialogHeader,
@@ -617,6 +682,7 @@
   .dialogFooter {
     padding: 20px;
   }
+  .dialogHeader { padding-top: max(20px, env(safe-area-inset-top)); }
   .dialogFooter {
     padding-bottom: max(20px, env(safe-area-inset-bottom));
   }

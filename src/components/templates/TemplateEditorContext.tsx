@@ -84,7 +84,7 @@ export type TemplateEditorRuntime = {
   requestPublish: (mode?: "login" | "signup") => Promise<void>;
   /** Resume the same native validation and publication path after authentication. */
   registerPublisher: (publish: () => Promise<void>) => () => void;
-  persist: (payload: TemplateHistoryPayload, status: "draft" | "published", options?: { navigate?: boolean; snapshot?: EditorSnapshot }) => Promise<string>;
+  persist: (payload: TemplateHistoryPayload, status: "draft" | "published", options?: { navigate?: boolean; snapshot?: EditorSnapshot; showMessage?: boolean }) => Promise<string>;
   previewPhoto: (file: File) => string;
 };
 const Context = createContext<TemplateEditorRuntime | null>(null);
@@ -543,7 +543,7 @@ export default function TemplateEditorProvider({
   }, [flush]);
 
   const persist = useCallback(
-    async (payload: TemplateHistoryPayload, nextStatus: "draft" | "published", options: { navigate?: boolean; snapshot?: EditorSnapshot } = {}) => {
+    async (payload: TemplateHistoryPayload, nextStatus: "draft" | "published", options: { navigate?: boolean; snapshot?: EditorSnapshot; showMessage?: boolean } = {}) => {
       if (busyRef.current) throw new Error("Your progress is still saving. Please wait.");
       if (!draft.current) throw new Error("Your editor is still loading.");
       if (!authenticated) throw new Error("Sign in to save your event.");
@@ -588,11 +588,13 @@ export default function TemplateEditorProvider({
         } catch {
           /* The server has safely retained this snapshot. */
         }
-        setMessage(
-          nextStatus === "draft"
-            ? "Draft saved. Only you and accepted co-hosts can view it until you publish."
-            : "Published.",
-        );
+        if (options.showMessage !== false) {
+          setMessage(
+            nextStatus === "draft"
+              ? "Draft saved. Only you and accepted co-hosts can view it until you publish."
+              : "Published.",
+          );
+        }
         if (nextStatus === "draft") {
           // Reload reopens this exact saved event; a plain gallery entry remains a new event.
           savedEventId.current = eventId;

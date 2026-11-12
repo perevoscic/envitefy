@@ -183,7 +183,10 @@ export async function PUT(req: Request) {
       { status: 400 },
     );
   }
-  const existingRow = await getFeatureVisibilityByEmail(email);
+  const [existingRow, access] = await Promise.all([
+    getFeatureVisibilityByEmail(email),
+    getCreationAccess(authUser.userId),
+  ]);
   const existingMetadata = readMetadata(existingRow);
 
   const hasPersona = Object.hasOwn(body, "persona");
@@ -221,7 +224,6 @@ export async function PUT(req: Request) {
       : normalizeSignupIntent(existingMetadata?.defaultCreateIntent),
     sportPreferences,
   });
-  const access = await getCreationAccess(authUser.userId);
   resolved.visibleTemplateKeys = filterCreationTemplateKeys(resolved.visibleTemplateKeys, access);
   resolved.sportPreferences = allowedSportPreferences(resolved.sportPreferences, access);
   resolved.defaultCreateIntent = allowedDefaultIntent(resolved.defaultCreateIntent, access);

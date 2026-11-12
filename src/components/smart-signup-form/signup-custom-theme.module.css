@@ -19,7 +19,7 @@
   border: 1px solid var(--create-border, #e8dfe8);
   border-radius: 24px;
   background: var(--create-background, #fffcfa);
-  color: #342d38;
+  color: var(--create-ink, #342d38);
   box-shadow: 0 28px 100px rgb(28 19 34 / 24%);
   font-family: var(--font-body, Arial, sans-serif);
   font-size: 14px;
@@ -63,6 +63,7 @@
   letter-spacing: 0.07em;
 }
 .title {
+  color: var(--create-ink, #342d38);
   margin: 0;
   max-width: 440px;
   font-family: Georgia, serif;
@@ -86,7 +87,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: #67566b;
+  color: var(--create-ink, #67566b);
   background: var(--create-soft, #f3edf2);
   border: 0;
   cursor: pointer;

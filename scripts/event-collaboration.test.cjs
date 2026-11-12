@@ -299,6 +299,62 @@ test("an editor rebases only server artwork bookkeeping and preserves real conte
   } finally { global.fetch = original; }
 });
 
+test("meet saves retain completed artwork and progress without accepting authored conflicts", async () => {
+  const { createEventHistoryClient } = compile("src/lib/event-history-client.ts", { react: { useMemo: fn => fn() } });
+  const original = global.fetch;
+  const before = { id: "event", title: "Meet", revision: "before", data: {
+    title: "Meet", createdVia: "meet-discovery-v2", venue: "Original venue",
+    pipelineSummary: { discoveryId: "import-1", processingStage: "generating_artwork" },
+    importedTheme: { id: "theme-1", enabled: true, artworkUrl: "old.webp", context: { title: "Meet" } },
+    importedThemeArtwork: { themeId: "theme-1", status: "generating" },
+  } };
+  const completed = { ...before, revision: "completed", data: { ...before.data,
+    pipelineSummary: { discoveryId: "import-1", processingStage: "review_ready" },
+    importedTheme: { ...before.data.importedTheme, artworkUrl: "generated.webp" },
+    importedThemeArtwork: { themeId: "theme-1", status: "ready", imageUrl: "generated.webp" },
+  } };
+  try {
+    for (const change of ["background", "replacement", "clear", "progress", "venue", "theme", "snapshot", "other-import", "unverified-image", "title-conflict"]) {
+      const latest = structuredClone(change === "progress" ? { ...before, revision: "progress", data: { ...before.data, pipelineSummary: completed.data.pipelineSummary } } : completed);
+      if (change === "venue") latest.data.venue = "Another host's venue";
+      if (change === "theme") latest.data.importedTheme.enabled = false;
+      if (change === "snapshot") latest.data.templateEditor = { snapshot: { data: { title: "Another host's title" } } };
+      if (change === "other-import") latest.data.pipelineSummary.discoveryId = "import-2";
+      if (change === "unverified-image") latest.data.importedThemeArtwork.imageUrl = "different.webp";
+      if (change === "title-conflict") latest.data.title = "Another host's title";
+      const writes = [];
+      global.fetch = async (_url, options = {}) => {
+        if (options.method !== "PATCH") return Response.json(writes.length ? latest : before);
+        const payload = JSON.parse(options.body); writes.push(payload);
+        return payload.expectedRevision === latest.revision
+          ? Response.json({ ...latest, revision: "saved", data: { ...latest.data, ...payload.data } })
+          : Response.json({ error: "changed", code: "event_changed" }, { status: 409 });
+      };
+      const client = createEventHistoryClient();
+      await client.fetch("/api/history/event");
+      const theme = { ...before.data.importedTheme, artworkUrl: change === "replacement" ? "my-photo.webp" : change === "clear" ? "" : "old.webp" };
+      const result = await client.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: {
+        ...before.data, title: "My edited meet", importedTheme: theme,
+        templateEditor: { snapshot: { data: { importedTheme: theme, title: "My edited meet" } } },
+      } }) });
+      const allowed = ["background", "replacement", "clear", "progress", "venue", "theme"].includes(change);
+      assert.equal(result.status, allowed ? 200 : 409, change);
+      assert.equal(writes.length, allowed ? 2 : 1, change);
+      if (allowed) {
+        const saved = await result.json();
+        assert.equal(saved.data.title, "My edited meet", change);
+        assert.equal(saved.data.venue, change === "venue" ? "Another host's venue" : "Original venue", change);
+        assert.equal(saved.data.importedTheme.enabled, change === "theme" ? false : true, change);
+        assert.deepEqual(saved.data.pipelineSummary, latest.data.pipelineSummary, change);
+        assert.deepEqual(saved.data.importedThemeArtwork, latest.data.importedThemeArtwork, change);
+        const expectedImage = change === "replacement" ? "my-photo.webp" : change === "clear" ? "" : change === "progress" ? "old.webp" : "generated.webp";
+        assert.equal(saved.data.importedTheme.artworkUrl, expectedImage, change);
+        assert.equal(saved.data.templateEditor.snapshot.data.importedTheme.artworkUrl, expectedImage, change);
+      }
+    }
+  } finally { global.fetch = original; }
+});
+
 test("co-host access does not include private scans or unpublishing", async () => {
   const { api, event, state } = fixture();
   state.members.push({ event_id: "event", user_id: "friend", revoked_at: null });

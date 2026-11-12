@@ -20,10 +20,13 @@ import PublicTemplateGallery from "../../src/components/templates/PublicTemplate
 import {CUSTOM_EVENT_CATEGORIES, takeCustomEventPage} from "../../src/lib/event-custom-design";
 import {takeSignupTheme} from "../../src/lib/signup-theme-handoff";
 import {getCategoryCustomDesignProfile} from "../../src/lib/category-custom-design-profiles";
+import {applyAppearance} from "../../src/lib/appearance";
+import {readCreationIntake} from "../../src/lib/create/creation-intake";
 import UnsavedProgressProvider from "@/components/UnsavedProgressProvider";
 import {AppRouterContext} from "next/dist/shared/lib/app-router-context.shared-runtime";
 import {fixtureRouter} from "next/navigation";
-window.fixture = {categories: [...Object.keys(CUSTOM_EVENT_CATEGORIES), "signup-forms"], profile: getCategoryCustomDesignProfile, takeCustomEventPage, takeSignupTheme};
+window.fixture = {categories: [...Object.keys(CUSTOM_EVENT_CATEGORIES), "signup-forms"], profile: getCategoryCustomDesignProfile, takeCustomEventPage, takeSignupTheme, applyAppearance, readCreationIntake};
+applyAppearance("light", false);
 const params = new URLSearchParams(location.search);
 const category = params.get("category") || "weddings";
 createRoot(document.getElementById("root")!).render(<AppRouterContext.Provider value={fixtureRouter}><UnsavedProgressProvider><main>
@@ -63,12 +66,13 @@ const mocks = {
     export const AppRouterContext = createContext(null);
   `,
   "next-auth/react": `
-    import {useSyncExternalStore} from "react";
+    import {createContext, useSyncExternalStore} from "react";
+    export const SessionContext = createContext(undefined);
     let status = new URLSearchParams(location.search).get("status") || "authenticated";
     const listeners = new Set();
     const subscribe = fn => {listeners.add(fn); return () => listeners.delete(fn);};
     window.setTestSession = next => { status = next; listeners.forEach(fn => fn()); };
-    export function useSession() { return {status: useSyncExternalStore(subscribe, () => status), update: async () => window.setTestSession("authenticated")}; }
+    export function useSession() { return {status: useSyncExternalStore(subscribe, () => status), data: status === "authenticated" ? {user: {id: "category-fixture"}} : null, update: async () => window.setTestSession("authenticated")}; }
     export const SessionProvider = ({children}) => children;
     export async function getSession() {return null;}
     export async function signIn() {}

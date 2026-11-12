@@ -31,6 +31,12 @@
     linear-gradient(90deg, var(--gallery-base) 23%, transparent 72%);
 }
 
+.backdrop[data-gallery-category="gymnastics"] .artwork {
+  top: 0;
+  height: 100%;
+  transform: none;
+}
+
 @media (max-width: 767px) {
   .artwork {
     top: -25px;

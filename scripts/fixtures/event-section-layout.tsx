@@ -37,7 +37,12 @@ function App() {
     id: "hotels", label: "Hotels & Travel", kind: "hotels", priority: 40, hasContent: true,
     blocks: [{ id: "hotel-cards", type: "card-grid", cards: hotelNames.map((label, index) => ({
       key: String(index), label, presentation: "hotel", highlights: [{ label: "Nightly rate", value: search.get("hotels") === "short" ? "$190 + tax" : "1-Bedroom Suite: $224.00 + tax (per night); 2-Bedroom Suite: $299.00 + tax (per night)" }],
-      details: [{ label: "Distance", value: "4.2 miles" }], action: { label: "Book hotel", url: "https://hotel.example.test/booking?group=meet" },
+      details: [
+        { label: "Parking", value: "$10 per night" },
+        { label: "Breakfast", value: "Complimentary Hot Breakfast" },
+        { label: "Book by", value: "December 24, 2026" },
+        { label: "Phone", value: "(800) 233-1234" },
+      ], action: { label: "Book hotel", url: "https://hotel.example.test/booking?group=meet" },
     })) }],
   });
   const initialLayout: EventSectionLayout | undefined = search.get("explicit") === "split"

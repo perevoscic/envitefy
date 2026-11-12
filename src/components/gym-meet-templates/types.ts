@@ -365,6 +365,7 @@ export type GymMeetTitleSize = "small" | "medium" | "large";
 export type GymMeetRenderModel = {
   generatedFromDiscovery?: boolean;
   importedTheme?: import("@/lib/imported-event-theme").ImportedEventTheme | null;
+  importedThemeArtwork?: { themeId: string; status: "generating" | "ready" | "failed" } | null;
   schedule?: GymMeetScheduleInfo;
   sectionLayout?: import("@/lib/event-section-layout").EventSectionLayout;
   guestPlanning?: EventGuestPlanning;

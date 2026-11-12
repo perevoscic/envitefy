@@ -191,11 +191,11 @@ async function getHistory(req: Request) {
       light = cached;
     } else {
       let rows: any[] = [];
-      if (view === "sidebar" && timeFilter === "all") {
+      if (view === "sidebar") {
         responseSource = "dashboard-fallback";
         try {
-          rows = await coalesceHistoryRead(userId, "sidebar", limit, timeFilter, () => listDashboardHistoryFallbackForUser(userId, limit, limit));
-          if (!rows.length) {
+          rows = await coalesceHistoryRead(userId, "sidebar", limit, timeFilter, () => listDashboardHistoryFallbackForUser(userId, limit, limit, timeFilter));
+          if (!rows.length && timeFilter === "all") {
             rows = await loadHistory();
             responseSource = "dashboard-fallback-empty-union-fallback";
           }
@@ -207,12 +207,12 @@ async function getHistory(req: Request) {
             responseSource = "stale-cache";
           } else {
             try {
-              rows = await listDashboardHistoryWindowForUser(userId, limit);
+              rows = await listDashboardHistoryWindowForUser(userId, limit, timeFilter);
               responseSource = "dashboard-window-timeout-fallback";
             } catch (fallbackErr) {
               if (!isStatementTimeoutError(fallbackErr)) throw fallbackErr;
               try {
-                rows = await listSidebarHistoryForUserFast(userId, limit);
+                rows = await listSidebarHistoryForUserFast(userId, limit, timeFilter);
                 responseSource = "fast-sidebar-timeout-fallback";
               } catch (finalErr) {
                 if (!isStatementTimeoutError(finalErr)) throw finalErr;
@@ -226,34 +226,7 @@ async function getHistory(req: Request) {
         }
       } else {
         responseSource = "history-union";
-        try {
-          rows = await loadHistory();
-        } catch (err) {
-          const canUseFastSidebarFallback =
-            view === "sidebar" &&
-            timeFilter === "all" &&
-            isStatementTimeoutError(err);
-          if (!canUseFastSidebarFallback) throw err;
-          if (process.env.NODE_ENV !== "production") {
-            console.warn("[history] falling back to fast sidebar query after statement timeout");
-          }
-          try {
-            rows = await listSidebarHistoryForUserFast(userId, limit);
-            responseSource = "fast-sidebar-fallback";
-          } catch (fastErr) {
-            if (!isStatementTimeoutError(fastErr)) throw fastErr;
-            if (Array.isArray(staleCached)) {
-              light = staleCached;
-              rows = [];
-              responseSource = "stale-cache";
-            } else {
-              light = [];
-              responseSource = "degraded-empty";
-            }
-            degradedReason = "statement-timeout";
-            shouldCacheResponse = false;
-          }
-        }
+        rows = await loadHistory();
       }
       if (!light) {
         light = finalizeItems(rows);
@@ -266,7 +239,8 @@ async function getHistory(req: Request) {
       if (timeFilter === "all") return true;
       const end = row.data?.endAt || row.data?.endISO || row.data?.end || row.data?.startAt || row.data?.startISO || row.data?.start;
       const timestamp = typeof end === "string" ? Date.parse(end) : Number.NaN;
-      return Number.isFinite(timestamp) && (timeFilter === "past" ? timestamp < Date.now() : timestamp >= Date.now());
+      if (!Number.isFinite(timestamp)) return timeFilter === "upcoming";
+      return timeFilter === "past" ? timestamp < Date.now() : timestamp >= Date.now();
     }).slice(0, limit));
     const seenCollaborative = new Set(collaborative.map((row) => row.id));
     light = [...collaborative, ...(light || []).filter((row) => !seenCollaborative.has(row.id))];

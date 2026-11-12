@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import ArrowFillButton from "@/components/ui/ArrowFillButton";
+import importPanelStyles from "@/components/event-create/gymnastics-import-panel.module.css";
 import {
   type CustomDesignCategory,
   getCategoryCustomDesignProfile,
@@ -29,7 +30,7 @@ export default function CreateWithEnvitefyCallout({
   busy?: boolean;
   /** A single toolbar button for galleries whose header already carries the primary actions. */
   compact?: boolean;
-  presentation?: "hero";
+  presentation?: "hero" | "tile";
 }) {
   const { status, update } = useSession();
   const [authOpen, setAuthOpen] = useState(false);
@@ -51,7 +52,7 @@ export default function CreateWithEnvitefyCallout({
       }}
     />
   );
-  if (presentation === "hero") {
+  if (presentation) {
     const create = () => {
       if (status === "authenticated") {
         onClick();
@@ -60,6 +61,36 @@ export default function CreateWithEnvitefyCallout({
         setAuthOpen(true);
       }
     };
+    if (presentation === "tile") {
+      return (
+        <section
+          aria-label="Generate with Envitefy"
+          data-custom-design-category={category}
+          data-custom-design-presentation="tile"
+          style={categoryCustomDesignStyle(category)}
+          className={`${importPanelStyles.panel} flex h-full flex-col gap-4 rounded-2xl p-4 text-left`}
+        >
+          <div className="flex items-start gap-3">
+            <span className={`${importPanelStyles.badge} flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/12`}>
+              <CategoryCustomDesignIcon category={category} size={18} />
+            </span>
+            <div className="min-w-0">
+              <h2 className={`${importPanelStyles.title} text-[15px] font-semibold leading-5`}>Generate with Envitefy</h2>
+              <p className={`${importPanelStyles.description} mt-1 text-[13px] leading-5`}>{profile.description}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={create}
+            disabled={busy || status === "loading"}
+            className={`${importPanelStyles.button} ${importPanelStyles.primaryButton} mt-auto w-full`}
+          >
+            Generate with Envitefy
+          </button>
+          {authModal}
+        </section>
+      );
+    }
     return (
       <div data-custom-design-category={category} data-custom-design-presentation="hero">
         <ArrowFillButton
@@ -143,7 +174,7 @@ export default function CreateWithEnvitefyCallout({
             type="button"
             onClick={onImport}
             disabled={!canCreate}
-            className="mt-2 inline-flex min-h-11 items-center justify-center rounded-full border border-[#d7c6dc] px-5 py-2 text-sm font-semibold text-[#684675] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#684675]"
+            className="mt-2 inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--create-border)] px-5 py-2 text-sm font-semibold text-[var(--create-accent)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--create-accent)]"
           >
             Upload event information
           </button>

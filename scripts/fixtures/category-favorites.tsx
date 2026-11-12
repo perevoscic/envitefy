@@ -96,6 +96,9 @@ let result: ReturnType<typeof useCategoryFavorites>;
   toggle(id: string) {
     return result.toggle(id);
   },
+  retry() {
+    return result.retry();
+  },
 };
 if (configuration.dark) document.documentElement.classList.add("dark");
 if (configuration.eventFavorites) applyAppearance(configuration.dark ? "dark" : "light", false);

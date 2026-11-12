@@ -206,6 +206,28 @@
   object-fit: cover;
 }
 
+.artworkPlaceholder {
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 440px;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem 1.5rem 7rem;
+  color: var(--gym-ink);
+  background: radial-gradient(ellipse at top right, color-mix(in srgb, var(--gym-accent) 20%, transparent), transparent 70%), color-mix(in srgb, var(--gym-paper) 92%, var(--gym-ink));
+  font: 500 1rem/1.5 system-ui, sans-serif;
+  text-align: center;
+}
+
+.artworkSpinner { animation: artworkSpin 1.4s linear infinite; }
+@keyframes artworkSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .artworkSpinner { animation: none; } }
+
 .facts {
   grid-column: 7 / 13;
   grid-row: 3;
@@ -241,7 +263,12 @@
 .invitation {
   grid-column: 7 / 13;
   grid-row: 4;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
+
+.invitationCopy { min-width: 0; flex: 1; }
 
 .invitation p {
   margin: 0.7rem 0 0;
@@ -264,6 +291,35 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   opacity: 0.55;
+}
+
+.heroActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.heroIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  gap: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.heroIconButton:hover {
+  background: color-mix(in srgb, var(--gym-ink) 8%, transparent);
+}
+
+.heroIconButton:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
 }
 
 .signoff {

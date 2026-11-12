@@ -86,10 +86,16 @@ export function importedArtworkSrc(
   customImage?: string | null,
   templateImage?: string | null,
 ): string | undefined {
+  const savedTheme = readImportedEventTheme(value);
+  if (savedTheme?.motif === "gymnastics" && savedTheme.artworkUrl &&
+    (!customImage || customImage === templateImage))
+    return importedArtworkDisplayUrl(savedTheme.artworkUrl);
   const theme = activeImportedTheme(value);
   if (!theme || (customImage && customImage !== templateImage))
     return customImage || templateImage || undefined;
   if (theme.artworkUrl) return importedArtworkDisplayUrl(theme.artworkUrl);
+  // New meet imports reserve the hero for their own image, never a catalog gymnast.
+  if (theme.motif === "gymnastics") return undefined;
   // Keep the actual template photo while original generation is pending/failed.
   if (templateImage) return templateImage;
   const { accent, secondary, page, ink } = theme.colors;

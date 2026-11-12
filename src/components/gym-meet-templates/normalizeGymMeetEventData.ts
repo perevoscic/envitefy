@@ -469,6 +469,7 @@ export const normalizeGymMeetEventData = ({
     generatedFromDiscovery: isDiscoveryEvent,
     sectionLayout: normalizeEventSectionLayout(eventData?.sectionLayout),
     importedTheme: eventData?.importedTheme,
+    importedThemeArtwork: eventData?.importedThemeArtwork,
     schedule: advancedSections?.schedule,
     guestPlanning: normalizeEventGuestPlanning(eventData?.guestPlanning),
     pageTemplateId: resolveGymMeetTemplateId(eventData),

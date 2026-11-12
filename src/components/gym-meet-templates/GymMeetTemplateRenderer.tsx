@@ -9,6 +9,7 @@ import type { GymMeetPageTemplateMeta, GymMeetTemplateRendererProps } from "./ty
 import gymnasticsStyles from "./gymnastics-collection.module.css";
 import programStyles from "./gymnastics-program.module.css";
 import { GYMNASTICS_PRESENTATIONS } from "./gymnasticsPresentations";
+import { GymnasticsHeroActions } from "./FloatingActionStrip";
 
 function gymMeetPageVariant(design: GymMeetPageTemplateMeta) {
   return {
@@ -59,6 +60,12 @@ export default function GymMeetTemplateRenderer(props: GymMeetTemplateRendererPr
             model={props.model}
             design={design}
             heroImageAction={props.heroImageAction}
+            heroActions={!props.suppressActionStrip ? (
+              <GymnasticsHeroActions
+                onShare={props.onShare}
+                calendarLinks={props.calendarLinks}
+              />
+            ) : null}
             onHeroImagePositionChange={props.onHeroImagePositionChange}
             onPageTextChange={props.onPageTextChange}
           />

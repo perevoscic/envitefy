@@ -14,6 +14,7 @@ import styles from "./gymnastics-collection.module.css";
 import "./collection-fonts.css";
 import { importedArtworkSrc } from "@/lib/imported-event-design";
 import { importedArtworkDisplayUrl } from "@/lib/imported-event-theme";
+import { ImagePlus, LoaderCircle } from "lucide-react";
 
 export function gymnasticsDesignStyle(design: GymMeetPageTemplateMeta): CSSProperties {
   return {
@@ -32,12 +33,14 @@ export default function GymnasticsScene({
   model,
   design,
   heroImageAction,
+  heroActions,
   onHeroImagePositionChange,
   onPageTextChange,
 }: {
   model: GymMeetRenderModel;
   design: GymMeetPageTemplateMeta;
   heroImageAction?: ReactNode;
+  heroActions?: ReactNode;
   onHeroImagePositionChange?: (positionY: number) => void;
   onPageTextChange?: GymnasticsPageTextChange;
 }) {
@@ -47,6 +50,8 @@ export default function GymnasticsScene({
   const imageSettings = normalizeHeroImageSettings(model.heroImageSettings);
   const imageRef = useRef<HTMLImageElement>(null);
   const artworkSrc = importedArtworkSrc(model.importedTheme, model.heroImage, design.artwork);
+  const artworkStatus = model.importedThemeArtwork?.themeId === model.importedTheme?.id
+    ? model.importedThemeArtwork?.status : undefined;
   const pageText = useGymnasticsPageText(model.gymnasticsPageText, onPageTextChange);
   const masthead = <div className={styles.masthead}>
           <span>{pageText("mastheadLeft", "Gymnastics meet")}</span>
@@ -61,7 +66,7 @@ export default function GymnasticsScene({
           }}
         >
           {/* The original artwork keeps its intrinsic ratio; the frame supplies the composition. */}
-          <img
+          {artworkSrc ? <img
             className="template-hero-image"
             ref={imageRef}
             draggable={onHeroImagePositionChange ? false : undefined}
@@ -81,8 +86,13 @@ export default function GymnasticsScene({
                     ? `50% ${imageSettings.positionY}%`
                     : undefined,
             }}
-          />
-          {onHeroImagePositionChange && imageSettings.fit === "cover" ? (
+          /> : <div className={styles.artworkPlaceholder} role="status" aria-live="polite" data-artwork-placeholder>
+            {artworkStatus === "generating"
+              ? <LoaderCircle size={32} aria-hidden="true" className={styles.artworkSpinner} />
+              : <ImagePlus size={32} aria-hidden="true" />}
+            <span>{artworkStatus === "failed" ? "Event image unavailable" : artworkStatus === "generating" ? "Generating your image…" : "Preparing your image…"}</span>
+          </div>}
+          {artworkSrc && onHeroImagePositionChange && imageSettings.fit === "cover" ? (
             <HeroImageDragOverlay
               imageRef={imageRef}
               imageSrc={artworkSrc || design.artwork}
@@ -181,9 +191,12 @@ export default function GymnasticsScene({
           ) : null}
         </dl>
         <div className={styles.invitation}>
-          <span className={styles.rule} aria-hidden="true" />
-          <p>{pageText("invitation", model.heroSummary || design.previewKicker)}</p>
-          <span className={styles.smallLabel}>{pageText("tagline", "Together, we rise.")}</span>
+          <div className={styles.invitationCopy}>
+            <span className={styles.rule} aria-hidden="true" />
+            <p>{pageText("invitation", model.heroSummary || design.previewKicker)}</p>
+            <span className={styles.smallLabel}>{pageText("tagline", "Together, we rise.")}</span>
+          </div>
+          {heroActions}
         </div>
         <div className={styles.signoff}>
           <span>{pageText("signoffLeft", host || "Gymnastics")}</span>

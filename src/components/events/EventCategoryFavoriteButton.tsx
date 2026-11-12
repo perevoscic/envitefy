@@ -1,6 +1,6 @@
 "use client";
 
-import { LoaderCircle, Star } from "lucide-react";
+import { LoaderCircle, RotateCcw, Star } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEventCategoryFavorites } from "@/hooks/useEventCategoryFavorites";
 import { categoryFavoriteFor, type CategoryFavorite } from "@/lib/category-favorites";
@@ -34,30 +34,36 @@ export function CategoryFavoriteButton({ favorite, favorites, iconOnly = false, 
   );
 }
 
-export function CategoryFavoriteFeedback({ favorites }: { favorites: Favorites }) {
+export function CategoryFavoriteFeedback({ favorites, compact = false }: { favorites: Favorites; compact?: boolean }) {
   if (!favorites.authenticated || !favorites.error) return null;
+  if (compact) return <span role="alert" className={styles.compactFeedback}>
+    <span className={styles.srOnly}>{favorites.error}</span>
+    <button type="button" aria-label="Retry favorites" title={favorites.error} onClick={() => void favorites.retry()}>
+      <RotateCcw size={16} aria-hidden="true" />
+    </button>
+  </span>;
   return <div role="alert" className={styles.error}>
     <span>{favorites.error}</span>
     <button type="button" onClick={() => void favorites.retry()}>Retry favorites</button>
   </div>;
 }
 
-export function EventCategoryFavoriteControl({ favorite, favorites }: { favorite: CategoryFavorite; favorites: Favorites }) {
+export function EventCategoryFavoriteControl({ favorite, favorites, iconOnly = false }: { favorite: CategoryFavorite; favorites: Favorites; iconOnly?: boolean }) {
   return <div className={styles.control}>
-    <CategoryFavoriteButton favorite={favorite} favorites={favorites} />
-    <CategoryFavoriteFeedback favorites={favorites} />
+    {(!iconOnly || !favorites.error) && <CategoryFavoriteButton favorite={favorite} favorites={favorites} iconOnly={iconOnly} />}
+    <CategoryFavoriteFeedback favorites={favorites} compact={iconOnly} />
   </div>;
 }
 
-function ConnectedFavoriteButton({ favorite }: { favorite: CategoryFavorite }) {
+function ConnectedFavoriteButton({ favorite, iconOnly }: { favorite: CategoryFavorite; iconOnly?: boolean }) {
   const favorites = useEventCategoryFavorites();
-  return <EventCategoryFavoriteControl favorite={favorite} favorites={favorites} />;
+  return <EventCategoryFavoriteControl favorite={favorite} favorites={favorites} iconOnly={iconOnly} />;
 }
 
-export default function EventCategoryFavoriteButton(target: Parameters<typeof categoryFavoriteFor>[0]) {
+export default function EventCategoryFavoriteButton({ iconOnly = false, ...target }: Parameters<typeof categoryFavoriteFor>[0] & { iconOnly?: boolean }) {
   const { data: session, status } = useSession();
   const favorite = categoryFavoriteFor(target);
   const identity = session?.user?.email || (session?.user as { id?: string } | undefined)?.id;
   if (!favorite || status !== "authenticated" || !identity) return null;
-  return <ConnectedFavoriteButton favorite={favorite} />;
+  return <ConnectedFavoriteButton favorite={favorite} iconOnly={iconOnly} />;
 }

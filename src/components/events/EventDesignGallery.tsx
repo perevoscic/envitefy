@@ -39,7 +39,7 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
   renderPreview: (design: Design) => ReactNode;
   onSelect?: (event: MouseEvent<HTMLAnchorElement>, design: Design) => void;
   /** "toolbar" puts a compact Create with Envitefy button beside the filters. */
-  customThemePlacement?: "callout" | "toolbar";
+  customThemePlacement?: "callout" | "toolbar" | "header";
 }) {
   const seasonal = useSeasonalTemplates(designs);
   const search = useSearchParams();
@@ -60,7 +60,7 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
       <section aria-label="Filter designs" className="border-b border-[#e8dfe5] px-5 py-5 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-[1500px]">
           <div className="grid min-w-0 grid-cols-2 gap-3 sm:flex sm:flex-row sm:flex-wrap">
-            <EventCategoryFavoriteButton category={category} collection={search?.get("collection")} occasion={search?.get("occasion")} sport={search?.get("sport")} />
+            {customThemePlacement !== "header" && <EventCategoryFavoriteButton category={category} collection={search?.get("collection")} occasion={search?.get("occasion")} sport={search?.get("sport")} />}
             <label className="relative col-span-2 block">
               <span className="sr-only">Search designs</span>
               <Search className="absolute left-4 top-3.5 h-4 w-4 text-[#8b748b]" aria-hidden="true" />

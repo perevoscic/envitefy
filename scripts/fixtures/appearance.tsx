@@ -4,8 +4,10 @@ import { createPortal } from "react-dom";
 import ThemeProvider, { useTheme } from "../../src/components/AppearanceProvider";
 import AppearanceSelector from "../../src/components/AppearanceSelector";
 import ThemeColorSync from "../../src/components/ThemeColorSync";
+import { SidebarProvider } from "../../src/app/sidebar-context";
 import EventPreviewViewport from "../../src/components/EventPreviewViewport";
-import GymnasticsGalleryHeader from "../../src/components/gym-meet-templates/GymnasticsGalleryHeader";
+import GymnasticsPublicGallery from "../../src/components/templates/category-galleries/gymnastics";
+import TemplateGalleryLayout from "../../src/components/templates/TemplateGalleryLayout";
 import { Eye, Pencil, Share2, Users, Link2, Trash2 } from "lucide-react";
 
 function Workspace() {
@@ -13,13 +15,16 @@ function Workspace() {
   const [dialog, setDialog] = useState(false);
   const [preview, setPreview] = useState(false);
   const [darkPaper, setDarkPaper] = useState(false);
+  if (new URLSearchParams(location.search).has("publicLayout")) {
+    return <TemplateGalleryLayout category="gymnastics"><GymnasticsPublicGallery category="gymnastics" /></TemplateGalleryLayout>;
+  }
   return <>
     <ThemeColorSync />
     <main className="appearance-fixture bg-background text-foreground" style={{ padding: 24, minHeight: 1400 }}>
       <h1>Create your Live Card</h1>
       <AppearanceSelector />
       <output data-testid="appearance-state">{preference}:{theme}</output>
-      <div data-testid="meet-import-gallery" style={{ marginTop: 24 }}><GymnasticsGalleryHeader count={12} /></div>
+      <div data-testid="meet-import-gallery" style={{ marginTop: 24 }}><GymnasticsPublicGallery category="gymnastics" /></div>
       <section className="bg-card text-card-foreground" style={{ marginTop: 24, padding: 24 }}>
         <label htmlFor="unsaved">Event title</label>
         <input id="unsaved" placeholder="Movie Under the Stars" className="border border-input bg-field-background text-foreground" />
@@ -48,7 +53,7 @@ function Workspace() {
         <input id="authored-input" placeholder="Event-owned input" />
       </section>
     </main>
-    {dialog && createPortal(<div role="dialog" aria-label="Appearance dialog" className="bg-card text-foreground" style={{ position: "fixed", top: 50, left: 50, padding: 24 }}><button onClick={() => setDialog(false)}>Close dialog</button></div>, document.body)}
+    {dialog && createPortal(<div role="dialog" aria-label="Appearance dialog" className="bg-card text-foreground" style={{ position: "fixed", zIndex: 100, top: 50, left: 50, padding: 24 }}><button onClick={() => setDialog(false)}>Close dialog</button></div>, document.body)}
   </>;
 }
-createRoot(document.getElementById("root")!).render(<ThemeProvider><Workspace /></ThemeProvider>);
+createRoot(document.getElementById("root")!).render(<ThemeProvider><SidebarProvider><Workspace /></SidebarProvider></ThemeProvider>);
