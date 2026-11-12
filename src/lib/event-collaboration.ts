@@ -6,6 +6,8 @@ import type { HistoryView } from "@/lib/history-view";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { updateSignupDefinition } from "@/lib/signup-mutations";
+import { buildOwnerEventViewHref } from "@/lib/event-preview-viewport";
+import { getPrimaryEventProductOutput, isCardFirstEventProduct } from "@/utils/event-product-route";
 import {
   type EventAccessPerson,
   EventCollaborationError,
@@ -220,9 +222,11 @@ export async function saveCollaborativeSignupEvent(params: {
 
 export async function collaboratorWorkspaceHref(eventId: string): Promise<string> {
   const row = await getEventHistoryById(eventId);
-  return row?.data?.signupForm
-    ? `/smart-signup-form/${row.public_slug || eventId}#signup-host-dashboard`
-    : `/event/${eventId}?tab=dashboard`;
+  if (row?.data?.signupForm) {
+    return `/smart-signup-form/${row.public_slug || eventId}#signup-host-dashboard`;
+  }
+  const output = getPrimaryEventProductOutput(row?.data, row?.title);
+  return buildOwnerEventViewHref(`/event/${eventId}`, isCardFirstEventProduct(output) ? "card" : "event");
 }
 
 export async function getEventPermissions(
@@ -404,6 +408,38 @@ export async function listEventAccess(eventId: string): Promise<EventAccessPerso
       [eventId],
     )
   ).rows;
+}
+
+/** Revoke only the signed-in co-host, serialized with saves and invitations. */
+export async function leaveEventCollaboration(eventId: string, userId: string): Promise<void> {
+  await ensureEventCollaboration();
+  await withClient(async (client) => {
+    await client.query("BEGIN");
+    try {
+      const event = (await client.query<EventHistoryRow>(
+        "SELECT id,user_id,title,data FROM event_history WHERE id=$1 FOR UPDATE", [eventId],
+      )).rows[0];
+      if (!event || event.user_id === userId || !supportsEventCollaboration(event.data))
+        throw new EventCollaborationError("Only a co-host can leave this event.", 403, "cohost_required");
+      const member = await client.query(
+        "SELECT 1 FROM event_collaborators WHERE event_id=$1 AND user_id=$2", [eventId, userId],
+      );
+      if (!member.rows.length)
+        throw new EventCollaborationError("You do not have co-host access to this event.", 403, "cohost_required");
+      await client.query(
+        "UPDATE event_collaborators SET revoked_at=now() WHERE event_id=$1 AND user_id=$2", [eventId, userId],
+      );
+      await client.query(
+        "UPDATE event_collaborator_invites SET revoked_at=now() WHERE event_id=$1 AND accepted_by=$2", [eventId, userId],
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    }
+  });
+  invalidateUserDashboard(userId);
+  invalidateUserHistory(userId);
 }
 
 export async function revokeEventCollaborator(

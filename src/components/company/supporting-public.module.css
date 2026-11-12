@@ -236,6 +236,13 @@
   background: var(--marketing-accent);
   color: var(--marketing-paper);
 }
+:global(html.dark) .content.content [data-public-surface] {
+  background: var(--marketing-surface);
+  color: var(--marketing-ink);
+}
+:global(html.dark) .content.content [data-public-surface] :is(h2, h3, p, svg, [class~="text-white"]) {
+  color: var(--marketing-ink);
+}
 .prose.prose button[type="submit"]:disabled {
   opacity: 0.5;
   cursor: not-allowed;

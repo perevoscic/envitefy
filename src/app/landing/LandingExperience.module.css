@@ -396,12 +396,6 @@
   color: var(--marketing-paper);
 }
 .finalCta {
-  --landing-ink: #442c3b;
-  --landing-muted: #77616b;
-  --landing-accent: #853652;
-  --landing-wash: #f3e1e5;
-  --landing-line: #e5d6d6;
-  --marketing-paper: #fcf8f3;
   color: var(--landing-ink);
   background: transparent;
   border-radius: 0;
@@ -453,6 +447,9 @@
   }
 }
 @media (max-width: 1023px) {
+  .header .headerCreate {
+    display: none;
+  }
   .desktopNav {
     display: none;
   }

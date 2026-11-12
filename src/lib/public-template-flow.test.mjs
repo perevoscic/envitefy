@@ -234,6 +234,73 @@ test("failed uploads retain browser photos and remain retryable", async () => {
   assert.equal(await current.assets["blob:photo"].text(), "photo bytes");
 });
 
+test("saved photo URLs survive browser recovery and unused selections never upload again", async () => {
+  const current = draft();
+  current.eventId = "shared-event";
+  current.eventRevision = "original";
+  current.assets["blob:discarded"] = new Blob(["unused image"], { type: "image/png" });
+  const requests = [];
+  const save = value => handoff.saveTemplateDraftToAccount({
+    draft: value, payload: { title: "Shared wedding", data: value.snapshot.data },
+    category: "weddings", templateId: value.templateId, status: "published", authenticated: true,
+    remoteMedia: {}, // A new mounted editor has no in-memory upload cache.
+    request: async (url, options) => {
+      requests.push([url, options.method]);
+      if (url === "/api/templates/media") {
+        assert.equal(await options.body.get("file").text(), "photo bytes");
+        assert.equal(options.body.get("eventId"), "shared-event");
+        return json({ url: "https://media.example/original.webp" });
+      }
+      assert.equal(url, "/api/history/shared-event");
+      const body = JSON.parse(options.body);
+      assert.equal(body.data.templateEditor.snapshot.data.images.hero, "https://media.example/original.webp");
+      return json({ id: "shared-event", revision: "saved", ...body });
+    },
+  });
+  await save(current);
+  await save(structuredClone(current)); // Also survives recovery before normalization.
+  const uploadedOnly = structuredClone(current);
+  uploadedOnly.assets = {}; // Its old object URLs no longer need to be readable.
+  await save(uploadedOnly);
+  const recovered = storage.prepareTemplateDraftForStorage(current);
+  assert.equal(recovered.snapshot.data.images.hero, "https://media.example/original.webp");
+  assert.deepEqual(recovered.assets, {});
+  assert.equal(current.snapshot.data.images.hero, "blob:photo", "saving never rewrites mounted editor fields");
+  recovered.snapshot.data.partner1 = "New co-host edit";
+  await save(recovered);
+  assert.equal(requests.filter(([url]) => url === "/api/templates/media").length, 1);
+  assert.equal(requests.filter(([url]) => url === "/api/history/shared-event").length, 4);
+  assert.ok(requests.slice(1).every(([, method]) => method === "PATCH"));
+});
+
+test("an uploaded photo is reused after an event save fails and the browser draft is reopened", async () => {
+  const current = draft();
+  current.eventId = "shared-event";
+  current.eventRevision = "before";
+  let uploads = 0, failSave = true;
+  const save = value => handoff.saveTemplateDraftToAccount({
+    draft: value, payload: { title: "Shared wedding", data: value.snapshot.data },
+    category: "weddings", templateId: value.templateId, status: "published", authenticated: true, remoteMedia: {},
+    request: async (url, options) => {
+      if (url === "/api/templates/media") { uploads++; return json({ url: "https://media.example/retained.webp" }); }
+      assert.equal(url, "/api/history/shared-event");
+      if (failSave) return json({ error: "Event changed" }, 409);
+      const body = JSON.parse(options.body);
+      assert.equal(body.data.images.hero, "https://media.example/retained.webp");
+      return json({ id: "shared-event", revision: "after", ...body });
+    },
+  });
+  await assert.rejects(save(current), /Event changed/);
+  assert.equal(current.eventRevision, "before");
+  const recovered = storage.prepareTemplateDraftForStorage(current);
+  assert.deepEqual(recovered.assets, {});
+  assert.equal(recovered.pendingSave, true);
+  failSave = false;
+  await save(recovered);
+  assert.equal(uploads, 1);
+  assert.equal(recovered.eventId, "shared-event");
+});
+
 test("lost create responses recover the same identity and apply newer edits via owned update", async () => {
   const current = draft();
   const remoteMedia = { "blob:photo": "https://media.example/photo.webp" };

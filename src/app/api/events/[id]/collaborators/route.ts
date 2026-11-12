@@ -5,6 +5,7 @@ import { sendCoHostInvitationEmail } from "@/lib/email";
 import {
   ensureEventCollaboration,
   inviteEventCollaborator,
+  leaveEventCollaboration,
   listEventAccess,
   markCollaborationEmail,
   requireCollaborationOwner,
@@ -115,6 +116,18 @@ export async function DELETE(request: Request, context: Context) {
   try {
     if (request.headers.get("sec-fetch-site") === "cross-site")
       throw new EventCollaborationError("Open Envitefy to remove access.", 403, "cross_site");
+    const search = new URL(request.url).searchParams;
+    if (search.get("action") === "leave") {
+      if (search.has("personId"))
+        throw new EventCollaborationError("You can only leave as yourself.", 400, "invalid_person");
+      const session = await timing.time("session", () => getServerSession(authOptions));
+      const userId = await timing.time("user", () => resolveSessionUserId(session));
+      if (!userId)
+        throw new EventCollaborationError("Sign in to leave this event.", 401, "sign_in_required");
+      const { id } = await context.params;
+      await timing.time("leave", () => leaveEventCollaboration(id, userId));
+      return finish(NextResponse.json({ ok: true }, { headers }), timing, "DELETE");
+    }
     const owned = await owner(context, timing);
     const id = new URL(request.url).searchParams.get("personId") || "";
     if (!/^[0-9a-f-]{36}$/i.test(id))

@@ -6,6 +6,7 @@ import {
   type EditorSnapshot,
   replaceDraftMedia,
   retainDraftMedia,
+  draftMediaReferences,
   type TemplateDraft,
 } from "./template-draft-storage";
 
@@ -55,10 +56,16 @@ export async function saveTemplateDraftToAccount({
   request?: typeof fetch;
 }): Promise<string> {
   if (!authenticated) throw new Error("Sign in to save your event.");
-  const snapshot = structuredClone(draft.snapshot);
+  const uploadedMedia = draft.uploadedMedia ||= {};
+  Object.assign(remoteMedia, uploadedMedia);
+  Object.assign(uploadedMedia, remoteMedia);
+  const snapshot = replaceDraftMedia(draft.snapshot, remoteMedia);
+  const localData = replaceDraftMedia(payload.data as EditorSnapshot, remoteMedia);
   await retainDraftMedia(snapshot, draft.assets);
+  await retainDraftMedia(localData, draft.assets);
+  const referencedMedia = draftMediaReferences(snapshot, localData);
   for (const [key, file] of Object.entries(draft.assets)) {
-    if (remoteMedia[key]) continue;
+    if (!referencedMedia.has(key) || remoteMedia[key]) continue;
     const uploadBody = new FormData();
     uploadBody.set("file", file, file instanceof File ? file.name : "template-photo");
     if (draft.eventId) uploadBody.set("eventId", draft.eventId);
@@ -73,9 +80,10 @@ export async function saveTemplateDraftToAccount({
         result.error || "A photo could not be uploaded. Your draft is still here; please retry.",
       );
     remoteMedia[key] = result.url;
+    uploadedMedia[key] = result.url;
   }
   const savedSnapshot = replaceDraftMedia(snapshot, remoteMedia);
-  const data = replaceDraftMedia(payload.data as EditorSnapshot, remoteMedia);
+  const data = replaceDraftMedia(localData, remoteMedia);
   const canonical = buildTemplateDraftPayload(
     savedSnapshot,
     category,
@@ -183,6 +191,8 @@ export async function saveTemplateDraftToAccount({
   let row = await response.json();
   if (!response.ok || typeof row.id !== "string")
     throw new Error(row.error || "Your event could not be saved. Please retry.");
+  if (draft.eventId && row.id !== draft.eventId)
+    throw new Error("The save returned a different event. Your edits are still here; reopen the original event before retrying.");
   draft.eventId = row.id;
   // A create retry returns the existing event unchanged. Apply newer edits through
   // the ordinary ownership-checked update after recovering that event's identity.

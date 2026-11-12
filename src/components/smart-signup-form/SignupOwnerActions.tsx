@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import EventAccessDialog from "@/components/EventAccessDialog";
+import EventLeaveCoHostDialog from "@/components/EventLeaveCoHostDialog";
 import EventUrlDialog from "@/components/events/EventUrlEditor";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import type { SignupForm } from "@/types/signup";
@@ -46,7 +47,8 @@ export default function SignupOwnerActions({
 
   return (
     <>
-      <nav aria-label="Manage signup form" className={styles.ownerToolbar}>
+      <nav aria-label="Manage signup form" className={`${styles.ownerToolbar} flex-wrap`}>
+        {!isOwner && <span className="px-3 text-xs font-semibold">Co-host</span>}
         <a href="#signup-host-dashboard" className={styles.ownerButton}>
           <UsersRound className="size-4" aria-hidden="true" />
           <span className={styles.ownerLabel}>View signups</span>
@@ -61,6 +63,7 @@ export default function SignupOwnerActions({
           <span className={styles.ownerLabel}>Edit</span>
         </Link>
         {isOwner && <EventAccessDialog eventId={eventId} eventTitle={eventTitle} resourceType="signup" className={styles.ownerButton} labelClassName={styles.ownerLabel} />}
+        {!isOwner && <EventLeaveCoHostDialog eventId={eventId} eventTitle={eventTitle} className={styles.ownerButton} />}
         {isOwner && <EventUrlDialog eventId={eventId} className={styles.ownerButton} onUpdated={update => {
           router.replace(update.publicPath);
           router.refresh();

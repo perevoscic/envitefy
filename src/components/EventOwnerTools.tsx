@@ -35,6 +35,7 @@ import ArtworkDownloadButton from "@/components/ArtworkDownloadButton";
 import ownerStyles from "./EventOwnerTools.module.css";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventAccessDialog from "@/components/EventAccessDialog";
+import EventLeaveCoHostDialog from "@/components/EventLeaveCoHostDialog";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 import OwnerCardPreviewTeaser from "@/components/OwnerCardPreviewTeaser";
@@ -1203,6 +1204,7 @@ function OwnerWorkspaceHeader({
               <span>Preview</span>
             </button>
             {canManageAccess && <EventAccessDialog eventId={eventId} eventTitle={title} />}
+            {!isOwner && <EventLeaveCoHostDialog eventId={eventId} eventTitle={title} />}
             {isOwner && <EventDeleteModal
               eventId={eventId}
               eventTitle={title}

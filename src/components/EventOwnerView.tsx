@@ -9,6 +9,7 @@ import type { EventPreviewEntryContext } from "@/lib/event-preview-viewport";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventAccessDialog from "@/components/EventAccessDialog";
+import EventLeaveCoHostDialog from "@/components/EventLeaveCoHostDialog";
 import EventUrlDialog from "@/components/events/EventUrlEditor";
 import { useRouter } from "next/navigation";
 import EventPreviewViewport from "./EventPreviewViewport";
@@ -17,6 +18,7 @@ type Props = {
   editLocked?: boolean;
   canDelete?: boolean;
   canManageAccess?: boolean;
+  isCoHost?: boolean;
   eventId: string;
   title: string;
   publicHref: string;
@@ -30,6 +32,7 @@ export default function EventOwnerView({
   editLocked = false,
   canDelete = true,
   canManageAccess = false,
+  isCoHost = false,
   eventId,
   title,
   publicHref,
@@ -91,6 +94,7 @@ export default function EventOwnerView({
         <span>{copied ? "Copied" : "Share"}</span>
       </button>
       {canManageAccess && <EventAccessDialog eventId={eventId} eventTitle={title} className={`inline-flex ${actionClassName}`} />}
+      {isCoHost && <EventLeaveCoHostDialog eventId={eventId} eventTitle={title} className={`inline-flex ${actionClassName}`} />}
       {canDelete && <EventUrlDialog eventId={eventId} className={`inline-flex ${actionClassName}`} onUpdated={update => {
         router.replace(`${update.publicPath}?tab=event`);
         router.refresh();
@@ -112,7 +116,7 @@ export default function EventOwnerView({
 
   return (
     <section
-      aria-label={`${title} owner view`}
+      aria-label={`${title} ${isCoHost ? "co-host" : "owner"} view`}
       data-owner-event-view
       className="fixed bottom-0 right-0 top-0 left-[var(--app-sidebar-width,0px)] flex min-w-0 flex-col overflow-hidden text-slate-950"
     >
@@ -123,6 +127,7 @@ export default function EventOwnerView({
         onBackgroundChange={setBackground}
         initialBackground={background}
         actions={actions}
+        roleLabel={isCoHost ? "Co-host" : undefined}
       />
     </section>
   );

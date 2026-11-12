@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import type { EventEditorRecord } from "./event-editor";
 import { readEventResponse } from "./event-response";
+import { supportsEventCollaboration } from "./event-collaboration-types";
 
 function stableContent(value: unknown): string {
   return JSON.stringify(value, (_key, item) =>
@@ -54,7 +55,7 @@ function sameValue(left: unknown, right: unknown): boolean {
   return stableContent(left) === stableContent(right);
 }
 
-/** Keep the import's newer facts and the fields this editor changed. Overlapping edits stay a conflict. */
+/** Retain newer unchanged fields and this editor's changes; overlapping edits stay a conflict. */
 function reconcileValue(base: unknown, mine: unknown, theirs: unknown): unknown {
   if (sameValue(mine, theirs) || sameValue(theirs, base)) return mine;
   if (sameValue(mine, base)) return theirs;
@@ -77,10 +78,20 @@ function mismatchedArtwork(row: EventEditorRecord): boolean {
   return job?.status === "ready" && Boolean(job.imageUrl) && Boolean(theme?.artworkUrl) && job.themeId === theme?.id && job.imageUrl !== theme?.artworkUrl;
 }
 
-function reconcileImportSave(payload: Record<string, any>, baseline: EventEditorRecord, latest: EventEditorRecord): boolean {
-  if (!sameMeetImport(baseline, latest) || mismatchedArtwork(latest) || !isPlainObject(payload.data)) return false;
-  const data = reconcileValue(baseline.data, payload.data, latest.data);
-  if (data === importConflict || !isPlainObject(data)) return false;
+function reconcileEventSave(payload: Record<string, any>, baseline: EventEditorRecord, latest: EventEditorRecord): boolean {
+  if (baseline.id !== latest.id || !supportsEventCollaboration(baseline.data) ||
+    !supportsEventCollaboration(latest.data) || baseline.data.signupForm || latest.data.signupForm ||
+    mismatchedArtwork(latest) || !isPlainObject(payload.data)) return false;
+  // A different discovery run is a different authored baseline, not another host edit.
+  if ((baseline.data.createdVia === "meet-discovery-v2" || latest.data.createdVia === "meet-discovery-v2") && !sameMeetImport(baseline, latest)) return false;
+  const data: Record<string, unknown> = {};
+  for (const [key, mine] of Object.entries(payload.data)) {
+    if (key === "importedThemeArtwork" || (key === "pipelineSummary" && sameMeetImport(baseline, latest))) continue;
+    // History PATCH is shallow: omitted top-level fields retain their latest values.
+    const value = reconcileValue(baseline.data[key], mine, latest.data[key]);
+    if (value === importConflict) return false;
+    data[key] = value;
+  }
   if ("title" in payload) {
     const title = reconcileValue(baseline.title, payload.title, latest.title);
     if (title === importConflict) return false;
@@ -111,6 +122,8 @@ function retainBackgroundResults(payload: Record<string, any>, before: EventEdit
 export function createEventHistoryClient() {
   const revisions = new Map<string, string>();
   const records = new Map<string, EventEditorRecord>();
+  // A merged save can retain fields that this mounted editor has not rendered yet.
+  const editorViews = new Map<string, EventEditorRecord>();
   return {
     async fetch(input: string, options: RequestInit = {}): Promise<Response> {
       const method = (options.method || "GET").toUpperCase();
@@ -130,9 +143,18 @@ export function createEventHistoryClient() {
         }
         headers.delete("If-Match");
       }
+      const baseline = records.get(key);
+      const submitted = method === "PATCH" && typeof body === "string" ? JSON.parse(body) : null;
+      const editorView = editorViews.get(key) || baseline;
+      let merged = editorViews.has(key);
+      if (merged && baseline?.revision && editorView && submitted?.expectedRevision === baseline.revision && isPlainObject(submitted.data)) {
+        const payload = structuredClone(submitted);
+        if (!reconcileEventSave(payload, editorView, baseline))
+          return Response.json({ code: "event_changed", error: "This event changed in another editor. Your edits are still here; reopen the latest event before saving." }, { status: 409 });
+        body = JSON.stringify(payload);
+      }
       let response = await fetch(input, { ...options, body, headers });
       let row = await readEventResponse(response.clone());
-      const baseline = records.get(key);
       if (method === "PATCH" && response.status === 409 && row?.code === "event_changed" && baseline?.revision && typeof body === "string") {
         const payload = JSON.parse(body);
         // A recovered draft can carry an older revision than the loaded record.
@@ -142,11 +164,12 @@ export function createEventHistoryClient() {
             const latestResponse = await fetch(key, { credentials: options.credentials, cache: "no-store" });
             const latest = await readEventResponse(latestResponse);
             const current = latest as EventEditorRecord;
-            if (latestResponse.ok && typeof latest?.revision === "string" && latest.data && (sameAuthoredEvent(baseline, current) || reconcileImportSave(payload, baseline, current))) {
+            if (latestResponse.ok && typeof latest?.revision === "string" && latest.data && (sameAuthoredEvent(baseline, current) || reconcileEventSave(payload, baseline, current))) {
               retainBackgroundResults(payload, baseline, current);
               body = JSON.stringify({ ...payload, expectedRevision: latest.revision });
               response = await fetch(input, { ...options, body, headers });
               row = await readEventResponse(response.clone());
+              merged = true;
             }
           } catch {
             // Retain the original conflict and editor baseline if refresh fails.
@@ -162,6 +185,11 @@ export function createEventHistoryClient() {
         if (typeof row?.id === "string" && row.data && typeof row.data === "object" && !Array.isArray(row.data)) {
           const eventKey = `/api/history/${encodeURIComponent(row.id)}`;
           if (method !== "GET" || !records.has(eventKey)) records.set(eventKey, row as EventEditorRecord);
+          if (method === "PATCH" && merged && submitted && editorView) editorViews.set(eventKey, {
+            ...row as EventEditorRecord,
+            title: submitted.title ?? editorView.title,
+            data: { ...editorView.data, ...submitted.data },
+          });
         }
       }
       return response;
@@ -169,6 +197,7 @@ export function createEventHistoryClient() {
     clear(input: string) {
       revisions.delete(input.split("?")[0]);
       records.delete(input.split("?")[0]);
+      editorViews.delete(input.split("?")[0]);
     },
     read(input: string): EventEditorRecord | null {
       return records.get(input.split("?")[0]) || null;

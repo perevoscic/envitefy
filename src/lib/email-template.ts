@@ -46,9 +46,9 @@ ${ADAPTIVE_EMAIL_CSS}
 ${params.preheader ? `<div class="preheader">${escapeHtml(params.preheader)}</div>` : ""}
 <table role="presentation" class="email-canvas" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F5F2FF" style="width:100%;background-color:#F5F2FF;"><tr><td class="email-page-cell" align="center" style="padding:32px 16px;">
 <table role="presentation" class="email-shell" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="width:100%;max-width:600px;margin:0 auto;background-color:#FFFFFF;border:1px solid #E8E1FF;border-radius:16px;overflow:hidden;">
-<tr><td class="email-brand email-brand-band" align="center" bgcolor="#251F2D" style="padding:28px;background-color:#251F2D;"><a href="${escapeHtml(baseUrl)}" target="_blank"><img src="${baseUrl}${EMAIL_WHITE_ASSETS.symbol}" width="36" height="36" alt="Envitefy logo" style="display:block;width:36px;height:36px;margin:0 auto 12px;" /><img src="${baseUrl}${EMAIL_WHITE_ASSETS.wordmark}" width="164" height="53" alt="Envitefy" style="display:block;width:164px;max-width:100%;height:auto;" /></a></td></tr>
+<tr><td class="email-brand email-brand-band" align="center" bgcolor="#251F2D" style="padding:28px;background-color:#251F2D;"><a href="${escapeHtml(baseUrl)}" target="_blank"><img src="${baseUrl}${EMAIL_WHITE_ASSETS.symbol}" width="56" height="36" alt="Envitefy logo" style="display:block;width:56px;max-width:100%;height:auto;margin:0 auto 12px;" /><img src="${baseUrl}${EMAIL_WHITE_ASSETS.wordmark}" width="164" height="55" alt="Envitefy" style="display:block;width:164px;max-width:100%;height:auto;" /></a></td></tr>
 <tr><td class="email-content email-surface" bgcolor="#FFFFFF" style="padding:28px;background-color:#FFFFFF;color:#302738;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;">
-${adaptiveEmailBody(params.body)}${button}${footerText}
+${adaptiveEmailBody(params.body)}${adaptiveEmailBody(button)}${footerText}
 <p class="email-muted" style="margin:24px 0 0;color:#655A70;font-size:14px;font-style:italic;">Sincerely,<br/><strong>Envitefy Team</strong></p>
 <p class="email-muted" style="margin:4px 0 0;color:#655A70;font-size:11px;font-weight:700;letter-spacing:1.6px;">CREATE | SHARE | ENJOY</p>
 </td></tr>

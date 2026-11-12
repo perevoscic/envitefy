@@ -47,7 +47,7 @@ export default function ContactPage() {
         <div className="mx-auto max-w-4xl">
           <div className="rounded-lg border border-[#d9ded3] bg-white p-5 shadow-[0_24px_64px_rgba(32,49,55,0.1)] sm:p-6">
             <div className="flex items-start gap-4 border-b border-[#d9ded3] pb-5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#203137] text-white">
+              <div data-public-primary className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#203137] text-white">
                 <Mail className="h-5 w-5" />
               </div>
               <div>

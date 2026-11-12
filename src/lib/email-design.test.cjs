@@ -12,11 +12,11 @@ test("new email chrome has dark branding, adaptive inbox body and immutable whit
   assert.match(html, /prefers-color-scheme: dark/);
   assert.match(html, /email-brand-band[^>]*bgcolor="#251F2D"/);
   assert.match(html, /email-content email-surface[^>]*bgcolor="#FFFFFF"/);
-  assert.match(html, /\/email\/wordmark-v2\/matte\/envitefy-wordmark-email\.gif/);
+  assert.match(html, /\/email\/wordmark-v2\/matte\/envitefy-wordmark-email\.webp/);
   assert.equal((html.match(/class="social-icon-cell"/g) || []).length, 5);
   for (const name of ["instagram", "facebook", "youtube", "tiktok", "reddit"]) {
-    assert.ok(html.includes(`/email/white-v1/matte/social-${name}.png`));
-    assert.ok(fs.existsSync(`public/email/white-v1/matte/social-${name}.png`));
+    assert.ok(html.includes(`/email/white-v1/matte/social-${name}.webp`));
+    assert.ok(fs.existsSync(`public/email/white-v1/matte/social-${name}.webp`));
   }
   assert.match(html, /event\/test\?a=1&amp;b=2/);
   assert.match(html, /data-ogsc/);
@@ -94,7 +94,7 @@ test("all built-in marketing full documents have adaptive chrome and keep origin
     assert.match(adaptive, /email-footer-band/);
     assert.equal((adaptive.match(/white-v1\/matte\/social-/g) || []).length, 5);
     const artwork = html => [...html.matchAll(/src="([^"]+\.(?:webp|jpg))"/g)].map(m => m[1]);
-    assert.deepEqual(artwork(adaptive), artwork(legacy));
+    assert.deepEqual(artwork(adaptive).filter(url => !url.includes("/email/white-v1/") && !url.includes("/email/wordmark-v2/")), artwork(legacy));
     assert.doesNotMatch(adaptive, /localhost|light only/);
   }
 });
@@ -110,4 +110,15 @@ test("new contact email and admin composers use the shared rendering and version
   }
   const editor = fs.readFileSync("src/app/admin/emails/editor/page.tsx", "utf8");
   assert.match(editor, /const payload = \{\s*emailDesignVersion,/);
+});
+
+
+test("adaptive CTAs keep an inline fill and text-fill pair even without head styles", () => {
+  const html = createEmailTemplate({ title: "Co-host invitation", body: "<p>You are invited.</p>", buttonText: "Accept invitation", buttonUrl: "https://envitefy.com/cohost-invite#private" });
+  const cta = html.match(/<a[^>]*data-email-cta[^>]*>[\s\S]*?<\/a>/)[0];
+  assert.match(cta, /background-image:linear-gradient\(#C5A7FF,#C5A7FF\)/);
+  assert.match(cta, /-webkit-text-fill-color:#25103E !important/);
+  assert.match(cta, /<span class="email-cta-label"[^>]*-webkit-text-fill-color:#25103E !important;">Accept invitation<\/span>/);
+  const authored = '<!-- email-authored:start --><a data-email-cta="primary" style="background:#123456;color:#FFFFFF">Host artwork</a><!-- email-authored:end -->';
+  assert.equal(design.adaptiveEmailBody(authored), authored);
 });

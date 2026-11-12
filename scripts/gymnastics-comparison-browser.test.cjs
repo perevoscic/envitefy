@@ -25,6 +25,7 @@ async function buildFixture() {
       cache: false,
       entry: path.resolve("scripts/fixtures/gymnastics-comparison.tsx"),
       output: { path: output, filename: "fixture.js" },
+      plugins: [new compiled.webpack.DefinePlugin({ "process.env": JSON.stringify({ NODE_ENV: "test" }) })],
       resolve: { extensions: [".tsx", ".ts", ".js"], alias: { "@": path.resolve("src") } },
       module: {
         rules: [

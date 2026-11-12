@@ -7,6 +7,7 @@ import sharp from "sharp";
 import ts from "typescript";
 
 const require = createRequire(import.meta.url);
+const loadTs = require("../../scripts/lib/event-messages-test-loader.cjs");
 function harness({ pdfPreview, storeAccess } = {}) {
   const uploads = [];
   const stored = new Map();
@@ -145,6 +146,53 @@ test("repeated and concurrent event photo uploads preserve saved assets on publi
     if (storeAccess === "private") {
       assert.ok(urls.every((url) => url.startsWith("/api/blob/event-media/shared-meet/header/display-upload-")));
     }
+  }
+});
+
+test("the template media route accepts repeated co-host edits after owner uploads and rejects revoked access before storage", async () => {
+  for (const storeAccess of ["public", "private"]) {
+    const h = harness({ storeAccess });
+    let actor = "owner", active = true;
+    const event = { id: "tampa-event", user_id: "owner", title: "Tampa Bay Turners Invitational 2027", data: { createdVia: "meet-discovery", category: "sport_gymnastics", status: "published" } };
+    const db = {
+      getEventHistoryById: async id => id === event.id ? event : null,
+      query: async (_sql, args) => ({ rows: [{ allowed: args[0] === event.id && args[1] === "cohost" && active }] }),
+      withClient: async callback => callback({ query: async () => ({ rows: [{ ready: true }] }) }),
+    };
+    const collaboration = loadTs("src/lib/event-collaboration.ts", {
+      "@/lib/db": db, "@/lib/history-cache": {}, "@/lib/dashboard-cache": {},
+    });
+    const route = loadTs("src/app/api/templates/media/route.ts", {
+      "next-auth": { getServerSession: async () => ({ user: { id: actor } }) },
+      "@/lib/auth": { authOptions: {}, resolveSessionUserId: async session => session.user.id },
+      "@/lib/db": db,
+      "@/lib/event-collaboration": { getEventPermissions: collaboration.getEventPermissions },
+      "@/lib/media-upload-image": h.imageUploads,
+    });
+    const bytes = await fixture("webp");
+    const request = async () => {
+      const form = new FormData();
+      form.set("eventId", event.id);
+      form.set("file", new File([bytes], "event-hero.webp", { type: "image/webp" }));
+      return route.POST(new Request("https://envitefy.test/api/templates/media", { method: "POST", body: form }));
+    };
+    const first = await request();
+    assert.equal(first.status, 200);
+    const savedAssets = new Map(h.stored);
+    actor = "cohost";
+    const next = await Promise.all([request(), request()]);
+    assert.ok(next.every(response => response.status === 200));
+    const results = await Promise.all([first, ...next].map(response => response.json()));
+    assert.equal(new Set(results.map(result => result.url)).size, 3);
+    for (const [pathname, value] of savedAssets) assert.deepEqual(h.stored.get(pathname), value);
+    const count = h.uploads.length;
+    active = false;
+    assert.equal((await request()).status, 403);
+    actor = "outsider";
+    assert.equal((await request()).status, 403);
+    actor = null;
+    assert.equal((await request()).status, 401);
+    assert.equal(h.uploads.length, count, "rejected access never reaches Blob storage");
   }
 });
 

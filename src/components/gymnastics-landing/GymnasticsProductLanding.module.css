@@ -89,6 +89,13 @@
   color: var(--benefit-ink);
   box-shadow: 0 1rem 2rem -1.2rem #172d2950;
 }
+:global(html.dark) .benefitWrap.benefitWrap {
+  --benefit-paper: var(--surface-alt);
+  --benefit-ink: var(--foreground);
+}
+:global(html.dark) .featureExample {
+  background: var(--surface);
+}
 
 .cardIdentity {
   display: flex;

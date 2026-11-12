@@ -16,11 +16,15 @@ export type TemplateDraft = {
   updatedAt: number;
   snapshot: EditorSnapshot;
   assets: Record<string, Blob>;
+  /** Successfully uploaded local files retain their URLs across retries and recovery. */
+  uploadedMedia?: Record<string, string>;
   eventId?: string;
   eventRevision?: string;
   signupRevision?: number;
   signupRequiresInvitation?: boolean;
   pendingSave?: boolean;
+  /** Known-clean recovery copies yield to the latest shared event when reopened. */
+  hasUnsavedChanges?: boolean;
   /** An explicit account-and-publish action resumes the native publisher after auth. */
   pendingPublish?: boolean;
 };
@@ -144,4 +148,28 @@ export function replaceDraftMedia(
     return value;
   }
   return visit(snapshot) as EditorSnapshot;
+}
+
+/** Only referenced local files belong to this save, not every old selection. */
+export function draftMediaReferences(...values: unknown[]): Set<string> {
+  const references = new Set<string>();
+  function visit(value: unknown) {
+    if (typeof value === "string" && /^(blob:|data:image\/)/.test(value)) references.add(value);
+    else if (Array.isArray(value)) value.forEach(visit);
+    else if (value && typeof value === "object") Object.values(value).forEach(visit);
+  }
+  values.forEach(visit);
+  return references;
+}
+
+/** Recovery uses durable URLs after upload; live editor state can keep its object URLs. */
+export function prepareTemplateDraftForStorage(draft: TemplateDraft): TemplateDraft {
+  const snapshot = replaceDraftMedia(draft.snapshot, draft.uploadedMedia || {});
+  const references = draftMediaReferences(snapshot);
+  return {
+    ...draft,
+    snapshot,
+    assets: Object.fromEntries(Object.entries(draft.assets).filter(([key]) => references.has(key))),
+    uploadedMedia: {},
+  };
 }

@@ -38,6 +38,7 @@ type Props = {
   initialDevice?: EventPreviewDevice;
   onExpand?: () => void;
   actions?: ReactNode;
+  roleLabel?: string;
   closeLabel?: string;
   onBackgroundChange?: (background: EventPreviewBackground) => void;
   initialBackground?: EventPreviewBackground;
@@ -55,6 +56,7 @@ export default function EventPreviewViewport({
   initialDevice,
   onExpand,
   actions,
+  roleLabel,
   closeLabel = "Close preview",
   onBackgroundChange,
   initialBackground,
@@ -289,7 +291,7 @@ export default function EventPreviewViewport({
           })}
         </div>
         {preserveNavigation && actions ? (
-          <EventPreviewActions surfaceStyle={floatingSurfaceStyle} previewDocument={frameDocument}>
+          <EventPreviewActions surfaceStyle={floatingSurfaceStyle} previewDocument={frameDocument} roleLabel={roleLabel}>
             {actions}
           </EventPreviewActions>
         ) : null}

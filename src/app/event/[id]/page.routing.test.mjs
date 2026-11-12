@@ -211,6 +211,32 @@ test("reachable sharing checks retain owner, cohost, anonymous, accepted, pendin
   }
 });
 
+test("old hosting links on RSVP-free event pages return owners and co-hosts to the same canvas", () => {
+  const branch = page.body.statements.find(node => ts.isIfStatement(node) &&
+    node.expression.getText(ast).includes('primaryProductOutput !== "signup_form"'));
+  assert.ok(branch, "resolve old dashboard, guest and message links before mounting hosting tools");
+  assert.ok(source.indexOf(branch.getText(ast)) < source.indexOf("if (showOwnerWorkspace && resolvedOwnerToolsTab)"));
+  const dispatch = new Function("showOwnerWorkspace", "ownerPreviewMode", "cardFirstCanonical",
+    "primaryProductOutput", "ownerRsvpDashboardEnabled", "ownerToolsTab", "editParam", "ownerEventHref", "redirect",
+    ts.transpile(branch.getText(ast)));
+  for (const role of ["owner", "cohost", "guest"]) {
+    for (const enabled of [true, false]) for (const output of ["event_page", "live_card", "signup_form"]) {
+      for (const tab of [null, "dashboard", "rsvps", "messages", "design"]) {
+        for (const preview of [true, false]) for (const editing of ["", "event"]) {
+          const destinations = [];
+          dispatch(role !== "guest", preview, output === "live_card" ? "/card/meet" : null,
+            output, enabled, tab, editing, "/event/atlanta-centennial-classic", href => destinations.push(href));
+          const shouldRedirect = role !== "guest" && !preview && output === "event_page" && !enabled && Boolean(tab) && !editing;
+          assert.deepEqual(destinations, shouldRedirect ? ["/event/atlanta-centennial-classic?tab=event"] : [],
+            `${role}, RSVP=${enabled}, output=${output}, tab=${tab}, preview=${preview}, editing=${editing}`);
+        }
+      }
+    }
+  }
+  assert.match(source, /mobileEditInEvent=\{isOwner && isGymnasticsTemplate && canEditCreatedEvent\}/,
+    "co-hosts keep the Edit action on phones where the owner-only inline pencil is absent");
+});
+
 test("public renderer retains discovery media and private signup-response redaction", () => {
   const statements = page.body.statements;
   const start = statements.findIndex(node => ts.isVariableStatement(node) && node.declarationList.declarations[0].name.getText(ast) === "clientSafeEventData");

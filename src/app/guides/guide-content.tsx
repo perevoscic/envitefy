@@ -1445,7 +1445,7 @@ export function GuidePageView({ slug }: { slug: GuideSlug }) {
           </section>
 
           <section className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:px-8">
-            <div className="rounded-lg bg-[#203137] p-6 text-white sm:p-8">
+            <div data-public-surface className="rounded-lg bg-[#203137] p-6 text-white sm:p-8">
               <div className="flex items-center gap-3">
                 <ListChecks className="h-6 w-6 text-[#b8e0d4]" />
                 <h2 className="text-2xl font-semibold text-white" style={{ color: "#ffffff" }}>

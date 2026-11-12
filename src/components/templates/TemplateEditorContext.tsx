@@ -49,6 +49,7 @@ import {
   type EditorSnapshot,
   readTemplateEditorDraft,
   replaceDraftMedia,
+  prepareTemplateDraftForStorage,
   retainDraftMedia,
   type TemplateDraft,
   writeTemplateDraft,
@@ -219,11 +220,11 @@ export default function TemplateEditorProvider({
 
   const flush = useCallback(async () => {
     if (!draft.current) return;
-    const current = {
+    const current = prepareTemplateDraftForStorage({
       ...draft.current,
       snapshot: structuredClone(draft.current.snapshot),
       assets: { ...draft.current.assets },
-    };
+    });
     // Serialize retention so a slower photo write cannot replace a newer edit.
     const write = writeQueue.current
       .catch(() => {})
@@ -323,7 +324,7 @@ export default function TemplateEditorProvider({
         const stored = row.data?.templateEditor;
         if (!stored || stored.category !== category)
           throw new Error("This event uses a different editor.");
-        if (!saved || saved.eventId !== editId || saved.templateId !== templateId)
+        if (!saved || saved.eventId !== editId || saved.templateId !== templateId || saved.hasUnsavedChanges === false)
           saved = {
             version: 1,
             id: crypto.randomUUID(),
@@ -347,6 +348,7 @@ export default function TemplateEditorProvider({
             assets: {},
             eventId: editId,
             eventRevision: row.revision,
+            hasUnsavedChanges: false,
           };
         if (typeof saved.eventRevision === "string") eventHistoryClient.remember(`/api/history/${encodeURIComponent(editId)}`, saved.eventRevision);
         else if (typeof row.revision === "string") saved.eventRevision = row.revision;
@@ -358,7 +360,7 @@ export default function TemplateEditorProvider({
         setError(
           "This browser draft has expired or is unavailable. You can start again with this template.",
         );
-      const current: TemplateDraft = saved || {
+      const current: TemplateDraft = prepareTemplateDraftForStorage(saved || {
         version: 1,
         id: crypto.randomUUID(),
         category,
@@ -366,7 +368,8 @@ export default function TemplateEditorProvider({
         updatedAt: Date.now(),
         snapshot: {},
         assets: {},
-      };
+      });
+      remoteMedia.current = {};
       if (current.ownerId && current.ownerId !== creationIntakeOwner(session?.user)) throw new Error("Sign in to the account that started this browser draft.");
       if (draftOwnerId) current.ownerId = draftOwnerId;
       if (current.templateId !== templateId && (!requestedDraft || Boolean(intakeId))) {
@@ -529,11 +532,10 @@ export default function TemplateEditorProvider({
       if (editable) {
         if (!Object.hasOwn(savedFields.current, key))
           savedFields.current[key] = JSON.stringify(value);
-        setDirty(
-          Object.entries(savedFields.current).some(
-            ([field, saved]) => JSON.stringify(current.snapshot[field]) !== saved,
-          ),
+        current.hasUnsavedChanges = Object.entries(savedFields.current).some(
+          ([field, saved]) => JSON.stringify(current.snapshot[field]) !== saved,
         );
+        setDirty(current.hasUnsavedChanges);
       }
     },
     [category, templateId, requestedIntake, flush],
@@ -552,7 +554,7 @@ export default function TemplateEditorProvider({
       setError("");
       setMessage("");
       try {
-        const current = { ...draft.current, snapshot: options.snapshot || structuredClone(draft.current.snapshot) };
+        const current = { ...draft.current, uploadedMedia: draft.current.uploadedMedia ||= {}, snapshot: options.snapshot || structuredClone(draft.current.snapshot) };
         const eventId = await saveTemplateDraftToAccount({
           request: (input, options) => typeof input === "string" ? eventHistoryClient.fetch(input, options) : fetch(input, options),
           draft: current,
@@ -575,7 +577,8 @@ export default function TemplateEditorProvider({
             JSON.stringify(current.snapshot[key]),
           ]),
         );
-        setDirty(Object.entries(savedFields.current).some(([key, saved]) => JSON.stringify(draft.current?.snapshot[key]) !== saved));
+        draft.current.hasUnsavedChanges = Object.entries(savedFields.current).some(([key, saved]) => JSON.stringify(draft.current?.snapshot[key]) !== saved);
+        setDirty(draft.current.hasUnsavedChanges);
         window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: eventId } }));
         setPublished(nextStatus === "published");
         trackTemplateEvent(
@@ -616,6 +619,10 @@ export default function TemplateEditorProvider({
           );
         }
       return eventId;
+      } catch (failure) {
+        // Keep successful upload URLs even when a later upload or event save fails.
+        await flush().catch(() => {});
+        throw failure;
       } finally {
         busyRef.current = false;
         setBusy(false);

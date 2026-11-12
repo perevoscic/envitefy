@@ -27,24 +27,24 @@
   background: var(--surface);
 }
 
-:global(html.dark) .starter {
+:global(html.dark) .panel.panel .starter {
   background: var(--surface-alt);
   border-color: var(--border);
   color: var(--foreground);
   box-shadow: none;
 }
 
-:global(html.dark) .starter:hover {
+:global(html.dark) .panel.panel .starter:hover {
   background: var(--surface-raised);
   color: var(--foreground);
 }
 
-:global(html.dark) .composer {
+:global(html.dark) .panel.panel .composer {
   background: var(--surface-raised);
   border-color: var(--border);
 }
 
-:global(html.dark) .composer > div {
+:global(html.dark) .panel.panel .composer > div {
   background: var(--field-background);
   border-color: var(--input);
 }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { execSync } from "node:child_process";
+import buildBunFixture from "./lib/build-bun-fixture.cjs";
 import test from "node:test";
 import { chromium } from "playwright";
 import sharp from "sharp";
@@ -9,7 +9,7 @@ import sharp from "sharp";
 const out = path.resolve("output/dark-ui-browser");
 
 test("real Live Card, gallery and marketing surfaces support dark appearance and white branding", {timeout:180000}, async () => {
-  execSync("bun scripts/build-dark-ui-fixture.mjs", {timeout:60000,stdio:"pipe"});
+  buildBunFixture("scripts/build-dark-ui-fixture.mjs");
   const [bundle,globalCss,moduleCss,bootstrap] = await Promise.all(["entry.js","global.css","entry.css","bootstrap.js"].map(name=>fs.readFile(path.join(out,name),"utf8")));
   const browser = await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE});
   const measurements=[];
@@ -58,12 +58,12 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
             if(["INPUT","TEXTAREA","SELECT"].includes(el.tagName)) controls.push(sample);
             if(text&&ratio<4.5&&!gradient&&!el.hasAttribute("disabled"))low.push(sample);
           }
-          return {theme:document.documentElement.dataset.theme,width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,controls,lowContrast:low};
+          return {theme:document.documentElement.dataset.theme,width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,overflowing:[...document.querySelectorAll("body *")].filter(el=>el.checkVisibility()).map(el=>({className:typeof el.className==="string"?el.className:el.tagName,rect:el.getBoundingClientRect().toJSON()})).filter(el=>el.rect.right>innerWidth+1||el.rect.left< -1).slice(0,12),controls,lowContrast:low};
         });
         const result=await collect();
         measurements.push({screen,...result});
         assert.equal(result.theme,"general-dark");
-        assert.equal(result.overflow,false,`${screen} overflows at ${width}px`);
+        assert.equal(result.overflow,false,`${screen} overflows at ${width}px: ${JSON.stringify(result.overflowing)}`);
         for(const field of result.controls)assert.ok(field.ratio>=4.5,`${screen} control contrast ${field.ratio}: ${field.text}`);
         assert.deepEqual(result.lowContrast,[],`${screen} has visible text below 4.5:1 at ${width}px`);
         if(screen==="livecard") {
@@ -156,11 +156,11 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
           await footer.scrollIntoViewIfNeeded();
           const social=footer.getByRole("navigation",{name:"Follow Envitefy",exact:true});
           await social.waitFor();
-          assert.equal(await footer.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(59, 35, 51)","the homepage's plum footer strip supports the white wordmark and social glyphs");
+          assert.equal(await footer.evaluate(el=>getComputedStyle(el).backgroundColor),"rgba(0, 0, 0, 0)","the homepage footer retains the shared application canvas");
           const visible=await social.locator("img").evaluateAll(images=>images.filter(img=>img.checkVisibility()).map(img=>({src:img.getAttribute("src"),loaded:img.complete&&img.naturalWidth>0})));
           assert.equal(visible.length,5);
           assert.ok(visible.every(img=>img.src.startsWith("/email/white-v1/")&&img.loaded),"dark website footer uses all five loaded white icon assets");
-          assert.equal(await footer.getByRole("heading",{name:"Create",exact:true}).evaluate(el=>getComputedStyle(el).color),"rgb(252, 248, 243)");
+          assert.deepEqual((await collect()).lowContrast, [], "footer links and headings remain readable over the shared dark canvas");
           await footer.screenshot({path:path.join(out,`landing-footer-dark-${width}.png`)});
           if(width===390) {
             await page.locator("[data-landing-wordmark]").evaluate(wordmark=>window.scrollTo({top:Math.ceil(scrollY+wordmark.getBoundingClientRect().bottom)+1,behavior:"instant"}));
@@ -210,9 +210,9 @@ test("real Live Card, gallery and marketing surfaces support dark appearance and
           const calendars=await collect();
           measurements.push({screen:"settings-calendars",...calendars});
           assert.deepEqual(calendars.lowContrast,[],`Settings calendar text must retain4.5:1 contrast at ${width}px`);
-          const calendarCards=page.locator("[data-settings-surface]:visible");
-          assert.equal(await calendarCards.count(),3,"Google, Apple and Outlook cards all expose the themed settings surface");
-          for(const card of await calendarCards.all()) assert.equal(await card.evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(37, 31, 45)");
+          const calendarCards=page.locator('#calendars [class*="providerRow"]:visible');
+          assert.equal(await calendarCards.count(),3,"Google, Apple and Outlook retain all three themed provider columns");
+          for(const card of await calendarCards.all()) assert.deepEqual(await card.evaluate(el=>({background:getComputedStyle(el).backgroundColor,ink:getComputedStyle(el).color})),{background:"rgba(0, 0, 0, 0)",ink:"rgb(243, 239, 248)"});
         }
         if(screen==="install") {
           const install=page.getByRole("button",{name:"Install",exact:true});

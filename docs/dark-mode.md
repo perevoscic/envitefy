@@ -111,6 +111,14 @@ campaign intact; editing that original ID continues to use its stored design.
 
 ## Verification
 
+The November 12 audit adds source-derived neutral/status contrast checks and a
+31-route public/account/guide audit to `test:appearance`. Co-host invitation
+states have their own phone/desktop light/dark matrix. See
+[the audit record](design/application-theme-audit-2026-11-12.md) for corrections,
+scope and output locations. New UI should pair surfaces and foreground roles,
+including translucent backgrounds and hover states, rather than relying on a
+light-only utility with independently converted text.
+
 Run `npm run test:appearance` for the application preference/first-paint browser
 suite, actual signed-in sidebar/navbar coverage and white-asset checks. Navigation
 coverage includes expanded/collapsed rails, category submenus, account menus and

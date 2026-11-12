@@ -189,6 +189,9 @@
   outline: 3px solid var(--marketing-accent);
   outline-offset: 5px;
 }
+:global(html.dark) .viewport {
+  background: var(--surface-alt);
+}
 
 .before,
 .eventPage {

@@ -12,7 +12,7 @@ await fs.mkdir(out, { recursive: true });
 const entry = path.join(out, "entry.tsx");
 await fs.writeFile(entry, `import React from "react";
 import {createRoot} from "react-dom/client";
-import AppearanceProvider from "../../src/components/AppearanceProvider";
+import AppearanceProvider,{useTheme} from "../../src/components/AppearanceProvider";
 import UnsavedProgressProvider from "../../src/components/UnsavedProgressProvider";
 import {SidebarProvider} from "../../src/app/sidebar-context";
 import About from "../../src/app/about/page";
@@ -34,11 +34,12 @@ import Weddings from "../../src/app/weddings/WeddingsLandingView";
 import Sports from "../../src/components/sports-landing/SportsLandingPage";
 import Gymnastics from "../../src/components/gymnastics-landing/GymnasticsLanding";
 import Snap from "../../src/components/snap-landing/SnapLanding";
+function AuditAppearance(){const {setPreference}=useTheme();React.useEffect(()=>{window.__setAuditAppearance=setPreference;},[setPreference]);return null;}
 const p=new URLSearchParams(location.search),screen=p.get("screen")||"about";
 const views={about:<About/>,contact:<Contact/>,faq:<Faq/>,guides:<Guides/>,"how-it-works":<HowItWorks/>,privacy:<Privacy/>,terms:<Terms/>,forgot:<Forgot/>,reset:<Reset/>,"verify-request":<Verify/>,birthdays:<Birthdays page={getUseCasePageByPath("/birthdays")!}/>,weddings:<Weddings page={getUseCasePageByPath("/weddings")!}/>,sports:<Sports/>,gymnastics:<Gymnastics/>,snap:<Snap/>};
 let view=screen==="guide"?<GuidePageView slug={p.get("slug")||guidePages[0].slug}/>:screen==="category"?<Category page={getUseCasePageByPath(p.get("path")||"/baby-showers")!}/>:views[screen];
 if(screen==="unsubscribe") view=await Unsubscribe({searchParams:Promise.resolve({token:p.get("token")||""})});
-createRoot(document.getElementById("root")!).render(<AppearanceProvider><SidebarProvider><UnsavedProgressProvider>{view}</UnsavedProgressProvider></SidebarProvider></AppearanceProvider>);`);
+createRoot(document.getElementById("root")!).render(<AppearanceProvider><AuditAppearance/><SidebarProvider><UnsavedProgressProvider>{view}</UnsavedProgressProvider></SidebarProvider></AppearanceProvider>);`);
 const styles = new Map();
 const mocks = {
   "@/app/providers": `export {useTheme} from ${JSON.stringify(path.resolve("src/components/AppearanceProvider").replaceAll("\\","/"))};`,

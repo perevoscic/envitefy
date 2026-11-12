@@ -20,11 +20,12 @@ test("all email families render accessible text and white assets in light/dark i
       return route.abort();
     });
     const results = [];
-    for (const fixture of await fixtures()) for (const mode of ["light", "dark"]) {
+    for (const fixture of await fixtures()) for (const mode of ["light", "dark", "outlook-dark"]) {
       const page = await context.newPage();
       await page.setViewportSize({ width: 600, height: 900 });
-      await page.emulateMedia({ colorScheme: mode });
+      await page.emulateMedia({ colorScheme: mode === "dark" ? "dark" : "light" });
       await page.setContent(fixture.html, { waitUntil: "load" });
+      if (mode === "outlook-dark") await page.locator("body").evaluate(body => body.setAttribute("data-ogsc", ""));
       const failures = await page.evaluate(() => {
         const rgb = value => (value.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
         const luminance = values => values.reduce((sum, value, index) => { const channel = value / 255; return sum + (channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4) * [.2126, .7152, .0722][index]; }, 0);
@@ -38,7 +39,7 @@ test("all email families render accessible text and white assets in light/dark i
           let parent = node;
           while (parent && getComputedStyle(parent).backgroundColor === "rgba(0, 0, 0, 0)") parent = parent.parentElement;
           if (!parent) continue;
-          const foreground = luminance(rgb(style.color));
+          const foreground = luminance(rgb(style.webkitTextFillColor || style.color));
           const background = luminance(rgb(getComputedStyle(parent).backgroundColor));
           const ratio = (Math.max(foreground, background) + .05) / (Math.min(foreground, background) + .05);
           const large = parseFloat(style.fontSize) >= 24 || (parseFloat(style.fontSize) >= 18.66 && Number(style.fontWeight) >= 700);
@@ -50,11 +51,39 @@ test("all email families render accessible text and white assets in light/dark i
       const assets = await page.locator('img[src*="/email/white-v1/"],img[src*="/email/wordmark-v2/"]').evaluateAll(images => images.map(image => ({ src: image.src, loaded: image.complete && image.naturalWidth > 0 })));
       assert.ok(assets.length >= 7, `${fixture.name}: emblem, wordmark and five social icons`);
       assert.ok(assets.every(asset => asset.loaded), `${fixture.name}: all brand assets load`);
-      for (const width of [320, 375, 600]) {
+      assert.ok(assets.every(asset => asset.src.endsWith(".webp")), `${fixture.name}: WebP delivery assets`);
+      for (const width of [320, 375, 600, 800]) {
         await page.setViewportSize({ width, height: 900 });
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
         const overflowing = overflow ? await page.evaluate(() => [...document.querySelectorAll("body *")].map(node => ({ tag: node.tagName, className: node.className, text: node.textContent.trim().slice(0, 40), width: node.getBoundingClientRect().width, x: node.getBoundingClientRect().x })).filter(node => node.width + node.x > innerWidth + 1).slice(-12)) : [];
         assert.equal(overflow, false, `${fixture.name} (${mode}, ${width}px) horizontal overflow: ${JSON.stringify(overflowing)}`);
+        const distorted = await page.locator(".email-brand-band img").evaluateAll(images => images.filter(image => {
+          const box = image.getBoundingClientRect();
+          return Math.abs((box.width / box.height) / (image.naturalWidth / image.naturalHeight) - 1) > .01;
+        }).map(image => image.src));
+        assert.deepEqual(distorted, [], `${fixture.name} (${mode}, ${width}px) logo proportions`);
+        if (fixture.name === "sendCoHostInvitationEmail" && [375, 800].includes(width)) {
+          const filename = path.join(output, `cohost-${mode}-${width}.webp`);
+          const encoded = spawnSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", "-i", "pipe:0", "-c:v", "libwebp", "-q:v", "85", "-compression_level", "6", filename], { input: await page.screenshot({ fullPage: true }) });
+          assert.equal(encoded.status, 0, encoded.stderr?.toString());
+        }
+      }
+      if (fixture.name === "sendCoHostInvitationEmail") {
+        // Model an inbox that drops head CSS and recolors links in dark mode.
+        await page.locator("style").evaluateAll(styles => { for (const style of styles) style.remove(); });
+        await page.addStyleTag({ content: "a,span{color:#C0B3D0!important;}" });
+        const button = await page.locator("[data-email-cta] .email-cta-label").evaluate(label => ({
+          fill: getComputedStyle(label).webkitTextFillColor,
+          background: getComputedStyle(label.closest("a")).backgroundImage,
+          text: label.textContent,
+        }));
+        assert.deepEqual(button, { fill: "rgb(37, 16, 62)", background: "linear-gradient(rgb(197, 167, 255), rgb(197, 167, 255))", text: "Accept invitation" });
+        const fallbackLogo = await page.locator('img[alt="Envitefy logo"]').evaluate(image => {
+          image.removeAttribute("style");
+          const box = image.getBoundingClientRect();
+          return Math.abs((box.width / box.height) / (image.naturalWidth / image.naturalHeight) - 1);
+        });
+        assert.ok(fallbackLogo < .01, "logo HTML dimensions preserve proportions when inline CSS is stripped");
       }
       if (["standard-marketing", "features-oct26", "magazine-1", "sendSignupConfirmationEmail"].includes(fixture.name)) {
         const filename = path.join(output, `${fixture.name}-${mode}.webp`);

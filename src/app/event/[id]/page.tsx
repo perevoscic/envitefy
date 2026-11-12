@@ -1434,6 +1434,15 @@ async function RenderEventPage({
   const showOwnerAccessControls = isOwner && supportsEventCollaboration(data) &&
     (data.createdVia !== "livecard-builder" || data.status === "published");
 
+  // Old invitation links must not introduce guest/message tools on an event page
+  // without RSVP. Owners and co-hosts enter the same event canvas.
+  if (
+    showOwnerWorkspace && !ownerPreviewMode && !cardFirstCanonical &&
+    primaryProductOutput !== "signup_form" && !ownerRsvpDashboardEnabled && ownerToolsTab && !editParam
+  ) {
+    redirect(`${ownerEventHref}?tab=event`);
+  }
+
   if (showOwnerEventView && !editParam) {
     if (cardFirstCanonical) {
       redirect(`${ownerEventHref}?tab=design`);
@@ -1444,10 +1453,11 @@ async function RenderEventPage({
         eventId={row.id}
         canDelete={isOwner}
         canManageAccess={showOwnerAccessControls}
+        isCoHost={collaborationPermissions.role === "cohost"}
         title={title}
         publicHref={publicEventHref}
         editHref={resolveOwnerEditHref(row.id, data, title, ownerEventHref)}
-        mobileEditInEvent={isGymnasticsTemplate && canEditCreatedEvent}
+        mobileEditInEvent={isOwner && isGymnasticsTemplate && canEditCreatedEvent}
         backgroundColor={eventPageBackgroundColor}
         entryContext={createdParam ? {
           created: "1",

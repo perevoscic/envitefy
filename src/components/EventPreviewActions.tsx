@@ -9,10 +9,12 @@ export default function EventPreviewActions({
   children,
   surfaceStyle,
   previewDocument,
+  roleLabel,
 }: {
   children: ReactNode;
   surfaceStyle?: CSSProperties;
   previewDocument: Document | null;
+  roleLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [mobileSlot, setMobileSlot] = useState<HTMLElement | null>(null);
@@ -67,7 +69,8 @@ export default function EventPreviewActions({
   const content = (
     <div
       ref={root}
-      className="pointer-events-auto relative col-start-3 row-start-1 justify-self-end @min-[1600px]:justify-self-start"
+      data-event-preview-actions
+      className="pointer-events-auto relative col-start-3 row-start-1 flex items-center gap-2 justify-self-end @min-[1600px]:justify-self-start"
       onKeyDown={(event) => {
         if (event.key !== "Escape" || !open) return;
         event.preventDefault();
@@ -76,6 +79,7 @@ export default function EventPreviewActions({
         trigger.current?.focus();
       }}
     >
+      {roleLabel && <span className="shrink-0 rounded-full border border-current/15 px-3 py-2 text-xs font-semibold shadow-sm backdrop-blur-xl" style={surfaceStyle}>{roleLabel}</span>}
       <button
         ref={trigger}
         type="button"

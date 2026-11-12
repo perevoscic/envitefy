@@ -19,17 +19,34 @@ export const EMAIL_COLORS = {
 } as const;
 
 export const EMAIL_WHITE_ASSETS = {
-  symbol: ENVITEFY_BRAND_ASSETS.symbol.emailWhiteMatte,
-  wordmark: ENVITEFY_BRAND_ASSETS.wordmark.emailWhiteMatte,
-  social: (name: string) => ENVITEFY_SOCIAL_LINKS.find(link => link.name.toLowerCase() === name.toLowerCase())?.emailWhiteIconSrc || "",
+  symbol: ENVITEFY_BRAND_ASSETS.symbol.emailWhiteMatteWebp,
+  wordmark: ENVITEFY_BRAND_ASSETS.wordmark.emailWhiteMatteWebp,
+  social: (name: string) => ENVITEFY_SOCIAL_LINKS.find(link => link.name.toLowerCase() === name.toLowerCase())?.emailWhiteIconSrc.replace(/\.png$/, ".webp") || "",
 } as const;
+
+// A solid gradient keeps the button fill paired with its text in auto-darkening
+// inboxes; text-fill protects the label when the client rewrites link colors.
+const EMAIL_CTA_STYLE = "background-color:#C5A7FF;background-image:linear-gradient(#C5A7FF,#C5A7FF);color:#25103E !important;-webkit-text-fill-color:#25103E !important;";
+
+function protectEmailCtas(html: string): string {
+  return html.replace(/<a\b([^>]*(?:data-email-cta|background-color\s*:\s*#7F67D3|class="btn")[^>]*)>([\s\S]*?)<\/a>/gi, (_match, attributes: string, label: string) => {
+    let tag = `<a${attributes}>`;
+    if (!/data-email-cta\s*=/i.test(tag)) tag = tag.replace(/>$/, ' data-email-cta="primary">');
+    if (!/\bclass="[^"]*\bemail-cta\b/i.test(tag)) tag = addClasses(tag, ["email-cta"]);
+    tag = /\bstyle="/i.test(tag)
+      ? tag.replace(/\bstyle="([^"]*)"/i, (_style, value: string) => `style="${value};${EMAIL_CTA_STYLE}"`)
+      : tag.replace(/>$/, ` style="${EMAIL_CTA_STYLE}">`);
+    return `${tag}<span class="email-cta-label" style="color:#25103E !important;-webkit-text-fill-color:#25103E !important;">${label}</span></a>`;
+  });
+}
 
 /** Explicit classes let email clients override inline fallback colors without touching artwork. */
 export const ADAPTIVE_EMAIL_CSS = `
 :root { color-scheme: light dark; supported-color-schemes: light dark; }
 .email-brand-band,.email-footer-band { background-color:#251F2D !important; color:#FFFFFF !important; }
 .email-brand-band a,.email-footer-band a,.email-footer-band p,.email-footer-band div { color:#FFFFFF !important; }
-.email-cta { background:#C5A7FF !important; background-color:#C5A7FF !important; color:#25103E !important; }
+.email-cta { background-color:#C5A7FF !important; background-image:linear-gradient(#C5A7FF,#C5A7FF) !important; }
+.email-cta,.email-cta-label { color:#25103E !important; -webkit-text-fill-color:#25103E !important; }
 .email-link { color:#67459E !important; text-decoration:underline; }
 .email-muted { color:#655A70 !important; }
 .email-accent { color:#67459E !important; }
@@ -45,14 +62,16 @@ export const ADAPTIVE_EMAIL_CSS = `
   .email-success-text { color:#80D8B3 !important; }
   .hero { background:linear-gradient(135deg,#462F4D,#233A4E) !important; }
 }
-[data-ogsc] .email-canvas { background:#181818 !important; }
-[data-ogsc] .email-surface,[data-ogsc] .email-content,[data-ogsc] .email-shell { background:#251F2D !important; color:#F2EAFA !important; }
-[data-ogsc] .email-detail { background:#302738 !important; border-color:#51435F !important; }
-[data-ogsc] .email-text { color:#F2EAFA !important; }
-[data-ogsc] .email-muted { color:#C0B3D0 !important; }
+[data-ogsc] .email-canvas,[data-ogsc] .wrapper { background:#181818 !important; }
+[data-ogsc] .email-surface,[data-ogsc] .email-content,[data-ogsc] .email-shell,[data-ogsc] .container,[data-ogsc] .white { background:#251F2D !important; color:#F2EAFA !important; }
+[data-ogsc] .email-detail,[data-ogsc] .card { background:#302738 !important; border-color:#51435F !important; }
+[data-ogsc] .email-text,[data-ogsc] .h1,[data-ogsc] .h2,[data-ogsc] .hero-title,[data-ogsc] .feature-title,[data-ogsc] .body { color:#F2EAFA !important; }
+[data-ogsc] .email-muted,[data-ogsc] .small,[data-ogsc] .eyebrow,[data-ogsc] .legacy-note { color:#C0B3D0 !important; }
 [data-ogsc] .email-link,[data-ogsc] .email-accent { color:#C5A7FF !important; }
 [data-ogsc] .email-success { background:#203A32 !important; }
 [data-ogsc] .email-success-text { color:#80D8B3 !important; }
+[data-ogsc] .email-border,[data-ogsc] .divider { border-color:#51435F !important; }
+[data-ogsc] .hero { background:linear-gradient(135deg,#462F4D,#233A4E) !important; }
 @media only screen and (max-width:640px) {
   .container { table-layout:fixed; }
   .email-legacy-brand { white-space:normal !important; }
@@ -76,7 +95,7 @@ export function adaptiveEmailBody(html: string): string {
     authored.push(block);
     return `<!-- email-authored:${authored.length - 1} -->`;
   });
-  return protectedHtml.replace(/<[a-z][^>]*>/gi, tag => {
+  return protectEmailCtas(protectedHtml).replace(/<[a-z][^>]*>/gi, tag => {
     const classes: string[] = [];
     const style = tag.match(/\bstyle="([^"]*)"/i)?.[1] || "";
     if (/background(?:-color)?\s*:\s*#(?:f5f2ff|f3f0ff)/i.test(style)) classes.push("email-canvas");
@@ -108,13 +127,14 @@ export function adaptiveEmailDocument(html: string): string {
     .replace(/:root\s*\{[^}]*color-scheme[^}]*\}/gi, "")
     .replace(/color-scheme:light;?/gi, "")
     .replace(/\/email\/envitefy-wordmark-email\.png/g, EMAIL_WHITE_ASSETS.wordmark)
-    .replace(/\/email\/social-(instagram|facebook|youtube|tiktok|reddit)\.png/g, "/email/white-v1/matte/social-$1.png");
+    .replace(/\/email\/social-(instagram|facebook|youtube|tiktok|reddit)\.png/g, "/email/white-v1/matte/social-$1.webp");
   out = adaptiveEmailBody(out);
   out = out.replace(/<img\b[^>]*>/gi, img => {
     const source = img.match(/\bsrc="([^"]+)"/i)?.[1] || "";
     if (!source.endsWith(EMAIL_WHITE_ASSETS.wordmark)) return img;
     const base = source.slice(0, -EMAIL_WHITE_ASSETS.wordmark.length) || "https://envitefy.com";
-    return `<div class="email-brand-band" style="padding:20px;background-color:#251F2D;border-radius:12px;"><img src="${base}${EMAIL_WHITE_ASSETS.symbol}" width="36" height="36" alt="Envitefy logo" style="display:block;margin:0 auto 12px;border:0;" />${img}</div>`;
+    const wordmark = img.replace(/\sheight="[^"]*"/i, "");
+    return `<div class="email-brand-band" style="padding:20px;background-color:#251F2D;border-radius:12px;"><img src="${base}${EMAIL_WHITE_ASSETS.symbol}" width="56" height="36" alt="Envitefy logo" style="display:block;width:56px;max-width:100%;height:auto;margin:0 auto 12px;border:0;" />${wordmark}</div>`;
   });
   out = out.replace(/class="footer-shell([^"]*)"/g, 'class="footer-shell email-footer-band$1"');
   out = out.replace(/<[a-z][^>]*class="[^"]*email-(?:brand|footer)-band[^>]*>/gi, tag => {
@@ -122,8 +142,6 @@ export function adaptiveEmailDocument(html: string): string {
       (_match, style: string) => `style="${style};background-color:#251F2D;color:#FFFFFF;"`);
     return withBackground.replace(/>$/, ' bgcolor="#251F2D">');
   });
-  out = out.replace(/<a\b[^>]*(?:data-email-cta|background-color\s*:\s*#7F67D3|class="btn")[^>]*>/gi,
-    tag => addClasses(tag.replace(/\sdata-email-cta="[^"]*"/g, "").replace(/>$/, ' data-email-cta="primary">'), ["email-cta"]));
   return out.replace(/<html\b([^>]*)>/i, `<html$1 data-email-design="adaptive-v1">`)
     .replace(/<\/head>/i, `<meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><style>${ADAPTIVE_EMAIL_CSS}</style></head>`);
 }

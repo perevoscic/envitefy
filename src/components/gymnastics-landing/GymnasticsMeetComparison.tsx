@@ -186,6 +186,7 @@ export default function GymnasticsMeetComparison() {
         </article>
         <div
           className={styles.before}
+          data-appearance-scope="authored"
           style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
           data-comparison-before
           role="region"

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import {execSync} from "node:child_process";
+import buildBunFixture from "./lib/build-bun-fixture.cjs";
 import test from "node:test";
 import {chromium} from "playwright";
 import sharp from "sharp";
@@ -11,7 +11,7 @@ const guides=["pdf-to-event-page","flyer-to-event-page","live-card-invitations",
 const routes=[...['about','contact','faq','guides','how-it-works','privacy','terms','forgot','reset','verify-request','birthdays','weddings','sports','gymnastics','snap'].map(screen=>({id:screen,url:`/${screen}?screen=${screen}`})),...guides.map(slug=>({id:`guide-${slug}`,url:`/guides/${slug}?screen=guide&slug=${slug}`})),...['baby-showers','bridal-showers','gender-reveal','signup-forms'].map(slug=>({id:slug,url:`/${slug}?screen=category&path=/${slug}`})),{id:'unsubscribe-invalid',url:'/unsubscribe?screen=unsubscribe'},{id:'unsubscribe-valid',url:'/unsubscribe?screen=unsubscribe&token=valid'}];
 
 test("public marketing, help and account pages retain dark app surfaces and readable content",{timeout:240000},async()=>{
-  if(!process.env.PUBLIC_DARK_AUDIT_SKIP_BUILD)execSync("bun scripts/build-public-dark-audit.mjs",{timeout:60000,stdio:"pipe"});
+  if(!process.env.PUBLIC_DARK_AUDIT_SKIP_BUILD)buildBunFixture("scripts/build-public-dark-audit.mjs");
   const [bundle,globalCss,moduleCss,bootstrap]=await Promise.all(['entry.js','global.css','entry.css','bootstrap.js'].map(name=>fs.readFile(path.join(out,name),'utf8')));
   const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE});
   const results=[],errors=[];
@@ -77,12 +77,14 @@ test("public marketing, help and account pages retain dark app surfaces and read
           const pixels=async buffer=>{const image=sharp(buffer),size=await image.metadata();return image.extract({left:30,top:30,width:size.width-60,height:size.height-60}).raw().toBuffer();};
           const screenshotOptions={animations:'disabled',mask:[page.getByText('Most Popular',{exact:true})],maskColor:'#000000'};
           const dark=await sample.screenshot(screenshotOptions);
-          await page.getByRole('radio',{name:'Light',exact:true}).first().check({force:true});
+          await page.evaluate(()=>window.__setAuditAppearance('light'));
+          await page.waitForFunction(()=>document.documentElement.dataset.theme==='general-light');
           const light=await sample.screenshot(screenshotOptions);
           await fs.writeFile(path.join(out,'wedding-authored-dark.png'),dark);
           await fs.writeFile(path.join(out,'wedding-authored-light.png'),light);
           assert.ok((await pixels(dark)).equals(await pixels(light)),'App appearance preserves the authored wedding suite pixels');
-          await page.getByRole('radio',{name:'Dark',exact:true}).first().check({force:true});
+          await page.evaluate(()=>window.__setAuditAppearance('dark'));
+          await page.waitForFunction(()=>document.documentElement.dataset.theme==='general-dark');
         }
       }
     }

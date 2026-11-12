@@ -35,7 +35,7 @@ function fixture() {
     else if (q.startsWith("SELECT email FROM users")) rows.push(...state.users.filter(u => u.id === args[0]));
     else if (q.startsWith("SELECT count(*)")) rows.push({ count: "0" });
     else if (q.startsWith("SELECT 1 FROM event_collaborators c JOIN")) rows.push(...state.members.filter(m => m.event_id === args[0] && !m.revoked_at && state.users.find(u => u.id === m.user_id)?.email === args[1]));
-    else if (q.startsWith("SELECT 1 FROM event_collaborators")) rows.push(...state.members.filter(m => m.event_id === args[0] && !m.revoked_at && (!args[1] || m.user_id === args[1])));
+    else if (q.startsWith("SELECT 1 FROM event_collaborators")) rows.push(...state.members.filter(m => m.event_id === args[0] && (!q.includes("revoked_at IS NULL") || !m.revoked_at) && (!args[1] || m.user_id === args[1])));
     else if (q.startsWith("SELECT EXISTS")) rows.push({ allowed: state.members.some(m => m.event_id === args[0] && m.user_id === args[1] && !m.revoked_at) });
     else if (q.startsWith("SELECT user_id FROM event_collaborators")) rows.push(...state.members.filter(m => m.event_id === args[0] && !m.revoked_at));
     else if (q.startsWith("SELECT i.id::text AS id")) {
@@ -111,6 +111,22 @@ test("email invitations support a recipient without an account and store only a 
   assert.equal(await api.acceptCollaboratorInvitation(invite.token, "new"), "event");
   assert.equal(state.members[0].user_id, "new");
   assert.equal((await api.getEventPermissions(state.events[1], "new")).canEdit, false);
+});
+
+test("co-host entry uses the owner's product view instead of an RSVP dashboard", async () => {
+  const { api, event } = fixture();
+  for (const data of [
+    { createdVia: "meet-discovery", category: "sport_gymnastics", rsvpEnabled: false },
+    { primaryOutput: "event_page", rsvpEnabled: false },
+    { primaryOutput: "event_page", rsvpEnabled: true },
+  ]) {
+    event.data = data;
+    assert.equal(await api.collaboratorWorkspaceHref(event.id), "/event/event?tab=event");
+  }
+  for (const primaryOutput of ["live_card", "digital_flyer", "printable_flyer"]) {
+    event.data = { primaryOutput, rsvpEnabled: false };
+    assert.equal(await api.collaboratorWorkspaceHref(event.id), "/event/event?tab=design");
+  }
 });
 
 test("acceptance rejects wrong accounts, expired, cancelled and previously used invitations", async () => {
@@ -243,6 +259,73 @@ test("a co-host edits the existing event, keeps ownership, and revocation blocks
   await assert.rejects(api.saveCollaborativeEvent({ eventId: "event", userId: "friend", expectedRevision: saved.revision, patch: {} }), e => e.status === 403);
 });
 
+test("owner and co-host editors share one event and media, merge independent edits and retain overlapping conflicts", async () => {
+  const { api, state, event } = fixture();
+  const { createEventHistoryClient } = compile("src/lib/event-history-client.ts", { react: { useMemo: fn => fn() } });
+  event.title = "Tampa Bay Turners Invitational 2027";
+  event.data = { status: "published", createdVia: "meet-discovery", title: event.title,
+    venue: "Convention center", details: "Original details", heroImage: "https://assets.test/existing-hero.webp",
+    templateEditor: { category: "gymnastics", templateId: "airborne-atlas", snapshot: { data: {
+      title: event.title, venue: "Convention center", details: "Original details", hero: "https://assets.test/existing-hero.webp",
+    } } }, responses: [{ name: "Guest", attending: true }] };
+  const original = structuredClone(event);
+  const invite = await api.inviteEventCollaborator(event.id, "owner", "friend@test.com");
+  assert.equal(await api.acceptCollaboratorInvitation(invite.token, "friend"), event.id);
+  assert.deepEqual(event, original, "sharing adds access without rewriting the event or its artwork");
+  const before = structuredClone(event.data);
+  const originalFetch = global.fetch;
+  let actor = "owner";
+  const writes = [];
+  global.fetch = async (url, options = {}) => {
+    assert.equal(url, "/api/history/event", "no new event, media upload or generation endpoint");
+    if (options.method !== "PATCH") return Response.json({ ...structuredClone(event), revision: api.eventRevision(event) });
+    const body = JSON.parse(options.body);
+    writes.push({ actor, body });
+    try {
+      return Response.json(await api.saveCollaborativeEvent({ eventId: event.id, userId: actor,
+        expectedRevision: body.expectedRevision, patch: body.data, title: body.title }));
+    } catch (error) { return Response.json({ error: error.message, code: error.code }, { status: error.status }); }
+  };
+  try {
+    const owner = createEventHistoryClient(), cohost = createEventHistoryClient();
+    await owner.fetch("/api/history/event");
+    actor = "friend";
+    await cohost.fetch("/api/history/event");
+    actor = "owner";
+    const ownerData = structuredClone(before);
+    ownerData.venue = ownerData.templateEditor.snapshot.data.venue = "Updated venue";
+    assert.equal((await owner.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: ownerData }) })).status, 200);
+    actor = "friend";
+    const cohostData = structuredClone(before);
+    cohostData.details = cohostData.templateEditor.snapshot.data.details = "Co-host details";
+    assert.equal((await cohost.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: cohostData }) })).status, 200);
+    assert.equal(event.data.venue, "Updated venue");
+    assert.equal(event.data.templateEditor.snapshot.data.venue, "Updated venue");
+    assert.equal(event.data.details, "Co-host details");
+    cohostData.details = cohostData.templateEditor.snapshot.data.details = "Co-host details again";
+    assert.equal((await cohost.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: cohostData }) })).status, 200);
+    assert.equal(event.data.venue, "Updated venue", "a later save from the still-mounted editor cannot restore its older venue");
+    assert.equal(event.data.templateEditor.snapshot.data.venue, "Updated venue");
+    actor = "owner";
+    const conflicting = structuredClone(ownerData);
+    conflicting.details = conflicting.templateEditor.snapshot.data.details = "Owner's overlapping edit";
+    assert.equal((await owner.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: conflicting }) })).status, 409);
+    assert.equal(event.data.details, "Co-host details again");
+    const reopened = createEventHistoryClient();
+    const latest = await (await reopened.fetch("/api/history/event")).json();
+    latest.data.details = latest.data.templateEditor.snapshot.data.details = "Owner's explicit latest edit";
+    assert.equal((await reopened.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: latest.data }) })).status, 200);
+    assert.equal(event.data.details, "Owner's explicit latest edit");
+    assert.equal(event.id, original.id);
+    assert.equal(event.user_id, original.user_id);
+    assert.equal(event.data.heroImage, original.data.heroImage);
+    assert.equal(event.data.templateEditor.snapshot.data.hero, original.data.heroImage);
+    assert.deepEqual(event.data.responses, original.data.responses);
+    assert.equal(state.events.length, 2, "the original fixture event count is unchanged");
+    assert.equal(writes.length, 6, "only one bounded retry for an independent concurrent edit");
+  } finally { global.fetch = originalFetch; }
+});
+
 test("concurrent saves accept one revision and reject the stale writer without overwriting", async () => {
   const { api, state, event } = fixture();
   const invite = await api.inviteEventCollaborator("event", "owner", "friend@test.com");
@@ -253,6 +336,32 @@ test("concurrent saves accept one revision and reject the stale writer without o
   assert.equal(results.find(r => r.status === "rejected").reason.code, "event_changed");
   assert.equal(state.events[0].title, "Title 0");
   await assert.rejects(api.saveCollaborativeEvent({ eventId: "event", userId: "owner", expectedRevision: null, patch: {} }), e => e.status === 428);
+});
+
+test("a co-host leaves only their own event access, preserving its owner, other co-hosts, artwork and responses", async () => {
+  const { api, state, event } = fixture();
+  event.data.responses = [{ name: "Guest", attending: true }];
+  const invite = await api.inviteEventCollaborator(event.id, "owner", "friend@test.com");
+  await api.acceptCollaboratorInvitation(invite.token, "friend");
+  state.members.push({ event_id: event.id, user_id: "another", revoked_at: null });
+  state.members.push({ event_id: "other", user_id: "friend", revoked_at: null });
+  const before = structuredClone(event);
+  const revision = api.eventRevision(event);
+  await assert.rejects(api.leaveEventCollaboration(event.id, "owner"), e => e.code === "cohost_required");
+  await assert.rejects(api.leaveEventCollaboration(event.id, "outsider"), e => e.code === "cohost_required");
+  await api.leaveEventCollaboration(event.id, "friend");
+  await api.leaveEventCollaboration(event.id, "friend"); // Ambiguous-response retries are safe.
+  assert.deepEqual(event, before);
+  assert.equal((await api.getEventPermissions(event, "friend")).canEdit, false);
+  assert.equal((await api.getEventPermissions(event, "another")).canEdit, true);
+  assert.equal((await api.getEventPermissions(state.events[1], "friend")).canEdit, true);
+  assert.ok(state.invites[0].revoked_at);
+  assert.ok(state.invalidated.includes("friend"));
+  await assert.rejects(api.saveCollaborativeEvent({ eventId: event.id, userId: "friend", expectedRevision: revision, patch: { title: "Blocked" } }), e => e.code === "access_revoked");
+  await assert.rejects(api.acceptCollaboratorInvitation(invite.token, "friend"), e => e.status === 410);
+  const fresh = await api.inviteEventCollaborator(event.id, "owner", "friend@test.com");
+  await api.acceptCollaboratorInvitation(fresh.token, "friend");
+  assert.equal((await api.getEventPermissions(event, "friend")).canEdit, true);
 });
 
 test("saved editor snapshots cannot replace newer server artwork-job results", async () => {
@@ -381,7 +490,7 @@ test("editor revision tracking is isolated and keeps the baseline after a reject
   } finally { global.fetch = original; }
 });
 
-test("a custom link save advances the editor revision before a date save, while other edits still conflict", async () => {
+test("a custom link save advances the editor revision before a date save, while overlapping edits still conflict", async () => {
   const { createEventHistoryClient } = compile("src/lib/event-history-client.ts", { react: { useMemo: f => f() } });
   const original = global.fetch;
   let revision = "original";
@@ -411,9 +520,10 @@ test("a custom link save advances the editor revision before a date save, while 
     assert.equal(date, "2026-11-02");
     assert.equal(requests[1].expectedRevision, "custom-link");
     revision = "another-editor";
+    date = "2026-12-01";
     const rejected = await client.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: { date: "2026-11-03" } }) });
     assert.equal(rejected.status, 409);
-    assert.equal(date, "2026-11-02");
+    assert.equal(date, "2026-12-01");
   } finally { global.fetch = original; }
 });
 
@@ -551,6 +661,10 @@ test("invitation APIs require owner management and explicit authenticated accept
       inviteEventCollaborator: async (_event, _user, email) => { calls.push(["invite", email]); return { id: inviteId, token: "b".repeat(64), event: { title: "Garden party" } }; },
       listEventAccess: async () => [], markCollaborationEmail: async (...args) => calls.push(args),
       revokeEventCollaborator: async (...args) => calls.push(["revoke", ...args]),
+      leaveEventCollaboration: async (...args) => {
+        if (user !== "cohost") throw new errors.EventCollaborationError("Co-host required", 403, "cohost_required");
+        calls.push(["leave", ...args]);
+      },
       readCollaboratorInvitation: async () => ({ email: "friend@test.com", eventTitle: "Garden party", ownerName: "Host", accepted_by: null, accepted_at: null, revoked_at: null, expires_at: new Date(Date.now()+86400000).toISOString() }),
       acceptCollaboratorInvitation: async () => { calls.push(["accept"]); return eventId; },
       collaboratorWorkspaceHref: async id => `/event/${id}?tab=dashboard`,
@@ -579,6 +693,20 @@ test("invitation APIs require owner management and explicit authenticated accept
   const failed = await route.POST(request({ email: "friend@test.com" }), context);
   assert.equal(failed.status, 202); assert.equal((await failed.json()).emailSent, false);
   assert.deepEqual(calls.at(-1), [inviteId, "failed"]);
+  const leave = (query = "", headers = {}) => new Request(`https://envitefy.com/api/events/${eventId}/collaborators?action=leave${query}`, { method: "DELETE", headers });
+  user = null;
+  assert.equal((await route.DELETE(leave(), context)).status, 401);
+  user = "owner";
+  assert.equal((await route.DELETE(leave(), context)).status, 403);
+  user = "cohost";
+  assert.equal((await route.DELETE(leave("", { "sec-fetch-site": "cross-site" }), context)).status, 403);
+  assert.equal((await route.DELETE(leave(`&personId=${inviteId}`), context)).status, 400);
+  assert.equal(calls.some(call => call[0] === "leave"), false);
+  const left = await route.DELETE(leave(), context);
+  assert.equal(left.status, 200);
+  assert.equal((await left.json()).ok, true);
+  assert.equal(left.headers.get("cache-control"), "private, no-store");
+  assert.deepEqual(calls.at(-1), ["leave", eventId, "cohost"]);
   const acceptance = compile("src/app/api/cohost-invitations/route.ts", mocks);
   user = null;
   const inspected = await acceptance.POST(request({ token: "b".repeat(64), action: "inspect" }));
@@ -716,7 +844,7 @@ test("a resumed browser template draft keeps its earlier revision until a succes
   const helper = compile("src/lib/template-draft-handoff.ts", {
     "./template-categories": { getTemplateCategory: () => ({ historyCategory: "General" }) },
     "./template-draft-payload": { buildTemplateDraftPayload: () => ({ data: {} }) },
-    "./template-draft-storage": { retainDraftMedia: async () => {}, replaceDraftMedia: structuredClone },
+    "./template-draft-storage": compile("src/lib/template-draft-storage.ts"),
   });
   const draft = { id: "draft", eventId: "event", eventRevision: "earlier", snapshot: {}, assets: {} };
   const calls = [];
