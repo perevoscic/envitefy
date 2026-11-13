@@ -3,12 +3,29 @@ const path = require("node:path");
 const test = require("node:test");
 const { createJiti } = require("jiti");
 const jiti = createJiti(__filename, { alias: { "@": path.resolve("src") }, fsCache: false });
-const { eventEditorContent, eventEditorActions, persistEventEditorPayload } = jiti(
+const { eventEditorContent, eventEditorChangeContent, eventEditorActions, persistEventEditorPayload } = jiti(
   "../src/lib/event-editor.ts",
 );
 const { createEventHistoryClient } = jiti("../src/lib/event-history-client.ts");
 const { saveTemplateDraftToAccount } = jiti("../src/lib/template-draft-handoff.ts");
 const json = (row, status = 200) => new Response(JSON.stringify(row), { status });
+
+test("location verification stays out of pending edits while saves and undo retain its metadata", () => {
+  const details = { title: "Meet", rsvpEnabled: false, address: "Tampa, FL", date: "2027-04-10", time: "14:00", timezone: "America/New_York" };
+  for (const wrap of [data => ({ data }), details => ({ page: { artwork: "/retained.webp", details } })]) {
+    const before = wrap(details);
+    const verified = wrap({ ...details, timezoneSource: "location", timezoneLocation: "tampa, fl" });
+    const original = JSON.stringify(verified);
+    assert.deepEqual(eventEditorChangeContent(verified), eventEditorChangeContent(before));
+    assert.equal(JSON.stringify(verified), original, "comparison never mutates the snapshot being saved");
+    assert.deepEqual(eventEditorContent(verified), verified, "full snapshots keep verification for saves and undo");
+    for (const patch of [{ rsvpEnabled: true }, { address: "Atlanta, GA" }, { date: "2027-04-11" }, { time: "15:00" }, { timezone: "America/Chicago" }]) {
+      assert.notDeepEqual(eventEditorChangeContent(wrap({ ...details, ...patch })), eventEditorChangeContent(before), "authored facts and calendar zone changes still count");
+    }
+    const manual = wrap({ ...details, timezoneSource: "manual", timezoneLocation: "tampa, fl" });
+    assert.deepEqual(eventEditorChangeContent(manual), manual, "legacy manual provenance is retained");
+  }
+});
 
 test("view changes stay clean and saved pages disable Save until edited", () => {
   const content = { data: { title: "Trip", sections: [{ title: "Parking", body: "North lot" }] } };

@@ -320,11 +320,7 @@ async function createEditorHarness() {
   };
   const switchView = async (name) => {
     if (name === "Edit") {
-      const close = workspace.getByRole("button", { name: "Close preview", exact: true });
-      if (await close.isVisible()) await close.click();
-      if (!(await workspace.getByRole("complementary", { name: "Event editing controls", exact: true }).isVisible()))
-        await workspace.getByRole("button", { name: /^(Edit|Page settings)$/ }).click();
-      await workspace.getByRole("complementary", { name: "Event editing controls", exact: true }).waitFor();
+      await openControls();
       await checkActionPlacement();
       return;
     }
@@ -333,7 +329,9 @@ async function createEditorHarness() {
     assert.equal(await workspace.getByRole("group", { name: "Save event", exact: true }).count(), 0, "clean preview omits editing and save controls");
   };
   const openControls = async () => {
-    await workspace.waitFor();
+    // Before the entrance frames finish, the mounted panel is hidden and its
+    // opener is absent. Do not mistake that state for a collapsed editor.
+    await page.locator('[data-event-page-editor][data-entered="true"]').waitFor();
     const opener = viewActions.getByRole("button", { name: /^(Edit|Page settings|Close preview)$/, exact: true });
     if (await opener.isVisible()) await opener.click();
     if (!(await page.getByRole("complementary", { name: "Event editing controls", exact: true }).isVisible()))
@@ -444,6 +442,28 @@ function editorCase(name, run, timeout = 30000) {
 }
 
 test.describe("Event Page editor saves and navigation", () => {
+  editorCase("opening controls waits for the entrance frames and preserves preview return", async ({ page, base, writes, openControls, switchView }) => {
+    // A busy renderer can expose the workspace before its entrance frames.
+    // Reproduce that window instead of relying on the runner's frame timing.
+    await page.addInitScript(() => {
+      const frame = window.requestAnimationFrame.bind(window);
+      window.requestAnimationFrame = callback => frame(time => setTimeout(() => callback(time), 100));
+    });
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${base}/event/design/customize?mode=create`);
+      await page.locator('[data-event-page-editor][data-entered="false"]').waitFor();
+      await openControls();
+      await page.getByRole("button", { name: /^Event details/ }).click();
+      const title = page.getByLabel("Event title", { exact: true });
+      await title.fill(`Pending title ${width}`);
+      await switchView("Preview");
+      await openControls();
+      assert.equal(await title.inputValue(), `Pending title ${width}`, "returning to controls retains pending fields");
+      assert.equal(writes.length, 0, "opening controls and Preview never save");
+    }
+  });
+
   editorCase("draft and publication progress belongs to the selected action on desktop and phone", async ({ page, state, writes, records, base, workspace, preview, openControls, authorAddress }) => {
     for (const width of [1440, 390]) for (const route of [
         "/gymnastics/templates/airborne-atlas/customize",
@@ -813,6 +833,47 @@ test.describe("Event Page editor saves and navigation", () => {
     }
   }, 60000);
 
+  editorCase("RSVP saves stay clean when verification of the unchanged location finishes later", async ({ page, records, writes, base, openControls }) => {
+    let finishLookup, lookupGate;
+    await page.route("**/api/events/timezone", async route => {
+      await lookupGate;
+      await route.fulfill({ json: { timezone: "America/New_York" } });
+    });
+    for (const width of [1440, 390]) {
+      const id = `rsvp-delayed-location-${width}`;
+      records.set(id, { id, title: "RSVP audit", revision: "rsvp-v1", data: {
+        title: "RSVP audit", status: "published", createdVia: "template", category: "gymnastics",
+        date: "2027-04-10", time: "14:00", venue: "Tampa Convention Center", address: "333 S Franklin St, Tampa, FL 33602", timezone: "America/New_York", rsvpEnabled: false,
+        responses: [{ id: "retained-response" }],
+      } });
+      lookupGate = new Promise(resolve => { finishLookup = resolve; });
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics&edit=${id}`);
+      await openControls();
+      const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+      await controls.getByRole("button", { name: /^RSVP/ }).click();
+      await controls.getByRole("switch").click();
+      await page.getByRole("button", { name: "Save", exact: true }).click();
+      await page.getByText("Changes saved.", { exact: true }).waitFor();
+      const writesAfterSave = writes.length;
+      const response = page.waitForResponse("**/api/events/timezone");
+      finishLookup();
+      await response;
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      assert.equal(await page.getByRole("button", { name: "Save", exact: true }).isEnabled(), false, "background verification does not make a completed RSVP save dirty");
+      assert.equal(await page.getByRole("button", { name: "Undo", exact: true }).isEnabled(), false, "verification is not an undoable host edit");
+      assert.equal(records.get(id).data.rsvpEnabled, true);
+      assert.equal(writes.length, writesAfterSave, "verification never saves automatically");
+      await controls.getByRole("switch").click();
+      await page.getByRole("button", { name: "Save", exact: true }).click();
+      await page.getByText("Changes saved.", { exact: true }).waitFor();
+      assert.equal(records.get(id).data.rsvpEnabled, false, "a later explicit edit still saves");
+      assert.equal(records.get(id).data.timezoneSource, "location", "explicit saves retain verification metadata");
+      assert.equal(records.get(id).data.timezoneLocation, "333 s franklin st, tampa, fl 33602");
+      assert.deepEqual(records.get(id).data.responses, [{ id: "retained-response" }]);
+    }
+  });
+
   editorCase("RSVP enable/save/reopen/disable across five categories on desktop and phone", async ({ page, records, base, openControls }) => {
     // RSVP remains reachable even when disabled and survives an explicit save/reopen.
     for (const width of [1440, 390]) {
@@ -1078,8 +1139,10 @@ test.describe("Event Page editor saves and navigation", () => {
         const before = writes.length;
         await page.goto(`${base}/event/design/customize?mode=${mode}`);
         await workspace.waitFor();
+        await openControls();
         await page.getByRole("complementary", { name: "Event editing controls", exact: true }).waitFor();
-        assert.equal(await preview.isVisible(), width >= 768, `${mode} shares the desktop canvas and hides the phone canvas while expanded`);
+        assert.equal(await preview.isVisible(), true, `${mode} keeps its canvas mounted beside desktop controls and behind the phone sheet`);
+        assert.equal(await preview.getAttribute("inert"), width >= 768 ? null : "", "the phone sheet prevents interaction with the canvas behind it");
         assert.equal(await page.getByRole("complementary", { name: "Event editing controls", exact: true }).isVisible(), true, `${mode} opens expanded at ${width}px`);
         await openControls();
         await page.getByRole("button", { name: /Event details/ }).click();
@@ -1114,30 +1177,33 @@ test.describe("Event Page editor saves and navigation", () => {
         await switchView("Edit");
         await controls.getByRole("button", { name: /^Event details/ }).click();
         assert.equal(await title.inputValue(), `${mode} event ${width}`);
-        await page.getByRole("button", { name: /Page sections/ }).click();
+        await click("Back to details");
+        await controls.getByRole("button", { name: /^Event image settings/ }).click();
         await click("Back to details");
         assert.equal(await controls.getByRole("button", { name: /^Event details/ }).isVisible(), true, "custom shared-tool Back closes its underlying details submenu");
         assert.equal(await title.isVisible(), false);
         assert.equal(await title.inputValue(), `${mode} event ${width}`);
         assert.equal(await page.getByRole("dialog").filter({ hasNot: page.locator('aside[aria-label="Event editing controls"]') }).count(), 0);
         assert.equal(writes.length, before, "custom shared-tool Back keeps content in memory");
-        await page.getByRole("button", { name: /Page sections/ }).click();
-        assert.equal(await controls.getByRole("button", { name: "Add section", exact: true }).count(), 0, "section choices are available without opening a chooser");
-        assert.equal(await controls.getByRole("button", { name: /^Schedule Times/ }).count(), 0, "an existing custom schedule is reused");
-        await controls.getByRole("button", { name: /^Accessibility Access/ }).click();
+        await page.getByRole("button", { name: /^(Hide settings|Back to page)$/ }).click();
+        await preview.getByRole("button", { name: /^Add section at position \d+$/ }).first().click();
+        const sectionDialog = page.getByRole("dialog").filter({ hasNot: page.locator('aside[aria-label="Event editing controls"]') });
+        await sectionDialog.getByRole("button", { name: /^Accessibility Access/ }).click();
         assert.equal(await page.getByRole("dialog").filter({ hasNot: page.locator('aside[aria-label="Event editing controls"]') }).count(), 1, "a preset opens its fields directly");
         assert.equal(await page.getByLabel("Title", { exact: true }).inputValue(), "Accessibility");
         assert.equal(await page.getByLabel("Section content", { exact: true }).inputValue(), "", "presets do not invent event facts");
         await page.getByLabel("Section content", { exact: true }).fill("Step-free entrance beside the north lot.");
-        await click("Done");
-        await page.waitForFunction(() => document.activeElement?.getAttribute("aria-label") === "Edit Accessibility");
-        await controls.getByRole("button", { name: "Edit Schedule", exact: true }).click();
+        await sectionDialog.getByRole("button", { name: "Close section panel", exact: true }).click();
+        await preview.getByRole("group", { name: "Schedule section", exact: true }).click();
+        await preview.getByRole("button", { name: "Edit Schedule", exact: true }).click();
         await page.getByLabel("Title", { exact: true }).fill("Itinerary");
-        await click("Done");
+        await sectionDialog.getByRole("button", { name: "Close section panel", exact: true }).click();
         const removedSection = mode === "upload" && width === 390;
         if (removedSection) {
-          await controls.getByRole("button", { name: "Remove Parking section", exact: true }).click();
-          assert.equal(await controls.getByRole("button", { name: "Edit Parking", exact: true }).count(), 0);
+          const parking = preview.getByRole("group", { name: "Parking section", exact: true });
+          await parking.click();
+          await parking.getByRole("button", { name: "Remove Parking section", exact: true }).click();
+          assert.equal(await preview.getByRole("button", { name: "Edit Parking", exact: true }).count(), 0);
         }
         await click("Save draft");
         await page.getByText("Draft saved.", { exact: true }).first().waitFor();
@@ -1153,17 +1219,18 @@ test.describe("Event Page editor saves and navigation", () => {
         assert.ok(new URL(savedUrl).searchParams.has("edit"));
         await page.reload();
         await openControls();
-        await page.getByRole("button", { name: /Page sections/ }).click();
+        await page.getByRole("button", { name: /^(Hide settings|Back to page)$/ }).click();
         if (removedSection)
-          assert.equal(await controls.getByRole("button", { name: "Edit Parking", exact: true }).count(), 0);
-        await controls.getByRole("button", { name: "Edit Itinerary", exact: true }).click();
+          assert.equal(await preview.getByRole("group", { name: "Parking section", exact: true }).count(), 0);
+        await preview.getByRole("group", { name: "Itinerary section", exact: true }).click();
+        await preview.getByRole("button", { name: "Edit Itinerary", exact: true }).click();
         assert.equal(
           await page.getByLabel("Title", { exact: true }).inputValue(),
           "Itinerary",
         );
-        await click("Done");
+        await sectionDialog.getByRole("button", { name: "Close section panel", exact: true }).click();
+        await openControls();
         await checkActionPlacement();
-        await click("Back to details");
         const panelBounds = await controls.boundingBox();
         await page.mouse.move(panelBounds.x + panelBounds.width / 2, panelBounds.y + panelBounds.height / 2);
         await page.mouse.wheel(0, 10000);
@@ -1216,7 +1283,7 @@ test.describe("Event Page editor saves and navigation", () => {
     }
   }, 60000);
 
-  editorCase("Birthday template drafts, published updates and reverted edits retain identity", async ({ page, errors, writes, records, base, click, workspace, preview, switchView, openControls, checkPreviewScroll }) => {
+  editorCase("Birthday template drafts, published updates and reverted edits retain identity", async ({ page, errors, writes, records, base, click, workspace, preview, switchView, openControls, checkPreviewScroll, authorAddress }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`${base}/birthdays/templates/candy-dreams/customize?mode=template`);
     await workspace.waitFor();
@@ -1231,6 +1298,7 @@ test.describe("Event Page editor saves and navigation", () => {
     await age.fill("6");
     await page.getByLabel("Event Date", { exact: true }).fill("2026-11-03");
     await page.getByLabel("Start Time", { exact: true }).fill("14:00");
+    await authorAddress(page.getByLabel("Address", { exact: true }));
     await checkPreviewScroll("birthday template desktop editor");
     await switchView("Preview");
     await checkPreviewScroll("birthday template desktop preview");
@@ -1242,11 +1310,14 @@ test.describe("Event Page editor saves and navigation", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     assert.equal(await name.inputValue(), "Olivia");
     const birthdayControls = page.getByRole("complementary", { name: "Event editing controls" });
-    await birthdayControls.getByRole("button", { name: /^Page sections/ }).click();
-    await page.getByRole("button", { name: /^Other/ }).click();
+    await page.getByRole("button", { name: "Hide settings", exact: true }).click();
+    await preview.getByRole("button", { name: /^Add section at position \d+$/ }).first().click();
+    const sectionDialog = page.getByRole("dialog", { name: "Add section", exact: true });
+    await sectionDialog.getByRole("button", { name: /^Custom Add your own/ }).click();
     await page.getByLabel("Title", { exact: true }).fill("Dress code");
     await page.getByLabel("Section content", { exact: true }).fill("Wear comfortable shoes.");
-    await click("Done");
+    await page.getByRole("button", { name: "Close section panel", exact: true }).click();
+    await openControls();
     await click("Back to details");
     await birthdayControls.getByRole("button", { name: /^Event image settings/ }).click();
     await page.getByRole("button", { name: "Choose Crossing lines hero layout", exact: true }).click();

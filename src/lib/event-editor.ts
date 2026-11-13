@@ -31,6 +31,29 @@ export function eventEditorContent(snapshot: object): object {
   );
 }
 
+function withoutLocationVerification(value: unknown): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const fields = value as Record<string, unknown>;
+  // Legacy manual zones retain their authored provenance. Automatic verification
+  // of an unchanged zone is bookkeeping, not a new host edit.
+  if (fields.timezoneSource === "manual") return value;
+  return Object.fromEntries(Object.entries(fields).filter(([key]) =>
+    key !== "timezoneSource" && key !== "timezoneLocation",
+  ));
+}
+
+/** Compare pending edits without dropping verification from saves or undo data. */
+export function eventEditorChangeContent(snapshot: object): object {
+  const content = eventEditorContent(snapshot) as Record<string, unknown>;
+  const page = content.page && typeof content.page === "object" && !Array.isArray(content.page)
+    ? content.page as Record<string, unknown> : null;
+  return {
+    ...content,
+    ...(content.data ? { data: withoutLocationVerification(content.data) } : {}),
+    ...(page ? { page: { ...page, details: withoutLocationVerification(page.details) } } : {}),
+  };
+}
+
 export function eventEditorActions(published: boolean, dirty: boolean) {
   return {
     showDraft: !published,

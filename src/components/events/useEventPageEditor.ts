@@ -17,6 +17,7 @@ import type { EditorSnapshot, TemplateDraft } from "@/lib/template-draft-storage
 import type { createEventHistoryClient } from "@/lib/event-history-client";
 import {
   eventEditorContent,
+  eventEditorChangeContent,
   eventEditorPublicHref,
   persistEventEditorPayload,
   type EventEditorPayload,
@@ -324,7 +325,7 @@ export function useEventPageEditor<S extends object>({
           historyFetch: historyClient.fetch,
         });
       }
-      progress.markSaved(savedContent);
+      progress.markSaved(eventEditorChangeContent(savedContent));
       history.markSaved(savedContent);
       if (id.current) onSaved?.(id.current);
       if (intakeId && id.current) {
@@ -374,7 +375,7 @@ export function useEventPageEditor<S extends object>({
   const registerPublisher = template?.registerPublisher;
   useEffect(() => editorReady ? registerPublisher?.(() => currentPublisher.current()) : undefined, [registerPublisher, editorReady]);
   const progress = useEventProgress({
-    snapshot: content,
+    snapshot: eventEditorChangeContent(content),
     ready: editorReady,
     initialDirty,
     busy: busy || externalBusy || urlBusy,
@@ -437,7 +438,7 @@ export function useEventPageEditor<S extends object>({
     ...(template ? { publishWithAccount: (mode: "signup" | "login") => perform(true, true, mode) } : {}),
     cancel,
     ...(restoreSnapshot ? { undo: {
-      canUndo: history.canUndo,
+      canUndo: progress.dirty && history.canUndo,
       last: () => { if (!saving.current && !externalBusy && !urlBusy) restore(history.undo()); },
       all: () => { if (!saving.current && !externalBusy && !urlBusy) restore(history.reset()); },
     } } : {}),
