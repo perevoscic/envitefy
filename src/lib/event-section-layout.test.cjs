@@ -212,6 +212,42 @@ test("pairing can add, restore, replace a neighbor and move sections into their 
   assert.equal(unpaired.widths.rsvp, 12);
 });
 
+test("a remaining paired section fills its row in editors and guests, including saved removals", () => {
+  const sections = [
+    { id: "details", label: "Meet Details", content: "Retained meet information" },
+    { id: "venue", label: "Venue Details", content: "Retained venue information" },
+  ];
+  const paired = normalizeEventSectionLayout({ version: 1, order: ["details", "venue"],
+    hidden: [], added: [], pairs: [["details", "venue"]], widths: { details: 8, venue: 4 } });
+  for (const removedId of ["details", "venue"]) {
+    const removed = normalizeEventSectionLayout(JSON.parse(JSON.stringify(
+      changeEventSectionLayout(paired, paired.order, { type: "remove", id: removedId }),
+    )));
+    const snapshot = JSON.stringify(removed);
+    for (const editing of [false, true]) for (const missing of [false, true]) {
+      const canvas = React.createElement(EventSectionCanvas, {
+        sections: missing ? sections.filter(section => section.id !== removedId) : sections,
+        layout: removed,
+      });
+      const html = renderToStaticMarkup(editing ? React.createElement(EventSectionBuilderProvider, {
+        layout: removed, onChange: () => {}, catalog: [], renderEditor: () => null,
+      }, canvas) : canvas);
+      assert.ok(html.includes('data-section-width="12"'));
+      assert.ok(!html.includes('data-section-width="8"'));
+      assert.ok(!html.includes('data-section-width="4"'));
+      assert.ok(!html.includes('Own row'));
+      assert.ok(html.includes(sections.find(section => section.id !== removedId).content));
+      assert.equal(JSON.stringify(removed), snapshot, "rendering never rewrites saved layout or information");
+    }
+    const restored = changeEventSectionLayout(removed, removed.order.filter(id => id !== removedId), {
+      type: "add", id: removedId, index: 1,
+    });
+    const html = renderToStaticMarkup(React.createElement(EventSectionCanvas, { sections, layout: restored }));
+    assert.ok(html.includes('data-section-width="8"'));
+    assert.ok(html.includes('data-section-width="4"'));
+  }
+});
+
 test("untrusted column settings reject invalid sizes and duplicate or malformed pairs", () => {
   const layout = normalizeEventSectionLayout({
     version: 1,
@@ -529,6 +565,30 @@ test("complete gymnastics guest pages render saved extra sections in order with 
     assert.ok(!html.includes("data-editable-section"), design.id);
     assert.ok(!html.includes("Add section"), design.id);
     assert.ok(!html.includes("Reorder"), design.id);
+  }
+});
+
+test("all gymnastics guest designs retain empty added tabs and paired tab names after save", () => {
+  const Renderer = require("../components/gym-meet-templates/GymMeetTemplateRenderer.tsx").default;
+  const saved = JSON.parse(JSON.stringify(buildTemplateDraftPayload({ data: {
+    title: "Autumn Club Meet", details: "Check in with your coach.",
+    sectionLayout: {
+      version: 1, order: ["meet-details", "documents", "traffic-parking"], hidden: [],
+      added: ["documents", "traffic-parking"], pairs: [["meet-details", "documents"]],
+    },
+    gymnasticsPageText: { "section:traffic-parking:label": "Getting there" },
+  } }, "gymnastics", "America/Chicago")));
+  for (const design of GYM_MEET_TEMPLATE_LIBRARY) {
+    const model = normalizeGymMeetEventData({ eventTitle: saved.title,
+      eventData: { ...saved.data, pageTemplateId: design.id }, rosterAthletes: [], navItems: [] });
+    const html = renderToStaticMarkup(React.createElement(Renderer, {
+      model, isReadOnly: true, suppressActionStrip: true, rsvpProps: { enabled: false },
+    }));
+    const labels = [...html.matchAll(/role="tab"[^>]*aria-label="([^"]+)"/g)].map(match => match[1]);
+    assert.deepEqual(labels, ["Meet Details", "Documents &amp; links", "Getting there"], design.id);
+    assert.ok(html.includes("<h2>Documents &amp; links</h2>"), design.id);
+    assert.ok(html.includes("<h2>Getting there</h2>"), design.id);
+    assert.ok(!html.includes("data-editable-section"), design.id);
   }
 });
 

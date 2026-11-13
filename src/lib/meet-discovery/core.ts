@@ -51,7 +51,7 @@ import {
 } from "./cache";
 import { GYM_DISCOVERY_PUBLIC_PAGE_V2 } from "./constants";
 import { computeGymBuilderStatuses } from "./status";
-import { collectEventWebsite, isEventCorePage, websiteContent, websiteHotelText, websiteImagesForNames, websiteSections, type WebsiteImport, type WebsitePage, type WebsitePlaceImage } from "../discovery/event-website";
+import { collectEventWebsite, hasConflictingEventTitle, isEventCorePage, isOtherEventWebsiteUrl, isWithinEventWebsite, withoutOtherEventSections, websiteContent, websiteHotelText, websiteImagesForNames, websiteSections, type WebsiteImport, type WebsitePage, type WebsitePlaceImage } from "../discovery/event-website";
 
 export { computeGymBuilderStatuses, GYM_DISCOVERY_PUBLIC_PAGE_V2 };
 
@@ -3975,15 +3975,16 @@ function buildEventFingerprint(
   const titleTokens = normalizeEventTokens(titleSource);
   const slugTokens = normalizeEventTokens(slug);
   const identityTokens = filterSpecificEventTokens(
-    normalizeEventTokens([safeString(pageTitle), slug].filter(Boolean).join(" ")),
+    normalizeEventTokens([safeString(pageTitle).split(/[·|]/)[0], slug].filter(Boolean).join(" ")),
   );
   const addressMatch =
     readableText.match(
       /\b\d{2,6}\s+[A-Za-z0-9.\-'\s]+,\s*[A-Za-z.\-'\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/,
     ) || null;
-  const locationTokens = normalizeEventTokens(
-    [addressMatch?.[0], metadataText, firstMeaningfulLines].filter(Boolean).join(" "),
-  );
+  const locationLines = readableLines.filter((line) => /\b(?:[A-Z]{2}\s+\d{5}|[A-Za-z.' -]+,\s*[A-Z]{2})\b/.test(line) && !/\b(?:closes|opens|deadline|registration|levels)\b/i.test(line));
+  const locationTokens = filterSpecificEventTokens(normalizeEventTokens(
+    [addressMatch?.[0], ...locationLines.slice(0, 2)].filter(Boolean).join(" "),
+  )).filter((token) => token.length > 2);
   const dateRange =
     classifyMeetDateCandidates(`${safeString(pageTitle)}\n${metadataText}\n${readableText}`)
       .primary || deriveDateRangeFromText(`${safeString(pageTitle)} ${readableText}`);
@@ -4007,6 +4008,9 @@ function scoreEventResourceMatch(
   candidateLabel: string,
   candidateUrl: string,
 ): EventResourceMatch {
+  if (isOtherEventWebsiteUrl(fingerprint.rootUrl, candidateUrl, true)) {
+    return { score: -10, passes: false, hardReject: true, reason: "rejected: different event directory or edition" };
+  }
   const text = [candidateLabel, candidateUrl, candidateText].filter(Boolean).join("\n");
   const candidateTokens = normalizeEventTokens(text);
   const candidateTokenSet = new Set(candidateTokens);
@@ -4101,7 +4105,7 @@ function shouldFollowDiscoveryChildPage(
   candidate: CrawlCandidate,
   fingerprint: EventFingerprint,
 ): boolean {
-  if (candidate.kind !== "html" || !candidate.sameHost) return false;
+  if (candidate.kind !== "html" || !candidate.sameHost || !isWithinEventWebsite(fingerprint.rootUrl, candidate.url)) return false;
   const candidateUrl = safeString(candidate.url);
   const candidateLabel = safeString(candidate.label);
   const haystack = `${candidateLabel} ${candidateUrl}`;
@@ -4325,6 +4329,7 @@ function upsertDiscoveredLink(map: Map<string, CrawlCandidate>, candidate: Crawl
 }
 
 function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): CrawlCandidate[] {
+  html = withoutOtherEventSections(html);
   const links: CrawlCandidate[] = [];
   const anchorRegex = /<a\b([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi;
   for (let match = anchorRegex.exec(html); match; match = anchorRegex.exec(html)) {
@@ -4332,6 +4337,7 @@ function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): C
     if (shouldIgnoreDiscoveryAnchor(html, match.index || 0, rawAttrs)) continue;
     const url = linkUrlFromHref(baseUrl, match[2] || "");
     if (!url) continue;
+    if (isOtherEventWebsiteUrl(baseUrl.toString(), url.toString(), true)) continue;
     if (url.href === baseUrl.href) continue;
     const kind = classifyDiscoveryLink(url, baseUrl);
     const sameHost = url.host === baseUrl.host;
@@ -5107,6 +5113,7 @@ function buildResourceLinkFromCandidate(
 
 async function fetchResourceCandidateText(
   resource: DiscoveryResourceLink,
+  fingerprint: EventFingerprint,
   hooks: Required<UrlDiscoveryTestHooks>,
   options: NormalizedDiscoveryExtractionOptions,
   crawlBudget: {
@@ -5125,11 +5132,13 @@ async function fetchResourceCandidateText(
       timeoutMs: remainingFetchBudgetMs,
       signal: options.signal,
     });
+    if (fetched.finalUrl && isOtherEventWebsiteUrl(fingerprint.rootUrl, fetched.finalUrl, true)) return null;
     throwIfExtractionAborted(options.signal);
     if (
       /text\/html|text\/plain|application\/json|application\/ld\+json/i.test(fetched.contentType)
     ) {
       const htmlChunk = buildFetchedHtmlTextChunk(resource.url, fetched);
+      if (hasConflictingEventTitle(fingerprint.identityTokens.join(" "), htmlChunk.pageTitle || "")) return null;
       return {
         contentType: fetched.contentType || "text/html",
         text: [safeString(htmlChunk.pageTitle), htmlChunk.readableText, htmlChunk.metadataText]
@@ -5183,6 +5192,7 @@ async function resolveHubResourceLinks(
   requestCache?: DiscoveryRequestCache,
 ): Promise<DiscoveryResourceLink[]> {
   throwIfExtractionAborted(options.signal);
+  if (isOtherEventWebsiteUrl(fingerprint.rootUrl, hubResource.url) || (hubResource.sourceUrl && isOtherEventWebsiteUrl(fingerprint.rootUrl, hubResource.sourceUrl))) return [];
   const hubResolveStartedAt = Date.now();
   const finalizeHubResolve = (resolved: DiscoveryResourceLink[]) => {
     logDiscoveryDebug("[meet-discovery] hub resolve finished", {
@@ -5202,7 +5212,7 @@ async function resolveHubResourceLinks(
     crawlBudget.onBudgetExhausted(`hub_resolve:${hubResource.url}`);
     return finalizeHubResolve([]);
   }
-  let hubFetched: { contentType: string; buffer: Buffer; text: string } | null = null;
+  let hubFetched: { contentType: string; buffer: Buffer; text: string; finalUrl?: string } | null = null;
   try {
     hubFetched = await hooks.fetchWithLimit(hubResource.url, {
       timeoutMs: remainingHubBudgetMs,
@@ -5212,14 +5222,16 @@ async function resolveHubResourceLinks(
     return finalizeHubResolve([]);
   }
   throwIfExtractionAborted(options.signal);
+  if (hubFetched?.finalUrl && isOtherEventWebsiteUrl(fingerprint.rootUrl, hubFetched.finalUrl)) return finalizeHubResolve([]);
   if (
     !hubFetched ||
     !/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(hubFetched.contentType)
   ) {
     return finalizeHubResolve([]);
   }
-  const hubUrl = new URL(hubResource.url);
+  const hubUrl = new URL(hubFetched.finalUrl || hubResource.url);
   const hubHtml = hubFetched.text || hubFetched.buffer.toString("utf8");
+  if (hasConflictingEventTitle(fingerprint.identityTokens.join(" "), getPageTitle(hubHtml) || "")) return finalizeHubResolve([]);
   const hubCandidates = collectDiscoveryCandidates(hubHtml, hubUrl, 1)
     .sort(compareDiscoveryCandidates)
     .slice(0, 16);
@@ -5271,6 +5283,7 @@ async function resolveHubResourceLinks(
     }
     const fetchedText = await fetchResourceCandidateText(
       baseResource,
+      fingerprint,
       hooks,
       options,
       crawlBudget,
@@ -5740,7 +5753,7 @@ export async function extractDiscoveryText(
   });
   const html = page.text || page.buffer.toString("utf8");
   const sourceBranding = brandingFromWebsite(html, url.toString(), resolvedOptions.signal, readPublicCreateUrl);
-  const readable = stripHtml(html);
+  const readable = stripHtml(websiteContent(html));
   const metadata = extractMetadataText(html);
   const pageTitle = getPageTitle(html);
   const rootCandidates = collectDiscoveryCandidates(html, url, 0);
@@ -5886,6 +5899,7 @@ export async function extractDiscoveryText(
       throwIfExtractionAborted(resolvedOptions.signal);
       for (const browserCandidate of browserDiscovery.candidates) {
         throwIfExtractionAborted(resolvedOptions.signal);
+        if (isOtherEventWebsiteUrl(url.toString(), browserCandidate.sourceUrl) || isOtherEventWebsiteUrl(url.toString(), browserCandidate.url, true)) continue;
         const normalizedCandidate = toCrawlCandidateFromBrowserDiscovery(browserCandidate, url);
         if (!normalizedCandidate) continue;
         upsertDiscoveredLink(discoveredLinkMap, normalizedCandidate);
@@ -5904,6 +5918,7 @@ export async function extractDiscoveryText(
       }
       for (const browserPage of browserDiscovery.pages) {
         throwIfExtractionAborted(resolvedOptions.signal);
+        if (isOtherEventWebsiteUrl(url.toString(), browserPage.url) || isOtherEventWebsiteUrl(url.toString(), browserPage.sourceUrl) || hasConflictingEventTitle(pageTitle || "", browserPage.title || "")) continue;
         if (!browserPage.text) continue;
         const pageKey = `${browserPage.url}|${browserPage.depth}`;
         if (!crawledPageKeys.has(pageKey)) {
@@ -5950,6 +5965,7 @@ export async function extractDiscoveryText(
 
   const fetchAssetCandidate = async (candidate: CrawlCandidate) => {
     throwIfExtractionAborted(resolvedOptions.signal);
+    if (isOtherEventWebsiteUrl(url.toString(), candidate.url, true) || isOtherEventWebsiteUrl(url.toString(), candidate.sourceUrl)) return;
     if (fetchedAssetUrls.has(candidate.url)) return;
     if (linkedMeta.length >= MAX_FETCHED_LINKED_ASSETS) return;
     const fetchBudgetMs = getRemainingFollowUpBudgetMs(`asset_fetch:${candidate.url}`);
@@ -5965,6 +5981,7 @@ export async function extractDiscoveryText(
         timeoutMs: fetchBudgetMs,
         signal: resolvedOptions.signal,
       });
+      if (fetched.finalUrl && isOtherEventWebsiteUrl(url.toString(), fetched.finalUrl, true)) return;
       throwIfExtractionAborted(resolvedOptions.signal);
       logDiscoveryDebug("[meet-discovery] asset fetch finished", {
         url: candidate.url,
@@ -5997,6 +6014,7 @@ export async function extractDiscoveryText(
 
   const appendCanonicalResourceToText = async (resource: DiscoveryResourceLink) => {
     throwIfExtractionAborted(resolvedOptions.signal);
+    if (isOtherEventWebsiteUrl(url.toString(), resource.url, true) || (resource.sourceUrl && isOtherEventWebsiteUrl(url.toString(), resource.sourceUrl))) return;
     const canonicalUrl = normalizeCanonicalUrl(resource.url);
     if (fetchedCanonicalUrls.has(canonicalUrl)) return;
     const sameHost = (() => {
@@ -6024,6 +6042,7 @@ export async function extractDiscoveryText(
         timeoutMs: fetchBudgetMs,
         signal: resolvedOptions.signal,
       });
+      if (fetched.finalUrl && isOtherEventWebsiteUrl(url.toString(), fetched.finalUrl, true)) return;
       throwIfExtractionAborted(resolvedOptions.signal);
       if (assetLike || /pdf|image\//i.test(fetched.contentType)) {
         logDiscoveryDebug("[meet-discovery] asset fetch finished", {
@@ -6043,6 +6062,7 @@ export async function extractDiscoveryText(
         /text\/html|text\/plain|application\/json|application\/ld\+json/i.test(fetched.contentType)
       ) {
         const htmlChunk = buildFetchedHtmlTextChunk(resource.url, fetched);
+        if (hasConflictingEventTitle(pageTitle || "", htmlChunk.pageTitle || "")) return;
         linkedMeta.push({ url: resource.url, contentType: fetched.contentType || "text/html" });
         linkedChunks.push(htmlChunk.text);
         return;
@@ -6149,10 +6169,12 @@ export async function extractDiscoveryText(
       }
 
       const childHtml = fetched.text || fetched.buffer.toString("utf8");
-      const childUrl = new URL(childPage.url);
+      const childUrl = new URL(fetched.finalUrl || childPage.url);
+      if (!isWithinEventWebsite(url.toString(), childUrl.toString())) continue;
       const childMetadata = extractMetadataText(childHtml);
-      const childReadable = stripHtml(childHtml);
+      const childReadable = stripHtml(websiteContent(childHtml));
       const childTitle = getPageTitle(childHtml);
+      if (hasConflictingEventTitle(pageTitle || "", childTitle || "")) continue;
       if (!crawledPageKeys.has(childPageKey)) {
         crawledPages.push({ url: childPage.url, title: childTitle, depth: 1 });
         crawledPageKeys.add(childPageKey);
@@ -7000,6 +7022,7 @@ function buildVisitorInformationPrompt(): string {
     "- Hotels: put accommodation names, published rates, room blocks, booking deadlines and reservation instructions in `logistics.hotel`, separate from venue/parking text. Preserve complete source reservation URLs, including query parameters and fragments, in the existing link fields.",
     "- Explore: keep source-listed local attractions and things to do separate from hotels and arrival logistics. Preserve their links in `links` and otherwise unmatched attraction details in `unmappedFacts` with category `attractions`; do not put them in `logistics.hotel` or parking fields.",
     "- Extract only source-supported information. Leave absent fields empty; never invent hotels, rates, booking deadlines, attractions or travel guidance to fill a group. The renderer shows only populated, visible groups.",
+    "- Every fact and followed link must belong to the target meet and edition. Related/nearby meets, Also in January recommendations, other events and past editions are not this event's evidence. Shared dates, year, state or website never establish ownership. Leave hotels empty without a verified source chain from this meet; never borrow another meet's room block.",
   ].join("\n");
 }
 

@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { heroImagePositionAfterDrag, heroImageVerticalOverflow } from "@/lib/hero-image-drag";
+import { useEventPageComposition } from "./EventPageCompositionContext";
+import { useEventPageReadOnly } from "./EventPageReadOnlyContext";
 
 type Drag = { pointerId: number; startY: number; startPosition: number; overflow: number };
 
@@ -20,8 +22,13 @@ export default function HeroImageDragOverlay({
   const drag = useRef<Drag | null>(null);
   const [canDrag, setCanDrag] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const readOnly = useEventPageReadOnly();
+  const composition = useEventPageComposition();
+  // Custom hero layouts own object-position, so this template callback cannot move them.
+  const repositionable = !readOnly && !composition?.value?.hero;
 
   useEffect(() => {
+    if (!repositionable) return;
     const image = imageRef.current;
     if (!image) return;
     const measure = () => {
@@ -45,9 +52,9 @@ export default function HeroImageDragOverlay({
       observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [imageRef, imageSrc]);
+  }, [imageRef, imageSrc, repositionable]);
 
-  if (!canDrag) return null;
+  if (!repositionable || !canDrag) return null;
   return (
     <div
       role="slider"

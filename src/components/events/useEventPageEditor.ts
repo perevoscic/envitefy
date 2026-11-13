@@ -351,7 +351,7 @@ export function useEventPageEditor({
     }
   };
   const currentPublisher = useRef<() => Promise<void>>(async () => {});
-  currentPublisher.current = () => perform(true, true);
+  currentPublisher.current = () => perform(true, !published);
   const registerPublisher = template?.registerPublisher;
   useEffect(() => editorReady ? registerPublisher?.(() => currentPublisher.current()) : undefined, [registerPublisher, editorReady]);
   const progress = useEventProgress({
@@ -408,7 +408,7 @@ export function useEventPageEditor({
     error,
     message,
     saveDraft: () => perform(false, false),
-    saveChanges: () => perform(true, true),
+    saveChanges: () => perform(true, !published),
     ...(template ? { publishWithAccount: (mode: "signup" | "login") => perform(true, true, mode) } : {}),
     cancel,
     allowNavigation: progress.allowNavigation,

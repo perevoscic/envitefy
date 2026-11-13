@@ -474,8 +474,111 @@ test.describe("Event Page editor saves and navigation", () => {
     }
     await frame.getByText("Changes saved.", { exact: true }).waitFor();
     assert.equal(records.get(id).data.fields.title, "Updated published event");
-    await page.waitForFunction(() => window.editorMessages.filter(message => message.type === "envitefy:discovery-edit-saved").length === 2);
+    assert.equal(await frame.getByRole("button", { name: "Save changes", exact: true }).isEnabled(), false);
+    assert.equal(await page.evaluate(() => window.editorMessages.filter(message => message.type === "envitefy:discovery-edit-saved").length), 1, "only first publication asks the parent to leave the editor");
   });
+
+  editorCase("published gymnastics saves retain the mounted editor and disable only fully saved content", async ({ page, state, writes, records, base, openControls }) => {
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      const id = `gym-save-in-place-${width}`;
+      records.set(id, { id, title: "Tampa Bay Turners Invitational", revision: "gym-save-v1", data: {
+        title: "Tampa Bay Turners Invitational", status: "published", category: "gymnastics", createdVia: "template",
+        date: "2027-01-15", time: "09:00", timezone: "America/New_York", venue: "Bradenton Area Convention Center",
+        numberOfGuests: 8, pageTemplateId: "airborne-atlas",
+      } });
+      await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics&edit=${id}&editor=menu`);
+      await openControls();
+      const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+      await controls.getByRole("button", { name: "Event basics", exact: true }).click();
+      const title = controls.getByRole("textbox", { name: "Event Title", exact: true });
+      await title.waitFor();
+      const save = page.getByRole("button", { name: "Save changes", exact: true });
+      assert.equal(await save.isEnabled(), false);
+      const href = page.url();
+      await title.evaluate(element => { window.savedTitleInput = element; });
+      await title.fill("Tampa Bay Turners updated");
+      await save.click();
+      await page.getByText("Changes saved.", { exact: true }).waitFor();
+      assert.equal(page.url(), href, "saving leaves the event and settings panel mounted");
+      assert.equal(await title.isVisible(), true);
+      assert.equal(await title.evaluate(element => element === window.savedTitleInput), true);
+      assert.equal(await save.isEnabled(), false);
+
+      await title.fill("Save this version");
+      let release;
+      state.saveGate = new Promise(resolve => { release = resolve; });
+      try {
+        await save.click();
+        await page.getByRole("button", { name: "Saving…", exact: true }).waitFor();
+        assert.equal(await title.evaluate(element => Boolean(element.closest("[inert]"))), true,
+          "the existing save lock protects mounted fields while the request is pending");
+      } finally {
+        release();
+        state.saveGate = undefined;
+      }
+      await page.getByText("Changes saved.", { exact: true }).waitFor();
+      assert.equal(records.get(id).data.title, "Save this version");
+      assert.equal(await save.isEnabled(), false);
+      await title.fill("Keep this later edit");
+      assert.equal(await title.inputValue(), "Keep this later edit");
+      assert.equal(await save.isEnabled(), true, "the next edit re-enables Save changes");
+      await save.click();
+      await page.getByText("Changes saved.", { exact: true }).waitFor();
+      assert.equal(await save.isEnabled(), false);
+      assert.equal(records.get(id).data.title, "Keep this later edit");
+      assert.equal(records.get(id).data.numberOfGuests, 8);
+      assert.equal(writes.filter(write => write.path === `/api/history/${id}`).length, 3);
+      assert.equal(page.url(), href);
+      await page.screenshot({ path: path.join(output, `save-in-place-${width}.png`) });
+    }
+  }, 60000);
+
+  editorCase("published template and custom saves stay in their current settings with a disabled clean action", async ({ page, records, base, openControls }) => {
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const kind of ["template", "custom"]) {
+        const entry = kind === "template"
+          ? "/birthdays/templates/candy-dreams/customize?mode=template"
+          : "/event/design/customize?mode=create";
+        await page.goto(`${base}${entry}`);
+        await openControls();
+        const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+        const openFields = async () => {
+          const menu = controls.getByRole("button", { name: kind === "template" ? /^Headline/ : /^Event details/ });
+          if (await menu.isVisible()) await menu.click();
+        };
+        await openFields();
+        const title = controls.getByRole("textbox", { name: kind === "template" ? "Child's Name" : "Event title", exact: true });
+        await title.fill(`Saved ${kind} ${width}`);
+        await page.getByRole("button", { name: "Save draft", exact: true }).click();
+        await page.getByText("Draft saved.", { exact: true }).waitFor();
+        const href = page.url();
+        const id = new URL(href).searchParams.get("edit");
+        assert.ok(id);
+        const row = records.get(id);
+        row.data.status = row.data.draftStatus = "published";
+        row.data.numberOfGuests = 8;
+        await page.goto(href);
+        await openControls();
+        await openFields();
+        await title.waitFor();
+        const save = page.getByRole("button", { name: "Save changes", exact: true });
+        assert.equal(await save.isEnabled(), false);
+        await title.evaluate(element => { window.savedTitleInput = element; });
+        for (const version of ["First update", "Second update"]) {
+          await title.fill(`${version} ${kind}`);
+          await save.click();
+          await page.getByText("Changes saved.", { exact: true }).waitFor();
+          assert.equal(page.url(), href);
+          assert.equal(await title.isVisible(), true);
+          assert.equal(await title.evaluate(element => element === window.savedTitleInput), true);
+          assert.equal(await save.isEnabled(), false);
+          assert.equal(records.get(id).data.numberOfGuests, 8);
+        }
+      }
+    }
+  }, 60000);
 
   editorCase("gymnastics clean Cancel closes settings and dirty Cancel prompts on desktop and phone", async ({ page, writes, base, openControls, preview }) => {
     const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
@@ -665,7 +768,8 @@ test.describe("Event Page editor saves and navigation", () => {
         const toggle = controls.getByRole("switch");
         await toggle.click();
         await page.getByRole("button", { name: "Save changes", exact: true }).click();
-        await page.waitForFunction(() => !document.querySelector('[role="group"][aria-label="Save event"] button:not([hidden])'));
+        await page.getByText("Changes saved.", { exact: true }).waitFor();
+        assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isEnabled(), false);
         assert.equal(records.get(id).data.rsvpEnabled, true, `${mode} saves enabled RSVP at ${width}`);
         assert.equal(typeof records.get(id).data.rsvp, "string", "flat saves replace stale structured settings");
         await page.goto(url);
@@ -675,7 +779,8 @@ test.describe("Event Page editor saves and navigation", () => {
         assert.equal(await restoredToggle.getAttribute("aria-checked"), "true");
         await restoredToggle.click();
         await page.getByRole("button", { name: "Save changes", exact: true }).click();
-        await page.waitForFunction(() => !document.querySelector('[role="group"][aria-label="Save event"] button:not([hidden])'));
+        await page.getByText("Changes saved.", { exact: true }).waitFor();
+        assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isEnabled(), false);
         assert.equal(records.get(id).data.rsvpEnabled, false, `${mode} saves disabled RSVP at ${width}`);
       }
     }
@@ -979,7 +1084,7 @@ test.describe("Event Page editor saves and navigation", () => {
     assert.equal(await preview.isVisible(), true, "desktop Event Pages retain the page beside the expanded panel");
     assert.equal(await page.getByRole("complementary", { name: "Event editing controls", exact: true }).isVisible(), true, "saved Event Pages open with expanded editing controls");
     await viewActions.getByRole("button", { name: "Preview", exact: true }).waitFor();
-    assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isEnabled(), false);
     assert.equal(await page.getByRole("button", { name: "Save draft", exact: true }).count(), 0);
     await switchView("Preview");
     for (const width of [1440, 390]) {
@@ -1021,10 +1126,11 @@ test.describe("Event Page editor saves and navigation", () => {
     await title.fill("School field trip");
     await page
       .getByRole("button", { name: "Save changes", exact: true })
-      .waitFor({ state: "hidden" });
+      .evaluate(button => { if (!button.disabled) throw new Error("Reverted edits must disable Save changes"); });
     await title.fill("Updated field trip");
     await click("Save changes");
-    await page.locator("[data-destination]").waitFor();
+    await page.getByText("Changes saved.", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isEnabled(), false);
     assert.equal(writes.length, 1);
     assert.equal(writes[0].method, "PATCH");
     assert.equal(writes[0].path, "/api/history/saved-event");
@@ -1181,7 +1287,7 @@ test.describe("Event Page editor saves and navigation", () => {
           await openControls();
           await page.getByRole("button", { name: /Event details/ }).click();
           assert.equal(await page.getByRole("button", { name: "Save draft", exact: true }).count(), 0);
-          assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).count(), 0);
+          assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isEnabled(), false);
           await page.getByLabel("Date", { exact: true }).fill("2026-11-02");
           await click("Back to details");
           await controls.getByRole("button", { name: /^Custom URL/ }).click();
@@ -1193,7 +1299,8 @@ test.describe("Event Page editor saves and navigation", () => {
           assert.equal(await page.getByLabel("Date", { exact: true }).inputValue(), "2026-11-02", "saving the URL preserves unsaved date edits");
           await title.fill("Published upload update");
           await click("Save changes");
-          await page.locator("[data-destination]").waitFor();
+          await page.getByText("Changes saved.", { exact: true }).waitFor();
+          assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isEnabled(), false);
           assert.equal(writes.at(-1).path, `/api/history/${savedId}`);
           assert.equal(writes.at(-1).body.data.status, "published");
           assert.equal(writes.at(-1).body.data.customEventPage.details.title, "Published upload update");
@@ -1394,10 +1501,11 @@ test.describe("Event Page editor saves and navigation", () => {
     if (await birthdayControls.getByRole("button", { name: /^Headline/ }).isVisible()) await birthdayControls.getByRole("button", { name: /^Headline/ }).click();
     await name.waitFor();
     assert.equal(await name.inputValue(), "Olivia");
-    assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isEnabled(), false);
     await name.fill("Updated Olivia");
     await click("Save changes");
-    await page.locator("[data-destination]").waitFor();
+    await page.getByText("Changes saved.", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isEnabled(), false);
     assert.equal(writes.at(-1).path, `/api/history/${templateId}`);
     assert.equal(writes.at(-1).body.data.status, "published");
     assert.equal(writes.at(-1).body.data.numberOfGuests, 7);
@@ -1414,7 +1522,7 @@ test.describe("Event Page editor saves and navigation", () => {
     await name.fill("Reverted edit");
     await page.getByRole("button", { name: "Save changes", exact: true }).waitFor();
     await name.fill("Updated Olivia");
-    await page.getByRole("button", { name: "Save changes", exact: true }).waitFor({state:"hidden"});
+    assert.equal(await page.getByRole("button", { name: "Save changes", exact: true }).isEnabled(), false);
     assert.equal(errors.length, 0, errors.join("\n"));
     await page.screenshot({ path: path.join(output, "birthday-editor-desktop.png") });
   });

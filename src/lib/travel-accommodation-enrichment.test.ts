@@ -13,7 +13,7 @@ import {
 } from "./travel-accommodation-evidence";
 import { readHotelPage } from "./travel-accommodation-providers/playwright";
 import { extractPdfAnnotationLinks, extractPdfTextWithPdfJs } from "./pdf-raster";
-import { mergePdfAndWebHotels } from "./travel-accommodation-discovery";
+import { buildTravelAccommodationResult, mergePdfAndWebHotels } from "./travel-accommodation-discovery";
 import { validateModelHotels } from "./travel-accommodation-providers/astra";
 import { pdfLinkContext } from "./pdf-link-context";
 import { buildGymMeetDiscoveryContent } from "../components/gym-meet-templates/buildGymMeetDiscoveryContent";
@@ -164,6 +164,66 @@ function mockScrape(t: TestContext, handler: typeof fetch) {
 }
 const json = (content: string) =>
   new Response(JSON.stringify({ success: true, data: { markdown: content } }), { status: 200 });
+
+test("stale evidence and hotel links originating in another meet cannot enter accommodation enrichment", async (t) => {
+  const root = "https://www.vaultgymnastics.com/meets/tampa-bay-turners-invitational/2027";
+  const other = "https://www.vaultgymnastics.com/meets/presidential-classic/2027";
+  let requests = 0;
+  mockScrape(t, async () => { requests++; throw new Error("Foreign hotels must be rejected before fetching"); });
+  const result = await enrichTravelAccommodation({
+    sourceType: "url", sourceUrl: root, eventTitle: "Tampa Bay Turners Invitational 2027", eventYear: "2027",
+    extractedText: `Source URL: ${root}\nTampa Bay Turners Invitational 2027\n\n---\n\nSource URL: ${other}\n# Presidential Classic 2027\n${fright}`,
+    extractionMeta: {
+      discoveredLinks: [{ label: "Reserve a room", url: "https://usacompetitions.com/2027-presidential-hotel-info/", sourceUrl: other, contextText: "Host Hotels" }],
+      websiteHotelSources: [{ url: `${other}/hotels`, text: fright }],
+    }, budgetMs: 1000,
+  });
+  assert.equal(requests, 0);
+  assert.deepEqual(result.hotels, []);
+  assert.equal(result.fallbackLink, null);
+  assert.equal(result.candidates.length, 0);
+});
+
+test("an external hotel source naming a different meet is rejected even in the same year", async (t) => {
+  const root = "https://calendar.example/meets/tampa-bay-turners-invitational/2027";
+  const hotels = "https://organizer.example/hotel-info";
+  const requests: string[] = [];
+  mockScrape(t, async (_url, init) => { requests.push(JSON.parse(String(init?.body)).url); return json(`# 2027 Presidential Classic\n${fright}`); });
+  const result = await enrichTravelAccommodation({
+    sourceType: "url", sourceUrl: root, eventTitle: "Tampa Bay Turners Invitational 2027", eventYear: "2027",
+    extractedText: "Hotel information", extractionMeta: { resourceLinks: [{ url: hotels, label: "Host Hotels", sourceUrl: root }] }, budgetMs: 1000,
+  });
+  assert.deepEqual(requests, [hotels]);
+  assert.deepEqual(result.hotels, []);
+  assert.equal(result.fallbackLink, null);
+  assert.ok(result.attempts.some((attempt) => attempt.error === "Hotel source belongs to a different event"));
+});
+
+test("same-event external hotel pages retain their verified source chain and booking parameters", async (t) => {
+  const root = "https://calendar.example/meets/riverside-invitational/2027";
+  const hotels = "https://housing.example/riverside-2027";
+  mockScrape(t, async () => json(`# Riverside Invitational 2027\n${fright}`));
+  const result = await enrichTravelAccommodation({
+    sourceType: "url", sourceUrl: root, eventTitle: "Riverside Invitational 2027", eventYear: "2027",
+    extractedText: "Hotel information", extractionMeta: { resourceLinks: [{ url: hotels, label: "Host Hotels", sourceUrl: root }] }, budgetMs: 1000,
+  });
+  assert.equal(result.hotels.length, 1);
+  assert.equal(result.hotels[0].bookingUrl, bookingUrl);
+  assert.equal(result.sources?.find((source) => source.url === hotels)?.parentUrl, root);
+});
+
+test("an incomplete refresh cannot restore previous hotels whose source chain belongs to another meet", () => {
+  const root = "https://calendar.example/meets/tampa-bay-turners-invitational/2027";
+  const other = "https://calendar.example/meets/presidential-classic/2027";
+  const hotelSource = "https://housing.example/presidential-hotels";
+  const hotel = parseHotelEvidence(fright, { sourceUrl: hotelSource })[0];
+  const source = (url: string, parentUrl: string | null) => ({ id: url, url, parentUrl, type: "web" as const, pageNumber: null, checkedAt: "2026-11-12" });
+  const result = { ...buildTravelAccommodationResult({ candidates: [], pdfHotels: [], webHotels: [], attempts: [{ provider: "none", ok: false, url: hotelSource, error: "Hotel source belongs to a different event" }] }), sources: [source(root, null)] };
+  const state = buildTravelAccommodationState(result, { hotels: [hotel], fallbackLink: hotelSource, sources: [source(root, null), source(hotelSource, other)] });
+  assert.deepEqual(state.hotels, []);
+  assert.equal(state.fallbackLink, null);
+  assert.equal(state.status, "unavailable");
+});
 
 test("PDF -> official hub -> hotel list follows links once and stores the source chain", async (t) => {
   const hub = "https://organizer.example/2026-event/";

@@ -335,7 +335,7 @@
   padding: 0;
   border: 0;
 }
-.design[data-generated-event] .chapters:not([data-event-body-layout]) > .chapter {
+.design[data-generated-event] .chapters:not([data-event-body-layout]) .chapter {
   grid-column: 1 / -1;
   width: auto;
   margin: 0;

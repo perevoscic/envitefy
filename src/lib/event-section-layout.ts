@@ -8,6 +8,8 @@ export type EventSectionLayout = {
   added: string[];
   widths?: Record<string, EventSectionWidth>;
   pairs?: Array<[string, string]>;
+  /** Legacy navigation metadata, read only to migrate saved visibility. */
+  informationTabs?: Array<{ id: string; label: string; sectionIds: string[] }>;
 };
 
 function sectionIds(value: unknown): string[] {
@@ -39,6 +41,16 @@ export function normalizeEventSectionLayout(value: unknown): EventSectionLayout 
     }
   }
   const pairs: Array<[string, string]> = [];
+  const informationTabs: NonNullable<EventSectionLayout["informationTabs"]> = [];
+  if (Array.isArray(layout.informationTabs)) {
+    for (const value of layout.informationTabs.slice(0, 20)) {
+      if (!value || typeof value !== "object") continue;
+      const tab = value as Record<string, unknown>;
+      if (typeof tab.id !== "string" || !/^tab:[a-zA-Z0-9_-]{1,100}$/.test(tab.id) ||
+          informationTabs.some((item) => item.id === tab.id) || typeof tab.label !== "string" || !tab.label.trim()) continue;
+      informationTabs.push({ id: tab.id, label: tab.label.trim().slice(0, 80), sectionIds: sectionIds(tab.sectionIds) });
+    }
+  }
   const paired = new Set<string>();
   if (Array.isArray(layout.pairs)) {
     for (const candidate of layout.pairs.slice(0, 50)) {
@@ -59,13 +71,31 @@ export function normalizeEventSectionLayout(value: unknown): EventSectionLayout 
       paired.add(right);
     }
   }
+  // Older pages hid broad navigation groups outside Page sections. Fold those
+  // choices into section visibility so the settings list can restore them.
+  const hiddenTabs = sectionIds(layout.hiddenInformationTabs);
+  const knownIds = sectionIds([
+    ...GYMNASTICS_SECTION_CATALOG.map((section) => section.id),
+    ...sectionIds(layout.order),
+    ...sectionIds(layout.added),
+    ...informationTabs.flatMap((tab) => tab.sectionIds),
+  ]);
+  const legacyHidden = knownIds.filter((id) => {
+    const group = informationTabs.find((tab) => tab.sectionIds.includes(id))?.id ??
+      (/^schedule(?:-|$)/.test(id) ? "schedule" :
+        /^(participating-clubs|roster|practice|coaches|support)$/.test(id) ? "teams" :
+          /^(venue(?:-details)?|traffic-parking|parking|traffic|travel)$/.test(id) ? "venue-parking" :
+            id === "hotels" ? "hotels" : id === "attractions" ? "explore" : "overview");
+    return hiddenTabs.includes(group);
+  });
   return {
     version: 1,
     order: sectionIds(layout.order),
-    hidden: sectionIds(layout.hidden),
+    hidden: sectionIds([...sectionIds(layout.hidden), ...legacyHidden]),
     added: sectionIds(layout.added),
     ...(Object.keys(widths).length ? { widths } : {}),
     ...(pairs.length ? { pairs } : {}),
+    ...(informationTabs.length ? { informationTabs } : {}),
   };
 }
 
@@ -172,13 +202,13 @@ export function changeEventSectionLayout(
 }
 
 export const GYMNASTICS_SECTION_CATALOG = [
-  { id: "meet-details", label: "Meet details", editorId: "meet" },
+  { id: "meet-details", label: "Meet Details", editorId: "meet" },
   { id: "schedule", label: "Schedule", editorId: "schedule" },
   { id: "schedule-availability", label: "Official schedule", editorId: "meet" },
   { id: "participating-clubs", label: "Participating clubs", editorId: "meet" },
   { id: "attractions", label: "Things to do", editorId: "meet" },
   { id: "admission", label: "Admission", editorId: "admission" },
-  { id: "venue-details", label: "Venue", editorId: "venue" },
+  { id: "venue-details", label: "Venue Details", editorId: "venue" },
   { id: "traffic-parking", label: "Travel & parking", editorId: "travel" },
   { id: "hotels", label: "Hotels", editorId: "logistics" },
   { id: "coaches", label: "Coaches", editorId: "coaches" },

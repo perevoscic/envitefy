@@ -33,7 +33,7 @@ export async function extractHotelsWithFirecrawlScrape(
   const content = payload.data.markdown;
   const sourceUrl = hotelUrl(payload.data.metadata?.sourceURL) || url;
   const links = markdownHotelLinks(content, sourceUrl);
-  const context = { sourceUrl, sourceType: "web" as const, links };
+  const context = { sourceUrl, sourceType: "web" as const, links, eventTitle: options.eventTitle, eventSourceUrl: options.eventSourceUrl };
   let hotels = parseHotelEvidence(content, context);
   if (!hotels.length) hotels = await extractHotelEvidenceWithAstra(content, context, options);
   return {

@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import ts from "typescript";
+import loadTs from "../../../scripts/lib/event-messages-test-loader.cjs";
+
+const { isOtherEventWebsiteUrl } = loadTs("src/lib/discovery/event-website.ts");
 
 const source = fs.readFileSync(new URL("./core.ts", import.meta.url), "utf8");
 const parsed = ts.createSourceFile("core.ts", source, ts.ScriptTarget.Latest, true);
@@ -140,6 +143,7 @@ test("browser resource candidates retain only the defined discovery kinds", () =
 
 test("same-weekend links need the pasted event identity before they can be followed", () => {
   const score = loadFunction("scoreEventResourceMatch", {
+    isOtherEventWebsiteUrl,
     normalizeEventTokens: (value) =>
       String(value)
         .toLowerCase()
@@ -157,6 +161,7 @@ test("same-weekend links need the pasted event identity before they can be follo
     deriveDateRangeFromText: () => null,
   });
   const fingerprint = {
+    rootUrl: "https://www.vaultgymnastics.com/meets/tampa-bay-turners-invitational/2027",
     titleTokens: ["tampa", "bay", "turners", "invitational", "2027"],
     slugTokens: ["tampa", "bay", "turners", "invitational", "2027"],
     identityTokens: ["tampa", "bay", "turners"],
@@ -180,6 +185,6 @@ test("same-weekend links need the pasted event identity before they can be follo
   );
 
   assert.equal(unrelated.passes, false);
-  assert.match(unrelated.reason, /date_only_match/);
+  assert.match(unrelated.reason, /different event directory/);
   assert.equal(related.passes, true);
 });

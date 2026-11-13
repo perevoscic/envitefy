@@ -166,8 +166,8 @@ test("event pages open directly with owner actions and responsive device control
     assert.match(html, /href="\/event\/meet\?edit=meet&amp;editor=menu&amp;returnTo=%2Fevent%2Fmeet%3Ftab%3Devent&amp;eventColor=[^"]+"/);
     assert.match(html, /data-floating-event-toolbar="true"/);
     assert.match(html, /class="@container /);
-    assert.match(html, /@min-\[1600px\]:hidden/);
-    assert.match(html, /@min-\[1600px\]:flex-row/);
+    assert.match(html, /lg:hidden/);
+    assert.match(html, /lg:flex-row/);
     assert.doesNotMatch(html, /nav-chrome-mobile-drawer-trigger|absolute bottom-/);
     const editLink = html.match(/<a[^>]*aria-label="Edit event"[^>]*>/)?.[0];
     assert.ok(editLink);

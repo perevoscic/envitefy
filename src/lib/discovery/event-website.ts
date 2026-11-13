@@ -77,8 +77,29 @@ function decode(text: string): string {
   });
 }
 
+/** Recommendations and archived editions are separate events, not import evidence. */
+export function withoutOtherEventSections(html: string): string {
+  const stack: Array<{ tag: string; start: number; contentStart: number }> = [];
+  const ranges: Array<{ start: number; end: number }> = [];
+  for (const match of html.matchAll(/<(\/?)(section|aside|article)\b[^>]*>/gi)) {
+    if (!match[1]) { stack.push({ tag: match[2].toLowerCase(), start: match.index!, contentStart: match.index! + match[0].length }); continue; }
+    const index = stack.findLastIndex((entry) => entry.tag === match[2].toLowerCase());
+    if (index < 0) continue;
+    const [entry] = stack.splice(index);
+    const content = html.slice(entry.contentStart, match.index);
+    const heading = websiteText(content.match(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/i)?.[1] || "");
+    if (/^(?:also in\b|(?:other|related|nearby|recommended|similar|more)\s+(?:(?:sanctioned|upcoming|gymnastics)\s+)*(?:meets|events|invitationals)\b|past editions\b|previous editions\b)/i.test(heading)) ranges.push({ start: entry.start, end: match.index! + match[0].length });
+  }
+  let end = 0, clean = "";
+  for (const range of ranges.sort((a, b) => a.start - b.start)) {
+    if (range.start >= end) clean += html.slice(end, range.start);
+    end = Math.max(end, range.end);
+  }
+  return clean + html.slice(end);
+}
+
 export function websiteContent(html: string): string {
-  const clean = html
+  const clean = withoutOtherEventSections(html)
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<(script|style|noscript|nav|footer)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "");
   return clean.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] || clean;
@@ -113,6 +134,66 @@ function sameSite(left: string, right: string): boolean {
   const a = new URL(left);
   const b = new URL(right);
   return a.hostname.replace(/^www\./, "") === b.hostname.replace(/^www\./, "") && a.port === b.port;
+}
+
+/** A shared host's event directory and explicit edition are hard boundaries. */
+export function eventWebsiteScope(seedUrl: string, seedHtml = ""): string {
+  const seed = new URL(seedUrl);
+  const segments = seed.pathname.split("/").filter(Boolean);
+  const collection = segments.findIndex((segment) => /^(?:meets|events|competitions|tournaments|invitationals|championships)$/i.test(segment));
+  if (collection >= 0 && segments[collection + 1]) {
+    let end = collection + 2;
+    if (/^20\d{2}$/.test(segments[end] || "") || /^20\d{2}$/.test(segments[collection + 1])) end++;
+    return `/${segments.slice(0, end).join("/")}/`;
+  }
+  const directory = `${seed.pathname.replace(/\/$/, "")}/`;
+  const hasChildren = eventWebsiteLinks(seedHtml, seedUrl).some((link) => new URL(link.url).pathname.startsWith(directory));
+  return seed.pathname.endsWith("/") || hasChildren ? directory : new URL(".", seed).pathname;
+}
+
+export function isWithinEventWebsite(seedUrl: string, targetUrl: string, seedHtml = ""): boolean {
+  try {
+    if (!sameSite(seedUrl, targetUrl)) return false;
+    const scope = eventWebsiteScope(seedUrl, seedHtml);
+    const path = new URL(targetUrl).pathname;
+    return path === scope.replace(/\/$/, "") || path.startsWith(scope);
+  } catch { return false; }
+}
+
+export function isOtherEventWebsiteUrl(seedUrl: string, targetUrl: string, allowLinkedAsset = false): boolean {
+  try {
+    const path = new URL(targetUrl).pathname;
+    // A packet/image linked by the event can live in shared storage. Another
+    // event's directory is still foreign, even when its resource is a PDF.
+    if (allowLinkedAsset && /\.(?:pdf|png|jpe?g|webp)$/i.test(path) && !/\/(?:meets|events|competitions|tournaments|invitationals|championships)\//i.test(path)) return false;
+    return sameSite(seedUrl, targetUrl) && !isWithinEventWebsite(seedUrl, targetUrl);
+  }
+  catch { return true; }
+}
+
+/** Check explicit event headings, rather than accepting facts from a different meet. */
+export function hasConflictingEventTitle(eventTitle: string, pageTitle: string): boolean {
+  const generic = /^(?:20\d{2}|\d+|the|and|of|at|in|gymnastics|meet|event|invitational|classic|championships?|tournament|cup|information|info|overview|hotels?|host|official|schedule|results?|venue|registration|travel)$/i;
+  const tokens = (value: string) => value.toLowerCase().split(/[·|]/)[0].split(/[^\p{L}\p{N}]+/u).filter((token) => token.length > 1 && !generic.test(token));
+  if (!/\b(?:invitational|classic|championships?|tournament|cup|meet)\b/i.test(pageTitle.split(/[·|]/)[0])) return false;
+  const expected = tokens(eventTitle), actual = tokens(pageTitle);
+  return expected.length > 0 && actual.length > 0 && !expected.some((token) => actual.includes(token));
+}
+
+export function hasConflictingEventContent(eventTitle: string, content: string): boolean {
+  const headings = [
+    ...[...content.matchAll(/<(?:title|h[12])\b[^>]*>([\s\S]*?)<\/(?:title|h[12])>/gi)].map((match) => websiteText(match[1])),
+    ...[...content.matchAll(/^#{1,3}\s+([^\n]+)/gm)].map((match) => match[1]),
+  ];
+  return headings.some((heading) => hasConflictingEventTitle(eventTitle, heading));
+}
+
+/** Older extraction snapshots can contain several sources; reject foreign chunks on reuse. */
+export function eventWebsiteEvidence(text: string, seedUrl: string, eventTitle = ""): string {
+  return text.split(/\n\n---\n\n/).filter((chunk) => {
+    const source = chunk.match(/^Source URL:\s*(https?:\/\/\S+)/m)?.[1];
+    return (!source || !isOtherEventWebsiteUrl(seedUrl, source)) && !hasConflictingEventContent(eventTitle, chunk);
+  }).join("\n\n---\n\n");
 }
 
 /** Only embed public web photos. No data, script, credentialed or local-network sources. */
@@ -204,7 +285,7 @@ function anchors(html: string, base: string): WebsiteLink[] {
 export function eventWebsiteLinks(html: string, base: string): WebsiteLink[] {
   return [
     ...new Map(
-      anchors(html, base)
+      anchors(withoutOtherEventSections(html), base)
         .filter(
           (link) =>
             sameSite(link.url, base) &&
@@ -480,14 +561,7 @@ export async function collectEventWebsite(
   if (!seed) throw new Error("Invalid event source URL");
   const deadline = Date.now() + Math.max(0, options.budgetMs ?? 20_000);
   const maxPages = Math.max(1, Math.min(12, options.maxPages ?? 10));
-  const path = new URL(seed).pathname;
-  const directory = `${path.replace(/\/$/, "")}/`;
-  // A landing page may omit its trailing slash. Child hrefs establish that directory;
-  // otherwise treat the pasted URL as a document and discover its siblings.
-  const hasChildren = eventWebsiteLinks(seedHtml, seed).some((link) =>
-    new URL(link.url).pathname.startsWith(directory),
-  );
-  const scope = path.endsWith("/") || hasChildren ? directory : new URL(".", seed).pathname;
+  const scope = eventWebsiteScope(seed, seedHtml);
   const canonical = (value: string) => {
     const url = new URL(value);
     url.hostname = new URL(seed).hostname;
@@ -502,7 +576,7 @@ export async function collectEventWebsite(
   const failures: Array<{ url: string; sections: WebsiteSection[]; reason: string }> = [];
   const discover = (html: string, base: string, depth: number) => {
     for (const link of eventWebsiteLinks(html, base)) {
-      if (!new URL(link.url).pathname.startsWith(scope)) continue;
+      if (!isWithinEventWebsite(seed, link.url, seedHtml)) continue;
       const url = canonical(link.url);
       if (!visited.has(url) && (!queue.has(url) || depth < queue.get(url)!.depth))
         queue.set(url, {
@@ -514,7 +588,7 @@ export async function collectEventWebsite(
   };
   discover(seedHtml, seed, 1);
   const home = canonical(new URL(scope, seed).toString());
-  if (!visited.has(home))
+  if (!visited.has(home) && home.replace(/\/$/, "") !== seed.replace(/\/$/, ""))
     queue.set(home, {
       link: { url: home, label: "Event overview" },
       sections: ["overview"],
@@ -553,7 +627,7 @@ export async function collectEventWebsite(
           if (
             !finalUrl ||
             !sameSite(finalUrl, seed) ||
-            !new URL(finalUrl).pathname.startsWith(scope)
+            !isWithinEventWebsite(seed, finalUrl, seedHtml)
           )
             throw new Error("The source redirected outside this event website.");
           if (
@@ -561,8 +635,10 @@ export async function collectEventWebsite(
             websiteText(websiteContent(remote.text)).length < 20
           )
             throw new Error("The source returned no readable event page.");
+          const page = makePage(canonical(finalUrl), remote.text, item.sections);
+          if (hasConflictingEventTitle(pages[0].title, page.title)) throw new Error("The source belongs to a different event.");
           return {
-            page: makePage(canonical(finalUrl), remote.text, item.sections),
+            page,
             depth: item.depth,
           };
         } catch (error) {

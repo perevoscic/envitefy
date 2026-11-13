@@ -79,6 +79,7 @@ export async function runDiscoveryEnrichStage(
     sourceUrl: discovery.source.url,
     sourceId: discovery.id,
     eventYear: safeString(enrichedParseResult.startAt).slice(0, 4) || null,
+    eventTitle: baseParseResult.title,
     signal: options?.signal,
     budgetMs: Math.min(25000, enrichBudgetMs),
     extractedText,

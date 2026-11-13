@@ -31,7 +31,7 @@ const { heroImageVerticalOverflow, heroImagePositionAfterDrag } = load(
   path.resolve("src/lib/hero-image-drag.ts"),
 );
 
-function harness({ width = 600, height = 400, naturalWidth = 600, naturalHeight = 1000 } = {}) {
+function harness({ width = 600, height = 400, naturalWidth = 600, naturalHeight = 1000, readOnly = false, hero } = {}) {
   const values = [];
   const refs = [];
   let stateIndex = 0,
@@ -69,6 +69,8 @@ function harness({ width = 600, height = 400, naturalWidth = 600, naturalHeight 
   };
   const Overlay = load(path.resolve(__dirname, "HeroImageDragOverlay.tsx"), {
     react: hooks,
+    "./EventPageReadOnlyContext": { useEventPageReadOnly: () => readOnly },
+    "./EventPageCompositionContext": { useEventPageComposition: () => ({ value: { hero } }) },
   }).default;
   const target = {
     focus() {},
@@ -98,6 +100,8 @@ function harness({ width = 600, height = 400, naturalWidth = 600, naturalHeight 
   return {
     render,
     changes,
+    setReadOnly: (value) => { readOnly = value; },
+    setHero: (value) => { hero = value; },
     captured: () => captured,
     pointer: (clientY, extra = {}) => ({
       isPrimary: true,
@@ -164,5 +168,20 @@ test("the image supports keyboard repositioning without a separate adjustment wi
 
 test("uncropped and unloaded images do not intercept scrolling with a drag surface", () => {
   assert.equal(harness({ naturalWidth: 600, naturalHeight: 400 }).render(), null);
+  assert.equal(harness({ naturalWidth: 1200, naturalHeight: 400 }).render(), null);
   assert.equal(harness({ naturalWidth: 0, naturalHeight: 0 }).render(), null);
+});
+
+test("the drag hint and control stay hidden when the image position cannot be edited", () => {
+  assert.equal(harness({ readOnly: true }).render(), null);
+  for (const imageFit of ["cover", "contain"]) {
+    assert.equal(harness({ hero: { imageFit, imagePositionY: 50 } }).render(), null);
+  }
+  const h = harness();
+  assert.ok(h.render(), "cropped template artwork remains repositionable while editing");
+  h.setReadOnly(true);
+  assert.equal(h.render(), null, "entering preview removes a previously measured drag surface");
+  h.setReadOnly(false);
+  h.setHero({ imageFit: "cover", imagePositionY: 50 });
+  assert.equal(h.render(), null, "choosing a layout removes the now ineffective drag surface");
 });

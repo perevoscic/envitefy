@@ -84,6 +84,7 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
     sourceUrl: params.sourceInput.type === "url" ? params.sourceInput.url : null,
     sourceId: params.eventId,
     eventYear: safeString(enrichedParseResult.startAt).slice(0, 4) || null,
+    eventTitle: baseParseResult.title,
     budgetMs: Math.min(25000, enrichBudgetMs),
     extractedText: extraction.extractedText || baseExtractedText,
     extractionMeta: extraction.extractionMeta,

@@ -36,6 +36,7 @@ const files = [
   "src/lib/share-image.test.ts",
   "src/lib/event-page-composition.test.cjs",
   "src/lib/event-section-layout.test.cjs",
+  "src/components/events/EventSectionPalette.test.cjs",
   "src/lib/event-information-tabs.test.cjs",
   "src/lib/imported-event-theme.test.cjs",
   "src/lib/imported-event-artwork.test.cjs",

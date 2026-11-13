@@ -207,7 +207,9 @@ function SavedGymnasticsPreview() {
   useEffect(() => {
     void fetch(`/api/history/${encodeURIComponent(id)}`).then(response => response.json()).then(setRow);
   }, [id]);
-  return row ? <SimpleTemplateView eventId={id} eventData={row.data} eventTitle={row.title} isOwner={false} isReadOnly={true} viewerKind="readonly" shareUrl="" sessionEmail={null} disableProtectedSectionLocks={true} hideOwnerActions={true} /> : null;
+  return row ? <EventPageCompositionProvider value={row.data.eventPageComposition}>
+    <SimpleTemplateView eventId={id} eventData={row.data} eventTitle={row.title} isOwner={false} isReadOnly={true} viewerKind="readonly" shareUrl="" sessionEmail={null} disableProtectedSectionLocks={true} hideOwnerActions={true} />
+  </EventPageCompositionProvider> : null;
 }
 
 function SavedSchoolMemo() {

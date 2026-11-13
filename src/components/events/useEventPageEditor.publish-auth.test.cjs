@@ -4,7 +4,7 @@ const React = require("react");
 const { renderToStaticMarkup } = require("react-dom/server");
 const loadTs = require("../../../scripts/lib/event-messages-test-loader.cjs");
 
-function editorHarness() {
+function editorHarness({ published = false } = {}) {
   const refs = [];
   const states = [];
   const effects = [];
@@ -16,6 +16,7 @@ function editorHarness() {
   let failure = "";
   let publisher;
   let builds = 0;
+  let savedContent;
   const requests = [];
   const publications = [];
   const destinations = [];
@@ -27,7 +28,8 @@ function editorHarness() {
     useEffect(effect, dependencies) { const index = effectIndex++; const previous = effects[index]; if (!previous || dependencies.some((value, entry) => value !== previous[entry])) { effects[index] = dependencies; effect(); } },
   };
   const template = () => ({
-    authenticated, initial: {}, category: "birthdays", published: false,
+    authenticated, initial: {}, category: "birthdays", published,
+    ...(published ? { eventId: "published-event" } : {}),
     record() {}, registerPublisher,
     requestSave: async () => { requests.push("save"); },
     requestPublish: async (mode) => { requests.push(mode); },
@@ -38,7 +40,11 @@ function editorHarness() {
     "next/navigation": { useRouter: () => ({ push: (href) => destinations.push(href) }), useSearchParams: () => new URLSearchParams() },
     "next-auth/react": { getSession: async () => ({ user: { id: "host" } }) },
     "@/components/templates/TemplateEditorContext": { useTemplateEditor: template },
-    "@/components/UnsavedProgressProvider": { useEventProgress: () => ({ dirty: true, markSaved() {}, allowNavigation: (run) => run(), requestLeave() {} }) },
+    "@/components/UnsavedProgressProvider": { useEventProgress: ({ snapshot }) => ({
+      dirty: savedContent !== JSON.stringify(snapshot),
+      markSaved(content) { savedContent = JSON.stringify(content); },
+      allowNavigation: (run) => run(), requestLeave() {},
+    }) },
     "@/lib/event-page-composition": { normalizeEventPageComposition: () => undefined },
     "@/lib/create/editor-handoff": { creationNativePayload: (payload) => payload },
     "@/lib/template-draft-handoff": { saveTemplateDraftToAccount: () => { throw new Error("Native publishing must not use the generic draft builder."); } },
@@ -100,6 +106,24 @@ test("draft saves retain their draft-only authentication intent", async () => {
   assert.equal(fixture.builds(), 0);
 });
 
+test("published saves stay in the mounted editor and clear only the saved changes", async (t) => {
+  const previousWindow = globalThis.window;
+  globalThis.window = { dispatchEvent() {} };
+  t.after(() => { if (previousWindow === undefined) delete globalThis.window; else globalThis.window = previousWindow; });
+  const fixture = editorHarness({ published: true });
+  fixture.authenticate("First saved title");
+  await fixture.render().saveChanges();
+  assert.deepEqual(fixture.destinations, [], "Save changes never routes away from a published editor");
+  assert.equal(fixture.render().dirty, false);
+  fixture.authenticate("Another edit");
+  assert.equal(fixture.render().dirty, true);
+  await fixture.render().saveChanges();
+  assert.equal(fixture.render().dirty, false);
+  assert.equal(fixture.publications.length, 2);
+  assert.equal(fixture.publications[1].payload.title, "Another edit");
+  assert.deepEqual(fixture.destinations, []);
+});
+
 test("authentication return waits for the native editor's own readiness before registering publication", () => {
   const fixture = editorHarness();
   fixture.authenticate();
@@ -125,4 +149,9 @@ test("the shared action area retains signed-in controls and keeps the same guest
   assert.match(guest, />Save draft</);
   assert.match(guest, />Publish</);
   assert.doesNotMatch(guest, /Create an account|Sign in &amp; publish|Save and continue/);
+  const clean = renderToStaticMarkup(React.createElement(EventEditorActions, { editor: { ...editor, published: true, dirty: false } }));
+  assert.match(clean, /<button[^>]*disabled=""[^>]*>Save changes<\/button>/);
+  const changed = renderToStaticMarkup(React.createElement(EventEditorActions, { editor: { ...editor, published: true } }));
+  assert.match(changed, /<button[^>]*>Save changes<\/button>/);
+  assert.doesNotMatch(changed, /<button[^>]*disabled=""[^>]*>Save changes<\/button>/);
 });

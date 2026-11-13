@@ -21,8 +21,30 @@ const {
   websiteSections,
   websiteImagesForNames,
   websitePhotoUrl,
+  eventWebsiteScope,
+  isWithinEventWebsite,
+  isOtherEventWebsiteUrl,
+  withoutOtherEventSections,
 } = loaded.exports;
 const origin = "https://www.meet.test";
+
+test("shared-host boundaries retain the event edition while preserving explicitly linked storage assets", () => {
+  const root = `${origin}/meets/riverside-invitational/2027`;
+  assert.equal(eventWebsiteScope(root), "/meets/riverside-invitational/2027/");
+  assert.equal(isWithinEventWebsite(root, `${root}/hotels`), true);
+  assert.equal(isWithinEventWebsite(root, `${origin}/meets/other-classic/2027/hotels`), false);
+  assert.equal(isWithinEventWebsite(root, `${origin}/meets/riverside-invitational/2026/hotels`), false);
+  assert.equal(isOtherEventWebsiteUrl(root, `${origin}/files/riverside-packet.pdf`, true), false);
+  assert.equal(isOtherEventWebsiteUrl(root, `${origin}/meets/other-classic/2027/packet.pdf`, true), true);
+});
+
+test("nested related-meet panels and archived editions do not become event prose or navigation", () => {
+  const html = `<main><section><h1>Riverside Invitational</h1><p>Current event information</p><section><h2>Also in January</h2><article><a href="/meets/other-classic/2027">Other Classic</a></article></section></section><section><h2>Past editions</h2><a href="/meets/riverside/2026">Old meet</a></section></main>`;
+  const clean = withoutOtherEventSections(html);
+  assert.match(clean, /Current event information/);
+  assert.doesNotMatch(clean, /Other Classic|Old meet|Also in January|Past editions/);
+  assert.equal(eventWebsiteLinks(html, origin).length, 0);
+});
 
 test("place photos stay with their named source cards, including lazy images and reordered hotels", () => {
   const page = { url: "https://organizer.example.org/stay", html: `<main><img src="/logo.png" alt="logo"><article><h3>River Hotel</h3><img src="/placeholder.gif" data-src="//cdn.example.org/river.jpg?size=large&amp;quality=90"></article><article><h3>Harbor Suites</h3><img src="/harbor.webp"></article><article><h3>No Photo Inn</h3></article></main>` };

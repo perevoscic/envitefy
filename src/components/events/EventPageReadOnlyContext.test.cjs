@@ -39,6 +39,7 @@ const { EventSectionsReadOnly } = load("src/components/events/EventSectionBuilde
 });
 const Hero = load("src/components/events/HeroImageEditor.tsx", {
   "./EventPageReadOnlyContext": context,
+  "./EventEditorImageControlsContext": { useEventEditorImageControls: () => null },
 }).default;
 const Inline = load("src/components/events/InlineEditableText.tsx", {
   "./EventPageReadOnlyContext": context,

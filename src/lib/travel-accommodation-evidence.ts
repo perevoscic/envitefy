@@ -32,6 +32,8 @@ export type HotelSource = {
   checkedAt: string;
 };
 export type HotelContext = {
+  eventTitle?: string;
+  eventSourceUrl?: string | null;
   sourceUrl?: string | null;
   sourceId?: string;
   pageNumber?: number | null;

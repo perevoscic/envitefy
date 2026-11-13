@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { fulfillPublicDiscoveryRequest } from "@/lib/discovery-browser";
+import { collectDiscoveryBrowserData, fulfillPublicDiscoveryRequest } from "@/lib/discovery-browser";
 import { createSourceDeps } from "@/lib/create/read-source";
 
 const original = { ...createSourceDeps };
@@ -33,4 +33,23 @@ test("private browser subresources and mutating requests are aborted without a c
   }
   expect(aborted).toBe(2);
   expect(connections).toBe(0);
+});
+
+test("browser discovery never opens another meet and blocks a same-event link redirecting there", async () => {
+  const root = "https://calendar.example/meets/riverside-invitational/2027";
+  const other = "https://calendar.example/meets/presidential-classic/2027";
+  const child = `${root}/details`;
+  const requests: string[] = [];
+  createSourceDeps.lookup = async () => [{ address: "8.8.8.8", family: 4 }];
+  createSourceDeps.request = async (url) => {
+    const target = url.toString();
+    requests.push(target);
+    if (target === child) return { status: 302, mimeType: "text/html", bytes: Buffer.alloc(0), location: other };
+    return { status: 200, mimeType: "text/html", bytes: Buffer.from(`<title>Riverside Invitational 2027</title><main><h1>Riverside Invitational 2027</h1><a href="${other}">Presidential Classic January 15-17 Hotels</a><a href="${child}">Meet details</a></main>`) };
+  };
+  const result = await collectDiscoveryBrowserData(root, { timeoutMs: 1000, maxChildPages: 2 });
+  expect(requests).toContain(root);
+  expect(requests).not.toContain(other);
+  expect(result.pages.some((page) => page.url === other)).toBe(false);
+  expect(result.candidates.some((candidate) => candidate.url === other)).toBe(false);
 });

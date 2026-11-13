@@ -3,7 +3,7 @@ import type {
   TravelAccommodationHotel,
 } from "../travel-accommodation-discovery";
 import type { HotelLink } from "../travel-accommodation-evidence";
-export type TravelProviderOptions = { signal: AbortSignal; timeoutMs: number };
+export type TravelProviderOptions = { signal: AbortSignal; timeoutMs: number; eventTitle?: string; eventSourceUrl?: string };
 export type TravelProviderResult = {
   hotels: TravelAccommodationHotel[];
   fallbackLink: string | null;

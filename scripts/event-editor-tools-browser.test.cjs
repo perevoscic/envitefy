@@ -226,6 +226,51 @@ test("event editors keep the earlier layout with fonts inside Design and separat
       }});
       await page.goto(kind === "gymnastics" ? `${base}/event/gymnastics/customize?mode=gymnastics&edit=${id}` : `${base}/event/design/customize?mode=upload`);
       await openControls();
+      if (kind === "gymnastics") {
+        const workspace = page.locator("[data-event-page-editor]");
+        const preview = page.getByRole("region", { name: "Event page preview panel", includeHidden: true });
+        const previewElement = await preview.elementHandle();
+        const before = writes.length;
+        assert.equal(await controls.getByRole("button", { name: "Change hero image", exact: true }).count(), 0, "the main menu has no image-change row");
+        await controls.getByRole("button", { name: "Image position", exact: true }).click();
+        await controls.getByRole("button", { name: "Change hero image", exact: true }).waitFor();
+        if (width < 768) {
+          await page.getByRole("button", { name: "Back", exact: true }).click();
+          await controls.getByRole("button", { name: "Image position", exact: true }).waitFor();
+        } else {
+          await controls.getByRole("button", { name: "Back to details", exact: true }).click();
+        }
+        await page.emulateMedia({ reducedMotion: "no-preference" });
+        if (width < 768) await page.getByRole("button", { name: "Back", exact: true }).click();
+        else await controls.getByRole("button", { name: "Close settings", exact: true }).click();
+        await page.waitForFunction(() => {
+          const panel = document.querySelector('[aria-label="Event editing controls"]');
+          return panel && getComputedStyle(panel).visibility === "hidden";
+        });
+        assert.equal(await workspace.locator('[aria-label="Event editing controls"]').evaluate(element => element.inert), true, "closed settings cannot receive focus");
+        await workspace.getByRole("button", { name: "Page settings", exact: true }).click();
+        await page.waitForFunction(() => {
+          const workspace = document.querySelector('[data-event-page-editor]');
+          const panel = workspace?.querySelector('[aria-label="Event editing controls"]');
+          if (!panel) return false;
+          const right = panel.getBoundingClientRect().right;
+          return Math.abs(right - workspace.getBoundingClientRect().right) < 1;
+        });
+        assert.equal(await previewElement.evaluate(element => element === document.querySelector('[aria-label="Event page preview panel"]')), true, "sliding settings preserves the mounted event");
+        if (width < 768) {
+          assert.ok(await preview.evaluate(element => element.getBoundingClientRect().right <= 1), "the event slides left off the phone canvas");
+          assert.equal(await preview.evaluate(element => element.inert), true, "the offscreen event cannot receive focus");
+        } else {
+          assert.ok(await preview.evaluate(element => element.getBoundingClientRect().width < element.parentElement.clientWidth - 300), "desktop settings push the event canvas left");
+        }
+        assert.equal(writes.length, before, "opening and backing out never saves");
+        await page.screenshot({ path: path.join(output, `gymnastics-sliding-menu-${width}.png`) });
+        await page.emulateMedia({ colorScheme: "dark" });
+        await page.waitForFunction(() => document.documentElement.classList.contains("dark"));
+        await page.screenshot({ path: path.join(output, `gymnastics-sliding-menu-${width}-dark.png`) });
+        await page.emulateMedia({ colorScheme: "light" });
+        await page.emulateMedia({ reducedMotion: "reduce" });
+      }
       await controls.getByRole("button", { name: /^(RSVP|Attendance)/ }).click();
       const switchControl = controls.getByRole("switch", { name: /Enable RSVP|Enable Attendance/ });
       if (!(await switchControl.isChecked())) await switchControl.click();

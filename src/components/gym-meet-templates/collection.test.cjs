@@ -158,7 +158,7 @@ test('website import coverage distinguishes not published from failed without cl
   assert.equal(renderToStaticMarkup(React.createElement(Coverage, { value: null })), '');
 });
 
-test('website import pages share grouped tabs across every gymnastics design', () => {
+test('website import pages share section names with tabs across every gymnastics design', () => {
   for (const design of designs) {
     const eventData = { title: 'Community club meet', createdVia: 'meet-discovery-v2', pageTemplateId: design.id,
       venue: 'Riverside Sports Centre', date: '2027-05-14',
@@ -167,8 +167,9 @@ test('website import pages share grouped tabs across every gymnastics design', (
     const model = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData, navItems: [], rosterAthletes: [] });
     const html = renderToStaticMarkup(React.createElement(Renderer, { ...props(design), model }));
     assert.ok(html.includes('role="tablist"'), design.id);
-    for (const label of ['Overview', 'Schedule', 'Teams', 'Venue & Parking', 'Hotels', 'Explore'])
+    for (const { label } of model.discovery.sections.filter(section => section.hasContent !== false))
       assert.ok(html.includes(`aria-label="${escaped(label)}"`), `${design.id}: ${label}`);
+    assert.ok(!html.includes('Manage tabs'), `${design.id}: sections are managed in settings`);
     assert.ok(!html.includes('aria-label="Visit"'), `${design.id}: no combined Visit tab`);
     assert.ok(html.includes('role="tabpanel"'), design.id);
     assert.ok(html.includes('hidden="" style="display:none"'), `${design.id}: inactive content is hidden`);
@@ -494,6 +495,28 @@ test('sparse and empty meets render without placeholder sections or empty RSVP s
     assert.ok(!html.includes('Send RSVP'), design.id);
     assert.ok(!html.includes('data-has-attendance="true"'), design.id);
     assert.ok(html.includes(design.previewTitle), design.id);
+  }
+});
+
+test('arrival and preparation stay in Meet Details without a separate Guest information tab', () => {
+  for (const design of designs) for (const hasOverview of [false, true]) {
+    const p = props(design);
+    p.model.discovery.sections = hasOverview ? [{
+      id: 'meet-details', label: 'Meet Details', kind: 'meet_overview', priority: 10, hasContent: true,
+      blocks: [{ id: 'overview', type: 'text', text: 'The saved meet introduction.' }],
+    }] : [];
+    p.model.guestPlanning = { arrival: 'Arrive 30 minutes before your session.', preparation: 'Bring your grips and water bottle.' };
+    const saved = JSON.stringify(p.model);
+    for (const editing of [false, true]) {
+      const html = renderToStaticMarkup(React.createElement(Renderer, { ...p, onPageTextChange: editing ? noAction : undefined }));
+      assert.equal((html.match(/role="tab"[^>]*aria-label="Meet Details"/g) || []).length, 1, design.id);
+      assert.ok(!html.includes('aria-label="Guest information"'), design.id);
+      assert.equal(html.split('Before you arrive').length - 1, 2, 'one section with its heading and accessible label');
+      assert.ok(html.includes('Arrive 30 minutes before your session.'), design.id);
+      assert.ok(html.includes('Bring your grips and water bottle.'), design.id);
+      if (hasOverview) assert.ok(html.includes('The saved meet introduction.'), design.id);
+    }
+    assert.equal(JSON.stringify(p.model), saved, 'presentation preserves saved content');
   }
 });
 

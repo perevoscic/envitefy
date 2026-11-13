@@ -227,12 +227,23 @@ test("co-host entry matches the owner event canvas; access and signup/login reta
     await page.getByRole("button", { name: "Accept invitation", exact: true }).click();
     await page.waitForURL("**/event/qa-event?tab=event");
     assert.equal(actions.filter(action => action.action === "accept").length, 1);
-    for (const appearance of ["light", "dark"]) for (const width of [320, 390, 1280, 1920]) {
+    for (const appearance of ["light", "dark"]) for (const width of [320, 390, 1024, 1280, 1920]) {
       await page.evaluate(value => localStorage.setItem("envitefy:appearance:v1", value), appearance);
       await page.setViewportSize({ width, height: 844 });
       for (const role of ["cohost", "owner"]) {
         await page.goto(`${base}/event/qa-event?tab=event&role=${role}`);
         await page.locator("[data-owner-event-view]").waitFor();
+        if (width >= 1024) {
+          await page.evaluate(() => document.documentElement.style.setProperty("--app-sidebar-width", "288px"));
+          assert.equal(await page.getByRole("button", { name: "More event actions", exact: true }).isVisible(), false);
+          const toolbar = page.getByRole("group", { name: "Event actions", exact: true });
+          assert.equal(await toolbar.isVisible(), true, "desktop actions are expanded before any interaction");
+          const bounds = await toolbar.locator("a, button").evaluateAll(elements => elements.map(element => {
+            const rect = element.getBoundingClientRect();
+            return { left: rect.left, right: rect.right, height: rect.height };
+          }));
+          assert.ok(bounds.every(rect => rect.left >= 288 && rect.right <= width && rect.height >= 44), "expanded actions fit beside the desktop sidebar");
+        }
         assert.equal(await page.getByText("Co-host", { exact: true }).count(), role === "cohost" ? 1 : 0);
         await openEventActions();
         assert.equal(await page.getByRole("link", { name: "Edit event", exact: true }).isVisible(), true);
@@ -257,7 +268,7 @@ test("co-host entry matches the owner event canvas; access and signup/login reta
           assert.equal(actions.filter(action => action.action === "leave").length, before, "Escape never removes access");
           const more = page.getByRole("button", { name: "More event actions", exact: true });
           const focusTarget = await more.isVisible() ? more : page.getByRole("button", { name: "Leave event as co-host", exact: true });
-          assert.equal(await focusTarget.evaluate(el => el === document.activeElement), true);
+          await page.waitForFunction(el => el === document.activeElement, await focusTarget.elementHandle());
           await openEventActions();
           await page.getByRole("button", { name: "Leave event as co-host", exact: true }).click();
           await dialog.getByRole("button", { name: "Cancel", exact: true }).click();

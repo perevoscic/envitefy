@@ -79,8 +79,54 @@ test("a nearby meet on the same weekend cannot enter the pasted event crawl", ()
   );
 
   assert.equal(unrelated.passes, false);
-  assert.match(unrelated.reason, /date_only_match/);
+  assert.match(unrelated.reason, /different event directory/);
   assert.equal(related.passes, true);
+});
+
+test("the actual Tampa source excludes Presidential recommendations across HTTP and browser discovery", async () => {
+  const root = "https://www.vaultgymnastics.com/meets/tampa-bay-turners-invitational/2027";
+  const other = "https://www.vaultgymnastics.com/meets/presidential-classic/2027";
+  const hotelUrl = "https://usacompetitions.com/2027-presidential-hotel-info/";
+  const html = await readFile(new URL("./fixtures/tampa-bay-turners-2027.html", import.meta.url), "utf8");
+  const requests: string[] = [];
+  __testUtils.setUrlDiscoveryTestHooks({
+    fetchWithLimit: async (url) => {
+      requests.push(url);
+      if (url !== root) throw new Error(`Unexpected event source: ${url}`);
+      return { text: html, buffer: Buffer.from(html), contentType: "text/html" };
+    },
+    collectBrowserData: async () => ({
+      pages: [{ url: other, sourceUrl: root, title: "Presidential Classic 2027", depth: 1,
+        text: "Host Hotels\nTru by Hilton Orlando\nRate: $209" }],
+      candidates: [{ url: hotelUrl, sourceUrl: other, label: "Reserve a room", depth: 1,
+        sameHost: false, contextText: "Host Hotels for Presidential Classic", openedVia: "anchor", discoveryMethod: "playwright" }],
+    }),
+  });
+  const result = await extractDiscoveryText({ type: "url", url: root }, { workflow: "gymnastics", mode: "enrich", budgetMs: 10000 });
+  assert.deepEqual(requests, [root]);
+  assert.doesNotMatch(result.extractedText, /Presidential|Tru by Hilton|Orlando/);
+  assert.ok(!JSON.stringify(result.extractionMeta.discoveredLinks).includes("presidential"));
+  assert.ok(!JSON.stringify(result.extractionMeta.resourceLinks).includes("presidential"));
+  assert.equal(result.extractionMeta.websiteImport?.coverage.find((entry) => entry.section === "hotels")?.status, "not_found");
+});
+
+test("a permitted child URL cannot redirect to another meet or import another event title", async () => {
+  const root = "https://calendar.example/meets/riverside-invitational/2027";
+  const child = `${root}/details`;
+  for (const finalUrl of [child, "https://calendar.example/meets/other-classic/2027"]) {
+    __testUtils.setUrlDiscoveryTestHooks({
+      fetchWithLimit: async (url) => {
+        const html = url === root
+          ? `<title>Riverside Invitational 2027</title><main><h1>Riverside Invitational 2027</h1><p>January 15-17, 2027</p><a href="${child}">Meet details</a></main>`
+          : `<title>Other Classic 2027</title><main><h1>Other Classic 2027</h1><p>Foreign hotels and admission $999.</p></main>`;
+        return { text: html, buffer: Buffer.from(html), contentType: "text/html", finalUrl: url === root ? root : finalUrl };
+      },
+      collectBrowserData: async () => ({ pages: [], candidates: [] }),
+    });
+    const result = await extractDiscoveryText({ type: "url", url: root }, { workflow: "gymnastics", mode: "core", budgetMs: 1000 });
+    assert.doesNotMatch(result.extractedText, /Foreign hotels|999|Other Classic/);
+    assert.equal(result.extractionMeta.websiteImport?.coverage.find((entry) => entry.section === "overview")?.sourceUrls.length, 1);
+  }
 });
 
 const packets = [

@@ -34,7 +34,8 @@ export function eventEditorContent(snapshot: object): object {
 export function eventEditorActions(published: boolean, dirty: boolean) {
   return {
     showDraft: !published,
-    showPrimary: !published || dirty,
+    showPrimary: true,
+    primaryDisabled: published && !dirty,
     primaryLabel: published ? "Save changes" : "Publish",
   };
 }

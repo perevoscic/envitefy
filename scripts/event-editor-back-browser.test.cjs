@@ -6,7 +6,7 @@ const { chromium } = require("playwright");
 const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
 
-test("Event Page controls open by default with Back hidden and retain draft exit behavior", {
+test("Event Page controls show mobile Back and retain draft exit behavior", {
   timeout: 180000,
 }, async () => {
   const output = path.resolve(".qa/event-editor-back-browser");
@@ -97,12 +97,12 @@ test("Event Page controls open by default with Back hidden and retain draft exit
   const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true, includeHidden: true });
   const actions = page.getByRole("group", { name: "Save event", exact: true });
   const view = page.getByRole("group", { name: "Editor view", exact: true });
-  // Keep the temporary hidden action's existing handler covered without exposing it in the UI.
   const back = async () => {
     const button = actions.getByRole("button", { name: "Back", exact: true, includeHidden: true });
-    assert.equal(await button.isVisible(), false, "Back stays hidden on desktop and mobile");
-    assert.equal(await button.evaluate((element) => getComputedStyle(element).display), "none");
-    await button.evaluate((element) => element.click());
+    const mobile = page.viewportSize().width < 768;
+    assert.equal(await button.isVisible(), mobile, "Back is visible on phones");
+    if (mobile) await button.click();
+    else await button.evaluate((element) => element.click());
   };
   const edit = () => view.getByRole("button", { name: "Edit", exact: true }).click();
   const expectLocalBack = async (count, message) => {
@@ -121,7 +121,7 @@ test("Event Page controls open by default with Back hidden and retain draft exit
     await workspace.waitFor();
     await view.getByRole("button", { name: "Preview", exact: true }).waitFor();
     await controls.waitFor({ state: "visible" });
-    assert.equal(await actions.getByRole("button", { name: "Back", exact: true }).count(), 0, "the bottom Back action is absent from accessible controls");
+    assert.equal(await actions.getByRole("button", { name: "Back", exact: true }).count(), page.viewportSize().width < 768 ? 1 : 0, "mobile Back is accessible");
     await controls.getByRole("button", { name: /^Headline/ }).click();
     await page.getByLabel("Headline", { exact: true }).waitFor();
   };

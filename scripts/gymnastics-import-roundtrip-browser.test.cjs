@@ -144,7 +144,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
         await page.reload();
         await preview.getByText("Preparing your image…", { exact: true }).waitFor();
       }
-      await preview.getByRole("tab", { name: "Venue & Parking", exact: true }).click();
+      await preview.getByRole("tab", { name: "Venue Details", exact: true }).click();
       await preview.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
       const before = await regionText();
       assert.ok(before.some(section => /Venue Details/.test(section.name) && /East, Central and West Halls/.test(section.text)));
@@ -174,7 +174,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       records.get(id).data.createdManually = true;
       await page.reload();
       await page.waitForURL(`**/gymnastics/templates/airborne-atlas/customize?edit=${id}`);
-      await preview.getByRole("tab", { name: "Venue & Parking", exact: true }).click();
+      await preview.getByRole("tab", { name: "Venue Details", exact: true }).click();
       await preview.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
       assert.deepEqual(await regionText(), before, `${variant}: imported sections, list formatting and links survive the template redirect`);
       assert.equal(writes.length, count + 1, "reopening never persists automatically");
@@ -210,7 +210,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
           const search = imageSettings.getByRole("searchbox", { name: "Search meet designs", exact: true });
           await search.fill("moonbeam");
           await imageSettings.locator('[data-template-masonry-card="moonbeam-balance"] button').click();
-          assert.equal(await page.locator('[data-gym-design="moonbeam-balance"]').count() > 0, true);
+          await page.locator('[data-gym-design="moonbeam-balance"]').first().waitFor();
           assert.equal(await page.locator('[aria-label="Event page preview panel"] img[src$="/original.webp"]').count(), 1);
           if (width === 1440) {
             await imageSettings.getByRole("button", { name: "Redesign", exact: true }).click();
@@ -246,7 +246,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       assert.equal(writes.at(-1).data.templateEditor.snapshot.data.importedTheme.artworkUrl, `/media/event-media/${id}/original.webp`);
       await page.reload();
       await preview.locator(`img[src="/media/event-media/${id}/original.webp"]`).waitFor();
-      await preview.getByRole("tab", { name: "Venue & Parking", exact: true }).click();
+      await preview.getByRole("tab", { name: "Venue Details", exact: true }).click();
       await preview.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
       await preview.getByRole("button", { name: "Edit welcome message", exact: true }).click();
       assert.equal(await preview.getByLabel("Welcome message", { exact: true }).inputValue(), "");
@@ -273,7 +273,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       await page.getByRole("heading", { level: 1, name: correctedTitle, exact: true }).waitFor();
       await page.getByText(correctedVenue, { exact: true }).first().waitFor();
       assert.equal(await page.getByText(event.address, { exact: true }).count(), 0, "saved guest rendering does not revive the old address");
-      await page.getByRole("tab", { name: "Venue & Parking", exact: true }).click();
+      await page.getByRole("tab", { name: "Venue Details", exact: true }).click();
       await page.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
       await page.locator(`img[src="/media/event-media/${id}/original.webp"]`).waitFor();
       await page.goto(`${base}/gymnastics/templates/airborne-atlas/customize?edit=${id}`);
@@ -302,6 +302,61 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
     await embeddedControls.waitFor({ state: "visible" });
     await embeddedControls.getByRole("button", { name: "Design", exact: true }).click();
     assert.equal(await embeddedControls.getByLabel("Title font", { exact: true }).inputValue(), "orbitron");
+    // Tab choices use the real editor save and guest renderer, without dropping source facts or artwork.
+    for (const width of [1440, 390]) {
+      const id = `tabs-${width}`;
+      const record = structuredClone(records.get("gasparilla-v2"));
+      record.id = id;
+      record.revision = `${id}-initial`;
+      records.set(id, record);
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${base}/gymnastics/templates/airborne-atlas/customize?edit=${id}`);
+      const settings = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+      await settings.getByRole("button", { name: "Page sections", exact: true }).click();
+      const palette = settings.getByRole("region", { name: "Page sections", exact: true });
+      const sectionOrder = palette.getByRole("list", { name: "Page section order", exact: true });
+      const beforeWrites = writes.length;
+      assert.equal(await page.getByRole("button", { name: "Manage tabs", exact: true }).count(), 0);
+      const venueIndex = (await sectionOrder.locator("li > span:first-child").allTextContents()).indexOf("Venue Details");
+      await palette.getByRole("button", { name: "Move Venue Details up", exact: true }).click();
+      await palette.getByRole("button", { name: "Edit Venue Details", exact: true }).click();
+      await page.getByLabel("Section name", { exact: true }).fill("Venue & arrival");
+      await page.getByRole("button", { name: "Close section panel", exact: true }).click();
+      assert.equal(await sectionOrder.locator("li > span:first-child").nth(venueIndex - 1).innerText(), "Venue & arrival");
+      await palette.getByRole("button", { name: "Remove Venue & arrival section", exact: true }).click();
+      await palette.getByRole("button", { name: /^Other/ }).click();
+      await page.getByLabel("Section heading", { exact: true }).fill("Parent notes");
+      await page.getByLabel("Section content", { exact: true }).fill("Bring a water bottle.");
+      await page.getByRole("button", { name: "Close section panel", exact: true }).click();
+      assert.equal(writes.length, beforeWrites, "section changes wait for explicit save");
+      await page.getByRole("button", { name: "Save draft", exact: true }).click();
+      await page.getByText("Draft saved.", { exact: true }).waitFor();
+      assert.deepEqual(records.get(id).data.discoverySource, record.data.discoverySource);
+      await page.reload();
+      await settings.getByRole("button", { name: "Page sections", exact: true }).click();
+      const savedNames = await sectionOrder.locator("li > span:first-child").allTextContents();
+      if (width === 390)
+        await settings.getByRole("button", { name: "Close settings", exact: true }).click();
+      assert.deepEqual(await preview.getByRole("tab").allTextContents(), savedNames);
+      await preview.getByRole("tab", { name: "Parent notes", exact: true }).click();
+      await preview.getByText("Bring a water bottle.", { exact: true }).waitFor();
+      assert.equal(await preview.getByRole("tab", { name: "Venue & arrival", exact: true }).count(), 0);
+      await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics-guest&edit=${id}`);
+      assert.deepEqual(await page.getByRole("tab").allTextContents(), savedNames);
+      await page.getByRole("tab", { name: "Parent notes", exact: true }).click();
+      await page.getByText("Bring a water bottle.", { exact: true }).waitFor();
+      assert.equal(await page.getByRole("button", { name: "Manage tabs", exact: true }).count(), 0);
+      assert.equal(await page.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).isVisible(), false);
+      await page.goto(`${base}/gymnastics/templates/airborne-atlas/customize?edit=${id}`);
+      await settings.getByRole("button", { name: "Page sections", exact: true }).click();
+      await palette.getByRole("button", { name: "Venue & arrival", exact: true }).click();
+      await page.getByRole("button", { name: "Close section panel", exact: true }).click();
+      if (width === 390)
+        await settings.getByRole("button", { name: "Close settings", exact: true }).click();
+      await preview.getByRole("tab", { name: "Venue & arrival", exact: true }).click();
+      await preview.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
+      assert.equal(writes.length, beforeWrites + 1, "reload, guest viewing and restore do not save automatically");
+    }
     // Exit stays separate from closing settings and never writes or generates artwork.
     for (const width of [1440, 390, 320]) for (const published of [false, true]) {
       const id = `exit-${width}-${published}`;
@@ -330,8 +385,16 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       const bounds = await cancel.boundingBox();
       assert.ok(bounds.width >= 44 && bounds.height >= 44 && bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y >= 0 && bounds.y + bounds.height <= 900, "Cancel is a visible touch target within the viewport");
       await page.screenshot({ path: path.join(output, `exit-settings-${width}-${published}.png`) });
+      await cancel.click();
+      await expectExit();
+      assert.equal(await page.getByRole("dialog").count(), 0, "clean Cancel exits directly from settings");
+
+      await page.goto(href);
+      await embeddedControls.waitFor({ state: "visible" });
       await view.getByRole("button", { name: "Close settings", exact: true }).click();
       await embeddedControls.waitFor({ state: "hidden" });
+      assert.equal(await cancel.isVisible(), true, "the clean canvas retains its exit action");
+      await page.screenshot({ path: path.join(output, `exit-canvas-${width}-${published}.png`) });
       await cancel.click();
       await expectExit();
       assert.equal(await page.getByRole("dialog").count(), 0, "clean exit does not prompt");
@@ -344,6 +407,13 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       const dialog = page.getByRole("dialog");
       await dialog.getByRole("button", { name: "Keep editing", exact: true }).click();
       assert.equal(await title.inputValue(), "Unsaved meet title", "Keep editing retains the unsaved title");
+      await view.getByRole("button", { name: "Close settings", exact: true }).click();
+      await embeddedControls.waitFor({ state: "hidden" });
+      await cancel.click();
+      await dialog.getByRole("button", { name: "Keep editing", exact: true }).click();
+      await view.getByRole("button", { name: "Page settings", exact: true }).click();
+      assert.equal(await title.inputValue(), "Unsaved meet title", "canvas exit protection retains mounted settings");
+      await view.getByRole("button", { name: "Close settings", exact: true }).click();
       await cancel.click();
       await dialog.getByRole("button", { name: "Discard and leave", exact: true }).click();
       await expectExit();

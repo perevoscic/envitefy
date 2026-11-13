@@ -46,7 +46,7 @@ export async function extractHotelsWithPlaywright(
     });
     options.signal.throwIfAborted();
     context = await browser.newContext({ serviceWorkers: "block" });
-    await context.route("**/*", fulfillPublicDiscoveryRequest);
+    await context.route("**/*", (route) => fulfillPublicDiscoveryRequest(route, { eventSourceUrl: options.eventSourceUrl }));
     await context.routeWebSocket("**/*", (socket) => socket.close());
     const page = await context.newPage();
     await page.goto(url, {
@@ -67,7 +67,7 @@ export async function extractHotelsWithPlaywright(
     const content = await readHotelPage(page);
     const sourceUrl = page.url();
     const links = markdownHotelLinks(content, sourceUrl);
-    const hotelContext = { sourceUrl, links, sourceType: "web" as const };
+    const hotelContext = { sourceUrl, links, sourceType: "web" as const, eventTitle: options.eventTitle, eventSourceUrl: options.eventSourceUrl };
     let hotels = parseHotelEvidence(content, hotelContext);
     if (!hotels.length)
       hotels = await extractHotelEvidenceWithAstra(content, hotelContext, options);

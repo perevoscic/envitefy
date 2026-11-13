@@ -128,11 +128,12 @@ async function transcribeCreatePages(images: string[], signal: AbortSignal): Pro
   } finally { record(); }
 }
 
-export async function readPublicCreateUrl(input: string, signal: AbortSignal): Promise<RemoteSource> {
+export async function readPublicCreateUrl(input: string, signal: AbortSignal, options?: { allowUrl?: (url: URL) => boolean }): Promise<RemoteSource> {
   let url: URL;
   try { url = new URL(input); } catch { throw new CreateSourceError("Enter a full public http or https link."); }
   for (let redirects = 0; redirects <= 4; redirects++) {
     signal.throwIfAborted();
+    if (options?.allowUrl && !options.allowUrl(url)) throw new CreateSourceError("The link belongs to a different event.", 422);
     if (!["http:", "https:"].includes(url.protocol) || url.username || url.password ||
         (url.port && !["80", "443"].includes(url.port))) throw new CreateSourceError("Use a public http or https page without a login.");
     const hostname = url.hostname.replace(/^\[|\]$/g, "");

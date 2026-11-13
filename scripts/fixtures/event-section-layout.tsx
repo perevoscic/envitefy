@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
 import {
   EventSectionBuilderProvider,
+  EventSectionPalette,
 } from "../../src/components/events/EventSectionBuilder";
 import { EventPageCompositionProvider } from "../../src/components/events/EventPageCompositionContext";
 import GymnasticsProgram from "../../src/components/gym-meet-templates/GymnasticsProgram";
@@ -9,9 +10,11 @@ import { GYMNASTICS_PRESENTATIONS } from "../../src/components/gym-meet-template
 import type { GymMeetDiscoverySection } from "../../src/components/gym-meet-templates/types";
 import type { EventPageComposition } from "../../src/lib/event-page-composition";
 import type { EventSectionLayout } from "../../src/lib/event-section-layout";
+import type { GymnasticsPageText, GymnasticsPageTextChange } from "../../src/lib/gymnastics-page-text";
 import programStyles from "../../src/components/gym-meet-templates/gymnastics-program.module.css";
 import EventPlaceCard, { placeCardGridStyle } from "../../src/components/event-create/EventPlaceCard";
 import placeStyles from "../../src/components/event-create/event-place-card.module.css";
+import EventGuestPlanningNotes from "../../src/components/event-templates/EventGuestPlanningNotes";
 
 const sourceSections: GymMeetDiscoverySection[] = [
   ["details", "Meet Details", "Arrive at Tampa Convention Center by 8 AM. Check in with your coach before warming up."],
@@ -26,10 +29,20 @@ function App() {
   const search = new URLSearchParams(location.search);
   const selected = search.get("layout") || "template";
   const editing = search.has("editing");
+  const [previewing, setPreviewing] = useState(false);
+  const storageKey = "gymnastics-tab-sync";
+  const restored = search.has("saved-tabs") ? JSON.parse(localStorage.getItem(storageKey) || "null") : null;
   // Geometry checks exercise multiple rows within one tab; the tabs case uses real section identities.
   const sections = sourceSections.map(section => search.has("tabs") ? section : {
     ...section, id: section.id === "schedule" ? "timing" : section.id === "parking" ? "arrival" : section.id,
   });
+  if (search.has("documents")) sections.splice(0, sections.length, {
+    ...sourceSections[0], id: "meet-details",
+  });
+  if (search.has("planning")) {
+    if (search.has("planning-only")) sections.splice(0, sections.length);
+    else sections[0] = { ...sections[0], id: "meet-details" };
+  }
   const hotelNames = search.get("hotels") === "short"
     ? ["River Hotel", "Park Inn", "Garden Suites", "Bay Hotel", "The Lodge"]
     : ["Embassy Suites Lake Buena Vista", "Embassy Suites Orlando I–Drive Convention Center", "Fairfield by Marriott Inn & Suites Orlando I–Drive/Convention Center", "Hilton Grand Vacations Club Tuscany Village", "Hyatt House Orlando/International Drive"];
@@ -55,8 +68,11 @@ function App() {
         pairs: [["details", sections[1].id]],
       }
     : undefined;
-  const [layout, setLayout] = useState<EventSectionLayout | undefined>(initialLayout);
-  const [composition, setComposition] = useState<EventPageComposition | undefined>({
+  const [layout, setLayout] = useState<EventSectionLayout | undefined>(restored?.layout || initialLayout);
+  const [showSections, setShowSections] = useState(false);
+  const [pageText, setPageText] = useState<GymnasticsPageText>(restored?.pageText || {});
+  const updatePageText: GymnasticsPageTextChange = (key, value) => setPageText(previous => ({ ...previous, [key]: value }));
+  const [composition, setComposition] = useState<EventPageComposition | undefined>(restored?.composition || {
     version: 1,
     sections: [],
     ...(selected === "template" ? {} : { layout: selected as EventPageComposition["layout"] }),
@@ -70,7 +86,13 @@ function App() {
     <GymnasticsProgram
       sections={sections}
       presentation={presentation}
-      sectionLayout={layout}
+      sectionLayout={search.has("context-layout") && !previewing ? undefined : layout}
+      pageTextOverrides={pageText}
+      onPageTextChange={editing && !previewing ? updatePageText : undefined}
+      additionalSections={search.has("planning") ? [{
+        id: "meet-details", label: "Meet Details", editorId: "meet",
+        content: <EventGuestPlanningNotes value={{ arrival: "Arrive 30 minutes before your session.", preparation: "Bring your grips and water bottle." }} />,
+      }] : []}
       renderBlock={(block) => block.type === "text" ? <p>{block.text}</p> : block.type === "card-grid" ? (
         <div data-program-cards="hotels" className={placeStyles.grid} style={placeCardGridStyle((block.cards || []).map(card => ({ name: card.label || "", values: card.highlights?.map(item => item.value) })))}>
           {block.cards?.map(card => <EventPlaceCard key={card.key} name={card.label || ""} eyebrow="Host hotel"
@@ -105,13 +127,23 @@ function App() {
       </header>
       <div data-fixture-body style={{ paddingTop: 24 }}>
         <EventPageCompositionProvider value={composition} onChange={editing ? setComposition : undefined}>
-          {editing ? (
+          {search.has("saved-tabs") && <>
+            <button onClick={() => localStorage.setItem(storageKey, JSON.stringify({ layout, pageText, composition }))}>Save fixture</button>
+            <button onClick={() => setPreviewing(value => !value)}>{previewing ? "Close preview" : "Preview page"}</button>
+          </>}
+          {editing && !previewing ? (
             <EventSectionBuilderProvider
               layout={layout}
               onChange={setLayout}
-              catalog={sections.map(({ id, label }) => ({ id, label }))}
+              catalog={[
+                ...sections.map(({ id, label }) => ({ id, label })),
+                ...(search.has("documents") ? [{ id: "documents", label: "Documents & links", editorId: "logistics" }, { id: "traffic-parking", label: "Travel & parking", editorId: "travel" }] : []),
+              ]}
               renderEditor={() => <p>Edit section details.</p>}
+              renderSectionLabelEditor={section => section.id.startsWith("info:") ? null : <label>Section name<input value={pageText[`section:${section.id}:label`] ?? section.label} onChange={event => updatePageText(`section:${section.id}:label`, event.target.value)} /></label>}
             >
+              <button type="button" onClick={() => setShowSections(value => !value)}>Page sections</button>
+              {showSections && <EventSectionPalette />}
               {program}
             </EventSectionBuilderProvider>
           ) : program}

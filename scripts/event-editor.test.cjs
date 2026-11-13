@@ -10,7 +10,7 @@ const { createEventHistoryClient } = jiti("../src/lib/event-history-client.ts");
 const { saveTemplateDraftToAccount } = jiti("../src/lib/template-draft-handoff.ts");
 const json = (row, status = 200) => new Response(JSON.stringify(row), { status });
 
-test("view changes stay clean and saved pages expose only conditional Save changes", () => {
+test("view changes stay clean and saved pages disable Save changes until edited", () => {
   const content = { data: { title: "Trip", sections: [{ title: "Parking", body: "North lot" }] } };
   assert.deepEqual(
     eventEditorContent({ ...content, activeView: "design", mobileMenuOpen: true }),
@@ -18,13 +18,16 @@ test("view changes stay clean and saved pages expose only conditional Save chang
   );
   assert.deepEqual(eventEditorActions(true, false), {
     showDraft: false,
-    showPrimary: false,
+    showPrimary: true,
+    primaryDisabled: true,
     primaryLabel: "Save changes",
   });
   assert.equal(eventEditorActions(true, true).showPrimary, true);
+  assert.equal(eventEditorActions(true, true).primaryDisabled, false);
   assert.deepEqual(eventEditorActions(false, false), {
     showDraft: true,
     showPrimary: true,
+    primaryDisabled: false,
     primaryLabel: "Publish",
   });
 });

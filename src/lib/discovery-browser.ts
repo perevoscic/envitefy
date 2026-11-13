@@ -1,4 +1,5 @@
 import { readPublicCreateUrl } from "@/lib/create/read-source";
+import { hasConflictingEventTitle, isOtherEventWebsiteUrl } from "./discovery/event-website";
 
 type BrowserDiscoveryDepth = 0 | 1;
 
@@ -87,17 +88,20 @@ type PlaywrightBrowser = {
 };
 
 type DiscoveryBrowserRoute = {
-  request(): { url(): string; method(): string };
+  request(): { url(): string; method(): string; isNavigationRequest?(): boolean };
   abort(): Promise<void>;
   fulfill(options: { status: number; headers: Record<string, string>; body: Buffer }): Promise<void>;
 };
 
 /** Never let Chromium resolve or fetch an unvalidated linked/subresource URL itself. */
-export async function fulfillPublicDiscoveryRequest(route: DiscoveryBrowserRoute) {
+export async function fulfillPublicDiscoveryRequest(route: DiscoveryBrowserRoute, options?: { eventSourceUrl?: string }) {
   const request = route.request();
   if (!["GET", "HEAD"].includes(request.method())) { await route.abort(); return; }
   try {
-    const response = await readPublicCreateUrl(request.url(), AbortSignal.timeout(12_000));
+    const eventSource = request.isNavigationRequest?.() ? options?.eventSourceUrl : undefined;
+    const response = await readPublicCreateUrl(request.url(), AbortSignal.timeout(12_000), eventSource ? {
+      allowUrl: (target) => !isOtherEventWebsiteUrl(eventSource, target.toString(), true),
+    } : undefined);
     const redirected = new URL(response.url).toString() !== new URL(request.url()).toString();
     await route.fulfill({
       status: redirected ? 302 : 200,
@@ -320,11 +324,12 @@ export async function collectDiscoveryBrowserData(
   const maxActionablesPerPage = options?.maxActionablesPerPage ?? 12;
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true, serviceWorkers: "block" });
-  await context.route("**/*", fulfillPublicDiscoveryRequest);
+  await context.route("**/*", (route) => fulfillPublicDiscoveryRequest(route, { eventSourceUrl: normalizedRootUrl }));
   await context.routeWebSocket("**/*", (socket) => socket.close());
   const page = await context.newPage();
   const candidateMap = new Map<string, BrowserDiscoveryCandidate>();
   const pageMap = new Map<string, BrowserDiscoveryPage>();
+  let rootTitle = "";
 
   const addCandidate = (candidate: BrowserDiscoveryCandidate | null) => {
     if (!candidate?.url) return;
@@ -336,6 +341,7 @@ export async function collectDiscoveryBrowserData(
 
   const addPage = (discoveredPage: BrowserDiscoveryPage | null) => {
     if (!discoveredPage?.url) return;
+    if (isOtherEventWebsiteUrl(normalizedRootUrl, discoveredPage.url) || isOtherEventWebsiteUrl(normalizedRootUrl, discoveredPage.sourceUrl) || hasConflictingEventTitle(rootTitle, discoveredPage.title || "")) return;
     const key = pageKey(discoveredPage);
     if (!pageMap.has(key)) {
       pageMap.set(key, discoveredPage);
@@ -352,6 +358,7 @@ export async function collectDiscoveryBrowserData(
   ): BrowserDiscoveryCandidate | null => {
     const normalizedUrl = normalizeUrl(url);
     if (!normalizedUrl) return null;
+    if (isOtherEventWebsiteUrl(normalizedRootUrl, normalizedUrl, true) || isOtherEventWebsiteUrl(normalizedRootUrl, sourceUrl)) return null;
     const normalizedLabel = normalizeText(label) || "Resource link";
     const sameHost = isSameHost(normalizedUrl, normalizedRootUrl);
     if (!sameHost && !isTrustedExternalResourceUrl(normalizedUrl)) return null;
@@ -399,9 +406,10 @@ export async function collectDiscoveryBrowserData(
     await collectAnchorCandidates(page, normalizedRootUrl, 0);
 
     const rootText = await collectPageText(page);
+    rootTitle = normalizeText(await page.title());
     addPage({
       url: normalizedRootUrl,
-      title: normalizeText(await page.title()) || null,
+      title: rootTitle || null,
       depth: 0,
       text: rootText,
       sourceUrl: normalizedRootUrl,

@@ -14,11 +14,10 @@ import {
 } from "@/components/events/EventSectionBuilder";
 import {
   gymnasticsSectionEditor,
-  orderEventSections,
   type EventSectionLayout,
 } from "@/lib/event-section-layout";
 import { useEventPageComposition } from "@/components/events/EventPageCompositionContext";
-import { eventInformationTabs } from "@/lib/event-information-tabs";
+import { eventInformationSections, eventInformationTabs } from "@/lib/event-information-tabs";
 
 function ProgramPanel({
   tabbed,
@@ -67,11 +66,12 @@ export default function GymnasticsProgram({
   const pageText = useGymnasticsPageText(pageTextOverrides, onPageTextChange);
   const instanceId = useId();
   const builder = useEventSectionBuilder();
+  const currentLayout = builder ? builder.layout : sectionLayout;
   const composition = useEventPageComposition();
-  const [selectedTab, setSelectedTab] = useState("overview");
+  const [selectedTab, setSelectedTab] = useState("");
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const ordered = orderGymnasticsSections(sections, presentation.flow);
-  const navigation = orderEventSections(
+  const navigation = eventInformationSections(
     [
       ...ordered.map(({ id, label, navLabel }) => ({ id, label, navLabel })),
       ...additionalSections.map(({ id, label }) => ({ id, label, navLabel: label })),
@@ -81,14 +81,13 @@ export default function GymnasticsProgram({
         navLabel: title,
       })),
     ],
-    sectionLayout,
+    currentLayout,
   );
-  const availableTabs = eventInformationTabs(navigation, sectionLayout);
-  const tabbed = availableTabs.length > 1;
+  const availableTabs = eventInformationTabs(navigation, currentLayout);
+  const tabbed = availableTabs.length > 0;
   const activeTab = availableTabs.find((tab) => tab.id === selectedTab) || availableTabs[0];
   const tabSource = (id: string) => {
-    const tab = availableTabs.find(tab => tab.id === id)!;
-    return navigation.find(section => section.id === (tab.sectionIds.includes(id) ? id : tab.sectionIds[0]));
+    return navigation.find(section => section.id === id);
   };
   const tabLabel = (id: string, fallback: string) => {
     const source = tabSource(id);
@@ -96,7 +95,7 @@ export default function GymnasticsProgram({
   };
   // useId keeps links local even when multiple previews are mounted together.
   const sectionId = (id: string) => `${instanceId}-program-${id}`;
-  if (!ordered.length && !additionalSections.length && !builder) return null;
+  if (!navigation.length && !builder) return null;
 
   return (
     <div className={styles.program} data-tabbed={tabbed || undefined}>
@@ -162,39 +161,6 @@ export default function GymnasticsProgram({
           </div>
         </ResponsiveEventNavigation>
         </>
-      ) : navigation.length > 1 && !builder ? (
-        <ResponsiveEventNavigation
-          items={navigation.map(section => ({ id: section.id, label: pageTextOverrides?.[`section:${encodeURIComponent(section.id)}:label`] ?? section.navLabel ?? section.label, href: `#${sectionId(section.id)}` }))}
-          ariaLabel="Meet information sections"
-          background="var(--gym-paper)"
-          foreground="var(--gym-ink)"
-          renderItem={(item, control) => {
-            const source = navigation.find(section => section.id === item.id);
-            return pageText(
-              `section:${encodeURIComponent(item.id)}:label`, source?.navLabel || source?.label || item.label,
-              `${source?.label || item.label} navigation label`, () => control,
-            );
-          }}
-        >
-          <nav className={styles.navigation} aria-label="Meet information sections">
-            <span className={styles.indexLabel}>{pageText("programIndex", "Inside the meet")}</span>
-            <div className={styles.navLinks}>
-              {navigation.map((section, index) =>
-                pageText(
-                  `section:${encodeURIComponent(section.id)}:label`,
-                  section.navLabel || section.label,
-                  `${section.label} navigation label`,
-                  (text) => (
-                    <a href={`#${sectionId(section.id)}`} aria-label={text || section.label}>
-                      <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                      {text || section.navLabel || section.label}
-                    </a>
-                  ),
-                ),
-              )}
-            </div>
-          </nav>
-        </ResponsiveEventNavigation>
       ) : null}
       <ProgramPanel
         tabbed={tabbed}
@@ -204,12 +170,12 @@ export default function GymnasticsProgram({
         <EventSectionCanvas
           className={styles.chapters}
           cellClassName={styles.sectionColumn}
-          layout={sectionLayout}
-          visibleSectionIds={tabbed ? activeTab?.sectionIds : undefined}
+          layout={currentLayout}
+          visibleSectionIds={activeTab?.sectionIds || []}
           sections={[
             ...ordered.map((section, index) => ({
               id: section.id,
-              label: section.label,
+              label: pageTextOverrides?.[`section:${encodeURIComponent(section.id)}:label`] ?? section.label,
               editorId: gymnasticsSectionEditor(section.id, section.kind),
               content: (
                 <section
@@ -249,12 +215,30 @@ export default function GymnasticsProgram({
                       </div>
                     ))}
                   </div>
+                  {additionalSections.find((entry) => entry.id === section.id)?.content}
                 </section>
               ),
             })),
-            ...additionalSections.map((section) => ({
+            ...additionalSections.filter((section) => !ordered.some((entry) => entry.id === section.id)).map((section) => ({
               ...section,
+              label: pageTextOverrides?.[`section:${encodeURIComponent(section.id)}:label`] ?? section.label,
               content: <div id={sectionId(section.id)}>{section.content}</div>,
+            })),
+            ...navigation.filter((section) =>
+              !ordered.some((entry) => entry.id === section.id) &&
+              !additionalSections.some((entry) => entry.id === section.id) &&
+              !composition?.value?.sections.some((entry) => entry.id === section.id)
+            ).map((section) => ({
+              id: section.id,
+              label: tabLabel(section.id, section.label || "Information"),
+              editorId: gymnasticsSectionEditor(section.id),
+              content: (
+                <section id={sectionId(section.id)} className={styles.chapter}>
+                  <header className={styles.chapterHeading}>
+                    <h2>{pageText(`section:${encodeURIComponent(section.id)}:label`, section.label || "Information")}</h2>
+                  </header>
+                </section>
+              ),
             })),
           ]}
         />

@@ -2241,6 +2241,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return (
         <GymnasticsEditorLayout title="Image position" onBack={handleBackToMain} showBack>
           <div className="space-y-6">
+            {renderHeroImageEditor()}
             <label className="block text-sm font-semibold text-slate-700" htmlFor="gymnastics-image-fit">
               Image fit
               <select
@@ -2835,6 +2836,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <EventSectionBuilderProvider composition={{ value: editor.composition, onChange: editor.setComposition }} layout={data.sectionLayout}
         onChange={(sectionLayout) => setData((previous) => ({ ...previous, sectionLayout }))}
         catalog={GYMNASTICS_SECTION_CATALOG}
+        renderSectionLabelEditor={(section) => section.id.startsWith("info:") ? null : (
+          <InputGroup label="Section name" value={data.gymnasticsPageText?.[`section:${encodeURIComponent(section.id)}:label`] ?? section.label}
+            onChange={(value) => handlePageTextChange(`section:${encodeURIComponent(section.id)}:label`, value)} />
+        )}
         renderEditor={(id) => {
           if (id === "rsvp") return renderRsvpEditor();
           if (id === "details") return renderDetailsEditor();
@@ -2993,16 +2998,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     if (isEmbed) {
       return wrapSectionBuilder(
-        <EventEditorWorkspace onBackWithinControls={() => {
+        <EventEditorWorkspace imageControlsInMenu={false} onBackWithinControls={() => {
           if (activeView === "main" || activeView === "images") return false;
           setActiveView("main");
           return true;
-        }} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} sectionEditors={sectionEditors} artwork={data.hero} controlsHeader={sidebarHeader} controls={<>{renderHeroImageEditor("px-4 pt-4 md:px-6")}{sidebarPanel()}</>} />
+        }} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} sectionEditors={sectionEditors} artwork={data.hero} controlsHeader={sidebarHeader} controls={sidebarPanel()} />
       );
     }
 
     return wrapSectionBuilder(
-      <EventEditorWorkspace onBackWithinControls={() => {
+      <EventEditorWorkspace imageControlsInMenu={false} onBackWithinControls={() => {
         if (activeView === "main" || activeView === "images") return false;
         setActiveView("main");
         return true;

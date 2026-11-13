@@ -67,11 +67,13 @@ test("native and custom editors keep section management separate from hero layou
   assert.doesNotMatch(picker, /EVENT_DESIGN_LAYOUT_OPTIONS|Section layout|Sections in two columns|Information cards in two columns/);
 });
 
-test("the common workspace reserves one desktop column and switches mounted views on mobile", () => {
+test("the common workspace pushes the event aside and slides mounted views on mobile", () => {
   const shell = readFileSync(new URL("../../components/events/event-editor.module.css", import.meta.url), "utf8");
-  assert.match(shell, /grid-template-columns:\s*minmax\(0, 1fr\) minmax\(320px, 400px\)/);
+  assert.match(shell, /grid-template-columns:\s*minmax\(0, 1fr\) 400px/);
+  assert.match(shell, /transition: grid-template-columns/);
   assert.match(shell, /@media \(max-width: 767px\)/);
-  assert.match(shell, /data-mobile-editing="true"[\s\S]*display: none/);
+  assert.match(shell, /data-mobile-editing="true"\] \.preview\s*\{\s*transform: translateX\(-100%\)/);
+  assert.match(shell, /data-mobile-editing="true"\] \.panel\s*\{\s*transform: translateX\(0\)/);
 
   const globals = readFileSync(new URL("../globals.css", import.meta.url), "utf8");
   assert.doesNotMatch(

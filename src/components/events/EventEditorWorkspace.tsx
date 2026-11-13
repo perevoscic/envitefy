@@ -116,7 +116,7 @@ export function EventEditorActions({
   const disabled = editor.busy || !editor.ready;
   return (
     <div className={styles.actions} role="group" aria-label="Save event">
-      <button type="button" hidden disabled={disabled} onClick={onBack || editor.cancel}>
+      <button type="button" className={styles.mobileBack} disabled={disabled} onClick={onBack || editor.cancel}>
         <ArrowLeft size={17} aria-hidden="true" />
         Back
       </button>
@@ -136,7 +136,7 @@ export function EventEditorActions({
         <button
           type="button"
           className={styles.primary}
-          disabled={disabled}
+          disabled={disabled || actions.primaryDisabled}
           aria-busy={editor.saveIntent === "publish" || editor.saveIntent === "changes"}
           onClick={() => void editor.saveChanges().catch(() => {})}
         >
@@ -186,6 +186,7 @@ export default function EventEditorWorkspace({
   pageEditing = false,
   viewLabels,
   onBackWithinControls,
+  imageControlsInMenu = true,
 }: {
   editor: EventPageEditorSession;
   preview: ReactNode;
@@ -209,6 +210,8 @@ export default function EventEditorWorkspace({
   viewLabels?: { page: string; controls: string };
   /** Return true after going back within the controls; shared tools request the main menu. */
   onBackWithinControls?: (toMainMenu?: boolean) => boolean;
+  /** Editors with a dedicated image section can keep image actions there. */
+  imageControlsInMenu?: boolean;
 }) {
   const nativeBuilder = useEventSectionBuilder();
   const panelRef = useRef<HTMLElement>(null);
@@ -242,6 +245,13 @@ export default function EventEditorWorkspace({
   const [editing, setEditing] = useState(true);
   const [mobile, setMobile] = useState(false);
   const [mobileImageControls, setMobileImageControls] = useState<HTMLDivElement | null>(null);
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => setEntered(true));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
   useEffect(() => {
     const query = window.matchMedia("(max-width: 767px)");
     const sync = () => setMobile(query.matches);
@@ -268,7 +278,7 @@ export default function EventEditorWorkspace({
     requestAnimationFrame(() => previewRef.current?.focus({ preventScroll: true }));
   };
   const cancelEditing = () => {
-    if (!embedded && !editor.dirty) {
+    if (!pageEditing && !embedded && !editor.dirty) {
       showPage();
       return;
     }
@@ -338,7 +348,7 @@ export default function EventEditorWorkspace({
   );
   const settingsInFooter = pageEditing && !currentEditing;
   const workspace = (
-    <EventEditorImageControlsContext.Provider value={mobile && currentEditing ? mobileImageControls : null}>
+    <EventEditorImageControlsContext.Provider value={mobile && currentEditing && imageControlsInMenu ? mobileImageControls : null}>
     <section
       className={styles.workspace}
       data-event-page-editor
@@ -347,6 +357,7 @@ export default function EventEditorWorkspace({
       data-embedded={embedded}
       data-bottom-settings={settingsInFooter}
       data-page-editing={pageEditing}
+      data-entered={entered}
     >
       {notices}
       <div className={styles.body}>
@@ -363,7 +374,7 @@ export default function EventEditorWorkspace({
           aria-label="Event page preview panel"
           // biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard users must be able to scroll the page preview.
           tabIndex={0}
-          inert={editor.busy ? true : undefined}
+          inert={editor.busy || (mobile && currentEditing) ? true : undefined}
           {...drawer?.previewTouchHandlers}
         >
           <EventSectionsReadOnly readOnly={!currentEditing && !pageEditing}>
@@ -375,6 +386,7 @@ export default function EventEditorWorkspace({
           ref={panelRef}
           tabIndex={-1}
           aria-label="Event editing controls"
+          inert={!currentEditing ? true : undefined}
           {...drawer?.drawerTouchHandlers}
         >
           <div
@@ -385,7 +397,7 @@ export default function EventEditorWorkspace({
             {typeof controlsHeader === "function"
               ? controlsHeader(pageEditing ? viewActions : null)
               : controlsHeader}
-            <div ref={setMobileImageControls} className={styles.mobileImageControls} />
+            {imageControlsInMenu && <div ref={setMobileImageControls} className={styles.mobileImageControls} />}
             {compositionMenu === "cards" &&
               ((editor.setComposition && sectionEditors) ||
                 (customUrlMenu && editor.urlEditor)) && (
@@ -501,7 +513,7 @@ export default function EventEditorWorkspace({
           {pageEditing && viewActions}
           <EventEditorActions editor={editor} onBack={goBack}>
             {!pageEditing && viewActions}
-            {(currentEditing || editor.dirty) && (
+            {(pageEditing || currentEditing || editor.dirty) && (
               <button
                 type="button"
                 disabled={editor.busy}

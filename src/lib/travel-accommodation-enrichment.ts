@@ -20,7 +20,7 @@ import { extractHotelsWithFirecrawlScrape } from "./travel-accommodation-provide
 import { extractHotelsWithPlaywright } from "./travel-accommodation-providers/playwright";
 import { extractHotelsWithBrowserUse } from "./travel-accommodation-providers/browser-use";
 import { extractHotelEvidenceWithAstra } from "./travel-accommodation-providers/astra";
-import { websitePhotoUrl, type WebsitePlaceImage } from "./discovery/event-website";
+import { eventWebsiteEvidence, hasConflictingEventContent, isOtherEventWebsiteUrl, isWithinEventWebsite, websitePhotoUrl, type WebsitePlaceImage } from "./discovery/event-website";
 import {
   withinTravelBudget,
   type TravelProviderOptions,
@@ -34,6 +34,7 @@ type ExtractionMeta = {
   accommodationPageTexts?: Array<{ pageNumber: number; text: string }>;
   websiteHotelSources?: Array<{ url: string; text: string; images?: WebsitePlaceImage[] }>;
   sourceUrl?: string;
+  websiteImport?: { sources: Array<{ url: string }> };
   extractedText?: string;
 };
 type EnrichParams = {
@@ -45,6 +46,7 @@ type EnrichParams = {
   budgetMs?: number;
   signal?: AbortSignal;
   eventYear?: string | null;
+  eventTitle?: string | null;
 };
 
 export function extractHotelCardsFromContent(content: string) {
@@ -76,22 +78,43 @@ export async function enrichTravelAccommodation(
   params.signal?.throwIfAborted();
   const sourceUrl = hotelUrl(params.sourceUrl || params.extractionMeta?.sourceUrl);
   const meta = params.extractionMeta;
+  const extractedText = sourceUrl && params.sourceType === "url"
+    ? eventWebsiteEvidence(params.extractedText, sourceUrl, params.eventTitle || "")
+    : params.extractedText;
   const pages = meta?.accommodationPageTexts?.length
     ? meta.accommodationPageTexts
-    : [{ pageNumber: 1, text: params.extractedText }];
-  const candidateLinks = [
+    : [{ pageNumber: 1, text: extractedText }];
+  const links = [
     ...(meta?.resourceLinks || []),
     ...(meta?.discoveredLinks || []),
     ...(meta?.annotationLinks || []),
-    ...markdownHotelLinks(params.extractedText, sourceUrl),
+    ...markdownHotelLinks(extractedText, sourceUrl),
   ].map((link) => ({
     ...link,
     sourceUrl: link.sourceUrl || sourceUrl,
     pageNumber: link.pageNumber || Number(link.sourceUrl?.match(/file-page-(\d+)/)?.[1]) || null,
   }));
+  const trustedSources = new Set<string>();
+  const key = (value: string) => { const safe = hotelUrl(value); if (!safe) return ""; const url = new URL(safe); url.hash = ""; url.hostname = url.hostname.replace(/^www\./, ""); return url.toString(); };
+  if (sourceUrl) trustedSources.add(key(sourceUrl));
+  for (const page of [...(meta?.websiteImport?.sources || []), ...(meta?.websiteHotelSources || [])]) {
+    if (sourceUrl && isWithinEventWebsite(sourceUrl, page.url)) trustedSources.add(key(page.url));
+  }
+  const acceptsLink = (link: HotelLink) => {
+    if (!sourceUrl || params.sourceType !== "url") return true;
+    return !isOtherEventWebsiteUrl(sourceUrl, link.url) && Boolean(link.sourceUrl && trustedSources.has(key(link.sourceUrl)));
+  };
+  // Only a chain starting on this event can authorize an external hotel page.
+  for (let pass = 0; pass < links.length; pass++) {
+    const before = trustedSources.size;
+    for (const link of links) if (acceptsLink(link)) { const target = hotelUrl(link.url); if (target) trustedSources.add(key(target)); }
+    if (trustedSources.size === before) break;
+  }
+  const candidateLinks = links.filter(acceptsLink);
+  const hotelSources = (meta?.websiteHotelSources || []).filter((page) => !sourceUrl || params.sourceType !== "url" || isWithinEventWebsite(sourceUrl, page.url));
   const candidates = detectTravelAccommodationCandidates({
     source: params.sourceType === "file" ? "pdf" : "url",
-    extractedText: params.extractedText,
+    extractedText,
     pages,
     links: candidateLinks,
   });
@@ -100,21 +123,23 @@ export async function enrichTravelAccommodation(
     sourceId: params.sourceId || sourceUrl || "uploaded-pdf",
     sourceType: params.sourceType === "file" ? ("pdf" as const) : ("web" as const),
     links: candidateLinks,
+    eventTitle: params.eventTitle || undefined,
+    eventSourceUrl: sourceUrl,
   };
   const inline =
     params.sourceType === "file"
       ? pages.flatMap((page) =>
           parseHotelEvidence(page.text, { ...context, pageNumber: page.pageNumber }),
         )
-      : meta?.websiteHotelSources?.length
-        ? meta.websiteHotelSources.flatMap((page) => parseHotelEvidence(page.text, {
+      : hotelSources.length
+        ? hotelSources.flatMap((page) => hasConflictingEventContent(params.eventTitle || "", page.text) ? [] : parseHotelEvidence(page.text, {
             ...context, sourceUrl: page.url, sourceId: page.url,
           }).map((hotel) => {
             const image = page.images?.find((image) => image.name.toLowerCase() === hotel.name.toLowerCase());
             const imageUrl = websitePhotoUrl(image?.imageUrl || "");
             return imageUrl ? { ...hotel, imageUrl, evidence: { ...hotel.evidence, imageUrl: [{ value: imageUrl, quote: imageUrl, sourceId: page.url, sourceUrl: page.url, pageNumber: null, method: "link" as const }] } } : hotel;
           }))
-        : parseHotelEvidence(params.extractedText, context);
+        : parseHotelEvidence(extractedText, context);
   let pdfHotels = params.sourceType === "file" ? inline : [];
   let webHotels = params.sourceType === "url" ? inline : [];
   const checkedAt = new Date().toISOString();
@@ -126,7 +151,7 @@ export async function enrichTravelAccommodation(
     type: context.sourceType,
     checkedAt,
   }));
-  for (const page of meta?.websiteHotelSources || []) sources.push({
+  for (const page of hotelSources) sources.push({
     id: page.url, url: page.url, parentUrl: sourceUrl, parentId: context.sourceId,
     pageNumber: null, type: "web", checkedAt,
   });
@@ -134,7 +159,7 @@ export async function enrichTravelAccommodation(
   const attempts: TravelAccommodationAttempt[] = [];
   let resolution: TravelAccommodationResult["resolution"] = {
     provider: "none",
-    resolvedUrl: meta?.websiteHotelSources?.[0]?.url || sourceUrl,
+    resolvedUrl: hotelSources[0]?.url || sourceUrl,
     resolutionType: inline.length
       ? params.sourceType === "file"
         ? "pdf_only"
@@ -166,7 +191,7 @@ export async function enrichTravelAccommodation(
   const signal = params.signal
     ? AbortSignal.any([params.signal, controller.signal])
     : controller.signal;
-  const visited = new Set<string>(inline.length ? meta?.websiteHotelSources?.map((page) => page.url) : []);
+  const visited = new Set<string>(inline.length ? hotelSources.map((page) => page.url) : []);
   const rejectedUrls = new Set<string>();
   const providers: Array<
     [
@@ -183,12 +208,12 @@ export async function enrichTravelAccommodation(
     if (
       !inline.length &&
       process.env.OPENAI_API_KEY &&
-      /\b(hotels?|lodging|accommodation)\b/i.test(params.extractedText)
+      /\b(hotels?|lodging|accommodation)\b/i.test(extractedText)
     ) {
       try {
         const recovered = await withinTravelBudget(
           () =>
-            extractHotelEvidenceWithAstra(params.extractedText, context, {
+            extractHotelEvidenceWithAstra(extractedText, context, {
               signal,
               timeoutMs: Math.max(1, deadline - Date.now()),
             }),
@@ -218,6 +243,11 @@ export async function enrichTravelAccommodation(
     while (queue.length && visited.size < 3 && !signal.aborted) {
       const target = hotelUrl(queue.shift(), sourceUrl);
       if (!target || visited.has(target) || (target === sourceUrl && inline.length)) continue;
+      if (sourceUrl && isOtherEventWebsiteUrl(sourceUrl, target)) {
+        rejectedUrls.add(target);
+        attempts.push({ provider: "none", ok: false, url: target, error: "Hotel source belongs to a different event" });
+        continue;
+      }
       visited.add(target);
       const years: string[] = new URL(target).pathname.match(/\b20\d{2}\b/g) || [];
       if (params.eventYear && years.length && !years.includes(params.eventYear)) {
@@ -243,12 +273,18 @@ export async function enrichTravelAccommodation(
         if (signal.aborted) break;
         try {
           const response: TravelProviderResult = await withinTravelBudget(
-            () => extract(target, { signal, timeoutMs: Math.max(1, deadline - Date.now()) }),
+            () => extract(target, { signal, timeoutMs: Math.max(1, deadline - Date.now()), eventTitle: params.eventTitle || undefined, eventSourceUrl: sourceUrl || undefined }),
             signal,
           );
           attempts.push(response.attempt);
           if (!response.attempt.ok) continue;
           const resolved: string = hotelUrl(response.attempt.url) || target;
+          if ((sourceUrl && isOtherEventWebsiteUrl(sourceUrl, resolved)) || hasConflictingEventContent(params.eventTitle || "", response.content || "")) {
+            rejectedUrls.add(target);
+            rejectedUrls.add(resolved);
+            attempts.push({ provider, ok: false, url: resolved, error: "Hotel source belongs to a different event" });
+            break;
+          }
           const resolvedYears: string[] = new URL(resolved).pathname.match(/\b20\d{2}\b/g) || [];
           if (
             params.eventYear &&
@@ -347,6 +383,24 @@ export function buildTravelAccommodationState(
     sources?: HotelSource[];
   } | null,
 ) {
+  const root = result.sources?.find((source) => !source.parentUrl && source.url)?.url;
+  if (root && previous) {
+    const rejectedSources = new Set<string>();
+    for (let pass = 0; pass <= (previous.sources?.length || 0); pass++) {
+      const before = rejectedSources.size;
+      for (const source of previous.sources || []) {
+        if (source.url && (isOtherEventWebsiteUrl(root, source.url) || (source.parentUrl && (isOtherEventWebsiteUrl(root, source.parentUrl) || rejectedSources.has(source.parentUrl))))) rejectedSources.add(source.url);
+      }
+      if (before === rejectedSources.size) break;
+    }
+    const rejected = (url: string) => rejectedSources.has(url) || isOtherEventWebsiteUrl(root, url);
+    previous = {
+      ...previous,
+      hotels: previous.hotels?.filter((hotel) => !Object.values(hotel.evidence || {}).flat().some((fact) => fact.sourceUrl && rejected(fact.sourceUrl))),
+      fallbackLink: previous.fallbackLink && rejected(previous.fallbackLink) ? null : previous.fallbackLink,
+      sources: previous.sources?.filter((source) => !source.url || !rejected(source.url)),
+    };
+  }
   const incomplete =
     result.attempts.some((attempt) => !attempt.ok) ||
     result.hotels.some((hotel) => Object.keys(hotel.conflicts || {}).length > 0);

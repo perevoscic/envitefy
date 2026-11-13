@@ -218,6 +218,7 @@ export function EventSectionBuilderProvider({
   onChange,
   catalog,
   renderEditor,
+  renderSectionLabelEditor,
   createSection,
   sectionLimitReached,
   initialEntries,
@@ -228,6 +229,7 @@ export function EventSectionBuilderProvider({
   onChange: (layout: EventSectionLayout | undefined) => void;
   catalog: readonly EventSectionOption[];
   renderEditor: (id: string) => ReactNode;
+  renderSectionLabelEditor?: (section: EventSectionOption) => ReactNode;
   createSection?: (content: EventInformationSectionContent) => EventSectionOption | undefined;
   sectionLimitReached?: boolean;
   initialEntries?: EventSectionOption[];
@@ -322,7 +324,7 @@ export function EventSectionBuilderProvider({
         ),
       );
       const label =
-        [...catalog, ...entries].find((item) => item.id === action.id)?.label || "Section";
+        [...entries, ...catalog].find((item) => item.id === action.id)?.label || "Section";
       setNotice({
         message: `${label} ${action.type === "remove" ? "removed from page" : action.type === "add" ? "added" : action.type === "resize" ? "width updated" : action.type === "pair" ? "placed beside section" : action.type === "unpair" ? "moved to its own row" : "moved"}.`,
       });
@@ -462,7 +464,7 @@ export function EventSectionBuilderProvider({
         <div className={styles.dialogHeader}>
           <h2 id={titleId}>
             {panel?.kind === "edit"
-              ? panel.section.label
+              ? entries.find((section) => section.id === panel.section.id)?.label || panel.section.label
               : panel?.kind === "beside"
                 ? `Place beside ${panel.section.label}`
                 : "Add section"}
@@ -536,6 +538,7 @@ export function EventSectionBuilderProvider({
             <EventSectionEditorBusy.Provider value={setSectionBusy}>
               <EditorClose.Provider value={close}>
                 <EventSectionEditorHeaderTarget.Provider value={headerActionTarget}>
+                {renderSectionLabelEditor?.(panel.section)}
                 <InformationSectionEditor
                   id={panel.section.id}
                   fallback={renderEditor(panel.section.editorId || panel.section.id)}
@@ -600,6 +603,12 @@ function CatalogItem({ section, index }: { section: EventSectionOption; index: n
 export function EventSectionPalette() {
   const builder = useEventSectionBuilder();
   if (!builder) return null;
+  // Added catalog sections still belong to the page before they have content
+  // to register with the canvas (for example, a schedule document to upload).
+  const current = orderEventSections([
+    ...builder.entries,
+    ...builder.catalog.filter((section) => builder.layout?.added.includes(section.id)),
+  ], builder.layout);
   const available = [
     ...builder.catalog,
     ...builder.entries.filter(
@@ -607,12 +616,9 @@ export function EventSectionPalette() {
         builder.layout?.hidden.includes(entry.id) &&
         !builder.catalog.some((item) => item.id === entry.id),
     ),
-  ].filter(
-    (item) =>
-      !builder.entries.some((entry) => entry.id === item.id) ||
-      builder.layout?.hidden.includes(item.id),
+  ].map((section) => builder.entries.find((entry) => entry.id === section.id) || section).filter(
+    (item) => !current.some((entry) => entry.id === item.id),
   );
-  const current = orderEventSections(builder.entries, builder.layout);
   return (
     <section className={styles.palette} aria-label="Page sections">
       <p>Add sections or use Place beside to share a row. Drag handles to reorder.</p>
@@ -695,13 +701,14 @@ function EditableSection({
   section,
   index,
   count,
+  paired,
 }: {
   section: EventSectionEntry;
   index: number;
   count: number;
+  paired: boolean;
 }) {
   const builder = useEventSectionBuilder();
-  const paired = builder?.layout?.pairs?.some((pair) => pair.includes(section.id));
   const {
     attributes,
     listeners,
@@ -896,30 +903,36 @@ export function EventSectionCanvas({
         className={`${styles.row} ${!builder ? itemClassName : ""} ${attributes?.className || ""}`}
         data-section-row={row.map((section) => section.id).join(" ")}
       >
-        {row.map((section, offset) => (
-          <div
-            key={section.id}
-            className={`${styles.cell} ${cellClassName}`}
-            data-section-width={currentLayout?.widths?.[section.id] ?? 12}
-            style={{ "--section-span": currentLayout?.widths?.[section.id] ?? 12 } as CSSProperties}
-          >
-            {builder ? (
-              <EditableSection
-                section={
-                  renderSection && section.content
-                    ? { ...section, content: renderSection(section, index + offset) }
-                    : section
-                }
-                index={index + offset}
-                count={ordered.length}
-              />
-            ) : renderSection ? (
-              renderSection(section, index + offset)
-            ) : (
-              section.content
-            )}
-          </div>
-        ))}
+        {row.map((section, offset) => {
+          // A saved pair can have a hidden or unavailable neighbor. Its sole
+          // visible section fills the row; restoring the neighbor reuses the split.
+          const width = row.length === 1 ? 12 : currentLayout?.widths?.[section.id] ?? 12;
+          return (
+            <div
+              key={section.id}
+              className={`${styles.cell} ${cellClassName}`}
+              data-section-width={width}
+              style={{ "--section-span": width } as CSSProperties}
+            >
+              {builder ? (
+                <EditableSection
+                  section={
+                    renderSection && section.content
+                      ? { ...section, content: renderSection(section, index + offset) }
+                      : section
+                  }
+                  index={index + offset}
+                  count={ordered.length}
+                  paired={row.length > 1}
+                />
+              ) : renderSection ? (
+                renderSection(section, index + offset)
+              ) : (
+                section.content
+              )}
+            </div>
+          );
+        })}
       </div>
     );
     return builder ? (

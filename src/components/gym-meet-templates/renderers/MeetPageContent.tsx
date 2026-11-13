@@ -457,7 +457,7 @@ export default function MeetPageContent({
           <div className="py-5">
             <GymMeetDiscoveryContent model={model} variant={variant} presentation={presentation} onPageTextChange={onPageTextChange}
               additionalSections={[
-                ...(Object.values(model.guestPlanning || {}).some(Boolean) ? [{ id: "guest-planning", label: "Guest information", editorId: "details", content: <EventGuestPlanningNotes value={model.guestPlanning} /> }] : []),
+                ...(Object.values(model.guestPlanning || {}).some(Boolean) ? [{ id: "meet-details", label: "Meet Details", editorId: "meet", content: <EventGuestPlanningNotes value={model.guestPlanning} /> }] : []),
                 ...(model.schedule?.enabled !== false && model.schedule?.days?.length ? [{ id: "schedule", label: "Schedule", editorId: "schedule", content: <GymnasticsSchedule schedule={model.schedule} /> }] : []),
                 ...(rosterContent ? [{ id: "roster", label: "Roster", editorId: "roster", content: rosterContent }] : []),
                 ...(practiceContent ? [{ id: "practice", label: "Practice", editorId: "practice", content: practiceContent }] : []),

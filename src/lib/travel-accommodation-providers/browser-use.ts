@@ -1,9 +1,5 @@
-import type {
-  TravelAccommodationAttempt,
-  TravelAccommodationHotel,
-} from "@/lib/travel-accommodation-discovery";
 import { validateModelHotels } from "./astra";
-import type { TravelProviderOptions } from "./budget";
+import type { TravelProviderOptions, TravelProviderResult } from "./budget";
 
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
@@ -22,11 +18,7 @@ function normalizeUrl(value: unknown): string {
 export async function extractHotelsWithBrowserUse(
   url: string,
   options: TravelProviderOptions,
-): Promise<{
-  hotels: TravelAccommodationHotel[];
-  fallbackLink: string | null;
-  attempt: TravelAccommodationAttempt;
-}> {
+): Promise<TravelProviderResult> {
   const apiKey = safeString(process.env.BROWSER_USE_API_KEY);
   const baseUrl = safeString(process.env.BROWSER_USE_BASE_URL);
   if (!apiKey || !baseUrl || process.env.DISCOVERY_TRAVEL_BROWSER_USE_ENABLED !== "1") {
@@ -51,7 +43,7 @@ export async function extractHotelsWithBrowserUse(
       },
       body: JSON.stringify({
         startUrl: url,
-        task: "Read only this event's linked accommodation pages. Return data.content containing exact page text with markdown links and data.hotels, each with sourceBlock and fields. Every field (name, address, bookingUrl, bookingInstructions, groupRate, reservationDeadline, parking, breakfast, phone, imageUrl, distanceFromVenue) is null or {value, quote}. Quotes must occur verbatim inside sourceBlock and values inside quotes. Preserve full booking URLs. No guesses or attractions.",
+        task: `Target event: ${JSON.stringify({ title: options.eventTitle || null, sourceUrl: options.eventSourceUrl || url })}. Read only this event's linked accommodation pages. Ignore other meets, recommendations and past editions, even in the same year or city. Return data.content containing exact page text with markdown links and data.hotels, each with sourceBlock and fields. Every field (name, address, bookingUrl, bookingInstructions, groupRate, reservationDeadline, parking, breakfast, phone, imageUrl, distanceFromVenue) is null or {value, quote}. Quotes must occur verbatim inside sourceBlock and values inside quotes. Preserve full booking URLs. No guesses or attractions.`,
       }),
     });
     const payload = await response.json().catch(() => null);
@@ -60,12 +52,14 @@ export async function extractHotelsWithBrowserUse(
         safeString((payload as any)?.error || response.statusText) || "Browser Use request failed",
       );
     }
+    const content = safeString((payload as any)?.data?.content);
     return {
       hotels: validateModelHotels(
         (payload as any)?.data,
-        safeString((payload as any)?.data?.content),
-        { sourceUrl: url },
+        content,
+        { sourceUrl: url, eventTitle: options.eventTitle, eventSourceUrl: options.eventSourceUrl },
       ),
+      content,
       fallbackLink: normalizeUrl((payload as any)?.data?.fallbackLink) || null,
       attempt: {
         provider: "browser_use",

@@ -341,6 +341,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       sourceUrl: sourceInput.type === "url" ? sourceInput.url : null,
       sourceId: eventId,
       eventYear: safeString(enrichedParseResult.startAt).slice(0, 4) || null,
+      eventTitle: baseParseResult.title,
       signal: req.signal,
       extractedText: extraction.extractedText || baseExtractedText,
       extractionMeta: extraction.extractionMeta,
