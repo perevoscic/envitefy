@@ -92,7 +92,10 @@
     "campaign": "node scripts/generate-marketing-campaign.mjs",
     "campaign:video": "node scripts/assemble-storyboard-video.mjs",
     "creation:backfill-source-intent": "node scripts/backfill-creation-source-intent.mjs",
-    "events:backfill-public-slugs": "node scripts/backfill-event-public-slugs.mjs"
+    "events:backfill-public-slugs": "node scripts/backfill-event-public-slugs.mjs",
+    "images:convert": "node scripts/convert-repo-images.mjs",
+    "images:check": "node scripts/convert-repo-images.mjs --check && node --test scripts/repository-image-paths.test.mjs",
+    "images:prepare": "node scripts/prepare-site-image.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

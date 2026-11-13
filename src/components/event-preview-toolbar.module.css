@@ -1,0 +1,208 @@
+.control {
+  --preview-gradient-from: #6d28d9;
+  --preview-gradient-to: #a21caf;
+  --preview-control-size: 44px;
+  --preview-expanded-size: 156px;
+  position: relative;
+  isolation: isolate;
+  flex: 0 0 auto;
+  inline-size: var(--preview-control-size);
+  min-inline-size: var(--preview-control-size);
+  block-size: var(--preview-control-size);
+  min-block-size: var(--preview-control-size);
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--app-border, var(--border, #d9c5b8));
+  border-radius: 999px;
+  background-color: var(--app-surface, var(--surface, #fbf7f2));
+  color: var(--app-foreground, var(--foreground, #2b1b16));
+  box-shadow: 0 4px 14px rgb(0 0 0 / 10%);
+  opacity: 1;
+  cursor: pointer;
+  transition: inline-size 400ms cubic-bezier(0.22, 1, 0.36, 1), background-color 250ms, box-shadow 250ms;
+}
+
+.control::before,
+.control::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(45deg, var(--preview-gradient-from), var(--preview-gradient-to));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 350ms;
+}
+
+.control::after {
+  inset: 8px 3px -7px;
+  z-index: -2;
+  filter: blur(12px);
+}
+
+.control > svg {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  inline-size: 21px;
+  block-size: 21px;
+  stroke-width: 1.8;
+  opacity: 1;
+  transform: scale(1);
+  transition: transform 250ms, opacity 200ms;
+}
+
+.controlLabel,
+.control > span {
+  position: absolute;
+  inset-inline: 12px;
+  z-index: 1;
+  display: block;
+  margin: 0;
+  color: #fff;
+  font-size: var(--preview-label-size, 12px);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: 0.025em;
+  opacity: 0;
+  transform: scale(0.7);
+  pointer-events: none;
+  transition: transform 250ms, opacity 180ms;
+}
+
+.control[aria-pressed="true"] {
+  background-color: #6b46ce;
+  color: #fff;
+}
+
+.control[aria-pressed="true"]::before {
+  opacity: 1;
+}
+
+.control:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) {
+  inline-size: var(--preview-expanded-size);
+  background-color: var(--preview-gradient-from);
+  box-shadow: none;
+}
+
+.control:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible)::before {
+  opacity: 1;
+}
+
+.control:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible)::after {
+  opacity: 0.45;
+}
+
+.control:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) > svg {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.control:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) > span {
+  opacity: 1;
+  transform: scale(1);
+  transition-delay: 90ms;
+}
+
+.control:disabled,
+.control[aria-disabled="true"] {
+  cursor: default;
+}
+
+.control:disabled {
+  opacity: 0.4;
+}
+
+.control[aria-label="Desktop view"] { --preview-gradient-to: #1d4ed8; }
+.control[aria-label="Tablet and mobile view"] { --preview-expanded-size: 168px; }
+.control[aria-label="Preview event"] { --preview-gradient-from: #7c3aed; --preview-gradient-to: #9d174d; }
+.control[aria-label="Edit event"] { --preview-gradient-from: #075985; --preview-gradient-to: #1d4ed8; }
+.control[aria-label="Share event"] { --preview-gradient-from: #047857; --preview-gradient-to: #0e7490; }
+.control:is([aria-label="Manage access"], [aria-label="Invite co-host"]) { --preview-expanded-size: 180px; }
+.control[aria-label="Custom URL"] { --preview-gradient-from: #b45309; --preview-gradient-to: #b91c1c; }
+.control:is([aria-label="Delete event"], [aria-label="Leave event as co-host"]) { --preview-gradient-from: #be123c; --preview-gradient-to: #9d174d; }
+
+.rotationControl > svg {
+  inline-size: var(--preview-icon-size, 24px);
+  block-size: var(--preview-icon-size, 24px);
+}
+
+@media (min-width: 1024px) {
+  .toolbar {
+    column-gap: 12px;
+  }
+
+  .toolbar :global([aria-label="Preview device"]) {
+    gap: 12px;
+    padding: 0;
+    border: 0;
+    background: transparent !important;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .toolbar :global([data-event-preview-actions]) {
+    gap: 12px;
+  }
+
+  .toolbar :global([data-event-preview-actions] > div) {
+    padding: 0;
+    border: 0;
+    background: transparent !important;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .toolbar :global([aria-label="Event actions"]) {
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .ownerControl {
+    inline-size: auto;
+    block-size: auto;
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    justify-content: flex-start;
+    gap: 8px;
+    padding-inline: 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    box-shadow: none;
+    transition: background-color 150ms;
+  }
+
+  .ownerControl::before,
+  .ownerControl::after { display: none; }
+
+  .ownerControl > span {
+    position: static;
+    color: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: start;
+    opacity: 1;
+    transform: none;
+  }
+
+  .ownerControl.control:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) {
+    inline-size: auto;
+    background: color-mix(in srgb, currentColor 10%, transparent);
+  }
+
+  .ownerControl.control:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) > svg { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .control, .control::before, .control::after, .control > svg, .control > span {
+    transition: none;
+  }
+}

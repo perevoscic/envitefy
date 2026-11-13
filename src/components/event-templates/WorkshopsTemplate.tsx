@@ -7,7 +7,7 @@ const config = {
   displayName: "Workshop / Class",
   category: "workshop_class",
   categoryLabel: "Workshop / Class",
-  defaultHero: "/templates/hero-images/workshop-classes-hero.jpeg",
+  defaultHero: "/templates/hero-images/workshop-classes-hero.webp",
   detailFields: [
     { key: "instructor", label: "Instructor", placeholder: "Alex Lee" },
     {

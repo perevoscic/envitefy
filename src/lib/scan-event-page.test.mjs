@@ -2,6 +2,41 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildScanEventPageHistoryPayload } from "./scan-event-page.ts";
 
+test("camera and file memos never recover a parent location from classroom instructions or enrichment", () => {
+  for (const source of ["camera", "upload"]) {
+    const payload = buildScanEventPageHistoryPayload({
+      source,
+      scanAttemptId: `memo-without-location-${source}`,
+      locationEnrichment: { address: "123 Invented St, Chicago, IL" },
+      ocr: {
+        category: "General Events",
+        ocrText: "Mrs. Gerndts Weekly Memo\nNovember 2\nAt Home Partnership Tips:\nBinders are taken home and returned to school daily.\nSpelling Test Friday November 6",
+        fieldsGuess: { title: "Mrs. Gerndts Weekly Memo", venue: "Binders are taken home and returned to school daily.", location: "123 Invented St, Chicago, IL", timezone: "America/Chicago" },
+        scanSchedule: { kind: "school-memo", title: "Weekly Memo", timezone: "America/Chicago", items: [{ id: "spelling", title: "Spelling Test", date: "2026-11-06" }] },
+      },
+    });
+    assert.equal(payload.data.venue, undefined);
+    assert.equal(payload.data.location, undefined);
+    assert.equal(payload.data.placeName, undefined);
+    assert.equal(payload.data.locationEnrichment, undefined);
+    assert.equal(payload.data.locationLabel, "Location TBD");
+    assert.equal(payload.data.scanSchedule.items[0].id, "spelling");
+  }
+});
+
+test("a memo retains the school and address explicitly printed in its source", () => {
+  const payload = buildScanEventPageHistoryPayload({
+    source: "upload", scanAttemptId: "memo-printed-location",
+    ocr: {
+      category: "General Events",
+      ocrText: "School Weekly Memo\nSchool name: Oak Academy\nSchool address: 123 Main St, Chicago\nSpelling Test November 6",
+      fieldsGuess: { title: "Weekly Memo", timezone: "America/Chicago" },
+    },
+  });
+  assert.equal(payload.data.venue, "Oak Academy");
+  assert.equal(payload.data.location, "123 Main St, Chicago");
+});
+
 test("anniversary scan keeps its occasion instead of using birthday or wedding semantics", () => {
   const payload = buildScanEventPageHistoryPayload({
     source: "upload",

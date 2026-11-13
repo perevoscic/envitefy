@@ -7,9 +7,11 @@ export const EVENT_PREVIEW_DEVICES = {
 } as const;
 
 export type EventPreviewDevice = keyof typeof EVENT_PREVIEW_DEVICES;
+export type EventPreviewOrientation = "portrait" | "landscape";
 
+/** Desktop opens both framed devices; the unframed Desktop view stays explicit. */
 export function initialEventPreviewDevice(width: number): EventPreviewDevice {
-  return width < 768 ? "mobile" : width < 1024 ? "tablet" : "desktop";
+  return width >= 768 && width < 1024 ? "tablet" : "mobile";
 }
 
 /** Cards open in Design; event pages open in the event viewer. */
@@ -29,6 +31,74 @@ export function fitEventPreview(device: EventPreviewDevice, width: number, heigh
   const viewport = EVENT_PREVIEW_DEVICES[device];
   const scale = Math.max(0, Math.min(1, width / viewport.width, height / viewport.height));
   return { scale, width: viewport.width * scale, height: viewport.height * scale };
+}
+
+// Pixel coordinates keep the supplied transparent device artwork proportional.
+export const EVENT_PREVIEW_FRAMES = {
+  mobile: {
+    image: "/images/event-preview/phone-graphite.webp",
+    imageWidth: 864, imageHeight: 1821,
+    bounds: { x: 12, y: 22, width: 840, height: 1777 },
+    screen: { x: 46, y: 50, width: 773, height: 1721, radius: 116 },
+  },
+  tablet: {
+    image: "/images/event-preview/tablet-space-black.webp",
+    imageWidth: 1082, imageHeight: 1454,
+    bounds: { x: 52, y: 49, width: 979, height: 1355 },
+    screen: { x: 99, y: 98, width: 883, height: 1260, radius: 40 },
+  },
+} as const;
+
+/** Fit the supplied device image without stretching either axis. */
+export function getEventPreviewFrameLayout(
+  device: "tablet" | "mobile",
+  width: number,
+  height: number,
+  orientation: EventPreviewOrientation = "portrait",
+) {
+  const frame = EVENT_PREVIEW_FRAMES[device];
+  const screenWidth = EVENT_PREVIEW_DEVICES[device].width;
+  const imageScale = screenWidth / frame.screen.width;
+  const portraitShell = { width: frame.bounds.width * imageScale, height: frame.bounds.height * imageScale };
+  const portraitViewport = { width: screenWidth, height: frame.screen.height * imageScale };
+  const left = (frame.screen.x - frame.bounds.x) * imageScale;
+  const top = (frame.screen.y - frame.bounds.y) * imageScale;
+  const landscape = device === "tablet" && orientation === "landscape";
+  const shell = landscape ? { width: portraitShell.height, height: portraitShell.width } : portraitShell;
+  const viewport = landscape ? { width: portraitViewport.height, height: portraitViewport.width } : portraitViewport;
+  const scale = Math.max(0, Math.min(1, width / shell.width, height / shell.height));
+  return {
+    frame,
+    orientation: landscape ? "landscape" as const : "portrait" as const,
+    artwork: {
+      ...portraitShell,
+      transform: landscape ? `translateY(${portraitShell.width}px) rotate(-90deg)` : "translateY(0px) rotate(0deg)",
+    },
+    screen: {
+      left: landscape ? top : left,
+      top: landscape ? portraitShell.width - left - portraitViewport.width : top,
+      radius: frame.screen.radius * imageScale,
+    },
+    viewport,
+    shell,
+    fit: { scale, width: shell.width * scale, height: shell.height * scale },
+  };
+}
+
+/** Fit both proportional frames at the same visual height on desktop. */
+export function getEventPreviewPairLayout(width: number, height: number, orientation: EventPreviewOrientation = "portrait") {
+  const phone = getEventPreviewFrameLayout("mobile", width, height);
+  const tablet = getEventPreviewFrameLayout("tablet", width, height, orientation);
+  const phoneRatio = phone.shell.width / phone.shell.height;
+  const tabletRatio = tablet.shell.width / tablet.shell.height;
+  const pairHeight = Math.max(0, Math.min(
+    height, phone.shell.height, tablet.shell.height,
+    Math.max(0, width - 32) / (phoneRatio + tabletRatio),
+  ));
+  return {
+    mobile: getEventPreviewFrameLayout("mobile", pairHeight * phoneRatio, pairHeight),
+    tablet: getEventPreviewFrameLayout("tablet", pairHeight * tabletRatio, pairHeight, orientation),
+  };
 }
 
 /** A phone viewing Mobile uses its own CSS pixels, with no scaled device frame. */

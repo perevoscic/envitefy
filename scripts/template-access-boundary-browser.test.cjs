@@ -22,7 +22,10 @@ test("guest template edits survive first sign-in while account switches and deni
         "@": path.resolve("src"),
       } },
       plugins: [new compiled.webpack.DefinePlugin({ "process.env": JSON.stringify({ NODE_ENV: "development" }) })],
-      module: { rules: [{ test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") }] },
+      module: { rules: [
+        { test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") },
+        { test: /\.css$/, use: path.resolve("scripts/lib/event-editor-css-loader.cjs") },
+      ] },
     });
     compiler.run((error, stats) => compiler.close(() => error || stats?.hasErrors()
       ? reject(error || new Error(stats.toString({ all: false, errors: true }))) : resolve()));
@@ -34,15 +37,19 @@ test("guest template edits survive first sign-in while account switches and deni
   const script = fs.readFileSync(path.join(output, "fixture.js"));
   await page.route("**/*", async route => {
     const url = new URL(route.request().url());
-    if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: script });
+    if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript; charset=utf-8", body: script });
     if (url.pathname.startsWith("/api/history/")) return route.fulfill({ status: 403, json: { error: "No editing permission" } });
-    if (url.pathname === "/") return route.fulfill({ contentType: "text/html", body: '<!doctype html><html><body><div id="root"></div><script src="/fixture.js"></script></body></html>' });
+    if (url.pathname === "/") return route.fulfill({ contentType: "text/html; charset=utf-8", body: '<!doctype html><html><head><meta charset="utf-8"></head><body><div id="root"></div><script src="/fixture.js"></script></body></html>' });
     return route.abort();
   });
   const set = next => page.evaluate(value => window.templateAccessFixture.set(value), next);
   const field = page.getByRole("textbox", { name: "Event title" });
   try {
     await page.goto("http://template-access.test/");
+    await page.locator('[data-template-editor-loading="true"]').waitFor();
+    assert.match(await page.getByRole("status").ariaSnapshot(), /Opening your template…/);
+    assert.equal(await field.count(), 0, "initial access verification keeps editor fields unavailable");
+    await set({ status: "unauthenticated", loading: false });
     await field.fill("Guest wedding edits");
     const mount = await field.getAttribute("data-mount");
     await set({ status: "loading" });

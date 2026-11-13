@@ -8,7 +8,7 @@ const config = {
   displayName: "Meetup / Gathering",
   category: "general_event",
   categoryLabel: "General Event",
-  defaultHero: "/templates/hero-images/general-events-hero.jpeg",
+  defaultHero: "/templates/hero-images/general-events-hero.webp",
   detailFields: [
     { key: "host", label: "Host / Organizer", placeholder: "Community Guild" },
     {

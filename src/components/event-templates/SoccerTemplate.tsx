@@ -1147,7 +1147,7 @@ const config = {
   displayName: "Soccer Match",
   category: "sport_soccer",
   categoryLabel: "Soccer",
-  defaultHero: "/templates/hero-images/soccer-hero.jpeg",
+  defaultHero: "/templates/hero-images/soccer-hero.webp",
   detailFields: [
     { key: "opponent", label: "Opponent", placeholder: "vs River City FC" },
     { key: "league", label: "League / Division", placeholder: "U12 Premier" },

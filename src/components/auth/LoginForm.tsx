@@ -65,7 +65,7 @@ export default function LoginForm({
       if (result?.ok) {
         if (onAuthenticated) { await onAuthenticated(); return; }
         // Keep the modal open until navigation so the current page does not flash.
-        showAuthTransition("Loading ...");
+        showAuthTransition("Logging you in…");
         onSuccess?.();
         window.location.replace(successRedirectUrl);
         return;
@@ -82,7 +82,7 @@ export default function LoginForm({
     if (startNativeIOSSignIn({ returnTo: successRedirectUrl, mode: "login" })) return;
     setSubmitting(true);
     try {
-      showAuthTransition("Opening Google sign in...");
+      showAuthTransition("Logging you in…");
       await signIn("google", { callbackUrl: successRedirectUrl });
     } catch (err) {
       hideAuthTransition();

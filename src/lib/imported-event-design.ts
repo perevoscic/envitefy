@@ -3,6 +3,7 @@ import {
   IMPORTED_THEME_FONTS,
   importedArtworkDisplayUrl,
   readImportedEventTheme,
+  templateAccentColorCombinations,
   themeHash,
   type ImportedEventTheme,
 } from "./imported-event-theme";
@@ -16,6 +17,11 @@ export function importedThemeStyle(value: unknown): CSSProperties | undefined {
   const theme = activeImportedTheme(value);
   if (!theme || theme.preserveTemplateStyle) return undefined;
   const { colors: c } = theme;
+  const choice = theme.templateColorCombination;
+  const combination = choice?.templateId === theme.id && choice.index > 0
+    ? templateAccentColorCombinations({ id: theme.id, name: theme.name,
+        background: c.page, foreground: c.ink, accent: c.accent })[choice.index]
+    : undefined;
   const readableAccent = colorContrast(c.accent, c.page) >= 4.5 ? c.accent : c.ink;
   return {
     backgroundColor: c.page,
@@ -24,8 +30,11 @@ export function importedThemeStyle(value: unknown): CSSProperties | undefined {
     "--event-paper": c.page,
     "--event-surface": c.surface,
     "--event-ink": c.ink,
-    "--event-accent": c.accent,
-    "--event-on-accent": c.onAccent,
+    "--event-accent": combination?.button || c.accent,
+    "--event-source-accent": c.accent,
+    "--event-on-accent": combination?.onButton || c.onAccent,
+    "--event-heading": combination?.heading || c.ink,
+    "--event-link": combination?.link || readableAccent,
     "--event-font": IMPORTED_THEME_FONTS[theme.font],
     "--gym-paper": c.page,
     "--gym-ink": c.ink,
@@ -42,13 +51,13 @@ export function importedThemeStyle(value: unknown): CSSProperties | undefined {
 }
 export function importedSportsTheme(value: unknown) {
   const theme = activeImportedTheme(value);
-  return theme
+  return theme && !theme.preserveTemplateStyle
     ? {
         id: theme.id,
         name: theme.name,
         bg: "bg-[color:var(--event-paper)]",
         text: "text-[color:var(--event-ink)]",
-        accent: "text-[color:var(--event-ink)]",
+        accent: "text-[color:var(--event-heading)]",
         preview: "bg-white",
         bgStyle: importedThemeStyle(theme),
       }
@@ -58,7 +67,8 @@ export function importedFootballChrome<T extends Record<string, any>>(
   chrome: T,
   value: unknown,
 ): T {
-  if (!activeImportedTheme(value)) return chrome;
+  const theme = activeImportedTheme(value);
+  if (!theme || theme.preserveTemplateStyle) return chrome;
   return {
     ...chrome,
     pageClass: "min-h-screen bg-[color:var(--event-paper)] text-[color:var(--event-ink)]",
@@ -87,8 +97,9 @@ export function importedArtworkSrc(
   templateImage?: string | null,
 ): string | undefined {
   const savedTheme = readImportedEventTheme(value);
-  if (savedTheme?.motif === "gymnastics" && savedTheme.artworkUrl &&
-    (!customImage || customImage === templateImage))
+  const catalogImage = customImage && /^\/(?:templates|images)\//.test(customImage);
+  if (savedTheme?.artworkUrl &&
+    (!customImage || customImage === templateImage || catalogImage))
     return importedArtworkDisplayUrl(savedTheme.artworkUrl);
   const theme = activeImportedTheme(value);
   if (!theme || (customImage && customImage !== templateImage))

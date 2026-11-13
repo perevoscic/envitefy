@@ -7,6 +7,7 @@ import test from "node:test";
 import { chromium } from "playwright";
 import sharp from "sharp";
 const { emptyCustomEventDetails } = createRequire(import.meta.url)("./lib/event-messages-test-loader.cjs")("src/lib/event-custom-design.ts");
+const { eventEditorChangeContent } = createRequire(import.meta.url)("./lib/event-messages-test-loader.cjs")("src/lib/event-editor.ts");
 
 test("custom Event Page hero replacement stays local until explicit save on desktop and mobile", { timeout: 120000 }, async () => {
   buildBunFixture("scripts/build-category-custom-design-fixture.mjs");
@@ -22,12 +23,15 @@ test("custom Event Page hero replacement stays local until explicit save on desk
     };
     for (const width of [1280, 390]) {
       const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
-      const errors = [], writes = [];
+      const errors = [], writes = [], mutationPaths = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.addInitScript((value) => { window.testEditorPage = value; }, initial);
       await page.route("**/*", async (route) => {
         const request = route.request(), url = new URL(request.url());
         if (url.origin !== "http://localhost:43130") return route.abort();
+        if (url.pathname === "/api/events/timezone") {
+          return route.fulfill({ json: { timezone: initial.details.timezone } });
+        }
         if (["POST", "PATCH"].includes(request.method())) {
           const body = request.postDataJSON();
           if (url.pathname === "/api/event-themes/generate") {
@@ -35,6 +39,7 @@ test("custom Event Page hero replacement stays local until explicit save on desk
             return route.fulfill({ json: { details: body.currentDetails } });
           }
           writes.push(body);
+          mutationPaths.push(url.pathname);
           return route.fulfill({ json: { id: "saved-event", data: body.data } });
         }
         if (["/entry.js", "/entry.css", "/global.css"].includes(url.pathname)) {
@@ -46,7 +51,7 @@ test("custom Event Page hero replacement stays local until explicit save on desk
       });
       await page.goto("http://localhost:43130/editor?editor=1");
       const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
-      if (!(await controls.isVisible())) await page.getByRole("button", { name: "Page settings", exact: true }).click();
+      if (!(await controls.isVisible())) await page.getByRole("button", { name: "Continue editing", exact: true }).click();
       await controls.getByRole("button", { name: /^Event image settings/ }).click();
       const button = controls.getByRole("button", { name: "Upload image", exact: true });
       await button.waitFor();
@@ -73,9 +78,10 @@ test("custom Event Page hero replacement stays local until explicit save on desk
       await page.getByRole("button", { name: "Save draft", exact: true }).click();
       try { await page.getByText("Draft saved.", { exact: true }).waitFor({ timeout: 8000 }); }
       catch (error) { throw new Error(`${error.message} Alerts: ${JSON.stringify(await page.getByRole("alert").allTextContents())}; Writes: ${JSON.stringify(writes)}; Errors: ${errors.join(";")}`); }
-      assert.equal(writes.length, 1);
+      assert.equal(writes.length, 1, `Explicit save requests: ${JSON.stringify(mutationPaths)}`);
       assert.equal(writes[0].data.customEventPage.artwork, "/api/blob/event-media/replacement.webp");
-      assert.deepEqual(writes[0].data.customEventPage.details, initial.details);
+      assert.deepEqual(eventEditorChangeContent({ page: writes[0].data.customEventPage }).page.details, initial.details);
+      assert.equal(writes[0].data.customEventPage.details.timezoneSource, "location", "background location verification is retained separately from authored facts");
       assert.deepEqual(await page.evaluate(() => window.imageUploads), [selected]);
       assert.equal(await page.evaluate(() => window.editorProgress.dirty), false);
       await page.getByRole("button", {name: "Save draft", exact: true}).click();

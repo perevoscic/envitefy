@@ -1,0 +1,1042 @@
+[
+  {
+    "source": "public/images/event-preview/phone-cutout.png",
+    "destination": "public/images/event-preview/phone-cutout.webp",
+    "width": 1254,
+    "height": 1254,
+    "lossless": true,
+    "sourceSha256": "b55cdec14efcaea411cb7a1ef0a41aef8d012420aacd04c2b6f5281be921eb46"
+  },
+  {
+    "source": "public/images/event-preview/phone-graphite.png",
+    "destination": "public/images/event-preview/phone-graphite.webp",
+    "width": 864,
+    "height": 1821,
+    "lossless": true,
+    "sourceSha256": "f4cb713e1f69d25b762d62afb24547dead96883a0291dd51b0a72098c695273b"
+  },
+  {
+    "source": "public/images/event-preview/tablet-space-black.png",
+    "destination": "public/images/event-preview/tablet-space-black.webp",
+    "width": 1082,
+    "height": 1454,
+    "lossless": true,
+    "sourceSha256": "1a34e049ead2369944876c50ece827b314e838bddad0bb0d817f78a2729336c7"
+  },
+  {
+    "source": "public/images/event-preview/tablet.png",
+    "destination": "public/images/event-preview/tablet.webp",
+    "width": 503,
+    "height": 612,
+    "lossless": false,
+    "sourceSha256": "2dbf169dea48686004130b73162bb43a18e848fe537e7c80abfb201eac5436f1"
+  },
+  {
+    "source": "images/birthday-1-landing.png",
+    "destination": "images/birthday-1-landing.webp",
+    "width": 250,
+    "height": 268,
+    "lossless": false,
+    "sourceSha256": "58f21fab87c781ace055ef605feca7ce58da78bea7ddb5864c0f3050ae6010a7"
+  },
+  {
+    "source": "images/birthday-2-landing.png",
+    "destination": "images/birthday-2-landing.webp",
+    "width": 200,
+    "height": 389,
+    "lossless": true,
+    "sourceSha256": "f1a623c94d59093edee165bd3d0f5ba4c06d8eb1ac052acfa54965b516d3413f"
+  },
+  {
+    "source": "images/gymanstic-1-landing.png",
+    "destination": "images/gymanstic-1-landing.webp",
+    "width": 692,
+    "height": 794,
+    "lossless": false,
+    "sourceSha256": "e17ee4a650c63f3bfe6a15481f95617930e34da9412c15c64a630e2c76ebee74"
+  },
+  {
+    "source": "images/gymanstic-2-landing.png",
+    "destination": "images/gymanstic-2-landing.webp",
+    "width": 200,
+    "height": 402,
+    "lossless": true,
+    "sourceSha256": "024f1c826dc9743bb622a19f2cfa6793b330d14d879057d6bec421ab0d79453b"
+  },
+  {
+    "source": "images/gymnastic-hero.png",
+    "destination": "images/gymnastic-hero.webp",
+    "width": 600,
+    "height": 400,
+    "lossless": false,
+    "sourceSha256": "b2ba0a62f317669dbf789dc1447f0aa6a30a36f1fb02779ec6738d1c12eaeb46"
+  },
+  {
+    "source": "images/hero-1-landing.png",
+    "destination": "images/hero-1-landing.webp",
+    "width": 300,
+    "height": 504,
+    "lossless": true,
+    "sourceSha256": "99c246db86eefc666fa1f0b61439423fb7094da0333bf6e9f6d8dc57e1c11f4d"
+  },
+  {
+    "source": "images/hero-2-landing.png",
+    "destination": "images/hero-2-landing.webp",
+    "width": 200,
+    "height": 408,
+    "lossless": true,
+    "sourceSha256": "cf6d4832d60f0d5e5711244d9209bfaad2e7fa82717b3804ff3b36fbf718cbc2"
+  },
+  {
+    "source": "images/wedding-1-landing.png",
+    "destination": "images/wedding-1-landing.webp",
+    "width": 250,
+    "height": 341,
+    "lossless": false,
+    "sourceSha256": "2df7bcde7b2cd93c0da33884ca39ee4e55201ad3384f5db51c59eff01f380c86"
+  },
+  {
+    "source": "images/wedding-2-landing.png",
+    "destination": "images/wedding-2-landing.webp",
+    "width": 250,
+    "height": 502,
+    "lossless": true,
+    "sourceSha256": "10864de89bf5bb361c8a9392ae5369721da0ecb954475d56284c55aedf9f50bb"
+  },
+  {
+    "source": "public/LogoEonly.png",
+    "destination": "public/LogoEonly.webp",
+    "width": 443,
+    "height": 432,
+    "lossless": true,
+    "sourceSha256": "14c46552c04c390d89d7e7f718dfd1e30a7b8ea9725481766301156a3df7dab1"
+  },
+  {
+    "source": "public/gender-reveal-icon.png",
+    "destination": "public/gender-reveal-icon.webp",
+    "width": 128,
+    "height": 128,
+    "lossless": true,
+    "sourceSha256": "0b0f6b37a1bdf943ba5785611de5fa712f0caeac3ce3b308987d47c7a598d08f"
+  },
+  {
+    "source": "public/icons/sidebar-football.png",
+    "destination": "public/icons/sidebar-football.webp",
+    "width": 512,
+    "height": 512,
+    "lossless": true,
+    "sourceSha256": "5c83fe952a5873726b84f230e3af7f9cc84ad3f52e7219e0f28736ed1ba8c116"
+  },
+  {
+    "source": "public/icons/sidebar-gymnastics.png",
+    "destination": "public/icons/sidebar-gymnastics.webp",
+    "width": 512,
+    "height": 512,
+    "lossless": true,
+    "sourceSha256": "64b9875ca6ac77abc4a759a4011136591a60d485e00b626f17b7c7e051c956ad"
+  },
+  {
+    "source": "public/images/birthday-1-landing.png",
+    "destination": "public/images/birthday-1-landing.webp",
+    "width": 250,
+    "height": 268,
+    "lossless": false,
+    "sourceSha256": "58f21fab87c781ace055ef605feca7ce58da78bea7ddb5864c0f3050ae6010a7"
+  },
+  {
+    "source": "public/images/birthday-2-landing.png",
+    "destination": "public/images/birthday-2-landing.webp",
+    "width": 200,
+    "height": 389,
+    "lossless": true,
+    "sourceSha256": "f1a623c94d59093edee165bd3d0f5ba4c06d8eb1ac052acfa54965b516d3413f"
+  },
+  {
+    "source": "public/images/gymanstic-1-landing.png",
+    "destination": "public/images/gymanstic-1-landing.webp",
+    "width": 692,
+    "height": 794,
+    "lossless": false,
+    "sourceSha256": "e17ee4a650c63f3bfe6a15481f95617930e34da9412c15c64a630e2c76ebee74"
+  },
+  {
+    "source": "public/images/gymanstic-2-landing.png",
+    "destination": "public/images/gymanstic-2-landing.webp",
+    "width": 200,
+    "height": 402,
+    "lossless": true,
+    "sourceSha256": "024f1c826dc9743bb622a19f2cfa6793b330d14d879057d6bec421ab0d79453b"
+  },
+  {
+    "source": "public/images/gymnastic-hero.png",
+    "destination": "public/images/gymnastic-hero.webp",
+    "width": 600,
+    "height": 400,
+    "lossless": false,
+    "sourceSha256": "b2ba0a62f317669dbf789dc1447f0aa6a30a36f1fb02779ec6738d1c12eaeb46"
+  },
+  {
+    "source": "public/images/hero-1-landing.png",
+    "destination": "public/images/hero-1-landing.webp",
+    "width": 300,
+    "height": 504,
+    "lossless": true,
+    "sourceSha256": "99c246db86eefc666fa1f0b61439423fb7094da0333bf6e9f6d8dc57e1c11f4d"
+  },
+  {
+    "source": "public/images/hero-2-landing.png",
+    "destination": "public/images/hero-2-landing.webp",
+    "width": 200,
+    "height": 408,
+    "lossless": true,
+    "sourceSha256": "cf6d4832d60f0d5e5711244d9209bfaad2e7fa82717b3804ff3b36fbf718cbc2"
+  },
+  {
+    "source": "public/images/landing/hero/friday-night-lights-desktop.png",
+    "destination": "public/images/landing/hero/friday-night-lights-desktop-png.webp",
+    "width": 1672,
+    "height": 941,
+    "lossless": false,
+    "sourceSha256": "ceb6d717f5f9c28e8bce7b1b33a771e68e508fa4d451ad7de8dd11bb8fab15c7"
+  },
+  {
+    "source": "public/images/landing/hero/garden-brunch-desktop.png",
+    "destination": "public/images/landing/hero/garden-brunch-desktop-png.webp",
+    "width": 1672,
+    "height": 941,
+    "lossless": false,
+    "sourceSha256": "fe0e16a298052ab44e2e7a750f3a2e8b4a3ece348bf6d0ada1b27488e20b9f7c"
+  },
+  {
+    "source": "public/images/landing/hero/garden-vows-desktop.png",
+    "destination": "public/images/landing/hero/garden-vows-desktop-png.webp",
+    "width": 1672,
+    "height": 941,
+    "lossless": false,
+    "sourceSha256": "a87088b8c943d48b3687468a5bfb5a2007af0d8159e13367164af636a3b3ae12"
+  },
+  {
+    "source": "public/images/landing/hero/lincoln-discovery-desktop.png",
+    "destination": "public/images/landing/hero/lincoln-discovery-desktop-png.webp",
+    "width": 1672,
+    "height": 941,
+    "lossless": false,
+    "sourceSha256": "55079d4938f62e3a12673085258ffc19802cc12e0062062a53c738155ca157bb"
+  },
+  {
+    "source": "public/images/marketing/birthday-step-details.png",
+    "destination": "public/images/marketing/birthday-step-details.webp",
+    "width": 1536,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "ecbd19ad1b60b4c4c434837c0e3a6071ffdfb90122d88038161714fcc0869153"
+  },
+  {
+    "source": "public/images/marketing/birthday-step-share.png",
+    "destination": "public/images/marketing/birthday-step-share.webp",
+    "width": 1536,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "fa38fb9bbc97b1c5dff602f1462d9305c3e2953c4bf8547a78d487f83272fa84"
+  },
+  {
+    "source": "public/images/marketing/birthday-step-theme.png",
+    "destination": "public/images/marketing/birthday-step-theme.webp",
+    "width": 1536,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "10ebaa902b7c762bfb00f8b0a867854ba1beacc1274416a706cbe054d882acd1"
+  },
+  {
+    "source": "public/images/wedding-1-landing.png",
+    "destination": "public/images/wedding-1-landing.webp",
+    "width": 250,
+    "height": 341,
+    "lossless": false,
+    "sourceSha256": "2df7bcde7b2cd93c0da33884ca39ee4e55201ad3384f5db51c59eff01f380c86"
+  },
+  {
+    "source": "public/images/wedding-2-landing.png",
+    "destination": "public/images/wedding-2-landing.webp",
+    "width": 250,
+    "height": 502,
+    "lossless": true,
+    "sourceSha256": "10864de89bf5bb361c8a9392ae5369721da0ecb954475d56284c55aedf9f50bb"
+  },
+  {
+    "source": "public/logo-colored.png",
+    "destination": "public/logo-colored.webp",
+    "width": 256,
+    "height": 165,
+    "lossless": true,
+    "sourceSha256": "fc8aea08ddf3df924ca0726bb82cd5e16875b44d011ecdf30e06c2474de82154"
+  },
+  {
+    "source": "public/logo.png",
+    "destination": "public/logo.webp",
+    "width": 600,
+    "height": 161,
+    "lossless": true,
+    "sourceSha256": "b46b962769c64fe021989bf6af4c0a0afebb1a14828963a858c540d9e8db6a80"
+  },
+  {
+    "source": "public/navElogo.png",
+    "destination": "public/navElogo.webp",
+    "width": 500,
+    "height": 165,
+    "lossless": true,
+    "sourceSha256": "815f883b0563f00040702f15c7f31bce9f1bf7424f289a4352be5e01df7b899c"
+  },
+  {
+    "source": "public/no-event-palceholder.png",
+    "destination": "public/no-event-palceholder.webp",
+    "width": 1024,
+    "height": 1536,
+    "lossless": false,
+    "sourceSha256": "2dee1b6728f820cb1b11c6da397a73b25db074a4af54e959fecf7d582ae50aae"
+  },
+  {
+    "source": "public/phone-placeholders/baby-shower-gifts.jpeg",
+    "destination": "public/phone-placeholders/baby-shower-gifts.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "83bc0dcf5a29bdf53100bdf9a757b8c5a78569122cdf587ea69099ea6f7f8054"
+  },
+  {
+    "source": "public/phone-placeholders/birthday-maya.jpeg",
+    "destination": "public/phone-placeholders/birthday-maya.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "5164436dd447be46b67e239af3208d22a65e7f952789486de1f65b2fc21f7852"
+  },
+  {
+    "source": "public/phone-placeholders/birthday-pavilion.jpeg",
+    "destination": "public/phone-placeholders/birthday-pavilion.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "2863c58e3dc114be668e3634cd506f76d73cab300174b67805aa389a0b37cf2b"
+  },
+  {
+    "source": "public/phone-placeholders/volunteers-shelter.jpeg",
+    "destination": "public/phone-placeholders/volunteers-shelter.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "d56660767533953370730236085424809e3fa56998423ac314ff29e19b1d8573"
+  },
+  {
+    "source": "public/phone-placeholders/wedding-couple.jpeg",
+    "destination": "public/phone-placeholders/wedding-couple.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "aad31612f35de93b87e3873f08f6b8798246898994aec2fb2ce53bb9a23dc1e6"
+  },
+  {
+    "source": "public/sliders/horizontal/horizontal-slide-1.jpg",
+    "destination": "public/sliders/horizontal/horizontal-slide-1.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "d61d27d485bbbfe2fb774bd5bdd247ddcf14f0a8262c9a0d1790d6927aa6ecc1"
+  },
+  {
+    "source": "public/sliders/horizontal/horizontal-slide-2.jpg",
+    "destination": "public/sliders/horizontal/horizontal-slide-2.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "807bdc6b36b391bcd721fa68fc43f1e62c5078ab90f6fa15d9f7743a5e43c3cf"
+  },
+  {
+    "source": "public/sliders/horizontal/horizontal-slide-3.jpg",
+    "destination": "public/sliders/horizontal/horizontal-slide-3.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "a4f04a2c45d44293b502fc524e2386d981f85233f03b87040787eb5c59173e78"
+  },
+  {
+    "source": "public/sliders/horizontal/horizontal-slide-4.jpg",
+    "destination": "public/sliders/horizontal/horizontal-slide-4.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "7cbd7c95c66773c03165e8701d81beb4e295237a3f55f437c6aa223204401d24"
+  },
+  {
+    "source": "public/sliders/horizontal/horizontal-slide-5.jpg",
+    "destination": "public/sliders/horizontal/horizontal-slide-5.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "aeb17a917fdcad9e677af1cf657d289655fe339fb0bfe0a87bc896862d2db23a"
+  },
+  {
+    "source": "public/sliders/horizontal/horizontal-slide-6.jpg",
+    "destination": "public/sliders/horizontal/horizontal-slide-6.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "b05996c4a92ebb1d8dfb5c5d1a2120480104156622da685881561068c82af8ce"
+  },
+  {
+    "source": "public/sliders/horizontal/horizontal-slide-7.jpg",
+    "destination": "public/sliders/horizontal/horizontal-slide-7.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "e13e461b2e4c85afbb0fefae119ef3e15eb46de113011e2deb5dc59b42472e8f"
+  },
+  {
+    "source": "public/sliders/vertical/vertical-slide-1.jpg",
+    "destination": "public/sliders/vertical/vertical-slide-1.webp",
+    "width": 720,
+    "height": 1280,
+    "lossless": false,
+    "sourceSha256": "9d4fe0a007c6cbb248c9a873c34c3b4d2d06b8527336665f5f08f8fc79811673"
+  },
+  {
+    "source": "public/sliders/vertical/vertical-slide-2.jpg",
+    "destination": "public/sliders/vertical/vertical-slide-2.webp",
+    "width": 720,
+    "height": 1280,
+    "lossless": false,
+    "sourceSha256": "6156e1d384d0c50149350474e68f22a1504a4b7f3ea0d9f25cfad60c0fa88c5d"
+  },
+  {
+    "source": "public/sliders/vertical/vertical-slide-3.jpg",
+    "destination": "public/sliders/vertical/vertical-slide-3.webp",
+    "width": 720,
+    "height": 1280,
+    "lossless": false,
+    "sourceSha256": "8ddb2cc9866af6cfad3b7a02a3ff655d3f0e056a0660f66936eebbf25836a71f"
+  },
+  {
+    "source": "public/sliders/vertical/vertical-slide-4.jpg",
+    "destination": "public/sliders/vertical/vertical-slide-4.webp",
+    "width": 720,
+    "height": 1280,
+    "lossless": false,
+    "sourceSha256": "36293a4b184ac386d60100357f372c82c454172b3806fe2c820cd4b230e8cc8b"
+  },
+  {
+    "source": "public/sliders/vertical/vertical-slide-5.jpg",
+    "destination": "public/sliders/vertical/vertical-slide-5.webp",
+    "width": 720,
+    "height": 1280,
+    "lossless": false,
+    "sourceSha256": "7fcdb21796786ca273aeeb4f011963cddfa5df3af5312f48da1b7b9aa6b84f60"
+  },
+  {
+    "source": "public/sliders/vertical/vertical-slide-6.jpg",
+    "destination": "public/sliders/vertical/vertical-slide-6.webp",
+    "width": 720,
+    "height": 1280,
+    "lossless": false,
+    "sourceSha256": "2228de54621701c2e22ea96820d4a08fc0d8f7c34e783e302037fef5b9736e14"
+  },
+  {
+    "source": "public/sliders/vertical/vertical-slide-7.jpg",
+    "destination": "public/sliders/vertical/vertical-slide-7.webp",
+    "width": 720,
+    "height": 1280,
+    "lossless": false,
+    "sourceSha256": "32e884fa2345e48b31a9a1f0aff3f65d8f3ddf166eb48a53d3b2ceb6a69d5c31"
+  },
+  {
+    "source": "public/studio/open-house.png",
+    "destination": "public/studio/open-house-png.webp",
+    "width": 1594,
+    "height": 987,
+    "lossless": false,
+    "sourceSha256": "f100d4a11a2f2bf89abc3880ad0aa189cb9c75665ef3100c05ff29c641c12fcc"
+  },
+  {
+    "source": "public/templates/hero-images/baby-shower-hero.jpeg",
+    "destination": "public/templates/hero-images/baby-shower-hero.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "1929d568270b4e8286c926bddf2532cc3723d27e32e13c55ebeed94b165077fe"
+  },
+  {
+    "source": "public/templates/hero-images/balet-dance-hero.jpeg",
+    "destination": "public/templates/hero-images/balet-dance-hero.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "1e91876592e10b34fd24eb1ced228eb9a411dcc6c7e0dea23a51f078a9a1a25f"
+  },
+  {
+    "source": "public/templates/hero-images/cheerleading-hero.jpeg",
+    "destination": "public/templates/hero-images/cheerleading-hero.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "8bcbf0bc2919c9989c97960835a85958ef0617b3fea2554db452412dada7c67b"
+  },
+  {
+    "source": "public/templates/hero-images/dr-appinments-hero.jpeg",
+    "destination": "public/templates/hero-images/dr-appinments-hero.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "53fcb0b2a730b214c988c86dbff7c64856e1338bd2e545cd7a1d56425e7441a8"
+  },
+  {
+    "source": "public/templates/hero-images/father-daughter-hero.jpeg",
+    "destination": "public/templates/hero-images/father-daughter-hero.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "e8396327899b3813f0fff9a7f0f8dfae9c0b17e3763aad7542f70b5bd6443381"
+  },
+  {
+    "source": "public/templates/hero-images/football-hero.jpeg",
+    "destination": "public/templates/hero-images/football-hero.webp",
+    "width": 1365,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "cf8bcbf94313187a001b3454bf4c3f94a9b36795b873b49dfc04b00c769437f4"
+  },
+  {
+    "source": "public/templates/hero-images/gender reveal-hero.jpeg",
+    "destination": "public/templates/hero-images/gender reveal-hero.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "bbff6c9cbb54a5de3cbe74573587b78fee07f8ca7fd1ea1a6517eccf1f86b1da"
+  },
+  {
+    "source": "public/templates/hero-images/general-events-hero.jpeg",
+    "destination": "public/templates/hero-images/general-events-hero.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "583fa3d755194f1b9e79241524cc8d4279a463851ceb75b067771c90dbf84a66"
+  },
+  {
+    "source": "public/templates/hero-images/general-sport-hero.jpeg",
+    "destination": "public/templates/hero-images/general-sport-hero.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "1a517e0bc31887b0ba8872094135182a0928ae828a4a03bc54bfce2a7c2ff9de"
+  },
+  {
+    "source": "public/templates/hero-images/gymnastics-hero.jpeg",
+    "destination": "public/templates/hero-images/gymnastics-hero.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "ff64b63d5107aef350111584fd6a009a25a0403198cb5196ae11e4f5beefe6d9"
+  },
+  {
+    "source": "public/templates/hero-images/soccer-hero.jpeg",
+    "destination": "public/templates/hero-images/soccer-hero.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "cc313c0bf71d698d8a44ac495dc1b39b8dd044fa091dfec6628b9e37404e02bf"
+  },
+  {
+    "source": "public/templates/hero-images/workshop-classes-hero.jpeg",
+    "destination": "public/templates/hero-images/workshop-classes-hero.webp",
+    "width": 1920,
+    "height": 1080,
+    "lossless": false,
+    "sourceSha256": "f74405b8ded3d05a0f4ebf9a1370ed5a98b064a25bb570cc7cbaba88a5480cd0"
+  },
+  {
+    "source": "public/templates/signup/clubs-and-groups/bird-watching-group.png",
+    "destination": "public/templates/signup/clubs-and-groups/bird-watching-group.webp",
+    "width": 1600,
+    "height": 1200,
+    "lossless": true,
+    "sourceSha256": "8c244292ca8920948d1870b78b92e4fe2c6babe65aff95bbe4535d2e9000340e"
+  },
+  {
+    "source": "public/templates/signup/clubs-and-groups/hiking-club.png",
+    "destination": "public/templates/signup/clubs-and-groups/hiking-club.webp",
+    "width": 1600,
+    "height": 1200,
+    "lossless": true,
+    "sourceSha256": "cee0cac97521b5db6df0d1cbfa106e6630f1c7cc393add3e97c4de020742d175"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/art-deco-gala-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/art-deco-gala-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "c64b321c3f38913c0ee2b386400e4a14122f8d3868d7e371902b8bbd79f66d8f"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/carriage-house-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/carriage-house-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "dfac41bd12c4859ad6a0428fdd50fdd35f9793286efb57f8341702c3d96eb405"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/celestial-atelier-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/celestial-atelier-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "1a4830e1d09d7078e0b194b3b31ab734beb7751ec98c123f76c1abdb47bff12c"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/champagne-skyline-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/champagne-skyline-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "a3352f43236d4cceb3ee4460ada2e58affadcf73ca9b5e802a7c56db55f7b89a"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/coastal-pearl-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/coastal-pearl-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "d74cb8475e541b823875897208861c2f638632fc70ca00c629e45b323269aa38"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/desert-lumiere-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/desert-lumiere-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "1208c46ee37b1c6ec0cb783d286b083691bff82d05f2f2f2fa35fd857d395727"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/evergreen-ballroom-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/evergreen-ballroom-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "83517b88bcaf98134ce9e413803505d2347e7f068c963e8aa84cb95592457323"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/evergreen-ballroom.jpeg",
+    "destination": "public/templates/wedding-placeholders/evergreen-ballroom.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "676bde85803a9098165c842e9a54e5726b8ab0c3f3eff03909d15ce31b17cfe2"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/garden-atelier-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/garden-atelier-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "09efc828640c970b88fd7580dedf5072938ec3c10b4283f02fab07500824d1d0"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/gilded-twilight-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/gilded-twilight-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "f6be87364540e944dd245a0082e642b9df7dc9f02fcf4c60d4f0a110788e417a"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/golden-jubilee-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/golden-jubilee-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "8bd340d737f5149b46fbf42397778dc2f9fe3fee6a68d41763931a3a717a1403"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/harbor-serenade-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/harbor-serenade-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "b24b731434e8be089853fd3298719c4c918f799febf0d5b61f3e864d5e681d10"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/horizon-chateau-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/horizon-chateau-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "a032ba935500135a3eebb1edfc7c561832aa371955ec2685e2159033eda481c0"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/ivory-ink-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/ivory-ink-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "a6ee6de4fba4d52346e9072dae025a9e8a65cf784caba5d3e6c15b184fdcf1a3"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/marble-whisper-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/marble-whisper-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "aca7379845f36e8c7d0876ff3e01731cf531700e0801de9999d8724a7d8f6773"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/midnight-bloom-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/midnight-bloom-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "349ad659947e180c6273ce92bfb6bb868e622ccc3f06ea509346799c5dc42347"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/moonlit-terrace-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/moonlit-terrace-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "5723b9d5c8134667593cae7c85ca81010479c34fe3aef85bfbf95214f8dd83ba"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/orchid-reverie-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/orchid-reverie-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "2e3274105c5e3d48de8fe82ab5e98dbf053b818acc7556b2c035a099b155bf58"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/palais-moderne-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/palais-moderne-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "bb11bd2da071ae83af646397dc28f68d94138707894cb4a625dc57283f66e109"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/silken-alpine-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/silken-alpine-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "88f8bd98eccd8d345ccd466a2090629d3fc074231ce3999e3870fde7c37980f4"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/starlight-ballroom-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/starlight-ballroom-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "bb69d866b6b248bd5a1cb0c4d4c4e97b5ca83fdf831314eece5e30011298f436"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/sunset-vineyard-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/sunset-vineyard-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "b433fba19baf3f3b108ef3ef31b2a9075a73b98ca6e721fe716a4596106e941f"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/tidal-opulence-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/tidal-opulence-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "2369595717710b1fa3fd4c5052f385f2ca6eb18b8dcebedf565f9011b541527c"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/velvet-noir-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/velvet-noir-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "01d869966de577f03ae698966e1a7ef65d5021c917da2b7cad6a6c57e74ebbb4"
+  },
+  {
+    "source": "public/templates/wedding-placeholders/winter-chalet-hero.jpeg",
+    "destination": "public/templates/wedding-placeholders/winter-chalet-hero.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "00e37529fcaa1814192dae8591ff0f2fb8e7b80bcc69a9e4a5cb51462811d6f1"
+  },
+  {
+    "source": "public/templates/weddings/celestial-wedding/thumb.jpeg",
+    "destination": "public/templates/weddings/celestial-wedding/thumb.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "1a4830e1d09d7078e0b194b3b31ab734beb7751ec98c123f76c1abdb47bff12c"
+  },
+  {
+    "source": "public/templates/weddings/cinematic-wedding/thumb.jpeg",
+    "destination": "public/templates/weddings/cinematic-wedding/thumb.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "01d869966de577f03ae698966e1a7ef65d5021c917da2b7cad6a6c57e74ebbb4"
+  },
+  {
+    "source": "public/templates/weddings/ethereal-classic/thumb.jpeg",
+    "destination": "public/templates/weddings/ethereal-classic/thumb.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "a3352f43236d4cceb3ee4460ada2e58affadcf73ca9b5e802a7c56db55f7b89a"
+  },
+  {
+    "source": "public/templates/weddings/ethereal-wedding/thumb.jpeg",
+    "destination": "public/templates/weddings/ethereal-wedding/thumb.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "a3352f43236d4cceb3ee4460ada2e58affadcf73ca9b5e802a7c56db55f7b89a"
+  },
+  {
+    "source": "public/templates/weddings/gilded-wedding/thumb.jpeg",
+    "destination": "public/templates/weddings/gilded-wedding/thumb.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "f6be87364540e944dd245a0082e642b9df7dc9f02fcf4c60d4f0a110788e417a"
+  },
+  {
+    "source": "public/templates/weddings/midnight-elegance/hero.png",
+    "destination": "public/templates/weddings/midnight-elegance/hero.webp",
+    "width": 1440,
+    "height": 600,
+    "lossless": false,
+    "sourceSha256": "9800e209d870aff1d24be0edb6e35b6cfca2c27e3d39c70c788b34aee0118631"
+  },
+  {
+    "source": "public/templates/weddings/midnight-elegance/thumb.png",
+    "destination": "public/templates/weddings/midnight-elegance/thumb.webp",
+    "width": 320,
+    "height": 200,
+    "lossless": false,
+    "sourceSha256": "40f68f377a0f3812488db3236c9b25df1fa4e4d7eec7e2da5c026e9df4825bab"
+  },
+  {
+    "source": "public/templates/weddings/modern-editorial/thumb.jpeg",
+    "destination": "public/templates/weddings/modern-editorial/thumb.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "a6ee6de4fba4d52346e9072dae025a9e8a65cf784caba5d3e6c15b184fdcf1a3"
+  },
+  {
+    "source": "public/templates/weddings/museum-wedding/thumb.jpeg",
+    "destination": "public/templates/weddings/museum-wedding/thumb.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "bb11bd2da071ae83af646397dc28f68d94138707894cb4a625dc57283f66e109"
+  },
+  {
+    "source": "public/templates/weddings/noir-luxury/thumb.jpeg",
+    "destination": "public/templates/weddings/noir-luxury/thumb.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "01d869966de577f03ae698966e1a7ef65d5021c917da2b7cad6a6c57e74ebbb4"
+  },
+  {
+    "source": "public/templates/weddings/retro-70s/thumb.jpeg",
+    "destination": "public/templates/weddings/retro-70s/thumb.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "b433fba19baf3f3b108ef3ef31b2a9075a73b98ca6e721fe716a4596106e941f"
+  },
+  {
+    "source": "public/templates/weddings/rustic-boho/thumb.jpeg",
+    "destination": "public/templates/weddings/rustic-boho/thumb.webp",
+    "width": 1408,
+    "height": 768,
+    "lossless": false,
+    "sourceSha256": "b433fba19baf3f3b108ef3ef31b2a9075a73b98ca6e721fe716a4596106e941f"
+  },
+  {
+    "source": "public/themes/animal-forest-main.jpg",
+    "destination": "public/themes/animal-forest-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "c44a5b2fb1144a1b1c2ccd53a0729fa05b60c1a696094c125eb6e02a7a8240dc"
+  },
+  {
+    "source": "public/themes/bouncy-balloon-main.jpg",
+    "destination": "public/themes/bouncy-balloon-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "8aec7ce767da24414d3dfc025ebb7544b91cc0b382b8cb50fdc6605caf272e37"
+  },
+  {
+    "source": "public/themes/dino-explorer-main.jpg",
+    "destination": "public/themes/dino-explorer-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "5bc6bc65b270a7e7264bf7b60affed376bcfde44ea0bf1bc70bde92ab95b5c64"
+  },
+  {
+    "source": "public/themes/flower-fairy-main.jpg",
+    "destination": "public/themes/flower-fairy-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "684d0f987467a5e53456f6285720582e1fe671630f28e824e3febc7827dd9802"
+  },
+  {
+    "source": "public/themes/glow-disco-main.jpg",
+    "destination": "public/themes/glow-disco-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "95757c0fcdb39b3dbb7008c83e3873a20ddeae485cfc5871821a0598efdb2308"
+  },
+  {
+    "source": "public/themes/gold-star-winner-main.jpg",
+    "destination": "public/themes/gold-star-winner-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "f9b8aeb760bb03a6e98764367a39b6db022dfd499e224e8a241224b6e08053d4"
+  },
+  {
+    "source": "public/themes/gummy-bear-main.jpg",
+    "destination": "public/themes/gummy-bear-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "29e7bb8965ee8c3982a07d091ab58a5b29ddba574f8746f959ce726c75c3fe55"
+  },
+  {
+    "source": "public/themes/jungle-safari-main.jpg",
+    "destination": "public/themes/jungle-safari-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "a1201edfaaae94ea9761fe3d795d7fea08528b256075b3f81fb56fca02422149"
+  },
+  {
+    "source": "public/themes/little-mvp-main.jpg",
+    "destination": "public/themes/little-mvp-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "afab1392d2127bbbd8e46bf4cd68b472390c47be09bf97474e1dc96e1a960f54"
+  },
+  {
+    "source": "public/themes/little-prince-main.jpg",
+    "destination": "public/themes/little-prince-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "971ac1be2ec9423b4f4526b080b5c20870450a1b638c1a65e62b97172cd034ff"
+  },
+  {
+    "source": "public/themes/movie-star-main.jpg",
+    "destination": "public/themes/movie-star-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "a53a2abed6156501f34dd7f729540dec1e07ec9af4dc04de7910d225555e4174"
+  },
+  {
+    "source": "public/themes/pineapple-island-main.jpg",
+    "destination": "public/themes/pineapple-island-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "de9113f57246be0e42220b5c2392c0c77fa39c3d0235b336fb9a942fd4e03f08"
+  },
+  {
+    "source": "public/themes/pink-princess-main.jpg",
+    "destination": "public/themes/pink-princess-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "e16e485b82a1ad95f367a7a315f82f7af9197c536d57ea2fcc7d026d61163d3e"
+  },
+  {
+    "source": "public/themes/pixel-game-main.jpg",
+    "destination": "public/themes/pixel-game-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "0f9dd393d57af365ec63dcea4cadf3597a359db332b3a2b14153f439a0222bc5"
+  },
+  {
+    "source": "public/themes/space-robots-main.jpg",
+    "destination": "public/themes/space-robots-main.webp",
+    "width": 1024,
+    "height": 682,
+    "lossless": false,
+    "sourceSha256": "516cdebc23a4799e1713e2ba24fbaa8212f1521d933b252886524233ba094486"
+  },
+  {
+    "source": "public/themes/space-rocket-main.jpg",
+    "destination": "public/themes/space-rocket-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "6160fc66ce0369337ef63e0ad2f3d5fe631331b0fa50da26cb61b32b1d4101c7"
+  },
+  {
+    "source": "public/themes/twinkly-star-main.jpg",
+    "destination": "public/themes/twinkly-star-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "b8bf08179ef81af27321a20df0994a6d03f5faaf1a0e0f18f08ce58008a53c62"
+  },
+  {
+    "source": "public/themes/undersea-bubbles-main.jpg",
+    "destination": "public/themes/undersea-bubbles-main.webp",
+    "width": 1024,
+    "height": 1024,
+    "lossless": false,
+    "sourceSha256": "64b9da0c95dd435835975bfead7d3dfde90927832c0e4dde5687210084c3d790"
+  },
+  {
+    "source": "src/assets/LogoEonly.png",
+    "destination": "src/assets/LogoEonly.webp",
+    "width": 443,
+    "height": 432,
+    "lossless": true,
+    "sourceSha256": "9c934d954c22b1a107a7940a71a91424b0952e52ebba4b0234543704092bb977"
+  },
+  {
+    "source": "src/assets/concierge-menu-icon.png",
+    "destination": "src/assets/concierge-menu-icon.webp",
+    "width": 1063,
+    "height": 1144,
+    "lossless": true,
+    "sourceSha256": "2bc2285e8b23e47204606f61626a5a4f9a05d94835142f56236f8e40bbb696c2"
+  },
+  {
+    "source": "src/assets/envitefy-concierge-logo.png",
+    "destination": "src/assets/envitefy-concierge-logo.webp",
+    "width": 915,
+    "height": 986,
+    "lossless": true,
+    "sourceSha256": "ef5b36f1c5d079b505a510837a8ca854003a0f29074536e96e4c494502fc167f"
+  },
+  {
+    "source": "src/assets/user-concierge-logo.png",
+    "destination": "src/assets/user-concierge-logo.webp",
+    "width": 914,
+    "height": 990,
+    "lossless": true,
+    "sourceSha256": "6f9a9b1d0cc173d5233238de4d7609c884494dacaec2e69507074ff4853c3a4a"
+  }
+]

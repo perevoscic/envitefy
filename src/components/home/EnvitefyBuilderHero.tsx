@@ -87,7 +87,7 @@ export function EnvitefyBuilderHero({
                     <BabyCarriageIcon className="w-full h-full" />
                   ) : card.icon === "gender-reveal-icon" ? (
                     <Image
-                      src="/gender-reveal-icon.png"
+                      src="/gender-reveal-icon.webp"
                       alt="Gender Reveal"
                       width={80}
                       height={80}

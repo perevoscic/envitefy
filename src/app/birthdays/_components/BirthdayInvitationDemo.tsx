@@ -62,7 +62,7 @@ export default function BirthdayInvitationDemo({ primaryHref }: { primaryHref: s
     >
       <div className="flex items-center gap-3 border-b border-[#eadfd8] p-5">
         <Image
-          src="/phone-placeholders/birthday-maya.jpeg"
+          src="/phone-placeholders/birthday-maya.webp"
           alt="Maya"
           width={52}
           height={52}

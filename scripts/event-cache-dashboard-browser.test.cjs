@@ -1,6 +1,5 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const http = require("node:http");
 const path = require("node:path");
 const test = require("node:test");
 const { chromium } = require("playwright");
@@ -59,12 +58,7 @@ test("dashboard loads alongside a delayed sidebar and rejects earlier-account re
   });
   const script = fs.readFileSync(path.join(output, "fixture.js"));
   assert.equal(script.includes("dangerouslyAllowBrowser"), false, "dashboard fixture must not include the AI SDK");
-  const server = http.createServer((req, res) => {
-    if (req.url === "/fixture.js") { res.setHeader("Content-Type", "text/javascript"); res.end(script); }
-    else { res.setHeader("Content-Type", "text/html; charset=utf-8"); res.end('<html><head><meta charset="utf-8"></head><body><main id="root"></main><script src="/fixture.js"></script></body></html>'); }
-  });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const base = "http://event-cache-dashboard.test";
   let browser;
   const held = [];
   const reads = [];
@@ -88,6 +82,25 @@ test("dashboard loads alongside a delayed sidebar and rejects earlier-account re
   try {
     browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
     const page = await browser.newPage();
+    await page.route("**/*", route => {
+      const url = new URL(route.request().url());
+      if (url.origin !== base) return route.abort();
+      if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: script });
+      if (url.pathname === "/") return route.fulfill({ contentType: "text/html", body: '<html><head><meta charset="utf-8"></head><body><main id="root"></main><script src="/fixture.js"></script></body></html>' });
+      return route.abort();
+    });
+    await page.addInitScript(() => {
+      window.__holdHistoryIdle = true;
+      window.__historyIdleCallbacks = new Map();
+      let sequence = 0;
+      window.requestIdleCallback = callback => {
+        const id = ++sequence;
+        if (window.__holdHistoryIdle) window.__historyIdleCallbacks.set(id, callback);
+        else setTimeout(callback, 0);
+        return id;
+      };
+      window.cancelIdleCallback = id => window.__historyIdleCallbacks.delete(id);
+    });
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.route("**/api/**", async (route) => {
@@ -114,6 +127,15 @@ test("dashboard loads alongside a delayed sidebar and rejects earlier-account re
     await page.goto(base);
     await page.locator("#cache-state").waitFor({ state: "attached" });
     await waitState(() => JSON.parse(document.querySelector("#cache-state").textContent).dashboard?.diagnostics.owner === "a@test.com");
+    assert.equal(reads.filter(read => read.kind === "history").length, 0, "sidebar work waits for idle while the page loads");
+    await page.getByRole("button", { name: "Page action", exact: true }).click();
+    assert.equal(await page.locator("#page-actions").textContent(), "1", "page controls work before sidebar history starts");
+    await page.evaluate(() => {
+      window.__holdHistoryIdle = false;
+      for (const callback of window.__historyIdleCallbacks.values()) callback();
+      window.__historyIdleCallbacks.clear();
+    });
+    await waitState(() => JSON.parse(document.querySelector("#cache-state").textContent).historyLoading === true);
     const first = await state();
     assert.equal(first.historyLoading, true);
     assert.equal(first.hydrated, false);
@@ -125,6 +147,7 @@ test("dashboard loads alongside a delayed sidebar and rejects earlier-account re
     holdDashboard = true;
     await page.getByRole("button", { name: "Refresh all", exact: true }).click();
     const oldDashboard = await findHeld("dashboard", account);
+    assert.equal(reads.filter(read => read.kind === "history").length, 1, "refresh reuses the pending sidebar request");
     await switchAccount("b@test.com");
     const newDashboard = await findHeld("dashboard", account);
     const newHistory = await findHeld("history", account);
@@ -173,6 +196,5 @@ test("dashboard loads alongside a delayed sidebar and rejects earlier-account re
   } finally {
     for (const entry of held) if (!entry.released) entry.resolve({ items: [] });
     await browser?.close();
-    await new Promise((resolve) => server.close(resolve));
   }
 });

@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useCreationAccess } from "@/hooks/useCreationAccess";
 import { creationAllowed, type CreationProduct } from "@/lib/creation-access";
+import TemplateEditorLoading from "@/components/templates/TemplateEditorLoading";
 /** Explains unavailable new creation without changing source, route, or saved-event access. */
 export default function CreationAccessBoundary({ product, category, eventId, children }: { product: CreationProduct; category?: string | null; eventId?: string | null; children: ReactNode }) {
   const { data: session, status } = useSession();
@@ -54,7 +55,7 @@ export default function CreationAccessBoundary({ product, category, eventId, chi
   // Background access refreshes must not unmount an editor and discard in-memory work.
   if (status === "authenticated" && admitted.current === workspaceKey) return workspace("Access has changed. Your edits are retained here; review access in Settings before saving a new event.");
   const waiting = status === "loading" || (eventId ? status === "authenticated" && (!existing || existing.identity !== identity) && !error : creation.loading && !creation.access);
-  if (waiting) return <p role="status" className="mx-auto max-w-xl px-5 py-20 text-center text-sm text-[#6f6479]">Opening your event workspace…</p>;
+  if (waiting) return <TemplateEditorLoading viewport />;
   const failure = error || (!eventId ? creation.error : "");
   return <section className="mx-auto my-12 max-w-xl space-y-4 rounded-2xl border border-[#e2d9f1] bg-white p-6 text-[#30243e] sm:p-8"><h1 className="text-2xl font-semibold">{failure ? "Your workspace could not be loaded" : eventId ? "Editing access is required" : "Access to this event type is required"}</h1><p role={failure ? "alert" : undefined} className="text-sm leading-6 text-[#6f6479]">{failure || (eventId ? "Open this event from its owner account or accepted co-host invitation." : "Your source and edits are kept. You can request access in Settings and return here to continue.")}</p><div className="flex flex-wrap gap-3">{failure ? <button type="button" onClick={retry} className="min-h-11 rounded-xl border px-4 text-sm font-semibold">Retry</button> : null}<Link href="/settings#creation" className="inline-flex min-h-11 items-center rounded-xl bg-[#6555e8] px-4 text-sm font-semibold text-white">Open Settings</Link><Link href="/create" className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-[#59428d]">Back to Create</Link></div></section>;
 }

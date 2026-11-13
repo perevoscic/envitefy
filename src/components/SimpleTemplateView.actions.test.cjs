@@ -69,6 +69,26 @@ Module._extensions[".css"] = (mod) => {
 };
 
 const SimpleTemplateView = require("./SimpleTemplateView.tsx").default;
+
+test("saved school memos omit instructional locations and maps while retaining memo content", () => {
+  const routine = "Binders are taken home and returned to school daily.";
+  const base = { category: "General Events", themeId: "school--weekly-memo", scanSchedule: { kind: "school-memo", items: [] } };
+  const renderMemo = data => renderToStaticMarkup(React.createElement(SimpleTemplateView, {
+    eventId: "saved-memo", eventTitle: "Weekly Memo", eventData: { ...base, ...data },
+    isOwner: false, isReadOnly: true, viewerKind: "guest", hideOwnerActions: true, sessionEmail: null, shareUrl: "/event/weekly-memo",
+  }));
+  for (const field of ["venue", "location", "address", "city", "state"]) {
+    const html = renderMemo({ [field]: routine });
+    assert.ok(!html.includes(routine), `${field} must not display classroom instructions as a location`);
+    assert.ok(!html.includes("Location Map"));
+  }
+  assert.ok(!renderMemo({}).includes("Location Map"));
+  assert.ok(!renderMemo({ location: "Location TBD", address: "Not provided" }).includes("Location Map"));
+  const printed = renderMemo({ venue: "Oak Academy", address: "123 Main St, Chicago", description: routine });
+  assert.ok(printed.includes("Oak Academy"));
+  assert.ok(printed.includes("Location Map"), "an actual printed location retains its map");
+  assert.ok(printed.includes(routine), "the routine remains available as memo content");
+});
 const props = {
   eventId: "saved-meet",
   eventTitle: "Fright Invite",

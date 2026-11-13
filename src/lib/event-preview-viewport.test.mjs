@@ -9,6 +9,8 @@ import {
   eventPreviewReturnHref,
   fitEventPreview,
   getEventPreviewLayout,
+  getEventPreviewFrameLayout,
+  getEventPreviewPairLayout,
   initialEventPreviewDevice,
   ownerEventEditorReturnHref,
 } from "./event-preview-viewport.ts";
@@ -19,8 +21,8 @@ test("device previews use distinct real CSS viewport breakpoints", () => {
   assert.ok(EVENT_PREVIEW_DEVICES.mobile.width < 640);
   assert.equal(initialEventPreviewDevice(360), "mobile");
   assert.equal(initialEventPreviewDevice(800), "tablet");
-  assert.equal(initialEventPreviewDevice(1500), "desktop");
-  assert.equal(initialEventPreviewDevice(1024), "desktop");
+  assert.equal(initialEventPreviewDevice(1500), "mobile");
+  assert.equal(initialEventPreviewDevice(1024), "mobile");
   assert.equal(initialEventPreviewDevice(767), "mobile");
 });
 
@@ -77,6 +79,59 @@ test("Mobile on a real phone fills its available CSS viewport without scaling", 
   assert.equal(tablet.viewport.width, 820);
   assert.ok(tablet.fit.width <= 375 && tablet.fit.height <= 716);
   assert.equal(getEventPreviewLayout("mobile", 1440, 900).viewport.width, 390);
+});
+
+test("supplied phone and tablet frames keep their aspect ratio and real responsive widths", () => {
+  for (const device of ["mobile", "tablet"]) {
+    for (const [width, height] of [[320, 500], [760, 900], [1400, 720], [667, 220]]) {
+      const { viewport, shell, fit, frame } = getEventPreviewFrameLayout(device, width, height);
+      assert.equal(viewport.width, EVENT_PREVIEW_DEVICES[device].width);
+      assert.ok(viewport.height > 0);
+      assert.ok(fit.width <= width && fit.scale <= 1);
+      assert.ok(fit.height <= height);
+      assert.ok(Math.abs(fit.width / fit.height - frame.bounds.width / frame.bounds.height) < 0.00001, "preserves the supplied frame proportions at every available size");
+      assert.ok(Math.abs(viewport.width / viewport.height - frame.screen.width / frame.screen.height) < 0.00001);
+      assert.ok(shell.width > viewport.width && shell.height > viewport.height);
+      assert.equal(fit.width, shell.width * fit.scale);
+    }
+    for (const [width, height] of [[0, 0], [0, 720], [600, 0]]) {
+      const layout = getEventPreviewFrameLayout(device, width, height);
+      assert.equal(layout.fit.scale, 0);
+      assert.ok(Number.isFinite(layout.viewport.height));
+    }
+  }
+});
+
+test("desktop tablet and phone previews fit side by side at the same proportional height", () => {
+  for (const [width, height] of [[650, 500], [1000, 800], [1800, 1200], [0, 0]]) {
+    const pair = getEventPreviewPairLayout(width, height);
+    assert.ok(Math.abs(pair.mobile.fit.height - pair.tablet.fit.height) < 0.001);
+    assert.ok(pair.mobile.fit.height <= height);
+    assert.ok(pair.mobile.fit.width + pair.tablet.fit.width + (width > 32 ? 32 : 0) <= width + 0.001);
+    assert.equal(pair.mobile.viewport.width, 390);
+    assert.equal(pair.tablet.viewport.width, 820);
+  }
+});
+
+test("iPad rotation swaps the real viewport and rotates only its unchanged frame artwork", () => {
+  const portrait = getEventPreviewFrameLayout("tablet", 1400, 900);
+  const landscape = getEventPreviewFrameLayout("tablet", 1400, 900, "landscape");
+  assert.equal(landscape.viewport.width, portrait.viewport.height);
+  assert.equal(landscape.viewport.height, portrait.viewport.width);
+  assert.equal(landscape.shell.width, portrait.shell.height);
+  assert.equal(landscape.shell.height, portrait.shell.width);
+  assert.equal(landscape.artwork.width, portrait.artwork.width);
+  assert.equal(landscape.artwork.height, portrait.artwork.height);
+  assert.match(landscape.artwork.transform, /rotate\(-90deg\)/, "turn the right-side portrait camera onto the top landscape bezel");
+  assert.equal(landscape.screen.left, portrait.screen.top);
+  assert.equal(landscape.screen.top, portrait.shell.width - portrait.screen.left - portrait.viewport.width);
+  for (const [width, height] of [[650, 500], [1000, 800], [1800, 1200]]) {
+    const pair = getEventPreviewPairLayout(width, height, "landscape");
+    assert.ok(pair.tablet.viewport.width > pair.tablet.viewport.height);
+    assert.ok(pair.mobile.fit.width + pair.tablet.fit.width + 32 <= width + 0.001);
+    assert.ok(pair.tablet.fit.height <= height);
+    assert.ok(Math.abs(pair.mobile.fit.height - pair.tablet.fit.height) < 0.001);
+  }
 });
 
 test("owner Edit opens the editing menu while preserving the saved event and chosen design", () => {

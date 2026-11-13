@@ -108,18 +108,20 @@ function PreviewOwnerActions({ editor }: { editor: EventPageEditorSession }) {
 export function EventEditorActions({
   editor,
   children,
+  previewAction,
   onBack,
   showBack = true,
 }: {
   editor: EventPageEditorSession;
   children?: ReactNode;
+  previewAction?: ReactNode;
   onBack?: () => void;
   showBack?: boolean;
 }) {
   const actions = eventEditorActions(editor.published, editor.dirty);
   const disabled = editor.busy || !editor.ready;
   return (
-    <div className={styles.actions} role="group" aria-label="Save event" data-compact-save={editor.published && Boolean(editor.undo)}>
+    <div className={styles.actions} role="group" aria-label="Save event" data-published={editor.published} data-compact-save={editor.published && Boolean(editor.undo)}>
       {showBack && <button type="button" className={styles.mobileBack} disabled={disabled} onClick={onBack || editor.cancel}>
         <ArrowLeft size={17} aria-hidden="true" />
         Back
@@ -151,6 +153,7 @@ export function EventEditorActions({
           {!editor.published && <ExternalLink size={17} aria-hidden="true" />}
         </button>
       )}
+      {previewAction}
     </div>
   );
 }
@@ -189,6 +192,7 @@ export default function EventEditorWorkspace({
   preview,
   controls,
   controlsHeader,
+  controlsTitle = "Edit event page",
   children,
   drawer,
   embedded = false,
@@ -210,6 +214,7 @@ export default function EventEditorWorkspace({
   preview: ReactNode;
   controls: ReactNode | ((headerAction: ReactNode) => ReactNode);
   controlsHeader?: ReactNode | ((headerAction: ReactNode) => ReactNode);
+  controlsTitle?: string | null;
   templatesHref?: string;
   drawer?: Drawer;
   embedded?: boolean;
@@ -358,12 +363,13 @@ export default function EventEditorWorkspace({
   };
   const inlineHeader = typeof controls === "function" || typeof controlsHeader === "function";
   const canvasEditor = pageEditing && !embedded;
-  const exitButton = (
+  const renderExitButton = (left = false) => (
     <button type="button" disabled={editor.busy} onClick={editor.cancel}>
-      <LogOut size={17} aria-hidden="true" />
-      Exit
+      <LogOut size={17} aria-hidden="true" className={left ? styles.exitLeftIcon : undefined} />
+      {left ? "Exit Editing" : "Exit"}
     </button>
   );
+  const exitButton = renderExitButton();
   const viewActions = !embedded && (
     <div className={styles.views} role="group" aria-label="Editor view" data-owner-actions={!currentEditing && Boolean(editor.ownerActions)}>
       {readOnlyPreview ? (<>
@@ -389,15 +395,15 @@ export default function EventEditorWorkspace({
           )}
         </button>
       ) : (<>
-        {canvasEditor && mobile && exitButton}
-        <button ref={menuButtonRef} type="button" onClick={showEditing} aria-label={pageEditing ? "Page settings" : undefined}
+        {canvasEditor && mobile && renderExitButton(true)}
+        <button ref={menuButtonRef} type="button" onClick={showEditing} aria-label={pageEditing ? "Continue editing" : undefined}
           aria-expanded={currentEditing} aria-controls={editingPanelId}>
           {pageEditing ? (
             mobile ? <Pencil size={17} aria-hidden="true" /> : <PanelsTopLeft size={17} aria-hidden="true" />
           ) : (
             <Pencil size={17} aria-hidden="true" />
           )}
-          {mobile && pageEditing ? "Edit page" : viewLabels?.controls || "Edit"}
+          {pageEditing ? "Continue editing" : viewLabels?.controls || "Edit"}
         </button>
         {!canvasEditor && <PreviewOwnerActions editor={editor} />}
         {canvasEditor && !mobile && exitButton}
@@ -421,7 +427,7 @@ export default function EventEditorWorkspace({
       data-entered={entered}
       role={mobile && canvasEditor && currentEditing ? "dialog" : undefined}
       aria-modal={mobile && canvasEditor && currentEditing ? true : undefined}
-      aria-label={mobile && canvasEditor && currentEditing ? "Edit event page" : undefined}
+      aria-label={mobile && canvasEditor && currentEditing ? controlsTitle || "Edit event page" : undefined}
       onKeyDown={(event) => {
         if (mobile && canvasEditor && currentEditing && !event.defaultPrevented) {
           if (event.key === "Escape") { event.preventDefault(); goBack(); return; }
@@ -474,13 +480,13 @@ export default function EventEditorWorkspace({
         >
           {canvasEditor && (
             <div className={`${styles.panelNavigation} ${styles.views}`} role="group" aria-label="Editor view">
-              <div className={styles.desktopNavigation}>
-                {typeof controlsHeader === "function" ? controlsHeader(exitButton) : (
-                  <div className={styles.navigationRow}>
-                    <span className={styles.navigationTitle}>Edit event page</span>
-                    {exitButton}
-                  </div>
-                )}
+              <div className={`${styles.navigationRow} ${styles.desktopNavigation}`}>
+                <button type="button" disabled={editor.busy} onClick={showPage} aria-label="Close editing menu" title="Close editing menu">
+                  <X size={20} aria-hidden="true" />
+                </button>
+                <button type="button" disabled={editor.busy} onClick={editor.cancel}>
+                  <LogOut size={17} aria-hidden="true" />Exit editing
+                </button>
               </div>
               <div className={`${styles.navigationRow} ${styles.mobileNavigation}`}>
                 <button type="button" disabled={editor.busy} onClick={showPage} aria-label="Back to page">
@@ -550,17 +556,6 @@ export default function EventEditorWorkspace({
                             : "Page sections"
                       }
                       onBack={closeTool}
-                      action={panel === "layout" && editor.composition?.hero ? (
-                        <button
-                          type="button"
-                          data-section-reset
-                          onClick={() => editor.setComposition?.((previous) =>
-                            previous ? { ...previous, hero: undefined } : previous,
-                          )}
-                        >
-                          Reset
-                        </button>
-                      ) : undefined}
                     >
                       {panel === "url" ? (
                         <EventUrlEditor
@@ -574,7 +569,6 @@ export default function EventEditorWorkspace({
                         {(imageControls || imageControlsInMenu) && <div className={styles.imageSettingsControls}>
                           {imageControls}
                           {imageControlsInMenu && <div ref={setImageControlsTarget} />}
-                          <p>Image and layout changes are saved only when you save the event.</p>
                         </div>}
                         <EventPageLayoutPicker
                           value={editor.composition}
@@ -623,7 +617,15 @@ export default function EventEditorWorkspace({
             </div>
           )}
           {pageEditing && !canvasEditor && viewActions}
-          <EventEditorActions editor={editor} onBack={goBack} showBack={!canvasEditor}>
+          <EventEditorActions editor={editor} onBack={goBack} showBack={!canvasEditor}
+            previewAction={!embedded && !previewing && currentEditing && (
+              <button type="button" className={styles.previewAction} disabled={editor.busy} onClick={() => {
+                previewReturnToControls.current = currentEditing;
+                showPage();
+                setPreviewing(true);
+              }}><Eye size={17} aria-hidden="true" />Preview</button>
+            )}
+          >
             {!pageEditing && !currentEditing && viewActions}
             {editor.undo && (currentEditing || editor.dirty) && (
               <Dialog.Root open={undoOpen} onOpenChange={setUndoOpen}>
@@ -644,11 +646,6 @@ export default function EventEditorWorkspace({
                 </Dialog.Portal>
               </Dialog.Root>
             )}
-            {canvasEditor && currentEditing && (
-              <button type="button" className={styles.hideSettings} disabled={editor.busy} onClick={showPage}>
-                Hide settings
-              </button>
-            )}
             {!canvasEditor && (currentEditing || editor.dirty) && (
               <button
                 type="button"
@@ -658,13 +655,6 @@ export default function EventEditorWorkspace({
                 {pageEditing && <X size={17} aria-hidden="true" />}
                 Cancel
               </button>
-            )}
-            {!embedded && !previewing && (currentEditing || pageEditing) && (
-              <button type="button" disabled={editor.busy} onClick={() => {
-                previewReturnToControls.current = currentEditing;
-                showPage();
-                setPreviewing(true);
-              }}><Eye size={17} aria-hidden="true" />Preview</button>
             )}
           </EventEditorActions>
         </footer>}

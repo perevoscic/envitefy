@@ -3,15 +3,12 @@ import "./template-editor-styles";
 import dynamic from "next/dynamic";
 import type { TemplateCategory } from "@/lib/template-categories";
 import TemplateEditorProvider from "./TemplateEditorContext";
+import TemplateEditorLoading from "./TemplateEditorLoading";
 import { useSearchParams } from "next/navigation";
 import CreationAccessBoundary from "@/components/event-create/CreationAccessBoundary";
 import { normalizeCreationCategory } from "@/lib/creation-access";
 
-const loading = () => (
-  <p role="status" className="p-10 text-center">
-    Loading your editor…
-  </p>
-);
+const loading = () => <TemplateEditorLoading />;
 const WeddingEditor = dynamic(() => import("@/app/event/weddings/customize/page"), {
   loading,
   ssr: false,

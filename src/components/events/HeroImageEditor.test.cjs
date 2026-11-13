@@ -12,7 +12,7 @@ function pickerHarness({ readError = false, decodeError = false, options = {}, r
   const changes = [];
   let chooserCount = 0;
   const hooks = {
-    useRef: () => ({ current: { click: () => chooserCount++ } }),
+    useRef: (initial) => ({ current: initial === null ? { click: () => chooserCount++ } : initial }),
     useState: (initial) => {
       const index = states.push(initial) - 1;
       return [
@@ -40,7 +40,7 @@ function pickerHarness({ readError = false, decodeError = false, options = {}, r
   }
   const module = { exports: {} };
   new Function("require", "module", "exports", "FileReader", "window", code)(
-    (name) => (name === "react" ? hooks : name === "./EventPageReadOnlyContext" ? { useEventPageReadOnly: () => readOnly } : name === "./EventEditorImageControlsContext" ? { useEventEditorImageControls: () => null } : name === "lucide-react" || name === "./HeroImageAdjustments" ? {} : require(name)),
+    (name) => (name === "react" ? hooks : name === "./EventPageReadOnlyContext" ? { useEventPageReadOnly: () => readOnly } : name === "./EventEditorImageControlsContext" ? { useEventEditorImageControls: () => null } : name === "lucide-react" || name === "./HeroImageAdjustments" || name === "./ImageUploadDropzone" ? {} : require(name)),
     module,
     module.exports,
     FileReader,
@@ -106,7 +106,7 @@ test("clean pages hide image editing without opening a chooser or changing the o
   };
   const controls = flatten(h.editor({ value: "/original.webp" }));
   assert.ok(controls.find(node => node.props?.["aria-label"] === "Change hero image"));
-  assert.ok(controls.find(node => node.props?.["aria-label"] === "Use template image"));
+  assert.ok(controls.find(node => node.props?.["aria-label"] === "Reset image"));
   assert.equal(controls.find(node => node.props?.role === "switch"), undefined, "artwork colors stay original");
   assert.equal(h.chooserCount(), 0);
   assert.deepEqual(h.changes, []);
@@ -148,4 +148,30 @@ test("failed hero conversion preserves the previous image and releases busy stat
   assert.deepEqual(h.changes, []);
   assert.equal(h.states[1], "WebP preparation failed");
   assert.deepEqual(busy, [true, false]);
+});
+
+test("dropped images use the same validation and preparation as picker selections", async () => {
+  const h = pickerHarness({ options: { prepareImage: async () => "data:image/webp;base64,cHJlcGFyZWQ=" } });
+  await h.picker.choose({ name: "packet.pdf", type: "application/pdf", size: 512 });
+  assert.deepEqual(h.changes, [], "a drop cannot bypass the image-only boundary");
+  await h.picker.choose({ name: "photo.png", type: "image/png", size: 512 });
+  assert.deepEqual(h.changes, ["data:image/webp;base64,cHJlcGFyZWQ="]);
+});
+
+test("an in-flight image preparation blocks another drop and the file chooser", async () => {
+  let release, started;
+  const preparing = new Promise(resolve => { started = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  const h = pickerHarness({ options: { prepareImage: async () => { started(); await gate; return "/prepared.webp"; } } });
+  const first = h.picker.choose({ name: "first.png", type: "image/png", size: 512 });
+  await preparing;
+  await h.picker.choose({ name: "second.png", type: "image/png", size: 512 });
+  h.picker.open();
+  assert.equal(h.chooserCount(), 0);
+  assert.deepEqual(h.changes, []);
+  release();
+  await first;
+  assert.deepEqual(h.changes, ["/prepared.webp"]);
+  h.picker.open();
+  assert.equal(h.chooserCount(), 1, "the chooser becomes available again after preparation");
 });

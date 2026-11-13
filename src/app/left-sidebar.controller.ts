@@ -3,7 +3,6 @@ import { useCreationAccess } from "@/hooks/useCreationAccess";
 import { useCategoryFavorites } from "@/hooks/useCategoryFavorites";
 import { isCategoryFavoriteActive } from "@/lib/category-favorites";
 import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
-import { writeLocalCalendarDefault } from "@/lib/calendar-preference";
 import {
   type Dispatch,
   type RefObject,
@@ -32,8 +31,6 @@ import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
 import { buildEventPath } from "@/utils/event-url";
 import {
   buildGroupedEventLists,
-  CALENDAR_DEFAULT_STORAGE_KEY,
-  CalendarProviderKey,
   CompactNavItemId,
   CREATE_ACTIVE_STORAGE_KEY,
   countGroupedEventItems,
@@ -44,7 +41,6 @@ import {
   HistoryRow,
   INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
   MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
-  normalizeCalendarProvider,
   SIDEBAR_WIDTH_REM,
   SIDEBAR_COLLAPSED_REM,
   SidebarPage,
@@ -77,9 +73,6 @@ type LeftSidebarControllerArgs = {
   session: any;
   status: string;
   menu: {
-    connectedCalendars: Record<string, boolean>;
-    calendarConnectionsLoaded: boolean;
-    refreshConnectedCalendars: () => Promise<unknown> | unknown;
     featureVisibility: {
       visibleTemplateKeys: TemplateKey[];
       sportPreferences: SportPreferences;
@@ -316,9 +309,6 @@ export function useLeftSidebarController({
 }: LeftSidebarControllerArgs): LeftSidebarControllerViewModel {
   const creationAccess = useCreationAccess();
   const {
-    connectedCalendars,
-    calendarConnectionsLoaded,
-    refreshConnectedCalendars,
     featureVisibility,
     primarySignupSource,
     productScopes,
@@ -362,8 +352,6 @@ export function useLeftSidebarController({
   const [showPastInvitedEvents, setShowPastInvitedEvents] = useState(false);
   const [eventSidebarMode, setEventSidebarMode] = useState<EventSidebarMode>("owner");
   const [isHydrated, setIsHydrated] = useState(false);
-  const [defaultCalendarProvider, setDefaultCalendarProvider] =
-    useState<CalendarProviderKey | null>(null);
   const [lastCreateSelection, setLastCreateSelection] = useState<string | null>(null);
   const [forcedCreateActiveLabel, setForcedCreateActiveLabel] = useState<string | null>(null);
   const [isDesktop, setIsDesktop] = useState<boolean>(() => {
@@ -382,7 +370,6 @@ export function useLeftSidebarController({
   }, [profileEmail]);
   const [_profileLoaded, setProfileLoaded] = useState(false);
 
-  const savedCalendarProviderRef = useRef<CalendarProviderKey | null | "__unset">("__unset");
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const openBarButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -395,27 +382,6 @@ export function useLeftSidebarController({
   const lastMobileRoutePathRef = useRef<string | null>(null);
   const lastAdminRouteSyncPathRef = useRef<string | null>(null);
   const lastEventListRouteSyncPathRef = useRef<string | null>(null);
-
-  const mirrorLocalCalendarDefault = useCallback((provider: CalendarProviderKey | null) => {
-    writeLocalCalendarDefault(provider);
-  }, []);
-
-  const saveCalendarDefault = useCallback(
-    async (provider: CalendarProviderKey | null) => {
-      if (status !== "authenticated") return;
-      if (savedCalendarProviderRef.current === provider) return;
-      try {
-        await fetch("/api/user/profile", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ preferredProvider: provider }),
-        });
-        savedCalendarProviderRef.current = provider;
-      } catch {}
-    },
-    [status],
-  );
 
   const effectivePrimarySignupSource = profilePrimarySignupSource ?? primarySignupSource;
   const createEntryLabel = "Create event";
@@ -493,12 +459,6 @@ export function useLeftSidebarController({
       window.scrollTo(0, scrollY);
     };
   }, [isDesktop, isOpen]);
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      void refreshConnectedCalendars();
-    }
-  }, [refreshConnectedCalendars, status]);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -812,8 +772,6 @@ export function useLeftSidebarController({
           setProfilePrimarySignupSource(
             normalizePrimarySignupSource(json.primarySignupSource) || "legacy",
           );
-          setDefaultCalendarProvider(normalizeCalendarProvider(json.preferredProvider));
-          savedCalendarProviderRef.current = normalizeCalendarProvider(json.preferredProvider);
         }
       } catch {
       } finally {
@@ -853,7 +811,6 @@ export function useLeftSidebarController({
     } else if (status === "unauthenticated") {
       cancelScheduledLoad();
       profileEmailRef.current = null;
-      savedCalendarProviderRef.current = "__unset";
       setProfilePrimarySignupSource(null);
       setProfileLoaded(true);
     }
@@ -863,34 +820,6 @@ export function useLeftSidebarController({
       cancelScheduledLoad();
     };
   }, [primarySignupSource, profileEmail, session?.user, setProfilePrimarySignupSource, status]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(CALENDAR_DEFAULT_STORAGE_KEY);
-      const provider = normalizeCalendarProvider(raw);
-      if (provider) setDefaultCalendarProvider(provider);
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    if (status !== "authenticated") return;
-    if (!calendarConnectionsLoaded) return;
-    if (!defaultCalendarProvider) return;
-    if (connectedCalendars[defaultCalendarProvider]) return;
-    setDefaultCalendarProvider(null);
-    mirrorLocalCalendarDefault(null);
-    void saveCalendarDefault(null);
-  }, [
-    connectedCalendars.apple,
-    connectedCalendars.google,
-    connectedCalendars.microsoft,
-    calendarConnectionsLoaded,
-    defaultCalendarProvider,
-    mirrorLocalCalendarDefault,
-    saveCalendarDefault,
-    status,
-  ]);
 
   useEffect(() => {
     setIsAdmin(Boolean((session?.user as any)?.isAdmin));

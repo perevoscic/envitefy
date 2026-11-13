@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -16,6 +16,25 @@ const themeColorSyncSource = readFileSync(
 const manifest = JSON.parse(
   readFileSync(join(repoRoot, "public", "manifest.webmanifest"), "utf8"),
 );
+
+test("favicon is a static ICO asset instead of an App Router compilation", () => {
+  const icon = readFileSync(join(repoRoot, "public", "favicon.ico"));
+  assert.deepEqual([...icon.subarray(0, 4)], [0, 0, 1, 0]);
+  assert.ok(icon.readUInt16LE(4) > 0);
+  assert.equal(existsSync(join(__dirname, "favicon.ico")), false);
+  assert.match(layoutSource, /url: "\/favicon\.ico"/);
+  const generator = readFileSync(join(repoRoot, "scripts", "generate-favicon.js"), "utf8");
+  assert.match(generator, /const outDir = path\.resolve\(__dirname, "\.\.\/public"\)/);
+});
+
+test("PNG app icons are static assets and keep their existing URLs", () => {
+  for (const name of ["icon.png", "apple-icon.png"]) {
+    const bytes = readFileSync(join(repoRoot, "public", name));
+    assert.deepEqual([...bytes.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+    assert.equal(existsSync(join(__dirname, name)), false);
+    assert.ok(layoutSource.includes(`url: "/${name}`));
+  }
+});
 
 test("root layout leaves head metadata to Next", () => {
   assert.doesNotMatch(layoutSource, /<head\b/);

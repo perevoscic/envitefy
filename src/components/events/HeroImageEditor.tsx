@@ -7,6 +7,7 @@ import type { HeroImageSettings } from "@/lib/hero-image-settings";
 import { useEventEditorImageControls } from "./EventEditorImageControlsContext";
 import { useEventPageReadOnly } from "./EventPageReadOnlyContext";
 import HeroImageAdjustments from "./HeroImageAdjustments";
+import ImageUploadDropzone from "./ImageUploadDropzone";
 
 type Props = {
   value?: string | null;
@@ -24,15 +25,52 @@ export function useHeroImagePicker(
   options: Pick<Props, "prepareImage" | "onBusyChange"> = {},
 ) {
   const input = useRef<HTMLInputElement>(null);
+  const selecting = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const choose = async (file: File) => {
+    if (selecting.current) return;
+    selecting.current = true;
+    setBusy(true);
+    options.onBusyChange?.(true);
+    setError("");
+    try {
+      if (!/^image\/(jpeg|png|webp|avif)$/.test(file.type) || file.size > 20 * 1024 * 1024) {
+        throw new Error("Choose a JPG, PNG, WebP, or AVIF image under 20 MB.");
+      }
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () =>
+          typeof reader.result === "string"
+            ? resolve(reader.result)
+            : reject(new Error("Unable to read image."));
+        reader.onerror = () => reject(new Error("Unable to read image."));
+        reader.readAsDataURL(file);
+      });
+      await new Promise<void>((resolve, reject) => {
+        const img = new window.Image();
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("This image could not be decoded. Choose another file."));
+        img.src = dataUrl;
+      });
+      const prepared = options.prepareImage ? await options.prepareImage(dataUrl) : dataUrl;
+      onChange(prepared);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Unable to open this image.");
+    } finally {
+      selecting.current = false;
+      setBusy(false);
+      options.onBusyChange?.(false);
+    }
+  };
 
   return {
     busy,
     error,
     clearError: () => setError(""),
+    choose,
     open: () => {
-      if (!busy) input.current?.click();
+      if (!selecting.current) input.current?.click();
     },
     input: (
       <input
@@ -47,37 +85,7 @@ export function useHeroImagePicker(
           const file = event.target.files?.[0];
           event.target.value = "";
           if (!file) return;
-          setBusy(true);
-          options.onBusyChange?.(true);
-          setError("");
-          try {
-            if (!/^image\/(jpeg|png|webp|avif)$/.test(file.type) || file.size > 20 * 1024 * 1024) {
-              throw new Error("Choose a JPG, PNG, WebP, or AVIF image under 20 MB.");
-            }
-            const reader = new FileReader();
-            const dataUrl = await new Promise<string>((resolve, reject) => {
-              reader.onload = () =>
-                typeof reader.result === "string"
-                  ? resolve(reader.result)
-                  : reject(new Error("Unable to read image."));
-              reader.onerror = () => reject(new Error("Unable to read image."));
-              reader.readAsDataURL(file);
-            });
-            await new Promise<void>((resolve, reject) => {
-              const img = new window.Image();
-              img.onload = () => resolve();
-              img.onerror = () =>
-                reject(new Error("This image could not be decoded. Choose another file."));
-              img.src = dataUrl;
-            });
-            const prepared = options.prepareImage ? await options.prepareImage(dataUrl) : dataUrl;
-            onChange(prepared);
-          } catch (reason) {
-            setError(reason instanceof Error ? reason.message : "Unable to open this image.");
-          } finally {
-            setBusy(false);
-            options.onBusyChange?.(false);
-          }
+          await choose(file);
         }}
       />
     ),
@@ -99,11 +107,14 @@ export default function HeroImageEditor({
   const readOnly = useEventPageReadOnly();
   const mobileControls = useEventEditorImageControls();
   const mobileTarget = label === "Change" || label === "Change image" ? mobileControls : null;
+  const dropzone = label === "Upload image" || Boolean(mobileTarget);
   if (readOnly) return null;
   const controls = (
-    <div className={mobileTarget ? undefined : className} data-hero-image-control>
+    <div className={`${mobileTarget ? "" : className} ${dropzone ? "w-full min-w-0" : ""}`} data-hero-image-control>
+      {dropzone && <h3 className="mb-3 font-sans text-sm font-semibold">Change main image</h3>}
       <div className="flex flex-wrap items-center gap-2">
-        <button
+        {dropzone ? <ImageUploadDropzone label={label === "Change" || label === "Change image" ? "Change hero image" : label}
+          busy={picker.busy} value={value} onBrowse={picker.open} onFile={picker.choose} /> : <button
           type="button"
           disabled={picker.busy}
           onClick={picker.open}
@@ -112,11 +123,12 @@ export default function HeroImageEditor({
         >
           <ImagePlus size={18} aria-hidden="true" />
           {picker.busy ? "Preparing image…" : label}
-        </button>
+        </button>}
         {settings && onSettingsChange ? (
           <HeroImageAdjustments settings={settings} onChange={onSettingsChange} />
         ) : null}
         {value ? (
+          <div className={dropzone ? "flex w-full justify-center" : "contents"}>
           <button
             type="button"
             disabled={picker.busy}
@@ -124,12 +136,14 @@ export default function HeroImageEditor({
               picker.clearError();
               onChange("");
             }}
-            aria-label="Use template image"
+            aria-label="Reset image"
             title="Use template image"
-            className="inline-flex size-11 items-center justify-center rounded-full border border-violet-200 bg-white text-violet-800 shadow-md hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-violet-200 bg-white px-4 py-2 font-sans text-sm font-semibold text-violet-800 shadow-md hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
           >
             <RotateCcw size={16} aria-hidden="true" />
+            Reset image
           </button>
+          </div>
         ) : null}
       </div>
       {picker.input}

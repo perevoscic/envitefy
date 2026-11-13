@@ -4,6 +4,7 @@
 import "@/app/event/weddings/_renderers/atelier-wedding-layouts.module.css";
 import "@/app/live-cards/design-generation-progress.module.css";
 import "@/components/EventCanvas.module.css";
+import "@/components/event-preview-toolbar.module.css";
 import "@/components/baby-showers/baby-shower-designs.module.css";
 import "@/components/birthdays/redesign/anniversary-scenes.module.css";
 import "@/components/birthdays/redesign/birthday-fonts.css";
@@ -33,6 +34,7 @@ import "@/components/events/event-section-builder.module.css";
 import "@/components/events/event-section-extras.module.css";
 import "@/components/events/event-section-navigation.module.css";
 import "@/components/events/holiday-page-background.module.css";
+import "@/components/events/image-upload-dropzone.module.css";
 import "@/components/events/information-section-body.module.css";
 import "@/components/events/inline-editable-text.module.css";
 import "@/components/events/responsive-event-navigation.module.css";

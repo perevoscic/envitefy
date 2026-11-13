@@ -1516,7 +1516,7 @@ const config = {
   displayName: "Cheerleading Season",
   category: "sport_cheerleading",
   categoryLabel: "Cheerleading",
-  defaultHero: "/templates/hero-images/cheerleading-hero.jpeg",
+  defaultHero: "/templates/hero-images/cheerleading-hero.webp",
   detailFields: [
     { key: "team", label: "Team / Squad", placeholder: "Varsity Cheer" },
     { key: "season", label: "Season / Year", placeholder: "2024-2025" },

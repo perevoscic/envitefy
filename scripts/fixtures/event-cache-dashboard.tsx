@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useSession } from "next-auth/react";
 import { SidebarProvider } from "@/app/sidebar-context";
@@ -6,6 +6,7 @@ import { EventCacheProvider, useEventCache } from "@/app/event-cache-context";
 import Dashboard from "@/components/Dashboard";
 
 function CacheProbe() {
+  const [actions, setActions] = useState(0);
   const cache = useEventCache();
   const { data: session } = useSession();
   useEffect(() => {
@@ -19,6 +20,8 @@ function CacheProbe() {
     });
   });
   return <>
+    <button onClick={() => setActions(value => value + 1)}>Page action</button>
+    <output id="page-actions">{actions}</output>
     <output id="cache-state">{JSON.stringify({
       identity: session?.user?.email,
       ready: cache.isIdentityReady,

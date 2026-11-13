@@ -4,10 +4,10 @@
   "category": "luxury",
   "family": "classic",
   "layout": "gilded-wedding",
-  "thumbnail": "/templates/weddings/gilded-wedding/thumb.jpeg",
+  "thumbnail": "/templates/weddings/gilded-wedding/thumb.webp",
   "theme": {
     "colors": { "primary": "#FDFBF7", "secondary": "#D4AF37", "background": "transparent" },
     "fonts": { "headline": "Playfair Display", "body": "Playfair Display" },
-    "decorations": { "heroImage": "/templates/wedding-placeholders/gilded-twilight-hero.jpeg" }
+    "decorations": { "heroImage": "/templates/wedding-placeholders/gilded-twilight-hero.webp" }
   }
 }

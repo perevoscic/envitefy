@@ -130,12 +130,13 @@ test("provider disconnect removes only that calendar without ending the account 
   assert.match(calendarsRouteSource, /apple: false/);
 });
 
-test("shared navigation waits for real connection status before clearing a default", () => {
-  assert.match(menuContextSource, /fetch\("\/api\/calendars"/);
-  assert.match(menuContextSource, /calendarConnectionsLoaded/);
-  assert.match(leftSidebarControllerSource, /if \(!calendarConnectionsLoaded\) return/);
-  assert.match(
-    leftSidebarControllerSource,
-    /if \(connectedCalendars\[defaultCalendarProvider\]\) return/,
-  );
+test("shared navigation neither loads calendar connections nor rewrites calendar defaults", () => {
+  for (const navigationSource of [menuContextSource, leftSidebarControllerSource]) {
+    assert.doesNotMatch(navigationSource, /\/api\/calendars|refreshConnectedCalendars|calendarConnectionsLoaded/);
+    assert.doesNotMatch(navigationSource, /preferredProvider|writeLocalCalendarDefault/);
+  }
+});
+
+test("settings requests calendar status only for the selected Calendars section", () => {
+  assert.match(source, /if \(sessionStatus !== "authenticated" \|\| activeSettingsSection !== "calendars"\) return;\s*if \(calendarConnectionsRequestedRef.current\) return;\s*calendarConnectionsRequestedRef.current = true;\s*void fetchConnectedCalendars\(\)/);
 });

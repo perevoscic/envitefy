@@ -268,8 +268,8 @@ export function EventEditorSections({
   return (
     <div className={styles.sectionNavigation}>
       <div hidden={active !== "main"} className={styles.sectionMenu}>
-        <header className={styles.menuHeader}>
-          <h2>Add your details</h2>
+        <header className={`${styles.menuHeader} ${styles.sectionHeader}`}>
+          <h2>Edit event page</h2>
           {headerAction}
         </header>
         <p>Edit your event details and design.</p>

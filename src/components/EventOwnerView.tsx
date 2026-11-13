@@ -13,6 +13,7 @@ import EventLeaveCoHostDialog from "@/components/EventLeaveCoHostDialog";
 import EventUrlDialog from "@/components/events/EventUrlEditor";
 import { useRouter } from "next/navigation";
 import EventPreviewViewport from "./EventPreviewViewport";
+import toolbarStyles from "./event-preview-toolbar.module.css";
 
 type Props = {
   editLocked?: boolean;
@@ -69,7 +70,7 @@ export default function EventOwnerView({
   }
 
   const actionClassName =
-    "min-h-11 min-w-11 items-center justify-start gap-2 whitespace-nowrap rounded-xl px-3 text-sm font-semibold transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current lg:justify-center lg:rounded-full";
+    `${toolbarStyles.control} ${toolbarStyles.ownerControl} min-h-11 min-w-11 items-center justify-start gap-2 whitespace-nowrap rounded-xl px-3 text-sm font-semibold transition hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current lg:justify-center lg:rounded-full`;
 
   const actions = (
     <div role="group" aria-label="Event actions" className="flex min-w-0 flex-col items-stretch gap-1 lg:flex-row lg:flex-wrap lg:items-center lg:justify-center lg:gap-2">

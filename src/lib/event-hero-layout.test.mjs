@@ -33,6 +33,36 @@ const choice = EVENT_HERO_LAYOUT_PRESETS.find((preset) => preset.id === "arch").
 
 test("premade hero choices provide styled and classic arrangements without any section layout settings", () => {
   assert.deepEqual(EVENT_HERO_LAYOUT_PRESETS.map(({ id, label }) => ({ id, label })), [
+    { id: "ribbon-cross", label: "Ribbon cross" },
+    { id: "contour-flow", label: "Contour flow" },
+    { id: "prism-overlay", label: "Prism overlay" },
+    { id: "glass-sash", label: "Glass sash" },
+    { id: "mesh-corners", label: "Mesh corners" },
+    { id: "dot-matrix", label: "Dot matrix" },
+    { id: "constellation", label: "Constellation" },
+    { id: "circuit-trace", label: "Circuit trace" },
+    { id: "parallel-swoops", label: "Parallel swoops" },
+    { id: "woven-lines", label: "Woven lines" },
+    { id: "perspective-grid", label: "Perspective grid" },
+    { id: "neon-corners", label: "Neon corners" },
+    { id: "gradient-outline", label: "Gradient outline" },
+    { id: "halo-bloom", label: "Halo bloom" },
+    { id: "ripple-corner", label: "Corner ripples" },
+    { id: "sunrise-rays", label: "Sunrise rays" },
+    { id: "racing-lines", label: "Racing lines" },
+    { id: "pixel-corners", label: "Pixel corners" },
+    { id: "split-level", label: "Split level" },
+    { id: "bridge-window", label: "Bridge window" },
+    { id: "concave-waist", label: "Concave waist" },
+    { id: "petal-window", label: "Petal window" },
+    { id: "notched-banner", label: "Notched banner" },
+    { id: "scoop-corners", label: "Scooped corners" },
+    { id: "asymmetric-dome", label: "Asymmetric dome" },
+    { id: "terraced-window", label: "Terraced window" },
+    { id: "interlock-overlay", label: "Interlocking shapes" },
+    { id: "angle-echo", label: "Angle echo" },
+    { id: "floating-tiles", label: "Floating tiles" },
+    { id: "wave-lattice", label: "Wave lattice" },
     { id: "diagonal-cut", label: "Diagonal cut" },
     { id: "crossing-lines", label: "Crossing lines" },
     { id: "offset-frame", label: "Offset frame" },
@@ -94,8 +124,8 @@ test("premade hero choices provide styled and classic arrangements without any s
     { id: "arch-left", label: "Arch left" },
     { id: "arch-right", label: "Arch right" },
   ]);
-  assert.equal(new Set(EVENT_HERO_LAYOUT_PRESETS.map(({ layout }) => JSON.stringify(layout))).size, 60);
-  assert.equal(EVENT_HERO_LAYOUT_PRESETS.filter(({ layout }) => layout.imageStyle).length, 48);
+  assert.equal(new Set(EVENT_HERO_LAYOUT_PRESETS.map(({ layout }) => JSON.stringify(layout))).size, 90);
+  assert.equal(EVENT_HERO_LAYOUT_PRESETS.filter(({ layout }) => layout.imageStyle).length, 78);
   for (const { layout } of EVENT_HERO_LAYOUT_PRESETS) {
     assert.deepEqual(normalizeEventHeroLayout(layout), layout);
     assert.equal(layout.sectionLayout, undefined);

@@ -956,7 +956,7 @@ export default function SpecialEventsCustomizePage() {
         value: data.hero,
         eventId: editEventId || undefined,
         fileName: "special-event-hero.png",
-      })) || "/templates/hero-images/father-daughter-hero.jpeg";
+      })) || "/templates/hero-images/father-daughter-hero.webp";
     const sponsorsToSave = await Promise.all(
       (data.sponsors || []).map(async (sponsor: any) => ({
         ...sponsor,
@@ -1022,9 +1022,7 @@ export default function SpecialEventsCustomizePage() {
   const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
       <div className="mb-6 w-full max-w-sm text-center">
-        <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-          Add your details
-        </h2>
+        <EditorLayout title="Edit event page" showBack={false}>{null}</EditorLayout>
         <p className="text-slate-500 text-sm">
           Customize every aspect of your VIP father-daughter dance event.
         </p>
@@ -1549,7 +1547,7 @@ export default function SpecialEventsCustomizePage() {
       if (activeView === "main" || activeView === "images") return false;
       setActiveView("main");
       return true;
-    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "sponsors": renderSponsorsEditor, "rsvp": renderRsvpEditor }} artwork={data.hero} editor={editor} templatesHref={"/event/special-events"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "sponsors": renderSponsorsEditor, "rsvp": renderRsvpEditor }} artwork={data.hero || "/templates/hero-images/father-daughter-hero.webp"} editor={editor} templatesHref={"/event/special-events"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
         style={{
@@ -1578,7 +1576,7 @@ export default function SpecialEventsCustomizePage() {
                   />
                 ) : (
                   <Image
-                    src="/templates/hero-images/father-daughter-hero.jpeg"
+                    src="/templates/hero-images/father-daughter-hero.webp"
                     alt="Hero"
                     fill
                     className="object-cover"

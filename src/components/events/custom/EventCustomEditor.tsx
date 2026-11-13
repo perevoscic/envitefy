@@ -1,6 +1,7 @@
 "use client";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
+import EventAccentColorPicker from "@/components/events/EventAccentColorPicker";
 import SchoolMemoDates from "@/components/SchoolMemoDates";
 import { CloudSun, Link2, ListPlus, MapPinned, PanelsTopLeft } from "lucide-react";
 import { useEventHistoryClient } from "@/lib/event-history-client";
@@ -649,26 +650,14 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                         <legend>Font style</legend>
                       <FontPairingSelect options={EVENT_DESIGN_FONT_PAIRS} value={page.design.font} onChange={(font) => setPage({ ...page, design: { ...page.design, font, fontFamily: undefined } })} />
                       </fieldset>
-                      <div className={styles.columns}>
-                        {(["page", "surface", "ink", "accent"] as const).map((key) => (
-                          <label key={key} className={styles.field}>
-                            {key}
-                            <input
-                              type="color"
-                              value={page.design.colors[key]}
-                              onChange={(e) =>
-                                setPage({
-                                  ...page,
-                                  design: {
-                                    ...page.design,
-                                    colors: { ...page.design.colors, [key]: e.target.value },
-                                  },
-                                })
-                              }
-                            />
-                          </label>
-                        ))}
-                      </div>
+                      <EventAccentColorPicker
+                        palette={{ id: "custom", name: page.design.name, background: page.design.colors.page,
+                          foreground: page.design.colors.ink, accent: page.design.colors.accent }}
+                        value={page.design.accentCombination}
+                        onChange={(accentCombination) => setPage(current => current ? {
+                          ...current, design: { ...current.design, accentCombination },
+                        } : current)}
+                      />
                       <button
                         type="button"
                         className={styles.secondary}
@@ -801,18 +790,6 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                 description: "Upload an image and choose a design.",
                 icon: <PanelsTopLeft size={20} />,
                 tool: true,
-                action: page.design.hero ? (
-                  <button
-                    type="button"
-                    data-section-reset
-                    onClick={() => setPage((current) => current ? {
-                      ...current,
-                      design: { ...current.design, hero: undefined },
-                    } : current)}
-                  >
-                    Reset
-                  </button>
-                ) : undefined,
                 content: (
                   <>
                       <HeroImageEditor
@@ -836,7 +813,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                       />
                       <p>
                         {published
-                          ? "Your selected image is saved when you choose Save."
+                          ? "Your selected image is saved when you choose Save changes."
                           : "Your selected image is saved when you choose Save draft or Publish."}
                       </p>
 

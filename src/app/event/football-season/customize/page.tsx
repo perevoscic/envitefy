@@ -877,9 +877,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             <ChevronLeft size={16} aria-hidden="true" />
             Back to templates
           </button>
-          <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-            Event settings
-          </h2>
+          <EditorLayout title="Edit event page" showBack={false}>{null}</EditorLayout>
           {isDiscoveryEdit ? <p className="text-slate-500 text-sm">Review the details from your imported football source.</p> : null}
         </div>
 
@@ -986,7 +984,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         <EventEditorFontStyle />
         <div className="space-y-4">
           <ImportedThemeControls eventId={editEventId || editor.eventId} value={data.importedTheme} context={{ title: resolvedTitle, sport: "football", city: data.city, seed: editEventId || resolvedTitle }} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} />
-          <TemplateSelector value={pageTemplateId} onChange={(id) => { setPageTemplateId(id); setData(prev => ({ ...prev, importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: false } : null })); }} />
+          <TemplateSelector value={pageTemplateId} importedTheme={data.importedTheme}
+            onSelectCustom={() => setData(prev => prev.importedTheme ? ({ ...prev,
+              importedTheme: { ...prev.importedTheme, enabled: true, preserveTemplateStyle: undefined, templateColorCombination: undefined },
+            }) : prev)}
+            onChange={(id) => { setPageTemplateId(id); setData(prev => ({ ...prev,
+              importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: true, preserveTemplateStyle: true, templateColorCombination: undefined } : null,
+            })); }} />
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -1293,7 +1297,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       );
     }
 
-    const renderFootballPage = (readOnly: boolean) => (<div data-imported-theme={activeImportedTheme(data.importedTheme)?.id} style={importedThemeStyle(data.importedTheme)}><FootballSeasonPreviewFrame theme={templateTheme}>
+    const renderFootballPage = (readOnly: boolean) => (<div data-imported-theme={importedThemeStyle(data.importedTheme) ? activeImportedTheme(data.importedTheme)?.id : undefined} style={importedThemeStyle(data.importedTheme)}><FootballSeasonPreviewFrame theme={templateTheme}>
                   <FootballPageTextProvider text={data.footballPageText} title={resolvedTitle} details={data.details} onChange={readOnly || mobileMenuOpen ? undefined : handlePageTextChange}>
                   <FootballHero
                     importedTheme={data.importedTheme}

@@ -43,7 +43,7 @@ test("opened previews hide navigation and remove its spacing; inline previews do
   const viewport = read("src/components/EventPreviewViewport.tsx");
   const sidebar = read("src/app/left-sidebar.tsx");
   const styles = read("src/app/globals.css");
-  assert.match(viewport, /!preserveNavigation && \(fullscreen \|\| onClose\) \? <OwnerPreviewMobileTopbarSuppressor/);
+  assert.match(viewport, /!deviceOnly && !preserveNavigation && \(fullscreen \|\| onClose\) \? <OwnerPreviewMobileTopbarSuppressor/);
   // Mobile navigation now lives in the persistent topbar; the separate reveal
   // trigger was retired before appearance switching was introduced.
   for (const surface of ["sidebar", "topbar", "drawer-backdrop"]) {

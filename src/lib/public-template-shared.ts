@@ -94,6 +94,6 @@ export function legacySportPublicTemplate(sport: typeof SPORT_EVENT_PRESETS[numb
   return {
     id: `${sport.key}--${style}`, name: `${sport.label} · ${label}`, style: label,
     sport: sport.label, description: sport.defaultDetails,
-    heroImage: sportGalleryArtwork[sport.key] || "/templates/hero-images/general-sport-hero.jpeg",
+    heroImage: sportGalleryArtwork[sport.key] || "/templates/hero-images/general-sport-hero.webp",
   };
 }

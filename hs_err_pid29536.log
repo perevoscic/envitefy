@@ -1,0 +1,257 @@
+#
+# There is insufficient memory for the Java Runtime Environment to continue.
+# Native memory allocation (mmap) failed to map 1073741824 bytes. Error detail: G1 virtual space
+# Possible reasons:
+#   The system is out of physical RAM or swap space
+#   This process is running with CompressedOops enabled, and the Java Heap may be blocking the growth of the native heap
+# Possible solutions:
+#   Reduce memory load on the system
+#   Increase physical memory or swap space
+#   Check if swap backing store is full
+#   Decrease Java heap size (-Xmx/-Xms)
+#   Decrease number of Java threads
+#   Decrease Java thread stack sizes (-Xss)
+#   Set larger code cache with -XX:ReservedCodeCacheSize=
+#   JVM is running with Zero Based Compressed Oops mode in which the Java heap is
+#     placed in the first 32GB address space. The Java Heap base address is the
+#     maximum limit for the native heap growth. Please use -XX:HeapBaseMinAddress
+#     to set the Java Heap base and to place the Java Heap above 32GB virtual address.
+# This output file may be truncated or incomplete.
+#
+#  Out of Memory Error (os_windows.cpp:3736), pid=29536, tid=31976
+#
+# JRE version:  (21.0.8+9) (build )
+# Java VM: OpenJDK 64-Bit Server VM (21.0.8+9-LTS, mixed mode, sharing, tiered, compressed oops, compressed class ptrs, g1 gc, windows-amd64)
+# No core dump will be written. Minidumps are not enabled by default on client versions of Windows
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: -agentpath:C:\Program Files\SentinelOne\Sentinel Agent 25.1.3.334\SentinelJava64.dll=extendedCapabilities JvmVersion
+
+Host: Intel(R) Core(TM) i7-14700, 28 cores, 63G,  Windows 11 , 64 bit Build 26100 (10.0.26100.9818)
+Time: Fri Nov 13 09:38:10 2026 Central Standard Time elapsed time: 2.060778 seconds (0d 0h 0m 2s)
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x000002917ac18490):  JavaThread "Unknown thread" [_thread_in_vm, id=31976, stack(0x000000cc58600000,0x000000cc58700000) (1024K)]
+
+Stack: [0x000000cc58600000,0x000000cc58700000]
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [jvm.dll+0x6e1729]
+V  [jvm.dll+0x8bf47b]
+V  [jvm.dll+0x8c19aa]
+V  [jvm.dll+0x8c2083]
+V  [jvm.dll+0x289fd6]
+V  [jvm.dll+0x6de085]
+V  [jvm.dll+0x6d218a]
+V  [jvm.dll+0x366f6e]
+V  [jvm.dll+0x36ee1b]
+V  [jvm.dll+0x3c06b9]
+V  [jvm.dll+0x3c095b]
+V  [jvm.dll+0x33a8b7]
+V  [jvm.dll+0x33b3fb]
+V  [jvm.dll+0x888e5e]
+V  [jvm.dll+0x3cd611]
+V  [jvm.dll+0x871e5c]
+V  [jvm.dll+0x461261]
+V  [jvm.dll+0x462ea1]
+C  [InProcessClient64.dll+0x13677d]
+C  [InProcessClient64.dll+0xd0aa7]
+C  [InProcessClient64.dll+0xd0a19]
+C  [jli.dll+0x52f0]
+C  [ucrtbase.dll+0x2cd30]
+C  [KERNEL32.DLL+0x2dda7]
+C  [ntdll.dll+0xc9c5c]
+
+
+---------------  P R O C E S S  ---------------
+
+Threads class SMR info:
+_java_thread_list=0x00007fff0b306288, length=0, elements={
+}
+
+Java Threads: ( => current thread )
+Total: 0
+
+Other Threads:
+  0x000002917ac45b40 WorkerThread "GC Thread#0"                     [id=39732, stack(0x000000cc58700000,0x000000cc58800000) (1024K)]
+  0x000002917ac4e9d0 ConcurrentGCThread "G1 Main Marker"            [id=22780, stack(0x000000cc58800000,0x000000cc58900000) (1024K)]
+  0x000002917ddaa250 WorkerThread "G1 Conc#0"                       [id=15792, stack(0x000000cc58900000,0x000000cc58a00000) (1024K)]
+
+[error occurred during error reporting (printing all threads), id 0xc0000005, EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007fff0a9fd307]
+VM state: not at safepoint (not fully initialized)
+
+VM Mutex/Monitor currently owned by a thread:  ([mutex/lock_event])
+[0x00007fff0b37a8c8] Heap_lock - owner thread: 0x000002917ac18490
+
+Heap address: 0x0000000404800000, size: 16312 MB, Compressed Oops mode: Zero based, Oop shift amount: 3
+
+CDS archive(s) mapped at: [0x0000000000000000-0x0000000000000000-0x0000000000000000), size 0, SharedBaseAddress: 0x0000000800000000, ArchiveRelocationMode: 1.
+Narrow klass base: 0x0000000000000000, Narrow klass shift: 0, Narrow klass range: 0x0
+
+GC Precious Log:
+ CardTable entry size: 512
+ Card Set container configuration: InlinePtr #cards 4 size 8 Array Of Cards #cards 64 size 144 Howl #buckets 8 coarsen threshold 14745 Howl Bitmap #cards 2048 size 272 coarsen threshold 1843 Card regions per heap region 1 cards per card region 16384
+
+Heap:
+ garbage-first heap   total 0K, used 0K [0x0000000404800000, 0x0000000800000000)
+  region size 8192K, 0 young (0K), 0 survivors (0K)
+
+[error occurred during error reporting (printing heap information), id 0xc0000005, EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007fff0adeba99]
+GC Heap History (0 events):
+No events
+
+Dll operation events (1 events):
+Event: 0.019 Loaded shared library C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin\java.dll
+
+Deoptimization events (0 events):
+No events
+
+Classes loaded (0 events):
+No events
+
+Classes unloaded (0 events):
+No events
+
+Classes redefined (0 events):
+No events
+
+Internal exceptions (0 events):
+No events
+
+ZGC Phase Switch (0 events):
+No events
+
+VM Operations (0 events):
+No events
+
+Memory protections (0 events):
+No events
+
+Nmethod flushes (0 events):
+No events
+
+Events (0 events):
+No events
+
+
+Dynamic libraries:
+0x00007ff7a01b0000 - 0x00007ff7a01be000 	C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin\java.exe
+0x000002917a7f0000 - 0x000002917aa5c000 	C:\Windows\SYSTEM32\ntd1l.dll
+0x000002917aa70000 - 0x000002917ab3b000 	C:\Windows\System32\kern3l32.dll
+0x00007ff8120b0000 - 0x00007ff81231c000 	C:\Windows\SYSTEM32\ntdll.dll
+0x00007ff810360000 - 0x00007ff81042b000 	C:\Windows\System32\KERNEL32.DLL
+0x00007ff80f3e0000 - 0x00007ff80f7e9000 	C:\Windows\System32\KERNELBASE.dll
+0x00007ff80eb90000 - 0x00007ff80ef6b000 	C:\Program Files\SentinelOne\Sentinel Agent 25.1.3.334\InProcessClient64.dll
+0x00007ff810e60000 - 0x00007ff810f1b000 	C:\Windows\System32\ADVAPI32.dll
+0x00007ff80fee0000 - 0x00007ff80ff89000 	C:\Windows\System32\msvcrt.dll
+0x00007ff80eb80000 - 0x00007ff80eb8b000 	C:\Windows\SYSTEM32\VERSION.dll
+0x00007ff810810000 - 0x00007ff8108b8000 	C:\Windows\System32\sechost.dll
+0x00007ff80ff90000 - 0x00007ff8100a8000 	C:\Windows\System32\RPCRT4.dll
+0x00007ff80fc00000 - 0x00007ff80fd4c000 	C:\Windows\System32\ucrtbase.dll
+0x00007ff8063e0000 - 0x00007ff8063f8000 	C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin\jli.dll
+0x00007fffd4210000 - 0x00007fffd422e000 	C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin\VCRUNTIME140.dll
+0x00007ff810b60000 - 0x00007ff810d3e000 	C:\Windows\System32\USER32.dll
+0x00007ff80fd60000 - 0x00007ff80fd87000 	C:\Windows\System32\win32u.dll
+0x00007fffef4c0000 - 0x00007fffef751000 	C:\Windows\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.9818_none_3e071914e3359bdd\COMCTL32.dll
+0x00007ff80fd90000 - 0x00007ff80fdbb000 	C:\Windows\System32\GDI32.dll
+0x00007ff80fad0000 - 0x00007ff80fbf9000 	C:\Windows\System32\gdi32full.dll
+0x00007ff80f330000 - 0x00007ff80f3d3000 	C:\Windows\System32\msvcp_win.dll
+0x00007ff80e6f0000 - 0x00007ff80e6fc000 	C:\Windows\SYSTEM32\FLTLIB.DLL
+0x000002917a3f0000 - 0x000002917a421000 	C:\Windows\System32\IMM32.DLL
+0x00007ff809b70000 - 0x00007ff809b7c000 	C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin\vcruntime140_1.dll
+0x00007fffd22a0000 - 0x00007fffd2329000 	C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin\msvcp140.dll
+0x00007fff0a6b0000 - 0x00007fff0b45c000 	C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin\server\jvm.dll
+0x00007ff810610000 - 0x00007ff810690000 	C:\Windows\System32\WS2_32.dll
+0x00007ff80ea40000 - 0x00007ff80ea9e000 	C:\Windows\SYSTEM32\POWRPROF.dll
+0x00007ff801630000 - 0x00007ff801666000 	C:\Windows\SYSTEM32\WINMM.dll
+0x00007ff80e640000 - 0x00007ff80e655000 	C:\Windows\SYSTEM32\UMPDC.dll
+0x00007ff80dac0000 - 0x00007ff80dadb000 	C:\Windows\SYSTEM32\kernel.appcore.dll
+0x00007ffff0050000 - 0x00007ffff005a000 	C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin\jimage.dll
+0x00007fffef760000 - 0x00007fffef9ac000 	C:\Windows\SYSTEM32\DBGHELP.DLL
+0x00007ff810fa0000 - 0x00007ff811345000 	C:\Windows\System32\combase.dll
+0x00007ff8109c0000 - 0x00007ff810a99000 	C:\Windows\System32\OLEAUT32.dll
+0x00007ff800020000 - 0x00007ff80005b000 	C:\Windows\SYSTEM32\dbgcore.DLL
+0x00007ff80f270000 - 0x00007ff80f31c000 	C:\Windows\System32\bcryptPrimitives.dll
+0x00007fffadbc0000 - 0x00007fffadc5f000 	C:\Program Files\SentinelOne\Sentinel Agent 25.1.3.334\SentinelJava64.dll
+0x00007ff810470000 - 0x00007ff810609000 	C:\Windows\System32\ole32.dll
+0x00007fffd41e0000 - 0x00007fffd4201000 	C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin\java.dll
+
+JVMTI agents:
+C:\Program Files\SentinelOne\Sentinel Agent 25.1.3.334\SentinelJava64.dll path:none, loaded, not initialized, options:extendedCapabilities
+
+dbghelp: loaded successfully - version: 4.0.5 - missing functions: none
+symbol engine: initialized successfully - sym options: 0x614 - pdb path: .;C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin;C:\Windows\SYSTEM32;C:\Program Files\SentinelOne\Sentinel Agent 25.1.3.334;C:\Windows\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.9818_none_3e071914e3359bdd;C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin\server
+
+VM Arguments:
+jvm_args: -agentpath:C:\Program Files\SentinelOne\Sentinel Agent 25.1.3.334\SentinelJava64.dll=extendedCapabilities 
+java_command: JvmVersion
+java_class_path (initial): D:\Develop_local\envitefy\.tools\maestro\2.11.0\maestro\bin\jvm-version.jar
+Launcher Type: SUN_STANDARD
+
+[Global flags]
+     intx CICompilerCount                          = 12                                        {product} {ergonomic}
+     uint ConcGCThreads                            = 5                                         {product} {ergonomic}
+     uint G1ConcRefinementThreads                  = 20                                        {product} {ergonomic}
+   size_t G1HeapRegionSize                         = 8388608                                   {product} {ergonomic}
+    uintx GCDrainStackTargetSize                   = 64                                        {product} {ergonomic}
+   size_t InitialHeapSize                          = 1073741824                                {product} {ergonomic}
+   size_t MarkStackSize                            = 4194304                                   {product} {ergonomic}
+   size_t MaxHeapSize                              = 17104371712                               {product} {ergonomic}
+   size_t MinHeapDeltaBytes                        = 8388608                                   {product} {ergonomic}
+   size_t MinHeapSize                              = 8388608                                   {product} {ergonomic}
+    uintx NonNMethodCodeHeapSize                   = 7602480                                {pd product} {ergonomic}
+    uintx NonProfiledCodeHeapSize                  = 122027880                              {pd product} {ergonomic}
+    uintx ProfiledCodeHeapSize                     = 122027880                              {pd product} {ergonomic}
+    uintx ReservedCodeCacheSize                    = 251658240                              {pd product} {ergonomic}
+     bool SegmentedCodeCache                       = true                                      {product} {ergonomic}
+   size_t SoftMaxHeapSize                          = 17104371712                            {manageable} {ergonomic}
+     bool UseCompressedOops                        = true                           {product lp64_product} {ergonomic}
+     bool UseG1GC                                  = true                                      {product} {ergonomic}
+     bool UseLargePagesIndividualAllocation        = false                                  {pd product} {ergonomic}
+
+Logging:
+Log output configuration:
+ #0: stdout all=warning uptime,level,tags foldmultilines=false
+ #1: stderr all=off uptime,level,tags foldmultilines=false
+
+Environment Variables:
+JAVA_HOME=C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\
+CLASSPATH=D:\Develop_local\envitefy\.tools\maestro\2.11.0\maestro\lib\*
+PATH=C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1111-574-0_26.1111.574.0_x64__3k8sg7r9htsxt\dependencies\native\powershell;C:\Users\rjosan\.codex\tmp\arg0-windows\codex-arg0ubkkmL;C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1111-574-0_26.1111.574.0_x64__3k8sg7r9htsxt\dependencies\native\powershell;C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1111-574-0_26.1111.574.0_x64__3k8sg7r9htsxt\dependencies\native\libheif\libheif\bin;C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1111-574-0_26.1111.574.0_x64__3k8sg7r9htsxt\dependencies\native\jxrlib\jxrlib\bin;C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1111-574-0_26.1111.574.0_x64__3k8sg7r9htsxt\dependencies\native\poppler\Library\bin;C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1111-574-0_26.1111.574.0_x64__3k8sg7r9htsxt\dependencies\bin\override;C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin;C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot\bin;c:\Users\rjosan\AppData\Local\Programs\cursor\resources\app\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;c:\Program Files (x86)\HP\HP Performance Advisor;C:\Program Files\PuTTY\;C:\Users\rjosan\AppData\Local\Microsoft\WindowsApps;C:\Users\rjosan\AppData\Roaming\npm;C:\Users\rjosan\AppData\Local\Programs\Windsurf\bin;c:\Users\rjosan\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files (x86)\QuickTime\QTSystem\;C:\Program Files\dotnet\;C:\ProgramData\chocolatey\bin;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Amazon\AWSCLIV2\;D:\Google Drive\Develop_Cloud\SnapMyDate\stripe_1.30.0_windows_x86_64;C:\Program Files\HP\HP One Agent;C:\Program Files\cursor\resources\app\bin;C:\Users\Public\Mitel\HTMLToolKit;C:\Program Files\GitHub CLI\;C:\Program Files\Microsoft\Azure Functions Core Tools\;C:\Program Files\nodejs\;C:\Program Files\Git\cmd;C:\Program Files\PowerShell\7\;C:\Users\rjosan\.cargo\bin;C:\Users\rjosan\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\rjosan\.dotnet\tools;C:\Program Files (x86)\Nmap;C:\Users\rjosan\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin;C:\Users\rjosan\AppData\Local\Android\Sdk\platform-tools;C:\Users\rjosan\AppData\Local\Programs\VSCodium\bin;C:\Users\rjosan\AppData\Local\cursor-agent;C:\Users\rjosan\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\Scripts;C:\Users\rjosan\.dotnet\tools;C:\Users\rjosan\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\rjosan\AppData\Local\Programs\Microsoft VS Code\bin\copilot-shim;C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1111-574-0_26.1111.574.0_x64__3k8sg7r9htsxt\dependencies\bin\fallback;C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1111-574-0_26.1111.574.0_x64__3k8sg7r9htsxt\dependencies\node\bin;C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-1111-574-0_26.1111.574.0_x64__3k8sg7r9htsxt\dependencies\native\git\cmd;C:\Users\rjosan\AppData\Local\OpenAI\Codex\bin\85e840bd9ad04c3b;C:\Users\rjosan\AppData\Local\OpenAI\Codex\bin\a159911ff70742e9
+USERNAME=rjosan
+SHELL=C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+LANG=C.UTF-8
+LC_ALL=C.UTF-8
+LC_CTYPE=C.UTF-8
+TERM=dumb
+OS=Windows_NT
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 183 Stepping 1, GenuineIntel
+TMP=C:\Users\rjosan\AppData\Local\Temp
+TEMP=C:\Users\rjosan\AppData\Local\Temp
+
+
+
+
+Periodic native trim disabled
+
+---------------  S Y S T E M  ---------------
+
+OS:
+ Windows 11 , 64 bit Build 26100 (10.0.26100.9818)
+OS uptime: 2 days 23:48 hours
+Hyper-V role detected
+
+CPU: total 28 (initial active 28) (14 cores per cpu, 2 threads per core) family 6 model 183 stepping 1 microcode 0x12f, cx8, cmov, fxsr, ht, mmx, 3dnowpref, sse, sse2, sse3, ssse3, sse4.1, sse4.2, popcnt, lzcnt, tsc, tscinvbit, avx, avx2, aes, erms, clmul, bmi1, bmi2, adx, sha, fma, vzeroupper, clflush, clflushopt, clwb, hv, serialize, rdtscp, rdpid, fsrm, f16c, cet_ibt, cet_ss
+Processor Information for the first 28 processors :
+  Max Mhz: 2100, Current Mhz: 2100, Mhz Limit: 2100
+
+Memory: 4k page, system-wide physical 65241M (11183M free)
+TotalPageFile size 84233M (AvailPageFile size 1108M)
+current process WorkingSet (physical memory assigned to process): 22M, peak: 22M
+current process commit charge ("private bytes"): 91M, peak: 1114M
+
+vm_info: OpenJDK 64-Bit Server VM (21.0.8+9-LTS) for windows-amd64 JRE (21.0.8+9-LTS), built on 2025-07-10T20:22:44Z by "MicrosoftCorporation" with unknown MS VC++:1944
+
+END.

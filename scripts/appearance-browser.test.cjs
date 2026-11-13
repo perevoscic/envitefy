@@ -110,6 +110,24 @@ async function assertPreviewControlContrast(controls) {
   for (const result of measurements) assert.ok(result.ratio >= result.minimum, `${result.name} contrast ${result.ratio.toFixed(2)}:1 must reach ${result.minimum}:1`);
 }
 
+async function assertPreviewTheme(page, surfaces) {
+  const expected = await page.evaluate(() => {
+    const probe = document.createElement("div");
+    probe.style.cssText = "background-color:var(--surface);color:var(--foreground);border-color:var(--border)";
+    document.documentElement.append(probe);
+    const style = getComputedStyle(probe);
+    const colors = { background: style.backgroundColor, color: style.color, border: style.borderColor };
+    probe.remove();
+    return colors;
+  });
+  const actual = await surfaces.evaluateAll(elements => elements.filter(element => element.checkVisibility()).map(element => {
+    const style = getComputedStyle(element);
+    return { background: style.backgroundColor, color: style.color, border: style.borderColor };
+  }));
+  assert.ok(actual.length > 0, "the preview exposes theme-aware control surfaces");
+  for (const colors of actual) assert.deepEqual(colors, expected, "preview controls follow the application theme independently of the event palette");
+}
+
 async function assertMeetCreationTiles(page, output, theme) {
   const gallery = page.getByTestId("meet-import-gallery");
   const imported = gallery.getByRole("region", { name: "Import meet details", exact: true });
@@ -342,19 +360,24 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
     assert.deepEqual(await frame.locator("#iframe-input").evaluate((el) => ({ color: getComputedStyle(el).color, placeholder: getComputedStyle(el, "::placeholder").color })), frameOriginal);
     const preview = page.getByRole("region", { name: "Authored iframe preview", exact: true });
     const desktopControls = preview.locator('header button, header a');
+    const desktopSurfaces = preview.locator('header button:not([aria-pressed="true"]):not(:hover):not(:focus-visible), header a:not(:hover):not(:focus-visible)');
     await page.waitForFunction(() => getComputedStyle(document.querySelector('[aria-label="Authored iframe preview"]')).backgroundColor === "rgb(233, 244, 246)");
     await page.waitForFunction(() => getComputedStyle(document.querySelector('[aria-label="Authored iframe preview"]')).color === "rgb(242, 234, 250)");
     assert.equal(await frame.locator("#iframe-paper").evaluate((element) => getComputedStyle(element).color), "rgb(242, 234, 250)", "the regression includes pale inherited app ink over light event paper");
     await assertPreviewControlContrast(desktopControls);
+    await assertPreviewTheme(page, desktopSurfaces);
     await preview.screenshot({ path: path.join(output, "event-controls-dark-app-light-paper.png") });
     await page.getByText("Change event paper", { exact: true }).click();
     await page.waitForFunction(() => getComputedStyle(document.querySelector('[aria-label="Authored iframe preview"]')).backgroundColor === "rgb(24, 38, 49)");
     await assertPreviewControlContrast(desktopControls);
+    await assertPreviewTheme(page, desktopSurfaces);
     await appearanceSwitch(page).uncheck();
     await assertPreviewControlContrast(desktopControls);
+    await assertPreviewTheme(page, desktopSurfaces);
     await page.getByText("Change event paper", { exact: true }).click();
     await page.waitForFunction(() => getComputedStyle(document.querySelector('[aria-label="Authored iframe preview"]')).backgroundColor === "rgb(233, 244, 246)");
     await assertPreviewControlContrast(desktopControls);
+    await assertPreviewTheme(page, desktopSurfaces);
     await appearanceSwitch(page).check();
     await page.setViewportSize({ width: 375, height: 812 });
     const moreActions = frame.getByRole("button", { name: "More event actions", exact: true });
@@ -365,6 +388,7 @@ test("appearance applies before paint, persists, synchronizes tabs and preserves
         await page.waitForFunction(() => getComputedStyle(document.querySelector('[aria-label="Authored iframe preview"]')).backgroundColor === "rgb(24, 38, 49)");
       }
       await assertPreviewControlContrast(moreActions);
+      await assertPreviewTheme(page, moreActions);
       await moreActions.click();
       await assertPreviewControlContrast(frame.getByRole("group", { name: "Event actions", exact: true }).locator("button"));
       await moreActions.press("Escape");

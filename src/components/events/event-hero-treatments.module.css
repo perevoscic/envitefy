@@ -148,3 +148,205 @@
 .treatment[data-image-style="double-oval"]::after { inset: 10% 5%; border: 1px solid var(--hero-accent); border-radius: 50%; }
 .treatment[data-image-style="floating-border"]::before { inset: 6% 12% 12% 6%; border: 2px solid var(--hero-line); box-shadow: 6px 6px 0 color-mix(in srgb, var(--hero-accent) 60%, transparent); }
 .treatment[data-image-style="floating-border"]::after { inset: 12% 6% 6% 12%; border-right: 1px solid var(--hero-accent); border-bottom: 1px solid var(--hero-accent); }
+
+/* Website treatments: overlays stay translucent and leave the artwork's centre visible.
+   Percentage geometry scales identically in the thumbnail and authored hero. */
+.treatment[data-image-style="ribbon-cross"]::before {
+  inset: 0; background: color-mix(in srgb, var(--hero-accent) 32%, transparent);
+  clip-path: polygon(0 5%, 100% 73%, 100% 85%, 0 17%);
+}
+.treatment[data-image-style="ribbon-cross"]::after {
+  inset: 0; background: var(--hero-line);
+  clip-path: polygon(0 88%, 100% 12%, 100% 12.6%, 0 88.6%, 0 92%, 100% 16%, 100% 16.6%, 0 92.6%);
+}
+.treatment[data-image-style="contour-flow"]::before {
+  inset: 0; background: repeating-radial-gradient(ellipse at -15% 110%, transparent 0 5%, var(--hero-line) 5% 5.35%, transparent 5.35% 9%);
+  mask-image: linear-gradient(35deg, #000, transparent 65%); opacity: .8;
+}
+.treatment[data-image-style="contour-flow"]::after {
+  inset: 0; background: color-mix(in srgb, var(--hero-accent) 22%, transparent);
+  clip-path: ellipse(40% 65% at 105% 0);
+}
+.treatment[data-image-style="prism-overlay"]::before {
+  inset: 0; background: linear-gradient(125deg, color-mix(in srgb, var(--hero-accent) 55%, transparent), transparent);
+  clip-path: polygon(40% 0, 100% 0, 100% 85%);
+}
+.treatment[data-image-style="prism-overlay"]::after {
+  inset: 0; background: var(--hero-line);
+  clip-path: polygon(40% 0, 100% 85%, 100% 85.7%, 39.5% 0, 40% 0, 0 100%, 0 99%, 39.4% 0);
+}
+.treatment[data-image-style="glass-sash"]::before {
+  inset: 0; background: linear-gradient(110deg, #ffffff08, #ffffff52, #ffffff0a);
+  backdrop-filter: blur(3px); clip-path: polygon(0 68%, 100% 42%, 100% 70%, 0 96%);
+}
+.treatment[data-image-style="glass-sash"]::after {
+  inset: 0; background: var(--hero-line);
+  clip-path: polygon(0 68%, 100% 42%, 100% 42.5%, 0 68.5%, 0 95.5%, 100% 69.5%, 100% 70%, 0 96%);
+}
+.treatment[data-image-style="mesh-corners"]::before {
+  inset: 0; background: repeating-linear-gradient(45deg, transparent 0 2.5%, var(--hero-line) 2.5% 2.8%, transparent 2.8% 5%);
+  clip-path: polygon(0 0, 43% 0, 0 55%, 0 0, 100% 100%, 57% 100%, 100% 45%, 100% 100%);
+}
+.treatment[data-image-style="mesh-corners"]::after {
+  inset: 0; background: color-mix(in srgb, var(--hero-accent) 28%, transparent);
+  clip-path: polygon(0 0, 43% 0, 0 55%);
+}
+.treatment[data-image-style="dot-matrix"]::before {
+  inset: 0; background: radial-gradient(circle, var(--hero-line) 14%, transparent 17%) 0 0 / 4% 7%;
+  mask-image: linear-gradient(110deg, #000, transparent 38%, transparent 75%, #000);
+}
+.treatment[data-image-style="dot-matrix"]::after {
+  inset: 8%; border-top: 2px solid var(--hero-accent); clip-path: inset(0 70% 0 0);
+}
+.treatment[data-image-style="constellation"]::before {
+  inset: 0; background: var(--hero-line);
+  clip-path: polygon(6% 15%, 28% 8%, 48% 24%, 72% 10%, 94% 20%, 94% 20.5%, 72% 10.5%, 48% 24.5%, 28% 8.5%, 6% 15.5%);
+}
+.treatment[data-image-style="constellation"]::after {
+  inset: 0; background: radial-gradient(circle at 6% 15%, var(--hero-accent) 0 1%, transparent 1.2%),
+    radial-gradient(circle at 28% 8%, var(--hero-line) 0 .7%, transparent .9%),
+    radial-gradient(circle at 48% 24%, var(--hero-accent) 0 1%, transparent 1.2%),
+    radial-gradient(circle at 72% 10%, var(--hero-line) 0 .7%, transparent .9%),
+    radial-gradient(circle at 94% 20%, var(--hero-accent) 0 1%, transparent 1.2%);
+}
+.treatment[data-image-style="circuit-trace"]::before {
+  inset: 0; background: var(--hero-line);
+  clip-path: polygon(0 18%, 18% 18%, 28% 35%, 43% 35%, 43% 35.6%, 27.6% 35.6%, 17.6% 18.6%, 0 18.6%);
+}
+.treatment[data-image-style="circuit-trace"]::after {
+  inset: 0; background: var(--hero-accent);
+  clip-path: polygon(100% 85%, 82% 85%, 72% 68%, 57% 68%, 57% 67%, 72.5% 67%, 82.5% 84%, 100% 84%);
+}
+.treatment[data-image-style="parallel-swoops"]::before {
+  inset: 0; background: repeating-radial-gradient(ellipse at 0 160%, transparent 0 12%, var(--hero-line) 12% 12.3%, transparent 12.3% 16%, var(--hero-accent) 16% 16.6%, transparent 16.6% 26%);
+  mask-image: linear-gradient(transparent 30%, #000);
+}
+.treatment[data-image-style="parallel-swoops"]::after {
+  inset: -55% -18% 75%; border: 1px solid var(--hero-accent); border-radius: 50%; transform: rotate(18deg);
+}
+.treatment[data-image-style="woven-lines"]::before {
+  inset: 0; background: repeating-linear-gradient(32deg, transparent 0 9%, var(--hero-line) 9% 9.4%, transparent 9.4% 18%);
+  mask-image: linear-gradient(transparent 52%, #000);
+}
+.treatment[data-image-style="woven-lines"]::after {
+  inset: 0; background: repeating-linear-gradient(148deg, transparent 0 9%, var(--hero-accent) 9% 9.6%, transparent 9.6% 18%);
+  mask-image: linear-gradient(transparent 52%, #000);
+}
+.treatment[data-image-style="perspective-grid"]::before {
+  inset: 0; background: repeating-conic-gradient(from -45deg at 50% 34%, transparent 0deg 14.5deg, var(--hero-line) 14.5deg 15deg);
+  clip-path: polygon(0 100%, 25% 74%, 75% 74%, 100% 100%); opacity: .75;
+}
+.treatment[data-image-style="perspective-grid"]::after {
+  inset: 0; background: linear-gradient(transparent 76%, var(--hero-accent) 76% 76.5%, transparent 76.5% 84%, var(--hero-line) 84% 84.5%, transparent 84.5% 95%, var(--hero-line) 95% 95.5%, transparent 95.5%);
+  clip-path: polygon(0 100%, 25% 74%, 75% 74%, 100% 100%);
+}
+.treatment[data-image-style="neon-corners"] { border-radius: 8%; }
+.treatment[data-image-style="neon-corners"]::after {
+  inset: 6%; border: 2px solid var(--hero-line); border-radius: 6%;
+  box-shadow: 0 0 7px var(--hero-accent), inset 0 0 7px var(--hero-accent);
+  mask-image: linear-gradient(135deg, #000 0 23%, transparent 23% 77%, #000 77%);
+}
+.treatment[data-image-style="gradient-outline"] { border-radius: 14% 3% 14% 3%; }
+.treatment[data-image-style="gradient-outline"]::after {
+  inset: 4%; padding: 2px; border-radius: inherit;
+  background: linear-gradient(135deg, var(--hero-line), var(--hero-accent), transparent 60%, var(--hero-line));
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
+}
+.treatment[data-image-style="halo-bloom"]::before {
+  inset: 0; background: radial-gradient(ellipse at 95% 5%, color-mix(in srgb, var(--hero-accent) 65%, transparent), transparent 55%);
+}
+.treatment[data-image-style="halo-bloom"]::after {
+  inset: -35% -12% 35% 55%; border: 1px solid var(--hero-line); border-radius: 50%;
+  box-shadow: 0 0 25px color-mix(in srgb, var(--hero-accent) 40%, transparent);
+}
+.treatment[data-image-style="ripple-corner"]::after {
+  inset: 0; background: repeating-radial-gradient(ellipse at 100% 100%, transparent 0 7%, var(--hero-line) 7% 7.4%, transparent 7.4% 11%, var(--hero-accent) 11% 11.6%, transparent 11.6% 18%);
+  mask-image: linear-gradient(135deg, transparent 42%, #000);
+}
+.treatment[data-image-style="sunrise-rays"]::before {
+  inset: 0; background: repeating-conic-gradient(from 270deg at 0 100%, transparent 0deg 11deg, var(--hero-line) 11deg 11.35deg);
+  mask-image: radial-gradient(ellipse at 0 100%, #000, transparent 70%);
+}
+.treatment[data-image-style="sunrise-rays"]::after {
+  inset: 0; background: color-mix(in srgb, var(--hero-accent) 25%, transparent); clip-path: circle(16% at 0 100%);
+}
+.treatment[data-image-style="racing-lines"]::before {
+  inset: 0; background: var(--hero-accent);
+  clip-path: polygon(0 12%, 58% 12%, 58% 15%, 0 15%, 0 19%, 36% 19%, 36% 20%, 0 20%);
+}
+.treatment[data-image-style="racing-lines"]::after {
+  inset: 0; background: var(--hero-line);
+  clip-path: polygon(100% 80%, 64% 80%, 64% 81%, 100% 81%, 100% 86%, 42% 86%, 42% 86.6%, 100% 86.6%);
+}
+.treatment[data-image-style="pixel-corners"] {
+  clip-path: polygon(0 12%, 4% 12%, 4% 6%, 8% 6%, 8% 0, 100% 0, 100% 88%, 96% 88%, 96% 94%, 92% 94%, 92% 100%, 0 100%);
+}
+.treatment[data-image-style="pixel-corners"]::after {
+  inset: 0; background: conic-gradient(var(--hero-accent) 25%, transparent 0 50%, var(--hero-line) 0 75%, transparent 0) 0 0 / 8% 12%;
+  clip-path: polygon(0 0, 24% 0, 0 36%, 0 0, 100% 100%, 76% 100%, 100% 64%, 100% 100%);
+}
+.treatment[data-image-style="split-level"] {
+  clip-path: polygon(0 0, 61% 0, 61% 20%, 100% 20%, 100% 100%, 64% 100%, 64% 80%, 0 80%);
+  mask-image: linear-gradient(90deg, #000 61%, transparent 61% 64%, #000 64%);
+}
+.treatment[data-image-style="split-level"]::after { inset: 7% 5%; border-top: 1px solid var(--hero-line); }
+.treatment[data-image-style="bridge-window"] {
+  border-radius: 50% 50% 5% 5% / 35% 35% 5% 5%;
+  mask-image: radial-gradient(ellipse at 50% 100%, transparent 21%, #000 21.4%);
+}
+.treatment[data-image-style="bridge-window"]::after { inset: 5%; border: 1px solid var(--hero-accent); border-radius: inherit; }
+.treatment[data-image-style="concave-waist"] {
+  mask-image: radial-gradient(ellipse at -18% 50%, transparent 28%, #000 28.4%), radial-gradient(ellipse at 118% 50%, transparent 28%, #000 28.4%);
+  mask-composite: intersect;
+}
+.treatment[data-image-style="concave-waist"]::after { inset: 8% 20%; border-block: 1px solid var(--hero-line); }
+.treatment[data-image-style="petal-window"] { border-radius: 3% 48% 3% 48%; }
+.treatment[data-image-style="petal-window"]::after { inset: 6%; border: 1px solid var(--hero-line); border-radius: inherit; }
+.treatment[data-image-style="notched-banner"] {
+  clip-path: polygon(0 0, 72% 0, 72% 12%, 100% 12%, 100% 100%, 28% 100%, 28% 88%, 0 88%);
+}
+.treatment[data-image-style="notched-banner"]::after {
+  inset: 0; background: var(--hero-accent);
+  clip-path: polygon(0 82%, 33% 82%, 33% 100%, 32% 100%, 32% 83%, 0 83%, 100% 18%, 67% 18%, 67% 0, 68% 0, 68% 17%, 100% 17%);
+}
+.treatment[data-image-style="scoop-corners"] {
+  mask-image: radial-gradient(circle at 0 0, transparent 13%, #000 13.4%), radial-gradient(circle at 100% 100%, transparent 13%, #000 13.4%);
+  mask-composite: intersect;
+}
+.treatment[data-image-style="scoop-corners"]::after { inset: 6%; border-top: 1px solid var(--hero-line); border-bottom: 1px solid var(--hero-accent); }
+.treatment[data-image-style="asymmetric-dome"] { border-radius: 75% 25% 4% 4% / 45% 18% 4% 4%; }
+.treatment[data-image-style="asymmetric-dome"]::after { inset: 5%; border: 1px solid var(--hero-line); border-radius: inherit; }
+.treatment[data-image-style="terraced-window"] {
+  clip-path: polygon(0 0, 70% 0, 70% 10%, 85% 10%, 85% 25%, 100% 25%, 100% 100%, 30% 100%, 30% 90%, 15% 90%, 15% 75%, 0 75%);
+}
+.treatment[data-image-style="terraced-window"]::after {
+  inset: 0; background: var(--hero-accent);
+  clip-path: polygon(5% 5%, 65% 5%, 65% 15%, 80% 15%, 80% 30%, 95% 30%, 95% 31%, 79% 31%, 79% 16%, 64% 16%, 64% 6%, 5% 6%);
+}
+.treatment[data-image-style="interlock-overlay"]::before {
+  inset: 5% 50% 40% 5%; border: 2px solid var(--hero-line); border-radius: 22%;
+}
+.treatment[data-image-style="interlock-overlay"]::after {
+  inset: 35% 5% 5% 40%; border: 2px solid var(--hero-accent); border-radius: 50%;
+  background: color-mix(in srgb, var(--hero-accent) 10%, transparent);
+}
+.treatment[data-image-style="angle-echo"]::after {
+  inset: 0; background: repeating-linear-gradient(135deg, transparent 0 5%, var(--hero-line) 5% 5.4%, transparent 5.4% 10%, var(--hero-accent) 10% 10.8%, transparent 10.8% 15%);
+  mask-image: linear-gradient(135deg, #000, transparent 42%, transparent 70%, #000);
+}
+.treatment[data-image-style="floating-tiles"]::before {
+  inset: 0; background: color-mix(in srgb, var(--hero-accent) 30%, transparent);
+  clip-path: polygon(5% 8%, 22% 8%, 22% 30%, 5% 30%, 5% 8%, 80% 66%, 95% 66%, 95% 92%, 80% 92%, 80% 66%);
+}
+.treatment[data-image-style="floating-tiles"]::after {
+  inset: 0; background: var(--hero-line);
+  clip-path: polygon(18% 20%, 34% 20%, 34% 42%, 18% 42%, 18% 20%, 18.4% 20.6%, 18.4% 41.4%, 33.6% 41.4%, 33.6% 20.6%, 18.4% 20.6%, 66% 56%, 83% 56%, 83% 80%, 66% 80%, 66% 56%, 66.4% 56.6%, 66.4% 79.4%, 82.6% 79.4%, 82.6% 56.6%, 66.4% 56.6%);
+}
+.treatment[data-image-style="wave-lattice"]::before {
+  inset: 0; background: repeating-radial-gradient(ellipse at 10% 150%, transparent 0 7%, var(--hero-line) 7% 7.3%, transparent 7.3% 11%);
+  mask-image: linear-gradient(transparent 42%, #000);
+}
+.treatment[data-image-style="wave-lattice"]::after {
+  inset: 0; background: repeating-radial-gradient(ellipse at 90% 150%, transparent 0 7%, var(--hero-accent) 7% 7.4%, transparent 7.4% 11%);
+  mask-image: linear-gradient(transparent 42%, #000);
+}

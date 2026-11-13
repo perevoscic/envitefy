@@ -51,7 +51,7 @@ test("legacy tint flags preserve original artwork, root styles and image control
   check(html, "legacy saved flags");
   assert.equal((html.match(/background-color:white/g) || []).length, 3);
   assert.equal((html.match(/aria-label="Change hero image"/g) || []).length, 3);
-  assert.equal((html.match(/aria-label="Use template image"/g) || []).length, 3);
+  assert.equal((html.match(/aria-label="Reset image"/g) || []).length, 3);
   assert.ok(!html.includes('role="switch"'));
   assert.ok(!html.includes("Filter on") && !html.includes("Filter off"));
 });

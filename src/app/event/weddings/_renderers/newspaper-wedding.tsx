@@ -24,7 +24,7 @@ const _firstImage = (event: EventData, fallback?: string) =>
   event.travel ||
   event.story ||
   fallback ||
-  "/templates/wedding-placeholders/midnight-bloom-hero.jpeg";
+  "/templates/wedding-placeholders/midnight-bloom-hero.webp";
 
 export default function NewspaperWedding({ theme, event }: Props) {
   const coupleNames = buildNames(event);
@@ -41,7 +41,7 @@ export default function NewspaperWedding({ theme, event }: Props) {
     event.photos?.[0] ||
     event.gallery?.[0]?.url ||
     theme.decorations?.heroImage ||
-    "/templates/wedding-placeholders/midnight-bloom-hero.jpeg";
+    "/templates/wedding-placeholders/midnight-bloom-hero.webp";
 
   return (
     <div

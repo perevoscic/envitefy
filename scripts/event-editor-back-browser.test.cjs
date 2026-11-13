@@ -45,7 +45,7 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
     }));
   });
   const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process(
-    '@import "tailwindcss" source(none); @source "../src/components/UnsavedProgressProvider.tsx"; @source "../src/app/event/general/customize/page.tsx"; @source "../src/components/events"; @source "../src/components/templates/TemplateEditorContext.tsx";',
+    '@import "tailwindcss" source(none); @source "../src/components/UnsavedProgressProvider.tsx"; @source "../src/app/event/general/customize/page.tsx"; @source "../src/app/event/gymnastics/customize/page.tsx"; @source "../src/components/events"; @source "../src/components/templates/TemplateEditorContext.tsx";',
     { from: path.resolve("scripts/event-editor-fixture.css") },
   )).css;
   const script = fs.readFileSync(path.join(output, "fixture.js"));
@@ -100,8 +100,11 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
   const workspace = page.locator("[data-event-page-editor]");
   const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
   const actions = page.getByRole("group", { name: "Save event", exact: true });
+  const leaveEditor = async () => {
+    await workspace.getByRole("button", { name: /^Exit(?: [Ee]diting)?$/, exact: true }).click();
+  };
   const openDetails = async () => {
-    const edit = workspace.getByRole("button", { name: /^(Edit|Page settings|Close preview)$/ });
+    const edit = workspace.getByRole("button", { name: /^(Edit|Continue editing|Close preview)$/ });
     if (await edit.isVisible()) await edit.click();
     await controls.waitFor();
     const menu = controls.getByRole("button", { name: /^Event details/ });
@@ -127,20 +130,20 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
       assert.equal(await title.inputValue(), "School field trip", "typing in one field is one undo step");
       await page.getByRole("button", { name: "Back to details", exact: true }).click();
       await controls.getByRole("button", { name: /^Design/ }).click();
-      const pageColor = controls.getByLabel("page", { exact: true });
-      const inkColor = controls.getByLabel("ink", { exact: true });
-      const originalPage = await pageColor.inputValue(), originalInk = await inkColor.inputValue();
+      const accents = controls.getByRole("group", { name: "Theme color combinations", exact: true });
+      assert.equal(await controls.locator('input[type="color"]').count(), 0);
+      assert.equal(await accents.getByRole("button", { name: "Original", exact: true }).getAttribute("aria-pressed"), "true");
       const canvas = page.locator('[data-layout][data-appearance-scope="authored"]');
       const originalBackground = await canvas.evaluate(element => getComputedStyle(element).backgroundColor);
-      await pageColor.fill("#ffffff");
-      await inkColor.fill("#123456");
+      await accents.getByRole("button", { name: "Accent", exact: true }).click();
+      await accents.getByRole("button", { name: "Deep", exact: true }).click();
+      assert.equal(await canvas.evaluate(element => getComputedStyle(element).backgroundColor), originalBackground, "accent edits retain the authored background");
       await undo.click();
       await page.getByRole("button", { name: "Undo last change", exact: true }).click();
-      assert.equal(await inkColor.inputValue(), originalInk);
-      assert.equal(await pageColor.inputValue(), "#ffffff", "single undo keeps the earlier background edit");
+      assert.equal(await accents.getByRole("button", { name: "Accent", exact: true }).getAttribute("aria-pressed"), "true", "single undo keeps the earlier accent edit");
       await undo.click();
       await page.getByRole("button", { name: "Undo all unsaved changes", exact: true }).click();
-      assert.equal(await pageColor.inputValue(), originalPage);
+      assert.equal(await accents.getByRole("button", { name: "Original", exact: true }).getAttribute("aria-pressed"), "true");
       assert.equal(await canvas.evaluate(element => getComputedStyle(element).backgroundColor), originalBackground, "reset restores the rendered background");
       assert.equal(await undo.isEnabled(), false);
       await page.screenshot({ path: path.join(output, `undo-background-${width}.png`) });
@@ -166,11 +169,11 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
       await workspace.getByRole("button", { name: "Close preview", exact: true }).waitFor();
       assert.equal(await actions.count(), 0, "clean preview has no save or editing controls");
       await workspace.getByRole("button", { name: "Close preview", exact: true }).click();
-      await workspace.getByRole("button", { name: "Exit", exact: true }).click();
+      await leaveEditor();
       await page.getByRole("button", { name: "Keep editing", exact: true }).click();
       await openDetails();
       assert.equal(await title.inputValue(), `Pending current page ${width}`);
-      await workspace.getByRole("button", { name: "Exit", exact: true }).click();
+      await leaveEditor();
       await page.getByRole("button", { name: "Discard and leave", exact: true }).click();
       await page.locator("[data-destination]").waitFor();
       assert.equal(new URL(page.url()).pathname, "/create");
@@ -190,7 +193,7 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
       assert.equal(await title.inputValue(), records.get("legacy-general").data.title);
       assert.equal(writes.length, before, "opening a legacy event never migrates or saves it automatically");
       await title.fill(`Current host title ${width}`);
-      await actions.getByRole("button", { name: "Save", exact: true }).click();
+      await actions.getByRole("button", { name: "Save changes", exact: true }).click();
       await page.getByText("Changes saved.", { exact: true }).waitFor();
       assert.equal(writes.at(-1).path, "/api/history/legacy-general");
       assert.equal(writes.at(-1).method, "PATCH");
@@ -200,14 +203,14 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
       assert.deepEqual(saved.responses, legacy.responses);
       assert.equal(saved.numberOfGuests, 7);
       for (const key of ["rsvpName", "rsvpEmail", "rsvpPhone", "rsvpDeadline", "rsvpEnabled"]) assert.equal(saved.customEventPage.details[key], legacy[key]);
-      assert.equal(await actions.getByRole("button", { name: "Save", exact: true }).isEnabled(), false);
+      assert.equal(await actions.getByRole("button", { name: "Save changes", exact: true }).count(), 0);
       await title.fill("Unsaved wording");
       await actions.getByRole("button", { name: "Undo", exact: true }).click();
       await page.getByRole("button", { name: "Undo all unsaved changes", exact: true }).click();
       assert.equal(await title.inputValue(), `Current host title ${width}`, "reset uses the latest explicit save");
-      assert.equal(await actions.getByRole("button", { name: "Save", exact: true }).isEnabled(), false);
+      assert.equal(await actions.getByRole("button", { name: "Save changes", exact: true }).count(), 0);
       const afterSave = writes.length;
-      await workspace.getByRole("button", { name: "Exit", exact: true }).click();
+      await leaveEditor();
       await page.locator("[data-destination]").waitFor();
       assert.equal(new URL(page.url()).pathname, "/event/saved-host-title", "clean Exit leaves the editor for the saved event");
       assert.equal(writes.length, afterSave, "clean Exit never saves");
@@ -218,12 +221,12 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
       records.set(id, { id, title: "Undo meet", revision: "meet-v1", data: {
         title: "Undo meet", status: "published", category: "gymnastics", createdVia: "simple-template",
         pageTemplateId: "airborne-atlas", date: "2027-04-10", time: "", timezone: "America/New_York",
-        venue: "Original venue", rsvpEnabled: false, hero: "/templates/hero-images/general-sport-hero.jpeg",
+        venue: "Original venue", rsvpEnabled: false, hero: "/templates/hero-images/general-sport-hero.webp",
         responses: [{ id: "preserved-response" }],
       } });
       const openImageSettings = async () => {
         await workspace.waitFor();
-        const edit = workspace.getByRole("button", { name: /^(Page settings|Edit|Close preview)$/ });
+        const edit = workspace.getByRole("button", { name: /^(Continue editing|Edit|Close preview)$/ });
         if (await edit.isVisible()) await edit.click();
         await controls.waitFor();
         const image = controls.getByRole("button", { name: /^Event image settings/ });
@@ -234,18 +237,64 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
       await page.goto(editorHref);
       await page.evaluate(() => localStorage.setItem("envitefy:appearance:v1", "light"));
       await page.addScriptTag({ content: appearanceBootstrap });
-      await workspace.getByRole("button", { name: "Exit", exact: true }).waitFor();
+      await workspace.getByRole("button", { name: /^Exit(?: [Ee]diting)?$/, exact: true }).waitFor();
+      if (width < 768) {
+        const checkMenuAlignment = async () => {
+          const backdrop = workspace.getByRole("button", { name: "Close editing menu", exact: true });
+          assert.equal(await backdrop.isVisible(), true, "the open menu covers the event page with a dismissible backdrop");
+          const effect = await backdrop.evaluate(element => {
+            const style = getComputedStyle(element);
+            return { blur: style.backdropFilter, color: style.backgroundColor };
+          });
+          assert.equal(effect.blur, "blur(3px)", "the event page is subtly blurred behind the menu");
+          const opacity = Number(effect.color.match(/,\s*([\d.]+)\)$/)?.[1]);
+          assert.ok(opacity > 0 && opacity <= 0.2, "the event page is lightly dimmed behind the menu");
+          const panel = await controls.boundingBox();
+          const footer = await workspace.locator("footer[data-bottom-settings]").boundingBox();
+          const rows = await controls.locator('button[class*="_menuCard"]').evaluateAll(elements => elements
+            .filter(element => element.getClientRects().length && !element.closest("[hidden]"))
+            .map(element => {
+              const box = element.getBoundingClientRect();
+              return { label: element.textContent.trim(), x: box.x, right: box.right, height: box.height };
+            }));
+          assert.ok(rows.length >= 6, "Sections and the existing settings remain in the menu");
+          for (const row of rows) {
+            assert.ok(Math.abs(row.x - rows[0].x) < 1 && Math.abs(row.right - rows[0].right) < 1,
+              `${row.label} shares the Sections row width`);
+            assert.ok(row.height >= 44, `${row.label} keeps its touch target`);
+          }
+          assert.ok(Math.abs(footer.x - panel.x) < 1 && Math.abs(footer.width - panel.width) < 1,
+            "the action bar stays inside the editing menu's column");
+          assert.ok(panel.width <= 420 && panel.x >= 0, "the content-sized menu fits the viewport");
+        };
+        await checkMenuAlignment();
+        await page.screenshot({ path: path.join(output, `gymnastics-menu-${width}.png`) });
+        await page.evaluate(() => localStorage.setItem("envitefy:appearance:v1", "dark"));
+        await page.addScriptTag({ content: appearanceBootstrap });
+        await checkMenuAlignment();
+        await page.screenshot({ path: path.join(output, `gymnastics-menu-${width}-dark.png`) });
+        await page.evaluate(() => localStorage.setItem("envitefy:appearance:v1", "light"));
+        await page.addScriptTag({ content: appearanceBootstrap });
+        await page.setViewportSize({ width: 640, height: 390 });
+        await checkMenuAlignment();
+        await page.screenshot({ path: path.join(output, `gymnastics-menu-${width}-landscape.png`) });
+        await page.setViewportSize({ width, height: 900 });
+      }
       const checkNavigation = async () => {
-        const exit = workspace.getByRole("button", { name: "Exit", exact: true });
+        const exit = workspace.getByRole("button", { name: /^Exit(?: [Ee]diting)?$/, exact: true });
         assert.equal(await exit.count(), 1, "each editor view has one reachable Exit");
         assert.equal(await workspace.getByRole("button", { name: "Cancel", exact: true }).count(), 0, "Exit replaces duplicate Cancel");
         const box = await exit.boundingBox();
         assert.ok(box.width >= 44 && box.height >= 44 && box.x >= 0 && box.x + box.width <= width, `${width}px Exit keeps a full touch target`);
         assert.equal(await exit.locator("svg.lucide-log-out").count(), 1, "Exit has its exit icon");
-        assert.equal(await exit.locator("svg.lucide-log-out").evaluate(element => new DOMMatrixReadOnly(getComputedStyle(element).transform).a > 0), true, "the Exit arrow points right");
         const mobileCanvas = width < 768 && await workspace.getAttribute("data-mobile-editing") === "false";
+        assert.equal(await exit.textContent(), mobileCanvas ? "Exit Editing" : width >= 768 && await controls.isVisible() ? "Exit editing" : "Exit", "the left canvas control names the editing session");
+        assert.equal(await exit.locator("svg.lucide-log-out").evaluate(element => new DOMMatrixReadOnly(getComputedStyle(element).transform).a < 0), mobileCanvas,
+          "the left canvas arrow points left; the settings and desktop arrows point right");
         if (mobileCanvas) {
-          const edit = workspace.getByRole("button", { name: "Page settings", exact: true });
+          assert.equal(await workspace.getByRole("button", { name: "Edit event", exact: true }).count(), 0,
+            "the phone canvas omits the duplicate circled edit-menu pencil");
+          const edit = workspace.getByRole("button", { name: "Continue editing", exact: true });
           const editBounds = await edit.boundingBox();
           assert.ok(box.x <= 24 && editBounds.x > box.x + box.width && editBounds.x + editBounds.width >= width - 24, `${width}px phone canvas puts Exit left and Edit page right`);
           assert.equal(await edit.locator("svg.lucide-pencil").count(), 1, "Edit page uses a pencil");
@@ -261,23 +310,58 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
         return box;
       };
       await checkNavigation();
-      await workspace.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
-      await workspace.getByRole("button", { name: "Page settings", exact: true }).waitFor();
+      assert.equal(await workspace.getByRole("button", { name: "Hide settings", exact: true }).count(), 0,
+        "the header replaces the redundant footer Hide settings action");
+      if (width >= 768) {
+        const panel = await controls.boundingBox();
+        const heading = await controls.getByRole("heading", { name: "Edit meet page", exact: true }).boundingBox();
+        const close = controls.getByRole("button", { name: "Close editing menu", exact: true });
+        const back = await close.boundingBox();
+        assert.equal(await close.locator("svg.lucide-x").count(), 1, "the desktop header uses an X");
+        assert.equal(await controls.getByRole("button", { name: "Back", exact: true }).count(), 0, "the desktop header has no Back button");
+        assert.ok(heading.y >= back.y + back.height + 16 && heading.x >= panel.x + 16,
+          "Edit meet page sits below the desktop controls as a content heading");
+        assert.ok(back.width >= 44 && back.height >= 44,
+          "the desktop X sits on the left with a full touch target");
+        const headingStyle = await controls.getByRole("heading", { name: "Edit meet page", exact: true }).evaluate(element => {
+          const style = getComputedStyle(element);
+          return { font: style.fontFamily, size: style.fontSize };
+        });
+        await page.screenshot({ path: path.join(output, "gymnastics-main-menu-desktop.png") });
+        await controls.getByRole("button", { name: "Design", exact: true }).click();
+        const designStyle = await controls.getByRole("heading", { name: "Design", exact: true }).evaluate(element => {
+          const style = getComputedStyle(element);
+          return { font: style.fontFamily, size: style.fontSize };
+        });
+        assert.deepEqual(headingStyle, designStyle, "Edit meet page uses the same heading typography as Design");
+        assert.equal(await controls.getByRole("heading", { name: "Edit meet page", exact: true }).count(), 0,
+          "a settings panel keeps its own heading without a duplicate menu title");
+        await controls.getByRole("button", { name: "Back to details", exact: true }).click();
+      }
+      await controls.getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
+      await workspace.getByRole("button", { name: "Continue editing", exact: true }).waitFor();
       const canvasFooter = workspace.locator('footer[data-bottom-settings="true"]');
+      assert.equal(await canvasFooter.getByRole("button", { name: "Save changes", exact: true }).count(), 0,
+        "a clean collapsed canvas has no Save changes button");
+      assert.equal(await workspace.getByRole("button", { name: "Close editing menu", exact: true }).count(), 0, "returning to the canvas removes its dimming and blur");
       await checkNavigation();
       await page.screenshot({ path: path.join(output, `gymnastics-canvas-navigation-${width}.png`) });
       for (const box of await canvasFooter.getByRole("button").evaluateAll(elements => elements.map(element => {
         const rect = element.getBoundingClientRect();
         return { label: element.textContent.trim(), x: rect.x, right: rect.right, width: rect.width, height: rect.height };
       }))) assert.ok(box.x >= 0 && box.right <= width + 1 && box.width >= 44 && box.height >= 44, `${width}px canvas ${box.label} stays reachable`);
-      await canvasFooter.getByRole("button", { name: "Preview", exact: true }).click();
+      assert.equal(await canvasFooter.getByRole("button", { name: "Preview", exact: true }).count(), 0, "the collapsed menu has no redundant Preview");
+      await workspace.getByRole("button", { name: "Continue editing", exact: true }).click();
+      await actions.getByRole("button", { name: "Preview", exact: true }).click();
       await workspace.getByRole("button", { name: "Close preview", exact: true }).waitFor();
-      assert.equal(await workspace.getByRole("button", { name: "Exit", exact: true }).count(), 0, "Preview hides editor navigation");
+      assert.equal(await workspace.getByRole("button", { name: /^Exit(?: Editing)?$/, exact: true }).count(), 0, "Preview hides editor navigation");
       await workspace.getByRole("button", { name: "Close preview", exact: true }).click();
-      await workspace.getByRole("button", { name: "Page settings", exact: true }).waitFor();
+      await controls.waitFor();
+      await controls.getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
+      await workspace.getByRole("button", { name: "Continue editing", exact: true }).waitFor();
       await checkNavigation();
       const beforeExit = writes.length;
-      await workspace.getByRole("button", { name: "Exit", exact: true }).click();
+      await leaveEditor();
       await page.locator("[data-destination]").waitFor();
       assert.equal(writes.length, beforeExit, "clean canvas Exit leaves without saving");
       await page.goto(editorHref);
@@ -293,7 +377,11 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
           const box = element.getBoundingClientRect();
           return { label: element.textContent.trim(), x: box.x, y: box.y, right: box.right, width: box.width, height: box.height, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
         }));
-        assert.deepEqual(buttons.map(button => button.label), width < 768 ? ["Undo", "Preview", "Save"] : ["Undo", "Hide settings", "Preview", "Save"]);
+        const actionBounds = await actions.boundingBox();
+        assert.ok(Math.abs(buttons.at(-1).right - actionBounds.x - actionBounds.width) <= 1,
+          "Preview is aligned to the right edge of the menu's action bar");
+        const dirty = await actions.getByRole("button", { name: "Save changes", exact: true }).count() > 0;
+        assert.deepEqual(buttons.map(button => button.label), dirty ? ["Undo", "Save changes", "Preview"] : ["Undo", "Preview"]);
         for (const button of buttons) {
           assert.ok(Math.abs(button.y - buttons[0].y) < 1, `${width}px ${button.label} stays in the same row`);
           assert.ok(button.width >= 44 && button.height >= 44 && button.x >= 0 && button.right <= width + 1, `${width}px ${button.label} has a visible touch target`);
@@ -306,14 +394,25 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
       const split = controls.getByRole("button", { name: "Choose Crossing lines hero layout", exact: true });
       const undo = actions.getByRole("button", { name: "Undo", exact: true });
       await diagonal.click();
-      await actions.getByRole("button", { name: "Save", exact: true }).click();
+      await workspace.getByRole("button", { name: width >= 768 ? "Close editing menu" : "Back to page", exact: true }).click();
+      await workspace.getByRole("button", { name: "Continue editing", exact: true }).waitFor();
+      const canvasSave = actions.getByRole("button", { name: "Save changes", exact: true });
+      const saveBounds = await canvasSave.boundingBox();
+      assert.ok(saveBounds.width >= 44 && saveBounds.width < 200,
+        "Save changes follows its label width rather than stretching across the canvas");
+      assert.equal(await canvasSave.evaluate(element => element.scrollWidth <= element.clientWidth), true,
+        "the complete Save changes label fits its button");
+      await page.screenshot({ path: path.join(output, `gymnastics-pending-save-${width}.png`) });
+      await actions.getByRole("button", { name: "Save changes", exact: true }).click();
       await page.getByText("Changes saved.", { exact: true }).waitFor();
+      assert.equal(await canvasSave.count(), 0, "successful canvas saves remove Save changes until another edit");
+      await openImageSettings();
       const saved = structuredClone(records.get(id));
       await split.click();
       await undo.click();
       await page.getByRole("button", { name: "Undo last change", exact: true }).click();
       assert.equal(await diagonal.getAttribute("aria-pressed"), "true");
-      assert.equal(await actions.getByRole("button", { name: "Save", exact: true }).isEnabled(), false);
+      assert.equal(await actions.getByRole("button", { name: "Save changes", exact: true }).count(), 0);
       await page.goto(`${base}/gymnastics/templates/airborne-atlas/customize?edit=${id}`);
       await openImageSettings();
       await page.evaluate(() => localStorage.setItem("envitefy:appearance:v1", "dark"));
@@ -325,10 +424,12 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
       await split.click();
       await checkSaveRow();
       await page.screenshot({ path: path.join(output, `gymnastics-save-row-${width}-dark.png`) });
-      await workspace.getByRole("button", { name: "Exit", exact: true }).click();
+      await leaveEditor();
       await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+      assert.equal(await controls.isVisible(), true, "Keep editing preserves the open image settings menu");
+      await openImageSettings();
       assert.equal(await split.getAttribute("aria-pressed"), "true", "Keep editing retains pending layout changes");
-      await workspace.getByRole("button", { name: "Exit", exact: true }).click();
+      await leaveEditor();
       await page.getByRole("button", { name: "Discard and leave", exact: true }).click();
       await page.locator("[data-destination]").waitFor();
       assert.deepEqual(records.get(id), saved, "Exit never writes layout, artwork or responses");
@@ -348,10 +449,10 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
       await page.goto(`${base}/gymnastics/templates/airborne-atlas/customize?edit=${id}`);
       await openImageSettings();
       assert.equal(await diagonal.getAttribute("aria-pressed"), "true", "reopen retains the saved design");
-      assert.equal(await actions.getByRole("button", { name: "Save", exact: true }).isEnabled(), false);
+      assert.equal(await actions.getByRole("button", { name: "Save changes", exact: true }).count(), 0);
       await split.click();
       const beforeSaveAndExit = writes.length;
-      await workspace.getByRole("button", { name: "Exit", exact: true }).click();
+      await leaveEditor();
       await page.getByRole("button", { name: "Save and leave", exact: true }).click();
       await page.locator("[data-destination]").waitFor();
       assert.equal(writes.length, beforeSaveAndExit + 1, "Save and leave saves once before navigating");

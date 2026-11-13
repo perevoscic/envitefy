@@ -50,7 +50,7 @@ function loadPreference(account: string): Promise<Preference> {
   return request;
 }
 
-export function useCalendarPreference() {
+export function useCalendarPreference({ enabled }: { enabled: boolean }) {
   // Standalone, public previews may render without a SessionProvider.
   const session = useContext(SessionContext);
   const loading = session?.status === "loading";
@@ -58,7 +58,7 @@ export function useCalendarPreference() {
   const [preference, setPreference] = useState<(Preference & { account: string }) | null>(null);
 
   useEffect(() => {
-    if (loading) return;
+    if (!enabled || loading) return;
     let revision = 0;
     let mounted = true;
     const refresh = async () => {
@@ -90,7 +90,7 @@ export function useCalendarPreference() {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("focus", onChange);
     };
-  }, [account, loading]);
+  }, [account, enabled, loading]);
 
   const current = !loading && preference?.account === account ? preference : null;
   const provider = validCalendarDefault(

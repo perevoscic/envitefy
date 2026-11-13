@@ -27,7 +27,7 @@ test("location verification stays out of pending edits while saves and undo reta
   }
 });
 
-test("view changes stay clean and saved pages disable Save until edited", () => {
+test("view changes stay clean and saved pages show Save changes only while edited", () => {
   const content = { data: { title: "Trip", sections: [{ title: "Parking", body: "North lot" }] } };
   assert.deepEqual(
     eventEditorContent({ ...content, activeView: "design", mobileMenuOpen: true }),
@@ -35,9 +35,9 @@ test("view changes stay clean and saved pages disable Save until edited", () => 
   );
   assert.deepEqual(eventEditorActions(true, false), {
     showDraft: false,
-    showPrimary: true,
+    showPrimary: false,
     primaryDisabled: true,
-    primaryLabel: "Save",
+    primaryLabel: "Save changes",
   });
   assert.equal(eventEditorActions(true, true).showPrimary, true);
   assert.equal(eventEditorActions(true, true).primaryDisabled, false);

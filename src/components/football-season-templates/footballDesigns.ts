@@ -1947,7 +1947,7 @@ export function getFootballDesign(id?: string | null): FootballDesign {
 export function resolveFootballHero(id?: string | null, customHero?: string | null): string {
   const hero = customHero?.trim();
   const isTemplateArtwork = Object.values(FOOTBALL_DESIGNS).some((design) => design.hero === hero);
-  return hero && hero !== "/templates/hero-images/football-hero.jpeg" && !isTemplateArtwork
+  return hero && hero !== "/templates/hero-images/football-hero.webp" && !isTemplateArtwork
     ? hero
     : getFootballDesign(id).hero;
 }

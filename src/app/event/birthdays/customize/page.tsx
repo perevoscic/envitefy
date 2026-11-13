@@ -18,7 +18,7 @@ import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/
 
 import { BIRTHDAY_SAMPLES, birthdaySampleHeadline } from "@/data/birthday-samples";
 
-import { resolveBirthdayTemplateHero } from "@/lib/birthday-hero-asset";
+import { resolveBirthdayHeroAsset, resolveBirthdayTemplateHero } from "@/lib/birthday-hero-asset";
 
 import {
   Cake,
@@ -1068,7 +1068,7 @@ const handleGalleryUpload = useCallback(
             {isAnniversaryDesign ? "All anniversary designs" : "All birthday designs"}
           </button>
         )}
-        <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">Add your details</h2>
+        <EditorLayout title="Edit event page" showBack={false}>{null}</EditorLayout>
         <p className="text-slate-500 text-sm">
           {isAnniversaryDesign
             ? "Customize every aspect of your anniversary celebration page."
@@ -1443,7 +1443,7 @@ const handleGalleryUpload = useCallback(
       if (activeView === "main" || activeView === "images") return false;
       setActiveView("main");
       return true;
-    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "partyDetails": renderPartyDetailsEditor, "hosts": renderHostsEditor, "photos": renderPhotosEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, details: renderPartyDetailsEditor }} artwork={data.images.hero} editor={editor} templatesHref={isAnniversaryDesign ? "/event/anniversaries" : "/event/birthdays"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "partyDetails": renderPartyDetailsEditor, "hosts": renderHostsEditor, "photos": renderPhotosEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, details: renderPartyDetailsEditor }} artwork={resolveBirthdayHeroAsset({ customHero: data.images.hero, savedHero: activeRenderTheme.decorations?.heroImage || activeRenderTheme.heroImage, catalogHero: BIRTHDAY_DESIGN_BY_ID.get(activeRenderTheme.id)?.heroImage })} editor={editor} templatesHref={isAnniversaryDesign ? "/event/anniversaries" : "/event/birthdays"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
         ref={previewRef}
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"

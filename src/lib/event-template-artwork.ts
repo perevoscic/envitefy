@@ -36,13 +36,13 @@ export function eventArtworkCategory(data: Record<string, unknown>): string {
 
 // These are the same fallback photographs used by the native category templates.
 const nativeArtwork: Record<string, string> = {
-  general: "/templates/hero-images/general-events-hero.jpeg",
-  "sport-events": "/templates/hero-images/general-sport-hero.jpeg",
-  soccer: "/templates/hero-images/soccer-hero.jpeg",
-  cheerleading: "/templates/hero-images/cheerleading-hero.jpeg",
-  "dance-ballet": "/templates/hero-images/balet-dance-hero.jpeg",
-  workshops: "/templates/hero-images/workshop-classes-hero.jpeg",
-  appointments: "/templates/hero-images/dr-appinments-hero.jpeg",
+  general: "/templates/hero-images/general-events-hero.webp",
+  "sport-events": "/templates/hero-images/general-sport-hero.webp",
+  soccer: "/templates/hero-images/soccer-hero.webp",
+  cheerleading: "/templates/hero-images/cheerleading-hero.webp",
+  "dance-ballet": "/templates/hero-images/balet-dance-hero.webp",
+  workshops: "/templates/hero-images/workshop-classes-hero.webp",
+  appointments: "/templates/hero-images/dr-appinments-hero.webp",
 };
 const catalogs = new Map<TemplateCategory, Map<string, string>>();
 function catalogArtwork(category: TemplateCategory, ids: string[]): string | null {
@@ -84,7 +84,7 @@ export function resolveEventTemplateArtwork(data: Record<string, unknown>): stri
     case "baby-showers":
       return resolveBabyShowerHero(null, getBabyShowerDesign(text(data.templateId) || ids[0]));
     case "bridal-showers":
-      return catalogArtwork(category, ids) || "/templates/hero-images/baby-shower-hero.jpeg";
+      return catalogArtwork(category, ids) || "/templates/hero-images/baby-shower-hero.webp";
     case "gender-reveal":
       return catalogArtwork(category, [text(data.templateId), ...ids]) || getPublicTemplates(category)[0]?.heroImage || null;
     case "general":

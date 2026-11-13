@@ -25,6 +25,7 @@ import { EventSectionCanvas } from "@/components/events/EventSectionBuilder";
 import EventPageHero from "@/components/events/EventPageHero";
 import EventSectionExtrasContent from "@/components/events/EventSectionExtrasContent";
 import { useEventPageReadOnly } from "@/components/events/EventPageReadOnlyContext";
+import { templateAccentColorCombinations } from "@/lib/imported-event-theme";
 
 export default function CustomEventPageContent({
   page,
@@ -92,11 +93,18 @@ export default function CustomEventPageContent({
       )}
     </>
   );
+  const accentCombination = design.accentCombination ? templateAccentColorCombinations({
+    id: "custom", name: design.name, background: design.colors.page, foreground: design.colors.ink,
+    accent: design.colors.accent,
+  })[design.accentCombination] : undefined;
   const vars = {
     "--event-page": design.colors.page,
     "--event-surface": design.colors.surface,
     "--event-ink": design.colors.ink,
-    "--event-accent": design.colors.accent,
+    "--event-accent": accentCombination?.button || design.colors.accent,
+    "--event-on-accent": accentCombination?.onButton || "#ffffff",
+    "--event-heading": accentCombination?.heading,
+    "--event-link": accentCombination?.link,
     "--event-font": design.fontFamily || EVENT_DESIGN_FONTS[design.font],
     "--event-body-font": EVENT_DESIGN_FONT_PAIRS.find((pair) => pair.id === design.font)?.body,
   } as CSSProperties;
@@ -106,6 +114,7 @@ export default function CustomEventPageContent({
       className={styles.page}
       style={vars}
       data-layout={design.layout}
+      data-accent-combination={accentCombination?.index}
       aria-label={eventId ? "Event page" : "Event page preview"}
     >
       {isOwner && eventId && (

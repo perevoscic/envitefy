@@ -7,7 +7,7 @@ const config = {
   displayName: "Sport Event",
   category: "sport_event",
   categoryLabel: "Sport Event",
-  defaultHero: "/templates/hero-images/general-sport-hero.jpeg",
+  defaultHero: "/templates/hero-images/general-sport-hero.webp",
   detailFields: [
     { key: "opponent", label: "Opponent", placeholder: "vs Central City" },
     {

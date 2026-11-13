@@ -236,9 +236,9 @@ test("homepage interest onboarding saves chosen events and sports as editable ac
         }
         return route.fulfill({ json: records[account] || preferences(undefined) });
       }
-      if (["/icons/sidebar-gymnastics.png", "/icons/sidebar-football.png"].includes(url.pathname))
+      if (["/icons/sidebar-gymnastics.webp", "/icons/sidebar-football.webp"].includes(url.pathname))
         return route.fulfill({
-          contentType: "image/png",
+          contentType: "image/webp",
           body: fs.readFileSync(path.join("public", url.pathname)),
         });
       if (url.origin === "http://category-onboarding.test")

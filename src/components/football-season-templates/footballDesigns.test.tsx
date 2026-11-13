@@ -36,7 +36,7 @@ test("every football design has distinct verified artwork and its own theme", ()
 });
 
 test("artwork follows the selected design while custom uploads survive switching", () => {
-  const oldDefault = "/templates/hero-images/football-hero.jpeg";
+  const oldDefault = "/templates/hero-images/football-hero.webp";
   const newDefault = getFootballDesign("launchpad-editorial").hero;
   const selected = getFootballDesign("pop-art").hero;
   assert.equal(resolveFootballHero("pop-art", oldDefault), selected);

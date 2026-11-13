@@ -7,11 +7,6 @@ import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import AppearanceSelector from "@/components/AppearanceSelector";
 import appearanceStyles from "./navigation-appearance.module.css";
 import { secureSignOut } from "@/utils/secureSignOut";
-import {
-  CalendarIconGoogle,
-  CalendarIconOutlook,
-  CalendarIconApple,
-} from "@/components/CalendarIcons";
 import type { CategoryData } from "@/hooks/useEventCategories";
 import { useMenu } from "@/contexts/MenuContext";
 import {
@@ -19,18 +14,6 @@ import {
   getTemplateLinks,
 } from "@/config/navigation-config";
 import type { SportPreferences } from "@/lib/sports-preferences";
-
-type CalendarProviderKey = "google" | "microsoft" | "apple";
-
-const _CALENDAR_TARGETS: Array<{
-  key: CalendarProviderKey;
-  label: string;
-  Icon: typeof CalendarIconGoogle;
-}> = [
-  { key: "google", label: "Google", Icon: CalendarIconGoogle },
-  { key: "apple", label: "Apple", Icon: CalendarIconApple },
-  { key: "microsoft", label: "Outlook", Icon: CalendarIconOutlook },
-];
 
 // Re-export TEMPLATE_LINKS for backward compatibility with left-sidebar
 export const TEMPLATE_LINKS = getTemplateLinks();
@@ -224,23 +207,11 @@ export function ProfileMenu({
   isOpen,
   onClose,
   isAdmin,
-  connectedCalendars,
-  calendarsOpen,
-  setCalendarsOpen,
-  handleCalendarConnect,
   variant = "topnav",
 }: {
   isOpen: boolean;
   onClose: () => void;
   isAdmin: boolean;
-  connectedCalendars: {
-    google: boolean;
-    microsoft: boolean;
-    apple: boolean;
-  };
-  calendarsOpen: boolean;
-  setCalendarsOpen: (open: boolean) => void;
-  handleCalendarConnect: (provider: CalendarProviderKey) => void;
   variant?: "topnav" | "sidebar";
 }) {
   const profileRef = useRef<HTMLDivElement | null>(null);
@@ -448,8 +419,6 @@ export default function TopNav() {
     pathname,
     categories,
     history,
-    connectedCalendars,
-    handleCalendarConnect,
     isAdmin,
     initials,
     productScopes,
@@ -461,7 +430,6 @@ export default function TopNav() {
   const [openRecent, setOpenRecent] = useState(false);
   const [myEventsOpen, setMyEventsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [calendarsOpen, setCalendarsOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileScrolled, setMobileScrolled] = useState(false);
@@ -545,7 +513,6 @@ export default function TopNav() {
         !profileDropdownRef.current.contains(event.target)
       ) {
         setProfileOpen(false);
-        setCalendarsOpen(false);
       }
       if (
         myEventsOpen &&
@@ -560,7 +527,6 @@ export default function TopNav() {
       if (event.key === "Escape") {
         setOpenRecent(false);
         setProfileOpen(false);
-        setCalendarsOpen(false);
         setMyEventsOpen(false);
       }
     };
@@ -576,7 +542,6 @@ export default function TopNav() {
     myEventsOpen,
     setOpenRecent,
     setProfileOpen,
-    setCalendarsOpen,
     setMyEventsOpen,
   ]);
 
@@ -807,13 +772,8 @@ export default function TopNav() {
                 isOpen={profileOpen}
                 onClose={() => {
                   setProfileOpen(false);
-                  setCalendarsOpen(false);
                 }}
                 isAdmin={isAdmin}
-                connectedCalendars={connectedCalendars}
-                calendarsOpen={calendarsOpen}
-                setCalendarsOpen={setCalendarsOpen}
-                handleCalendarConnect={handleCalendarConnect}
                 variant="topnav"
               />
             </div>

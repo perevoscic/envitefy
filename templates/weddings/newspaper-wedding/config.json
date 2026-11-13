@@ -8,7 +8,7 @@
   "theme": {
     "colors": { "primary": "#f4f4f4", "secondary": "#000000", "background": "#ffffff" },
     "fonts": { "headline": "Playfair Display", "body": "Georgia" },
-    "decorations": { "heroImage": "/templates/wedding-placeholders/midnight-bloom-hero.jpeg" }
+    "decorations": { "heroImage": "/templates/wedding-placeholders/midnight-bloom-hero.webp" }
   }
 }
 

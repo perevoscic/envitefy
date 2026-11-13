@@ -4,10 +4,10 @@
   "category": "classic",
   "family": "classic",
   "layout": "ethereal-classic",
-  "thumbnail": "/templates/weddings/ethereal-classic/thumb.jpeg",
+  "thumbnail": "/templates/weddings/ethereal-classic/thumb.webp",
   "theme": {
     "colors": { "primary": "#f8f5f0", "secondary": "#1f2937", "background": "transparent" },
     "fonts": { "headline": "Playfair Display", "body": "Inter" },
-    "decorations": { "heroImage": "/templates/wedding-placeholders/golden-jubilee-hero.jpeg" }
+    "decorations": { "heroImage": "/templates/wedding-placeholders/golden-jubilee-hero.webp" }
   }
 }

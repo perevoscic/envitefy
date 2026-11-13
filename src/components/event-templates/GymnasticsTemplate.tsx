@@ -3960,7 +3960,7 @@ const config = {
   detailsDescriptionPopup: true,
   defaultRsvpDeadlineDays: null,
   themesExpandedByDefault: false,
-  defaultHero: "/templates/hero-images/gymnastics-hero.jpeg",
+  defaultHero: "/templates/hero-images/gymnastics-hero.webp",
   rsvpCopy: {
     menuTitle: "Attendance",
     menuDesc: "Response settings for athletes.",

@@ -26,7 +26,7 @@ export default function BabyShowerPhones({ className = "" }: Props) {
           {/* Header image */}
           <div className="relative h-1/2 bg-[#fdeef8]">
             <Image
-              src="/phone-placeholders/baby-shower-gifts.jpeg"
+              src="/phone-placeholders/baby-shower-gifts.webp"
               alt="Baby shower celebration"
               fill
               className="object-cover opacity-95 mix-blend-multiply"

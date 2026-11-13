@@ -5,11 +5,11 @@
     "category": "luxury",
     "family": "classic",
     "layout": "gilded-wedding",
-    "thumbnail": "/templates/weddings/gilded-wedding/thumb.jpeg",
+    "thumbnail": "/templates/weddings/gilded-wedding/thumb.webp",
     "primaryColor": "#FDFBF7",
     "secondaryColor": "#D4AF37",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/gilded-twilight-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/gilded-twilight-hero.webp",
     "bodyFont": "Playfair Display"
   },
   {
@@ -18,11 +18,11 @@
     "category": "modern",
     "family": "modern",
     "layout": "modern-editorial",
-    "thumbnail": "/templates/weddings/modern-editorial/thumb.jpeg",
+    "thumbnail": "/templates/weddings/modern-editorial/thumb.webp",
     "primaryColor": "#000000",
     "secondaryColor": "#A3E635",
     "headlineFont": "Geist Sans",
-    "heroImage": "/templates/wedding-placeholders/ivory-ink-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/ivory-ink-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -31,11 +31,11 @@
     "category": "rustic",
     "family": "boho",
     "layout": "rustic-boho",
-    "thumbnail": "/templates/weddings/rustic-boho/thumb.jpeg",
+    "thumbnail": "/templates/weddings/rustic-boho/thumb.webp",
     "primaryColor": "#FDF8F3",
     "secondaryColor": "#4A4036",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/sunset-vineyard-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/sunset-vineyard-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -44,11 +44,11 @@
     "category": "modern",
     "family": "modern",
     "layout": "cinematic-wedding",
-    "thumbnail": "/templates/weddings/cinematic-wedding/thumb.jpeg",
+    "thumbnail": "/templates/weddings/cinematic-wedding/thumb.webp",
     "primaryColor": "#0B0B0F",
     "secondaryColor": "#FFFFFF",
     "headlineFont": "Geist Sans",
-    "heroImage": "/templates/wedding-placeholders/velvet-noir-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/velvet-noir-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -57,11 +57,11 @@
     "category": "destination",
     "family": "modern",
     "layout": "celestial-wedding",
-    "thumbnail": "/templates/weddings/celestial-wedding/thumb.jpeg",
+    "thumbnail": "/templates/weddings/celestial-wedding/thumb.webp",
     "primaryColor": "#0B1026",
     "secondaryColor": "#D4AF37",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/celestial-atelier-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/celestial-atelier-hero.webp",
     "bodyFont": "Playfair Display"
   },
   {
@@ -70,11 +70,11 @@
     "category": "classic",
     "family": "classic",
     "layout": "ethereal-classic",
-    "thumbnail": "/templates/weddings/ethereal-classic/thumb.jpeg",
+    "thumbnail": "/templates/weddings/ethereal-classic/thumb.webp",
     "primaryColor": "#f8f5f0",
     "secondaryColor": "#1f2937",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/golden-jubilee-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/golden-jubilee-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -83,11 +83,11 @@
     "category": "modern",
     "family": "modern",
     "layout": "museum-wedding",
-    "thumbnail": "/templates/weddings/museum-wedding/thumb.jpeg",
+    "thumbnail": "/templates/weddings/museum-wedding/thumb.webp",
     "primaryColor": "#FFFFFF",
     "secondaryColor": "#000000",
     "headlineFont": "Geist Sans",
-    "heroImage": "/templates/wedding-placeholders/palais-moderne-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/palais-moderne-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -96,11 +96,11 @@
     "category": "classic",
     "family": "classic",
     "layout": "ethereal-wedding",
-    "thumbnail": "/templates/weddings/ethereal-wedding/thumb.jpeg",
+    "thumbnail": "/templates/weddings/ethereal-wedding/thumb.webp",
     "primaryColor": "#FFFFFF",
     "secondaryColor": "#F3E8E2",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/champagne-skyline-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/champagne-skyline-hero.webp",
     "bodyFont": "Playfair Display"
   },
   {
@@ -109,7 +109,7 @@
     "category": "luxury",
     "family": "luxury",
     "layout": "noir-luxury",
-    "thumbnail": "/templates/weddings/noir-luxury/thumb.jpeg",
+    "thumbnail": "/templates/weddings/noir-luxury/thumb.webp",
     "primaryColor": "#0A0A0A",
     "secondaryColor": "#D4AF37",
     "headlineFont": "Playfair Display",
@@ -122,7 +122,7 @@
     "category": "retro",
     "family": "retro",
     "layout": "retro-70s",
-    "thumbnail": "/templates/weddings/retro-70s/thumb.jpeg",
+    "thumbnail": "/templates/weddings/retro-70s/thumb.webp",
     "primaryColor": "#FEFAE0",
     "secondaryColor": "#BC4749",
     "headlineFont": "Montserrat",
@@ -139,7 +139,7 @@
     "primaryColor": "#f4f4f4",
     "secondaryColor": "#000000",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/midnight-bloom-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/midnight-bloom-hero.webp",
     "bodyFont": "Georgia"
   },
   {
@@ -165,7 +165,7 @@
     "primaryColor": "#004B8D",
     "secondaryColor": "#F4D03F",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -204,7 +204,7 @@
     "primaryColor": "#1A2F25",
     "secondaryColor": "#B7410E",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/winter-chalet-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/winter-chalet-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -243,7 +243,7 @@
     "primaryColor": "#ffffff",
     "secondaryColor": "#ec4899",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/garden-atelier-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/garden-atelier-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -265,11 +265,11 @@
     "category": "luxury",
     "family": "luxury",
     "layout": "split-hero",
-    "thumbnail": "/templates/weddings/midnight-elegance/thumb.png",
+    "thumbnail": "/templates/weddings/midnight-elegance/thumb.webp",
     "primaryColor": "#0D0F2C",
     "secondaryColor": "#C7A26B",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/harbor-serenade-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/harbor-serenade-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -308,7 +308,7 @@
     "primaryColor": "#F7F4EF",
     "secondaryColor": "#6A645A",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/carriage-house-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/carriage-house-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -360,7 +360,7 @@
     "primaryColor": "#5B402B",
     "secondaryColor": "#F3E4D1",
     "headlineFont": "Crimson Text",
-    "heroImage": "/templates/wedding-placeholders/tidal-opulence-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/tidal-opulence-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -399,7 +399,7 @@
     "primaryColor": "#7DA0C3",
     "secondaryColor": "#EEF3FA",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/orchid-reverie-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/orchid-reverie-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -412,7 +412,7 @@
     "primaryColor": "#5A1F2A",
     "secondaryColor": "#F6E3E6",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/marble-whisper-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/marble-whisper-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -425,7 +425,7 @@
     "primaryColor": "#F5F0EA",
     "secondaryColor": "#5E5B52",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/horizon-chateau-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/horizon-chateau-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -438,7 +438,7 @@
     "primaryColor": "#0D0F2C",
     "secondaryColor": "#C7A26B",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/silken-alpine-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/silken-alpine-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -464,7 +464,7 @@
     "primaryColor": "#F2B8A2",
     "secondaryColor": "#FFF2EA",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/evergreen-ballroom-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/evergreen-ballroom-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -477,7 +477,7 @@
     "primaryColor": "#F5F5F5",
     "secondaryColor": "#B8C2CC",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/starlight-ballroom-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/starlight-ballroom-hero.webp",
     "bodyFont": "Inter"
   },
   {
@@ -503,7 +503,7 @@
     "primaryColor": "#D9DCE4",
     "secondaryColor": "#F5F7FB",
     "headlineFont": "Playfair Display",
-    "heroImage": "/templates/wedding-placeholders/desert-lumiere-hero.jpeg",
+    "heroImage": "/templates/wedding-placeholders/desert-lumiere-hero.webp",
     "bodyFont": "Inter"
   },
   {

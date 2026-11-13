@@ -113,7 +113,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${base}/event/gymnastics/customize?edit=${id}`);
       const views = page.getByRole("group", { name: "Editor view", exact: true });
-      if (width === 390) await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+      if (width === 390) await page.getByRole("complementary", { name: "Event editing controls", exact: true }).getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
       const canvas = page.locator('[aria-label="Event page preview panel"] [data-imported-theme]').first();
       await canvas.waitFor();
       await page.evaluate(dark => document.documentElement.classList.toggle("dark", dark), dark);
@@ -122,7 +122,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
         assert.equal(await locator.locator('[class*="shell"]').first().evaluate(el => getComputedStyle(el).backgroundColor), "rgb(17, 27, 58)");
       };
       await assertNavy(canvas);
-      if (width === 390) await views.getByRole("button", { name: "Page settings", exact: true }).click();
+      if (width === 390) await views.getByRole("button", { name: "Continue editing", exact: true }).click();
       await openImageSettings();
       const choices = imageSettings.getByRole("group", { name: "Theme color combinations", exact: true });
       await choices.getByRole("button", { name: "Accent", exact: true }).click();
@@ -131,7 +131,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       await page.getByRole("button", { name: "Save draft", exact: true }).click();
       await page.getByText("Draft saved.", { exact: true }).waitFor();
       await page.reload();
-      if (width === 390) await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+      if (width === 390) await page.getByRole("complementary", { name: "Event editing controls", exact: true }).getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
       await canvas.waitFor();
       await assertNavy(canvas);
       await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics-guest&edit=${id}`);
@@ -162,7 +162,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
         for (const width of [390, 1440]) {
           await page.setViewportSize({ width, height: 900 });
           if (width === 390)
-            await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+            await page.getByRole("complementary", { name: "Event editing controls", exact: true }).getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
           const placeholder = preview.locator("[data-artwork-placeholder]");
           await placeholder.scrollIntoViewIfNeeded();
           assert.equal(await placeholder.isVisible(), true);
@@ -174,7 +174,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
           await page.screenshot({ path: path.join(output, `artwork-preparing-${width}.png`) });
           if (width === 390)
-            await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Page settings", exact: true }).click();
+            await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Continue editing", exact: true }).click();
         }
         artwork.set(id, { themeId: data.importedTheme.id, status: "failed", error: "The event image could not be generated." });
         await page.reload();
@@ -269,9 +269,9 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
           await imageSettings.getByRole("button", { name: "Back to details", exact: true }).click();
           if (width === 390) {
             const views = page.getByRole("group", { name: "Editor view", exact: true });
-            await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+            await page.getByRole("complementary", { name: "Event editing controls", exact: true }).getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
             await retainedImage.waitFor({ state: "attached" });
-            await views.getByRole("button", { name: "Page settings", exact: true }).click();
+            await views.getByRole("button", { name: "Continue editing", exact: true }).click();
           }
         }
         await page.setViewportSize({ width: 1440, height: 900 });
@@ -385,7 +385,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       await settings.getByRole("button", { name: "Page sections", exact: true }).click();
       const savedNames = await sectionOrder.locator("li > span:first-child").allTextContents();
       if (width === 390)
-        await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+        await page.getByRole("complementary", { name: "Event editing controls", exact: true }).getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
       assert.deepEqual(await preview.getByRole("tab").allTextContents(), savedNames);
       await preview.getByRole("tab", { name: "Parent notes", exact: true }).click();
       await preview.getByText("Bring a water bottle.", { exact: true }).waitFor();
@@ -401,7 +401,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       await palette.getByRole("button", { name: "Venue & arrival", exact: true }).click();
       await page.getByRole("button", { name: "Close section panel", exact: true }).click();
       if (width === 390)
-        await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+        await page.getByRole("complementary", { name: "Event editing controls", exact: true }).getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
       await preview.getByRole("tab", { name: "Venue & arrival", exact: true }).click();
       await preview.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
       assert.equal(writes.length, beforeWrites + 1, "reload, guest viewing and restore do not save automatically");
@@ -417,7 +417,10 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       const href = `${base}/gymnastics/templates/airborne-atlas/customize?edit=${id}&editor=menu&returnTo=${encodeURIComponent("/event/meet-return?tab=event")}`;
       const actions = page.getByRole("group", { name: "Save event", exact: true });
       const view = page.getByRole("group", { name: "Editor view", exact: true });
-      const cancel = page.getByRole("button", { name: "Exit", exact: true });
+      const cancel = page.getByRole("button", { name: /^Exit(?: Editing)?$/, exact: true });
+      const leaveEditor = async () => {
+        await page.getByRole("button", { name: /^Exit(?: [Ee]diting)?$/, exact: true }).click();
+      };
       const beforeWrites = writes.length, beforeImages = imageRequests.length;
       const expectExit = async () => {
         await page.locator("[data-destination]").waitFor();
@@ -429,23 +432,24 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       await page.setViewportSize({ width, height: 900 });
       await page.goto(href);
       await embeddedControls.waitFor({ state: "visible" });
-      await cancel.waitFor({ state: "visible" });
+      const menuExit = width < 768 ? cancel : page.getByRole("button", { name: "Exit editing", exact: true });
+      await menuExit.waitFor({ state: "visible" });
       assert.equal(await actions.getByRole("button", { name: "Preview", exact: true }).count(), 1, "one explicit Preview remains beside save actions");
       assert.equal(await actions.getByRole("button", { name: "Cancel", exact: true }).count(), 0, "Exit replaces duplicate Cancel");
-      const bounds = await cancel.boundingBox();
+      const bounds = await menuExit.boundingBox();
       assert.ok(bounds.width >= 44 && bounds.height >= 44 && bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y >= 0 && bounds.y + bounds.height <= 900, "Exit is a visible touch target within the viewport");
       await page.screenshot({ path: path.join(output, `exit-settings-${width}-${published}.png`) });
-      await cancel.click();
+      await leaveEditor();
       await expectExit();
-      assert.equal(await page.getByRole("dialog").count(), 0, "clean Exit leaves directly from settings");
+      assert.equal(await page.getByRole("dialog").count(), 0, "leaving a clean editor directly from its menu never prompts");
 
       await page.goto(href);
       await embeddedControls.waitFor({ state: "visible" });
-      await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+      await page.getByRole("complementary", { name: "Event editing controls", exact: true }).getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
       await embeddedControls.waitFor({ state: "hidden" });
       assert.equal(await cancel.isVisible(), true, "the clean canvas retains its exit action");
       await page.screenshot({ path: path.join(output, `exit-canvas-${width}-${published}.png`) });
-      await cancel.click();
+      await leaveEditor();
       await expectExit();
       assert.equal(await page.getByRole("dialog").count(), 0, "clean exit does not prompt");
 
@@ -453,18 +457,20 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       await embeddedControls.getByRole("button", { name: "Event basics", exact: true }).click();
       const title = embeddedControls.getByLabel("Event Title", { exact: true });
       await title.fill("Unsaved meet title");
-      await cancel.click();
+      await leaveEditor();
       const dialog = page.getByRole("dialog");
       await dialog.getByRole("button", { name: "Keep editing", exact: true }).click();
+      assert.equal(await embeddedControls.isVisible(), true, "Keep editing preserves the mounted settings menu");
+      if (!(await embeddedControls.isVisible())) await view.getByRole("button", { name: "Continue editing", exact: true }).click();
       assert.equal(await title.inputValue(), "Unsaved meet title", "Keep editing retains the unsaved title");
-      await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+      if (await embeddedControls.isVisible()) await page.getByRole("complementary", { name: "Event editing controls", exact: true }).getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
       await embeddedControls.waitFor({ state: "hidden" });
-      await cancel.click();
+      await leaveEditor();
       await dialog.getByRole("button", { name: "Keep editing", exact: true }).click();
-      await view.getByRole("button", { name: "Page settings", exact: true }).click();
+      await view.getByRole("button", { name: "Continue editing", exact: true }).click();
       assert.equal(await title.inputValue(), "Unsaved meet title", "canvas exit protection retains mounted settings");
-      await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
-      await cancel.click();
+      await page.getByRole("complementary", { name: "Event editing controls", exact: true }).getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
+      await leaveEditor();
       await dialog.getByRole("button", { name: "Discard and leave", exact: true }).click();
       await expectExit();
     }

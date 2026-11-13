@@ -4,10 +4,10 @@
   "category": "modern",
   "family": "modern",
   "layout": "cinematic-wedding",
-  "thumbnail": "/templates/weddings/cinematic-wedding/thumb.jpeg",
+  "thumbnail": "/templates/weddings/cinematic-wedding/thumb.webp",
   "theme": {
     "colors": { "primary": "#0B0B0F", "secondary": "#FFFFFF", "background": "transparent" },
     "fonts": { "headline": "Geist Sans", "body": "Inter" },
-    "decorations": { "heroImage": "/templates/wedding-placeholders/velvet-noir-hero.jpeg" }
+    "decorations": { "heroImage": "/templates/wedding-placeholders/velvet-noir-hero.webp" }
   }
 }

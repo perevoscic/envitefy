@@ -11,6 +11,7 @@ type CacheEntry<T> = {
 };
 
 const CACHE_TTL_MS = 30 * 1000; // 30 seconds
+const STALE_CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, CacheEntry<any>>();
 const userRevisions = new Map<string, number>();
 const inflight = new Map<string, Promise<any[]>>();
@@ -41,7 +42,8 @@ export function getCachedHistory(
 
   const age = Date.now() - entry.timestamp;
   if (age > CACHE_TTL_MS) {
-    cache.delete(key);
+    // Retain the last good result for a bounded timeout fallback.
+    if (age > STALE_CACHE_TTL_MS) cache.delete(key);
     return null;
   }
 
@@ -56,7 +58,7 @@ export function getCachedHistoryStale(
 ): any[] | null {
   const key = getCacheKey(userId, view, limit, timeFilter);
   const entry = cache.get(key);
-  return entry?.data ?? null;
+  return entry && Date.now() - entry.timestamp <= STALE_CACHE_TTL_MS ? entry.data : null;
 }
 
 export function setCachedHistory(
@@ -113,7 +115,7 @@ export function coalesceHistoryRead(
 export function cleanupExpiredEntries(): void {
   const now = Date.now();
   for (const [key, entry] of cache.entries()) {
-    if (now - entry.timestamp > CACHE_TTL_MS) {
+    if (now - entry.timestamp > STALE_CACHE_TTL_MS) {
       cache.delete(key);
     }
   }

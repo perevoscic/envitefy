@@ -850,7 +850,7 @@ export const SIGNUP_TEMPLATES: SignupTemplateManifest = {
     {
       "name": "Hiking Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/hiking-club.png",
+      "path": "/templates/signup/clubs-and-groups/hiking-club.webp",
       "artworkPath": "/templates/signup/photographic/clubs-and-groups/hiking-club.webp"
     },
     {
@@ -964,7 +964,7 @@ export const SIGNUP_TEMPLATES: SignupTemplateManifest = {
     {
       "name": "Bird Watching Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/bird-watching-group.png",
+      "path": "/templates/signup/clubs-and-groups/bird-watching-group.webp",
       "artworkPath": "/templates/signup/photographic/clubs-and-groups/bird-watching-group.webp"
     },
     {

@@ -4,7 +4,7 @@
   "category": "luxury",
   "family": "luxury",
   "layout": "noir-luxury",
-  "thumbnail": "/templates/weddings/noir-luxury/thumb.jpeg",
+  "thumbnail": "/templates/weddings/noir-luxury/thumb.webp",
   "theme": {
     "colors": { "primary": "#0A0A0A", "secondary": "#D4AF37", "background": "transparent" },
     "fonts": { "headline": "Playfair Display", "body": "Inter" },

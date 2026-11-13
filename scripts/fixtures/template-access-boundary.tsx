@@ -6,7 +6,7 @@ import type { CreationAccess } from "@/lib/creation-access";
 
 type Status = "unauthenticated" | "loading" | "authenticated";
 type State = { status: Status; identity: string; access: CreationAccess | null; loading: boolean; error: string; eventId?: string };
-let state: State = { status: "unauthenticated", identity: "", access: null, loading: false, error: "" };
+let state: State = { status: "loading", identity: "", access: null, loading: true, error: "" };
 const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => listeners.delete(listener); };
 const useStateSnapshot = () => useSyncExternalStore(subscribe, () => state);

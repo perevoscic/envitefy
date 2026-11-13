@@ -48,7 +48,7 @@ test("premade hero thumbnails rearrange artwork and title while native sections 
       assert.equal(await controls.locator("input,select,textarea").count(), 0, "hero layout is a thumbnail gallery");
       assert.equal(await controls.getByRole("button", { name: "Reset", exact: true }).count(), 0, "Reset stays hidden until a hero layout is selected");
       const presets = await page.evaluate(() => window.heroLayoutPresets.map(({ label, layout }) => ({ label, ...layout })));
-      assert.equal(presets.length, 48, "the gallery contains forty-eight styled designs");
+      assert.equal(presets.length, 78, "the gallery contains seventy-eight styled designs");
       assert.equal(await controls.getByRole("button", { name: /^Choose .* hero layout$/ }).count(), presets.length);
       const bodyGeometry = async () => page.locator("[data-fixture-body]").evaluate((body) => {
         const origin = body.getBoundingClientRect();
@@ -173,7 +173,7 @@ test("premade hero thumbnails rearrange artwork and title while native sections 
       }
       await page.goto(`http://localhost:43140/?width=${screen.width}&placeholder=1`);
       await controls.getByRole("button", { name: "Choose Diagonal cut hero layout", exact: true }).waitFor();
-      assert.equal(await controls.getByText("Event title", { exact: true }).count(), 48, "empty event titles use the requested thumbnail placeholder");
+      assert.equal(await controls.getByText("Event title", { exact: true }).count(), 78, "empty event titles use the requested thumbnail placeholder");
       assert.equal(await controls.getByText("Your event", { exact: true }).count(), 0);
       assert.deepEqual(errors, [], `${screen.name}: no browser errors`);
       await page.close();

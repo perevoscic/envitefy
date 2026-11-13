@@ -237,8 +237,6 @@ test("self-service settings and Reset cannot grant categories, products or accou
 test("public template previews stay available but saved editor data never survives sign-out or a different account", () => {
   const React = require("react");
   const { renderToStaticMarkup } = require("react-dom/server");
-  const ts = require("typescript");
-  const code = ts.transpileModule(require("node:fs").readFileSync("src/components/event-create/CreationAccessBoundary.tsx", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
   const render = (status, email, eventId) => {
     let stateIndex = 0, refIndex = 0;
     const existing = { id: "saved", identity: "owner@example.com", allowed: true };
@@ -249,12 +247,12 @@ test("public template previews stay available but saved editor data never surviv
       "@/hooks/useCreationAccess": { useCreationAccess: () => ({ access: access.resolveCreationAccess({ policy: "restricted", categories: [], products: [] }), loading: false, error: "", reload: async () => {} }) },
       "@/lib/creation-access": access,
     };
-    const module = { exports: {} };
-    new Function("require", "module", "exports", code)((name) => stubs[name] || require(name), module, module.exports);
-    const result = module.exports.default({ product: "event_page", category: "weddings", eventId, children: React.createElement("p", {}, "Private editor content") });
+    const Boundary = loadTs("src/components/event-create/CreationAccessBoundary.tsx", stubs).default;
+    const result = Boundary({ product: "event_page", category: "weddings", eventId, children: React.createElement("p", {}, "Private editor content") });
     return renderToStaticMarkup(result);
   };
   assert.match(render("unauthenticated", null, null), /Private editor content/, "public template preview");
+  assert.match(render("loading", null, null), /data-template-editor-loading="true"/, "session hydration uses the shared editor animation");
   assert.match(render("authenticated", "owner@example.com", "saved"), /Private editor content/, "verified saved owner");
   assert.doesNotMatch(render("authenticated", "other@example.com", "saved"), /Private editor content/, "stale verified owner cannot admit another account");
   assert.doesNotMatch(render("unauthenticated", null, "saved"), /Private editor content/, "saved edits need current sign-in");

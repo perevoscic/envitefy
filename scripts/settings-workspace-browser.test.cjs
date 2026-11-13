@@ -783,9 +783,12 @@ test("focused settings navigation and explicit profile saves work on desktop and
           assert.equal(writes.length, 0, "switching accounts never saves another account's draft");
           assert.equal(
             state.calendarReads.length,
-            2,
-            "switching accounts makes one fresh connection check",
+            0,
+            "Profile and account switching make no calendar requests",
           );
+          await openSection(page, "Calendars");
+          await waitCalendarDefaultsReady(page);
+          assert.equal(state.calendarReads.length, 1, "opening Calendars checks the current account once");
         } finally {
           await context.close();
         }

@@ -1,5 +1,6 @@
 import { parseEventDates } from "./event-date-parser.ts";
 import { scanScheduleFromOcr } from "./scan-schedule.ts";
+import { isSchoolMemoText, schoolMemoLocation } from "./school-memo.ts";
 import { buildScanPersonalization, normalizeScanPersonalization, personalizedScanCategory, personalizedScanTitle, withoutMedicalIdentityLines } from "./ocr/personalization.ts";
 import type { ConciergeEventType, DetectedSourceIntent } from "./concierge/types.ts";
 import { sanitizeConciergePublicEventData } from "./concierge/public-copy.ts";
@@ -721,7 +722,13 @@ export function buildScanEventPageHistoryPayload(params: {
     "Scanned Event";
   const normalizedBaseTitle = stripTitleVenueNarrativeSuffix(baseTitle) || baseTitle;
   const rescuedLocation = extractAddressFromOcr(ocrLines);
-  const normalizedLocation = normalizeOcrLocationFields({
+  const scanSchedule = scanScheduleFromOcr(params.ocr);
+  const memoLocation = scanSchedule?.kind === "school-memo" || isSchoolMemoText(rawOcrText)
+    ? schoolMemoLocation(rawOcrText) : null;
+  const normalizedLocation = memoLocation ? {
+    ...memoLocation,
+    locationLine: [memoLocation.venue, memoLocation.location].filter(Boolean).join(", ") || null,
+  } : normalizeOcrLocationFields({
     venue: firstSpecificString(fieldsGuess.venue, fieldsGuess.venueName),
     location: firstSpecificString(fieldsGuess.location, fieldsGuess.address),
     fallbackLocation: rescuedLocation,
@@ -751,7 +758,6 @@ export function buildScanEventPageHistoryPayload(params: {
   const ocrSkin = asRecord(params.ocr.ocrSkin);
   const openHouse = asRecord(params.ocr.openHouse);
   const activities = stringArray(fieldsGuess.activities).slice(0, 8);
-  const scanSchedule = scanScheduleFromOcr(params.ocr);
   const timezone =
     firstString(scanSchedule?.timezone, fieldsGuess.timezone, params.ocr.schedule?.timezone, params.ocr.practiceSchedule?.timezone) ||
     inferTimezoneFromState([venue, location, ocrText].filter(Boolean).join(" ")) ||
@@ -889,7 +895,7 @@ export function buildScanEventPageHistoryPayload(params: {
     venue: venue || undefined,
     locationLabel: locationLine,
     locationText: locationLine,
-    locationEnrichment: params.locationEnrichment || undefined,
+    locationEnrichment: memoLocation ? undefined : params.locationEnrichment || undefined,
     additionalLocations: additionalLocations.length ? additionalLocations : undefined,
     placeName: venue || location || undefined,
     coverImageUrl: thumbnail,

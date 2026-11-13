@@ -51,7 +51,7 @@ export default function GymnasticsMeetComparison() {
           <div className={styles.eventContent}>
             <img
               className={styles.eventArtwork}
-              src="/templates/hero-images/gymnastics-hero.jpeg"
+              src="/templates/hero-images/gymnastics-hero.webp"
               alt=""
               loading="lazy"
               width="1920"
@@ -197,7 +197,7 @@ export default function GymnasticsMeetComparison() {
         >
           <div className={styles.packetSheet}>
             <img
-              src="/images/gymanstic-1-landing.png"
+              src="/images/gymanstic-1-landing.webp"
               alt="Sample PDF meet packet for the Xcel state championships"
               loading="lazy"
               width="692"

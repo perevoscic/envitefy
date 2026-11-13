@@ -39,3 +39,261 @@
   height: 100%;
   min-height: 0;
 }
+
+.opening {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  overflow: auto;
+  padding: 2rem 1.5rem;
+  color: var(--app-foreground, var(--foreground, #442c3b));
+  text-align: center;
+}
+
+.openingViewport {
+  height: calc(100dvh - var(--app-content-top-inset, 0px) - env(safe-area-inset-bottom, 0px));
+}
+
+.openingIllustration {
+  --opening-blue: #005dff;
+  --opening-cyan: #38bdf8;
+  position: relative;
+  width: 164px;
+  height: 208px;
+  flex-shrink: 0;
+  isolation: isolate;
+}
+
+@property --template-opening-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.openingIllustration::before {
+  position: absolute;
+  z-index: -1;
+  inset: -4px;
+  border-radius: 20px;
+  content: "";
+  pointer-events: none;
+  background: conic-gradient(from var(--template-opening-angle),
+    transparent 0deg 160deg,
+    #1e40af 230deg,
+    var(--opening-blue) 290deg,
+    var(--opening-cyan) 330deg,
+    transparent 360deg);
+  filter: blur(7px);
+  opacity: 0.75;
+  animation: opening-border 5s linear infinite;
+}
+
+.openingCard {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid var(--app-border, var(--border, #ded5ca));
+  border-radius: 16px;
+  background: var(--app-surface-raised, var(--surface-raised, #fffcf7));
+  box-shadow: 0 12px 32px -20px color-mix(in srgb, var(--app-foreground, var(--foreground, #442c3b)) 24%, transparent);
+}
+
+/* Keep the spherical light inside the stationary card, beneath its content. */
+.openingCard::before {
+  position: absolute;
+  inset: -28%;
+  content: "";
+  border-radius: 50%;
+  box-shadow:
+    0 18px 28px 0 var(--opening-cyan) inset,
+    0 40px 58px 0 var(--opening-blue) inset,
+    0 72px 80px 0 #1e40af inset;
+  opacity: 0.68;
+  animation: opening-light 5s linear infinite;
+}
+
+.openingCardContent {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: 12px;
+  border-radius: inherit;
+}
+
+.openingArtwork {
+  display: grid;
+  height: 112px;
+  place-items: center;
+  border-radius: 7px;
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--app-foreground, var(--foreground, #442c3b)) 5%, transparent),
+    transparent);
+  color: var(--app-muted-foreground, var(--muted-foreground, #746775));
+}
+
+.openingLines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 4px 0;
+}
+
+.openingLines span {
+  width: 62%;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--app-foreground, var(--foreground, #442c3b)) 12%, transparent);
+}
+
+.openingLines span:first-child {
+  width: 83%;
+  height: 6px;
+  margin-bottom: 3px;
+  background: color-mix(in srgb, var(--app-foreground, var(--foreground, #442c3b)) 23%, transparent);
+}
+
+.openingLines span:last-child {
+  width: 44%;
+}
+
+.openingCopy {
+  display: grid;
+  width: min(100%, 22rem);
+  min-height: 3em;
+  align-items: center;
+}
+
+.openingTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+.openingRoll {
+  display: grid;
+  align-items: center;
+}
+
+.openingRollLayer {
+  grid-area: 1 / 1;
+  width: 100%;
+}
+
+.openingWord {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.openingLetter {
+  position: relative;
+  display: inline-block;
+  perspective: 10000px;
+  transform-style: preserve-3d;
+}
+
+.openingLetterOut,
+.openingLetterIn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-block;
+  backface-visibility: hidden;
+  animation-duration: 0.7s;
+  animation-timing-function: linear;
+  animation-delay: var(--opening-letter-delay);
+  animation-iteration-count: 1;
+  animation-fill-mode: both;
+}
+
+.openingLetterOut {
+  transform-origin: 50% 25%;
+  animation-name: opening-letter-out;
+}
+
+.openingLetterIn {
+  opacity: 0;
+  transform: rotateX(90deg);
+  transform-origin: 50% 100%;
+  animation-name: opening-letter-in;
+}
+
+.openingLetterMeasure {
+  visibility: hidden;
+}
+
+.openingAccessibleText {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.openingLogin {
+  min-height: 44px;
+  padding: 0.625rem 1rem;
+  border-radius: 999px;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.openingLogin:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+@keyframes opening-light {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes opening-border {
+  to { --template-opening-angle: 360deg; }
+}
+
+/* Carry the previous phrase out while the next phrase rolls in, then repeat. */
+@keyframes opening-letter-out {
+  0% { transform: rotateX(0deg); opacity: 1; }
+  100% { transform: rotateX(-90deg); opacity: 0; }
+}
+
+@keyframes opening-letter-in {
+  0% { transform: rotateX(90deg); opacity: 0; }
+  100% { transform: rotateX(0deg); opacity: 1; }
+}
+
+@media (max-height: 480px) {
+  .opening {
+    justify-content: flex-start;
+    gap: 2.5rem;
+    padding-block: 3rem 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .openingCard::before,
+  .openingIllustration::before {
+    animation: none;
+  }
+
+  .openingLetterOut {
+    display: none;
+    animation: none;
+  }
+
+  .openingLetterIn {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

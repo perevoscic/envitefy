@@ -160,6 +160,7 @@ function SettingsWorkspace() {
   const [connectionsLoading, setConnectionsLoading] = useState(false);
   const [connectionsVerified, setConnectionsVerified] = useState(false);
   const calendarRequestRef = useRef(0);
+  const calendarConnectionsRequestedRef = useRef(false);
   const [disconnectingProvider, setDisconnectingProvider] =
     useState<ConnectedCalendarProvider | null>(null);
   const [disconnectPromptProvider, setDisconnectPromptProvider] =
@@ -554,14 +555,21 @@ function SettingsWorkspace() {
   }, []);
 
   useEffect(() => {
+    calendarConnectionsRequestedRef.current = false;
     setConnectedCalendars({ google: false, microsoft: false, apple: false });
     appleStatusVersionRef.current++;
     setAppleSubscriptionStatus({ ready: false, connected: false });
     setCalendarAccountEmails({ google: null, microsoft: null });
     setConnectionsVerified(false);
-    if (sessionStatus === "authenticated") void fetchConnectedCalendars();
     return () => { calendarRequestRef.current++; };
-  }, [fetchConnectedCalendars, sessionStatus, session?.user?.email]);
+  }, [sessionStatus, session?.user?.email]);
+
+  useEffect(() => {
+    if (sessionStatus !== "authenticated" || activeSettingsSection !== "calendars") return;
+    if (calendarConnectionsRequestedRef.current) return;
+    calendarConnectionsRequestedRef.current = true;
+    void fetchConnectedCalendars();
+  }, [activeSettingsSection, fetchConnectedCalendars, sessionStatus, session?.user?.email]);
 
   useEffect(() => {
     if (connectionsLoading || !connectionsVerified) return;

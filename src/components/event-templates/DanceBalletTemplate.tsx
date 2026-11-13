@@ -1466,7 +1466,7 @@ const config = {
   displayName: "Dance / Ballet Season",
   category: "sport_dance_ballet",
   categoryLabel: "Dance / Ballet",
-  defaultHero: "/templates/hero-images/balet-dance-hero.jpeg",
+  defaultHero: "/templates/hero-images/balet-dance-hero.webp",
   detailFields: [
     {
       key: "company",

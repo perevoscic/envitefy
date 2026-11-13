@@ -109,9 +109,9 @@ test("category favorites persist shortcuts without changing event permissions or
         url = new URL(request.url());
       if (url.pathname === "/fixture.js")
         return route.fulfill({ contentType: "text/javascript", body: script });
-      if (["/icons/sidebar-gymnastics.png", "/icons/sidebar-football.png"].includes(url.pathname)) {
+      if (["/icons/sidebar-gymnastics.webp", "/icons/sidebar-football.webp"].includes(url.pathname)) {
         return route.fulfill({
-          contentType: "image/png",
+          contentType: "image/webp",
           body: fs.readFileSync(path.join("public", url.pathname)),
         });
       }

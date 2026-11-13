@@ -29,7 +29,8 @@ export function useCalendarAction({ links, onShowChooser, scanTheme }: CalendarA
   onShowChooser?: () => void;
   scanTheme?: ScanCalendarTheme;
 }) {
-  const preference = useCalendarPreference();
+  const [preferenceRequested, setPreferenceRequested] = useState(false);
+  const preference = useCalendarPreference({ enabled: preferenceRequested });
   const [isOpen, setOpen] = useState(false);
   const [remember, setRemember] = useState(false);
   const [nativeAttempt, setNativeAttempt] = useState(false);
@@ -50,6 +51,7 @@ export function useCalendarAction({ links, onShowChooser, scanTheme }: CalendarA
   };
   const open = () => {
     if (!links) return;
+    setPreferenceRequested(true);
     trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (preference.provider) {
       if (openProvider(preference.provider)) {

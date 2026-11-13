@@ -47,7 +47,7 @@ test("nested related-meet panels and archived editions do not become event prose
 });
 
 test("place photos stay with their named source cards, including lazy images and reordered hotels", () => {
-  const page = { url: "https://organizer.example.org/stay", html: `<main><img src="/logo.png" alt="logo"><article><h3>River Hotel</h3><img src="/placeholder.gif" data-src="//cdn.example.org/river.jpg?size=large&amp;quality=90"></article><article><h3>Harbor Suites</h3><img src="/harbor.webp"></article><article><h3>No Photo Inn</h3></article></main>` };
+  const page = { url: "https://organizer.example.org/stay", html: `<main><img src="/logo.webp" alt="logo"><article><h3>River Hotel</h3><img src="/placeholder.gif" data-src="//cdn.example.org/river.jpg?size=large&amp;quality=90"></article><article><h3>Harbor Suites</h3><img src="/harbor.webp"></article><article><h3>No Photo Inn</h3></article></main>` };
   assert.deepEqual(websiteImagesForNames(page, ["Harbor Suites", "No Photo Inn", "River Hotel"]), [
     { name: "River Hotel", imageUrl: "https://cdn.example.org/river.jpg?size=large&quality=90", sourceUrl: page.url },
     { name: "Harbor Suites", imageUrl: "https://organizer.example.org/harbor.webp", sourceUrl: page.url },
@@ -57,7 +57,7 @@ test("place photos stay with their named source cards, including lazy images and
 });
 
 test("place photos support separated CMS columns without assigning a shared page image", () => {
-  const page = { url: "https://organizer.example.org/visit", html: '<main><img src="/logo.png" alt="logo"><hr><div><figure><img data-src="/aquarium.jpg"></figure></div><div><h3>City Aquarium</h3><p>Explore the exhibits.</p></div><hr><div><img src="/park.jpg"></div><div><h3>River Park</h3></div></main>' };
+  const page = { url: "https://organizer.example.org/visit", html: '<main><img src="/logo.webp" alt="logo"><hr><div><figure><img data-src="/aquarium.jpg"></figure></div><div><h3>City Aquarium</h3><p>Explore the exhibits.</p></div><hr><div><img src="/park.jpg"></div><div><h3>River Park</h3></div></main>' };
   assert.deepEqual(websiteImagesForNames(page, ["River Park", "City Aquarium"]).map(({name,imageUrl}) => [name,imageUrl]), [["City Aquarium","https://organizer.example.org/aquarium.jpg"],["River Park","https://organizer.example.org/park.jpg"]]);
   for (const url of ['javascript:alert(1)', 'data:image/png;base64,abc', 'http://127.0.0.1/a.jpg', 'http://192.168.1.5/a.jpg', 'https://user:pass@cdn.example.org/a.jpg']) assert.equal(websitePhotoUrl(url), null);
 });

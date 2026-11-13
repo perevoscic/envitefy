@@ -1,9 +1,7 @@
 "use client";
-import { useState } from "react";
 import {
   createImportedEventTheme,
   readImportedEventTheme,
-  importedEventThemeColorCombinations,
   templateAccentColorCombinations,
   importedEventAccentPalette,
   type TemplateAccentPalette,
@@ -11,6 +9,7 @@ import {
 } from "@/lib/imported-event-theme";
 import "./imported-event-theme.css";
 import ImportedThemeArtwork from "./ImportedThemeArtwork";
+import EventAccentColorPicker from "@/components/events/EventAccentColorPicker";
 
 export default function ImportedThemeControls({
   value,
@@ -25,7 +24,10 @@ export default function ImportedThemeControls({
   eventId?: string | null;
   templatePalette?: TemplateAccentPalette;
 }) {
-  const theme = readImportedEventTheme(value) || (context ? {
+  const savedTheme = readImportedEventTheme(value);
+  // A generated fallback must not replace catalog surfaces when an accent is chosen.
+  if (!templatePalette && (!savedTheme?.enabled || savedTheme.preserveTemplateStyle)) return null;
+  const theme = savedTheme || (context ? {
     ...createImportedEventTheme(context),
     ...(templatePalette ? { preserveTemplateStyle: true as const } : {}),
   } : null);
@@ -43,42 +45,10 @@ export default function ImportedThemeControls({
       </div>
       {templatePalette ? (
         <TemplateColorCombinations theme={theme} palette={importedEventAccentPalette(templatePalette, theme)} onChange={onChange} />
-      ) : <ThemeColorCombinations key={theme.id} theme={theme} onChange={onChange} />}
+      ) : <TemplateColorCombinations theme={theme} palette={{ id: theme.id, name: theme.name,
+        background: theme.colors.page, foreground: theme.colors.ink, accent: theme.colors.accent }} onChange={onChange} />}
       <ImportedThemeArtwork syncOnly eventId={eventId} value={theme} onChange={onChange} />
     </section>
-  );
-}
-
-function ThemeColorCombinations({ theme, onChange }: {
-  theme: ImportedEventTheme;
-  onChange: (theme: ImportedEventTheme) => void;
-}) {
-  // Keep the opening palette available while trying the five alternatives.
-  const [combinations] = useState(() => importedEventThemeColorCombinations(theme));
-  return (
-    <div className="mt-4 grid grid-cols-2 gap-2" role="group" aria-label="Theme color combinations">
-      {combinations.map(({ name, colors }) => {
-        const selected = theme.enabled && !theme.preserveTemplateStyle &&
-          Object.entries(colors).every(([key, color]) => theme.colors[key as keyof typeof colors] === color);
-        return (
-          <button
-            key={name}
-            type="button"
-            aria-label={name}
-            aria-pressed={selected}
-            onClick={() => onChange({ ...theme, enabled: true, preserveTemplateStyle: undefined, colors })}
-            className={`flex min-h-16 min-w-0 flex-col items-start gap-2 rounded-xl border p-3 text-left text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 ${selected ? "border-violet-500 bg-violet-50 ring-1 ring-violet-500" : "border-slate-300 hover:bg-slate-50"}`}
-          >
-            <span className="flex gap-1.5" aria-hidden="true">
-              {[colors.accent, colors.secondary, colors.page].map((color, index) => (
-                <span key={index} className="h-5 w-5 rounded-full border border-black/15" style={{ backgroundColor: color }} />
-              ))}
-            </span>
-            <span>{name}</span>
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
@@ -87,30 +57,10 @@ function TemplateColorCombinations({ theme, palette, onChange }: {
   palette: TemplateAccentPalette;
   onChange: (theme: ImportedEventTheme) => void;
 }) {
-  const combinations = templateAccentColorCombinations(palette);
   const selected = theme.templateColorCombination?.templateId === palette.id ? theme.templateColorCombination.index : 0;
-  return (
-    <>
-      <p className="mt-3 text-xs text-slate-600">{palette.name} · Title, buttons, links and section titles</p>
-      <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label="Theme color combinations">
-        {combinations.map(({ name, index, button, heading, link }) => (
-          <button
-            key={index}
-            type="button"
-            aria-label={name}
-            aria-pressed={selected === index}
-            onClick={() => onChange({ ...theme, templateColorCombination: { templateId: palette.id, index } })}
-            className={`flex min-h-16 min-w-0 flex-col items-start gap-2 rounded-xl border p-3 text-left text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 ${selected === index ? "border-violet-500 bg-violet-50 ring-1 ring-violet-500" : "border-slate-300 hover:bg-slate-50"}`}
-          >
-            <span className="flex gap-1.5" aria-hidden="true">
-              {(index === 0 ? [palette.accent, palette.foreground, link] : [button, heading, link]).map((color, swatch) => (
-                <span key={swatch} className="h-5 w-5 rounded-full border border-black/15" style={{ backgroundColor: color }} />
-              ))}
-            </span>
-            <span>{name}</span>
-          </button>
-        ))}
-      </div>
-    </>
-  );
+  return <>
+    <p className="mt-3 text-xs text-slate-600">{palette.name} · Title, buttons, links and section titles</p>
+    <EventAccentColorPicker palette={palette} value={selected}
+      onChange={(index) => onChange({ ...theme, templateColorCombination: { templateId: palette.id, index } })} />
+  </>;
 }

@@ -21,7 +21,7 @@
 /* Scope overrides to the shared football canvas; uploaded images retain their pixels. */
 [data-imported-theme] [class*="football-page-content_"] {
   --ft-ink: var(--event-ink);
-  --ft-accent: var(--event-accent);
+  --ft-accent: var(--event-source-accent, var(--event-accent));
   --ft-paper: var(--event-surface);
   --ft-ground: var(--event-paper);
   --ft-font: var(--event-font);
@@ -29,4 +29,10 @@
 [data-imported-theme] [data-football-hero-layout] {
   background: var(--event-paper);
   color: var(--event-ink);
+}
+[data-imported-theme] [class*="football-page-content_"] :is(h2, h3) {
+  color: var(--event-heading, var(--event-ink));
+}
+[data-imported-theme] [class*="football-page-content_"] a {
+  color: var(--event-link, var(--event-accent));
 }

@@ -323,7 +323,7 @@ test("football and wedding cards recover their selected template artwork without
   const football = { ...row.data, category: "sport_football_season", templateId: "football-season", pageTemplateId: "airborne-atlas" };
   assert.equal(toDashboardEvent({ ...row, data: football })?.coverImageUrl, "/images/football/templates/launchpad-editorial.webp");
   const wedding = { ...row.data, category: "Weddings", templateId: "wedding", variationId: "gilded-wedding" };
-  assert.equal(toDashboardEvent({ ...row, data: wedding })?.coverImageUrl, "/templates/wedding-placeholders/gilded-twilight-hero.jpeg");
+  assert.equal(toDashboardEvent({ ...row, data: wedding })?.coverImageUrl, "/templates/wedding-placeholders/gilded-twilight-hero.webp");
   assert.equal(toDashboardEvent({ ...row, data: { ...wedding, heroImage: "/api/blob/event-media/upload.webp" } })?.coverImageUrl, "/api/blob/event-media/upload.webp");
   assert.equal(toDashboardEvent({ ...row, data: { ...row.data, category: "Weddings" } })?.coverImageUrl, null, "a manual event with no saved design remains without artwork");
 });

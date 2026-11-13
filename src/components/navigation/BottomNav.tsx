@@ -23,8 +23,8 @@ function cx(...parts: Array<string | false | null | undefined>) {
 }
 
 const conciergeNavLogoMaskStyle = {
-  WebkitMask: "url(/logo-colored.png) center / contain no-repeat",
-  mask: "url(/logo-colored.png) center / contain no-repeat",
+  WebkitMask: "url(/logo-colored.webp) center / contain no-repeat",
+  mask: "url(/logo-colored.webp) center / contain no-repeat",
 };
 
 function scrollToHash(href: string) {

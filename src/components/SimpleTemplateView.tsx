@@ -3,6 +3,7 @@
 import EventRsvpContactDetails from "@/components/events/EventRsvpContactDetails";
 import { readEventRsvpSettings } from "@/lib/event-rsvp-settings";
 import SchoolMemoIssueDate from "@/components/SchoolMemoIssueDate";
+import { schoolMemoLocationValue } from "@/lib/school-memo";
 
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
@@ -602,7 +603,7 @@ export default function SimpleTemplateView({
 
   // Event data extraction - use state data if available, fallback to prop
   // Check ALL possible locations for the hero image
-  const heroImage = importedArtworkSrc(importedTheme,
+  const heroImage = importedArtworkSrc(currentData?.importedTheme,
     currentData?.heroImage ||
     currentData?.customHeroImage ||
     (currentData as any)?.images?.hero ||
@@ -655,11 +656,12 @@ export default function SimpleTemplateView({
     (typeof currentData?.rsvp === "string" ? currentData.rsvp : "") ||
     "";
   const isSignedIn = Boolean(sessionEmail);
-  const venue = currentData?.venue || "";
-  const city = currentData?.city || "";
-  const state = currentData?.state || "";
-  const address =
-    currentData?.address || customFields?.stadiumAddress || customFields?.address || "";
+  const locationValue = (value: unknown) => schoolMemo ? schoolMemoLocationValue(value) || "" : value || "";
+  const venue = locationValue(currentData?.venue);
+  const city = locationValue(currentData?.city);
+  const state = locationValue(currentData?.state);
+  const address = locationValue(currentData?.address || customFields?.stadiumAddress || customFields?.address);
+  const location = locationValue(currentData?.location);
   const hosts = Array.isArray(currentData?.hosts) ? currentData.hosts : [];
   const registries = Array.isArray(currentData?.registries) ? currentData.registries : [];
   const parentsName = currentData?.parentsName || "";
@@ -733,10 +735,10 @@ export default function SimpleTemplateView({
 
   // Build location string for header (compact but keeps city/state when present)
   const headerLocation =
-    currentData?.location || [venue, city, state].filter(Boolean).join(", ") || address || "";
+    location || [venue, city, state].filter(Boolean).join(", ") || address || "";
   // Full location for calendar exports / map links
   const fullLocation =
-    currentData?.location || [venue, address, city, state].filter(Boolean).join(", ");
+    location || [venue, address, city, state].filter(Boolean).join(", ");
   const mapAddress = [address, city, state].filter(Boolean).join(", ") || fullLocation;
 
   // Theme classes

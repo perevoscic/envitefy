@@ -7,7 +7,7 @@ const config = {
   displayName: "Doctor Appointment",
   category: "doctor_appointment",
   categoryLabel: "Doctor Appointment",
-  defaultHero: "/templates/hero-images/dr-appinments-hero.jpeg",
+  defaultHero: "/templates/hero-images/dr-appinments-hero.webp",
   rsvpCopy: {
     menuTitle: "Reminders",
     menuDesc: "Confirmations, follow-ups, and deadlines.",

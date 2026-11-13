@@ -26,7 +26,7 @@ export default function BirthdayPhones({ className = "" }: Props) {
           {/* Header image */}
           <div className="relative h-1/2 bg-[#fff1f4]">
             <Image
-              src="/phone-placeholders/birthday-pavilion.jpeg"
+              src="/phone-placeholders/birthday-pavilion.webp"
               alt="Park pavilion"
               fill
               className="object-cover opacity-95 mix-blend-multiply"
@@ -44,7 +44,7 @@ export default function BirthdayPhones({ className = "" }: Props) {
             </div>
             <div className="absolute -bottom-10 left-6 flex h-16 w-16 items-center z-20 justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow-lg">
               <Image
-                src="/phone-placeholders/birthday-maya.jpeg"
+                src="/phone-placeholders/birthday-maya.webp"
                 alt="Smiling 8 year old girl"
                 width={80}
                 height={80}

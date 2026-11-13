@@ -35,7 +35,7 @@ export const birthdayPromptExamples = [
       "Create an adventurous dinosaur birthday invitation for Leo’s seventh birthday. Make it cinematic but still playful, with jungle greens, warm sunlight, and room for our park details.",
     resultTitle: "Leo’s Dino Expedition",
     resultNote: "Adventure-forward · warm jungle palette",
-    image: "/themes/dino-explorer-main.jpg",
+    image: "/themes/dino-explorer-main.webp",
     imageAlt: "Dinosaur explorer invitation generated for Leo's birthday prompt",
   },
   {
@@ -45,7 +45,7 @@ export const birthdayPromptExamples = [
       "A dreamy flower-fairy invitation for Ava. Soft garden light, tiny magical details, lavender and blush colors, and an elegant storybook feeling—not too babyish.",
     resultTitle: "Ava’s Secret Fairy Garden",
     resultNote: "Whimsical · floral storybook direction",
-    image: "/themes/flower-fairy-main.jpg",
+    image: "/themes/flower-fairy-main.webp",
     imageAlt: "Flower fairy invitation generated for Ava's birthday prompt",
   },
   {
@@ -55,7 +55,7 @@ export const birthdayPromptExamples = [
       "Design a bold glow-party invitation for Mia’s thirteenth birthday. Neon dance-floor energy, dark background, modern type, and something that feels cool to teenagers.",
     resultTitle: "Mia After Dark",
     resultNote: "High-energy · neon editorial direction",
-    image: "/themes/glow-disco-main.jpg",
+    image: "/themes/glow-disco-main.webp",
     imageAlt: "Neon glow invitation generated for Mia's birthday prompt",
   },
 ] as const satisfies readonly BirthdayPromptExample[];
@@ -65,21 +65,21 @@ export const birthdaySetupSteps = [
     number: "01",
     label: "Choose the feeling",
     body: "Describe the person and party, SNAP an invitation you already have, or tell Envitefy Create.",
-    image: "/images/marketing/birthday-step-theme.png",
+    image: "/images/marketing/birthday-step-theme.webp",
     imageAlt: "Parent and child choosing a birthday invitation design together",
   },
   {
     number: "02",
     label: "Add what guests need",
     body: "Confirm the schedule, household RSVP, food notes, directions, pickup, and gifts.",
-    image: "/images/marketing/birthday-step-details.png",
+    image: "/images/marketing/birthday-step-details.webp",
     imageAlt: "Parent organizing birthday details on a phone",
   },
   {
     number: "03",
     label: "Share one living link",
     body: "Text it once. Guests can return whenever they need the newest party details.",
-    image: "/images/marketing/birthday-step-share.png",
+    image: "/images/marketing/birthday-step-share.webp",
     imageAlt: "Parents sharing a digital birthday invitation at a backyard party",
   },
 ] as const satisfies readonly BirthdaySetupStep[];
@@ -89,7 +89,7 @@ export const birthdayMilestones = [
     eyebrow: "Sweet sixteen",
     title: "Give the next chapter a little red-carpet energy.",
     body: "A polished invitation, photo-ready details, and one place for every reply.",
-    image: "/themes/movie-star-main.jpg",
+    image: "/themes/movie-star-main.webp",
     imageAlt: "Red carpet inspired milestone birthday celebration",
     href: birthdayCreateHref,
   },
@@ -116,5 +116,5 @@ export const birthdayGuestRows = [
   { family: "The Nguyens", count: "2 kids · 1 adult", status: "Maybe" },
 ] as const;
 
-export const birthdayFinalImage = "/themes/jungle-safari-main.jpg";
-export const birthdayInvitationBackdrop = "/phone-placeholders/birthday-pavilion.jpeg";
+export const birthdayFinalImage = "/themes/jungle-safari-main.webp";
+export const birthdayInvitationBackdrop = "/phone-placeholders/birthday-pavilion.webp";

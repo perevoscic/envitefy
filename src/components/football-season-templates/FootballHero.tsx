@@ -44,7 +44,8 @@ export default function FootballHero({
   artworkAction,
 }: Props) {
   const design = getFootballDesign(templateId);
-  const theme = activeImportedTheme(importedTheme);
+  const savedTheme = activeImportedTheme(importedTheme);
+  const theme = savedTheme?.preserveTemplateStyle ? null : savedTheme;
   const typography = getGymMeetTitleTypography(templateId as GymMeetTemplateId);
   const src = importedArtworkSrc(importedTheme, heroSrc, design.hero) || resolveFootballHero(templateId, heroSrc);
   const hero = useEventPageComposition()?.value?.hero;
@@ -66,7 +67,7 @@ export default function FootballHero({
         style={{
           ...typography.fontStyle,
           ...headingStyle,
-          color: theme?.colors.ink || (cinematic ? "#ffffff" : design.ink),
+          color: theme ? "var(--event-heading)" : cinematic ? "#ffffff" : design.ink,
           ...(theme ? { fontFamily: IMPORTED_THEME_FONTS[theme.font] } : {}),
         }}
       >

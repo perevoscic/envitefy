@@ -207,6 +207,12 @@
 @container (max-width: 700px) {
   .page[data-layout="cards"] .hero, .page[data-layout="cards"] .content { grid-template-columns: 1fr; }
 }
+.page[data-accent-combination] :is(h1, h2, h3) {
+  color: var(--event-heading);
+}
+.page[data-accent-combination] a {
+  color: var(--event-link);
+}
 .primary {
   display: inline-flex;
   align-items: center;
@@ -216,7 +222,7 @@
   min-height: 48px;
   padding: 12px 24px;
   background: var(--event-accent, #684675);
-  color: #fff;
+  color: var(--event-on-accent, #fff);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;

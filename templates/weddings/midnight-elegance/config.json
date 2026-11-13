@@ -4,7 +4,7 @@
   "category": "luxury",
   "family": "luxury",
   "layout": "split-hero",
-  "thumbnail": "/templates/weddings/midnight-elegance/thumb.png",
+  "thumbnail": "/templates/weddings/midnight-elegance/thumb.webp",
   "theme": {
     "colors": {
       "primary": "#0D0F2C",
@@ -16,7 +16,7 @@
       "body": "Inter"
     },
     "decorations": {
-      "heroImage": "/templates/wedding-placeholders/harbor-serenade-hero.jpeg"
+      "heroImage": "/templates/wedding-placeholders/harbor-serenade-hero.webp"
     }
   }
 }

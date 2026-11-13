@@ -49,20 +49,22 @@ function isStudioCardSharePath(pathname: string) {
   return segments.length === 2 && segments[0] === "card";
 }
 
-function AuthTransitionOverlay() {
+function AuthTransitionOverlay({ message = "Logging you in…" }: { message?: string }) {
   return (
     <div
       className="auth-transition-overlay fixed inset-0 z-[14000] flex cursor-progress touch-none select-none flex-col items-center justify-center gap-5 bg-[#f8f5ff]/90 px-6 backdrop-blur-xl"
       role="status"
       aria-live="polite"
-      aria-label="Loading Envitefy"
+      aria-label={message}
     >
-      <p className="relative z-10 text-sm font-semibold text-[#51456d]">Loading ...</p>
+      <p className="relative z-10 text-sm font-semibold text-[#51456d]">{message}</p>
       <div
-        className="auth-transition-mark relative flex h-24 w-56 items-center justify-center overflow-hidden rounded-[2rem]"
+        className="auth-transition-glow relative rounded-[2rem]"
         aria-hidden
       >
-        <EnvitefyWordmark className="relative z-10 text-[4rem] leading-none" scaled={false} appearance="fixed" shine />
+        <div className="auth-transition-mark relative flex h-24 w-56 items-center justify-center overflow-hidden rounded-[2rem]">
+          <EnvitefyWordmark className="relative z-10 text-[4rem] leading-none" scaled={false} appearance="fixed" shine />
+        </div>
       </div>
     </div>
   );
@@ -142,6 +144,7 @@ export default function AppShell({
         isAuthenticated={true}
         reserveSidebarSpace={false}
       >
+        {authTransitionMessage ? <AuthTransitionOverlay message={authTransitionMessage} /> : null}
         <div className="flex-1 min-w-0">{children}</div>
         <ConditionalFooter />
       </MainContentWrapper>
@@ -152,7 +155,7 @@ export default function AppShell({
     <EventCacheProvider>
       <CoHostInvitationProvider active={showAppChrome}>
         {process.env.NODE_ENV === "development" ? <MobileOverflowReporter /> : null}
-        {authTransitionMessage ? <AuthTransitionOverlay /> : null}
+        {authTransitionMessage ? <AuthTransitionOverlay message={authTransitionMessage} /> : null}
         {showAppChrome ? <CategoryInterestOnboarding /> : null}
         {isPublicTemplateEditor ? (
           // Keep the editor mounted while account creation adds the signed-in

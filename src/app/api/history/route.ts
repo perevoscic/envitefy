@@ -15,8 +15,6 @@ import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
   insertEventHistory,
   getEventHistoryById,
-  listDashboardHistoryFallbackForUser,
-  listDashboardHistoryWindowForUser,
   listHistoryForUser,
   listSidebarHistoryForUserFast,
   mutateSignupEvent,
@@ -99,10 +97,21 @@ function buildMediaValidationResponse(issues: ReturnType<typeof findTransientEve
 }
 
 export async function GET(req: Request) {
-  return withQueryRoute("GET /api/history", () => getHistory(req));
+  const started = performance.now();
+  const timings: Record<string, number> = {};
+  const response = await withQueryRoute("GET /api/history", () => getHistory(req, timings));
+  timings.total = performance.now() - started;
+  response.headers.set("Server-Timing", Object.entries(timings)
+    .map(([stage, duration]) => `${stage};dur=${duration.toFixed(1)}`).join(", "));
+  return response;
 }
 
-async function getHistory(req: Request) {
+async function getHistory(req: Request, timings: Record<string, number>) {
+  const measure = async <T,>(stage: string, work: () => Promise<T>): Promise<T> => {
+    const started = performance.now();
+    try { return await work(); }
+    finally { timings[stage] = performance.now() - started; }
+  };
   try {
     const url = new URL(req.url);
     const limitRaw = url.searchParams.get("limit");
@@ -118,9 +127,9 @@ async function getHistory(req: Request) {
     const view = normalizeHistoryView(viewRaw);
     const timeFilter = normalizeHistoryTimeFilter(timeRaw);
 
-    const session: any = await getServerSession(authOptions as any);
+    const session: any = await measure("session", () => getServerSession(authOptions as any));
     const sessionUser: any = (session && (session as any).user) || null;
-    const userId = await resolveSessionUserId(session);
+    const userId = await measure("identity", () => resolveSessionUserId(session));
     if (!userId) {
       if (HISTORY_DEBUG) {
         console.log("[history] GET: no userId resolved", {
@@ -184,6 +193,10 @@ async function getHistory(req: Request) {
     let degradedReason: string | null = null;
     let shouldCacheResponse = true;
     let responseSource = cached ? "cache" : "query";
+    // Start the independent co-host read alongside owned/shared history. Catch
+    // immediately so a failed read cannot become an unhandled rejection.
+    const collaborativeRead = measure("collaboration", () => listCollaborativeEvents(userId, view, limit))
+      .then(rows => ({ rows, error: null as unknown }), error => ({ rows: [], error }));
     const loadHistory = () => useCache
       ? coalesceHistoryRead(userId, view, limit, timeFilter, () => listHistoryForUser({ userId, view, limit, timeFilter }))
       : listHistoryForUser({ userId, view, limit, timeFilter });
@@ -192,12 +205,13 @@ async function getHistory(req: Request) {
     } else {
       let rows: any[] = [];
       if (view === "sidebar") {
-        responseSource = "dashboard-fallback";
+        responseSource = "sidebar-projection";
         try {
-          rows = await coalesceHistoryRead(userId, "sidebar", limit, timeFilter, () => listDashboardHistoryFallbackForUser(userId, limit, limit, timeFilter));
+          rows = await measure("history", () => coalesceHistoryRead(userId, "sidebar", limit, timeFilter,
+            () => listSidebarHistoryForUserFast(userId, limit, timeFilter)));
           if (!rows.length && timeFilter === "all") {
-            rows = await loadHistory();
-            responseSource = "dashboard-fallback-empty-union-fallback";
+            rows = await measure("history_fallback", loadHistory);
+            responseSource = "sidebar-empty-union-fallback";
           }
         } catch (err) {
           if (!isStatementTimeoutError(err)) throw err;
@@ -206,27 +220,17 @@ async function getHistory(req: Request) {
             rows = [];
             responseSource = "stale-cache";
           } else {
-            try {
-              rows = await listDashboardHistoryWindowForUser(userId, limit, timeFilter);
-              responseSource = "dashboard-window-timeout-fallback";
-            } catch (fallbackErr) {
-              if (!isStatementTimeoutError(fallbackErr)) throw fallbackErr;
-              try {
-                rows = await listSidebarHistoryForUserFast(userId, limit, timeFilter);
-                responseSource = "fast-sidebar-timeout-fallback";
-              } catch (finalErr) {
-                if (!isStatementTimeoutError(finalErr)) throw finalErr;
-                light = [];
-                responseSource = "degraded-empty";
-                degradedReason = "statement-timeout";
-                shouldCacheResponse = false;
-              }
-            }
+            // Do not turn one slow read into three serial timeout budgets or
+            // report an unavailable list as a successful empty account.
+            light = [];
+            responseSource = "degraded-empty";
+            degradedReason = "statement-timeout";
+            shouldCacheResponse = false;
           }
         }
       } else {
         responseSource = "history-union";
-        rows = await loadHistory();
+        rows = await measure("history", loadHistory);
       }
       if (!light) {
         light = finalizeItems(rows);
@@ -235,7 +239,9 @@ async function getHistory(req: Request) {
         setCachedHistory(userId, view, limit, timeFilter, light, cacheRevision);
       }
     }
-    const collaborative = finalizeItems((await listCollaborativeEvents(userId, view, limit)).filter((row) => {
+    const collaborativeResult = await collaborativeRead;
+    if (collaborativeResult.error) throw collaborativeResult.error;
+    const collaborative = finalizeItems(collaborativeResult.rows.filter((row) => {
       if (timeFilter === "all") return true;
       const end = row.data?.endAt || row.data?.endISO || row.data?.end || row.data?.startAt || row.data?.startISO || row.data?.start;
       const timestamp = typeof end === "string" ? Date.parse(end) : Number.NaN;
@@ -300,7 +306,7 @@ async function getHistory(req: Request) {
       });
     }
 
-    return NextResponse.json(body, { headers });
+    return NextResponse.json(body, { headers, status: degradedReason ? 503 : 200 });
   } catch (err: any) {
     if (!HISTORY_DEBUG && process.env.NODE_ENV !== "production") {
       console.error("[history] GET error", err);

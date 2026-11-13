@@ -95,7 +95,7 @@ test("standalone text uses quiet controls and saves mouse/touch placement in the
           document.documentElement.classList.toggle("dark", dark);
           for (const [name, value] of Object.entries(variables)) document.documentElement.style.setProperty(name, value);
         }, { dark, variables: resolveThemeCssVariables("general", dark ? "dark" : "light") });
-        if (mobile) await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+        if (mobile) await page.getByRole("complementary", { name: "Event editing controls", exact: true }).getByRole("button", { name: /^(Close editing menu|Back to page)$/, exact: true }).click();
         try { await source().waitFor(); } catch (error) {
           await page.screenshot({ path: path.join(output, `failure-${mobile}-${dark}.png`), fullPage: true });
           throw new Error(`${error.message}\n${errors.join("\n")}\n${(await page.locator("body").innerHTML()).slice(0, 1200)}`);
@@ -127,7 +127,7 @@ test("standalone text uses quiet controls and saves mouse/touch placement in the
         for (const button of await page.getByRole("button", { name: /^Options for /, includeHidden: true }).all())
           assert.equal(await button.isVisible(), false, "unselected text has no visible options");
         const pageBounds = await preview.boundingBox();
-        const menuButton = page.getByRole("button", { name: "Page settings", exact: true });
+        const menuButton = page.getByRole("button", { name: "Continue editing", exact: true });
         const menuBounds = await menuButton.boundingBox();
         assert.ok(menuBounds.y + menuBounds.height <= pageBounds.y, "header reserves space above the canvas");
         await page.screenshot({ path: path.join(output, `canvas-mobile-${dark ? "dark" : "light"}.png`), fullPage: true });
@@ -275,12 +275,17 @@ test("standalone text uses quiet controls and saves mouse/touch placement in the
         await page.keyboard.press("Escape"); await page.mouse.up();
       }
       await page.waitForFunction(expected => document.querySelector('[data-text-positioned="Welcome message"]')?.getAttribute("style") === expected, beforeCancel);
+      const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+      if (!(await controls.isVisible())) await page.getByRole("button", { name: "Continue editing", exact: true }).click();
+      const mountedControls = await controls.elementHandle();
       await page.getByRole("button", { name: "Preview", exact: true }).click();
       await page.getByRole("button", { name: "Close preview", exact: true }).waitFor();
       assert.equal(await page.getByRole("button", { name: /^Options for / }).count(), 0);
       assert.equal(writes.length, 0, "clean preview does not save pending placement");
       await page.getByRole("button", { name: "Close preview", exact: true }).click();
-      assert.equal(await preview.isVisible(), true, "closing canvas Preview returns to the canvas");
+      await controls.waitFor({ state: "visible" });
+      assert.equal(await mountedControls.evaluate(element => element.isConnected), true, "Preview retains the original editing controls");
+      assert.equal(await controls.isVisible(), true, "closing Preview returns to its mounted editing menu");
       await save();
       const saved = writes.at(-1).data.templateEditor.snapshot.data;
       const placement = JSON.parse(saved.gymnasticsPageText["placement:invitation"]);

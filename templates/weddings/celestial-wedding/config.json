@@ -4,10 +4,10 @@
   "category": "destination",
   "family": "modern",
   "layout": "celestial-wedding",
-  "thumbnail": "/templates/weddings/celestial-wedding/thumb.jpeg",
+  "thumbnail": "/templates/weddings/celestial-wedding/thumb.webp",
   "theme": {
     "colors": { "primary": "#0B1026", "secondary": "#D4AF37", "background": "transparent" },
     "fonts": { "headline": "Playfair Display", "body": "Playfair Display" },
-    "decorations": { "heroImage": "/templates/wedding-placeholders/celestial-atelier-hero.jpeg" }
+    "decorations": { "heroImage": "/templates/wedding-placeholders/celestial-atelier-hero.webp" }
   }
 }

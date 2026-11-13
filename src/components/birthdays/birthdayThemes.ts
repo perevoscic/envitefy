@@ -9,7 +9,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#fff7eb",
         secondaryColor: "#ff7b89",
         headlineFont: "Playfair Display",
-        heroImage: "/themes/gummy-bear-main.jpg",
+        heroImage: "/themes/gummy-bear-main.webp",
         decorations: {
             graphicType: "confetti"
         }
@@ -24,7 +24,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#fff7fb",
         secondaryColor: "#9f7aea",
         headlineFont: "Cormorant",
-        heroImage: "/themes/flower-fairy-main.jpg",
+        heroImage: "/themes/flower-fairy-main.webp",
         decorations: {
             graphicType: "sparkles"
         }
@@ -39,7 +39,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#0b1020",
         secondaryColor: "#14f1d9",
         headlineFont: "Montserrat",
-        heroImage: "/themes/glow-disco-main.jpg",
+        heroImage: "/themes/glow-disco-main.webp",
         decorations: {
             graphicType: "neon"
         }
@@ -54,7 +54,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#ffffff",
         secondaryColor: "#FF6B6B",
         headlineFont: "Playfair Display",
-        heroImage: "/themes/gummy-bear-main.jpg",
+        heroImage: "/themes/gummy-bear-main.webp",
         decorations: {
             graphicType: "confetti"
         }
@@ -69,7 +69,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#e7f5ff",
         secondaryColor: "#8bb9dd",
         headlineFont: "Cormorant",
-        heroImage: "/themes/bouncy-balloon-main.jpg",
+        heroImage: "/themes/bouncy-balloon-main.webp",
         decorations: {
             graphicType: "balloons"
         }
@@ -84,7 +84,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#fff8f0",
         secondaryColor: "#d4af37",
         headlineFont: "Libre Baskerville",
-        heroImage: "/themes/twinkly-star-main.jpg",
+        heroImage: "/themes/twinkly-star-main.webp",
         decorations: {
             graphicType: "sparkles"
         }
@@ -99,7 +99,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#0b1224",
         secondaryColor: "#08d9d6",
         headlineFont: "Montserrat",
-        heroImage: "/themes/glow-disco-main.jpg",
+        heroImage: "/themes/glow-disco-main.webp",
         decorations: {
             graphicType: "neon"
         }
@@ -114,7 +114,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#fff4e8",
         secondaryColor: "#89b97c",
         headlineFont: "Playfair Display",
-        heroImage: "/themes/pineapple-island-main.jpg",
+        heroImage: "/themes/pineapple-island-main.webp",
         decorations: {
             graphicType: "leaves"
         }
@@ -129,7 +129,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#def7f3",
         secondaryColor: "#f78fb3",
         headlineFont: "Playfair Display",
-        heroImage: "/themes/animal-forest-main.jpg",
+        heroImage: "/themes/animal-forest-main.webp",
         decorations: {
             graphicType: "animals"
         }
@@ -144,7 +144,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#ffeaf4",
         secondaryColor: "#e57aa4",
         headlineFont: "Cormorant",
-        heroImage: "/themes/pink-princess-main.jpg",
+        heroImage: "/themes/pink-princess-main.webp",
         decorations: {
             graphicType: "glitter"
         }
@@ -159,7 +159,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#0d1b3d",
         secondaryColor: "#d8b878",
         headlineFont: "Playfair Display",
-        heroImage: "/themes/little-prince-main.jpg",
+        heroImage: "/themes/little-prince-main.webp",
         decorations: {
             graphicType: "gold-shapes"
         }
@@ -174,7 +174,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#0a1230",
         secondaryColor: "#f0c36f",
         headlineFont: "EB Garamond",
-        heroImage: "/themes/space-rocket-main.jpg",
+        heroImage: "/themes/space-rocket-main.webp",
         decorations: {
             graphicType: "space"
         }
@@ -189,7 +189,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#faf3e7",
         secondaryColor: "#6b8c42",
         headlineFont: "Libre Baskerville",
-        heroImage: "/themes/dino-explorer-main.jpg",
+        heroImage: "/themes/dino-explorer-main.webp",
         decorations: {
             graphicType: "dinos"
         }
@@ -204,7 +204,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#121212",
         secondaryColor: "#FFD700",
         headlineFont: "Playfair Display",
-        heroImage: "/themes/gold-star-winner-main.jpg",
+        heroImage: "/themes/gold-star-winner-main.webp",
         decorations: {
             graphicType: "sparkles"
         }
@@ -234,7 +234,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#2d004d",
         secondaryColor: "#39ff14",
         headlineFont: "Montserrat",
-        heroImage: "/themes/pixel-game-main.jpg",
+        heroImage: "/themes/pixel-game-main.webp",
         decorations: {
             graphicType: "pixel"
         }
@@ -249,7 +249,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#e0f2f1",
         secondaryColor: "#f48fb1",
         headlineFont: "Arizonia",
-        heroImage: "/themes/flower-fairy-main.jpg",
+        heroImage: "/themes/flower-fairy-main.webp",
         decorations: {
             graphicType: "flowers"
         }
@@ -264,7 +264,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#edf7ed",
         secondaryColor: "#ff9800",
         headlineFont: "Montserrat",
-        heroImage: "/themes/little-mvp-main.jpg",
+        heroImage: "/themes/little-mvp-main.webp",
         decorations: {
             graphicType: "sports"
         }
@@ -279,7 +279,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#e0f7fa",
         secondaryColor: "#ff8a80",
         headlineFont: "Amita",
-        heroImage: "/themes/undersea-bubbles-main.jpg",
+        heroImage: "/themes/undersea-bubbles-main.webp",
         decorations: {
             graphicType: "bubbles"
         }
@@ -294,7 +294,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#fff0f0",
         secondaryColor: "#c5a059",
         headlineFont: "Playfair Display",
-        heroImage: "/themes/movie-star-main.jpg",
+        heroImage: "/themes/movie-star-main.webp",
         decorations: {
             graphicType: "stars"
         }
@@ -324,7 +324,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#f5f5dc",
         secondaryColor: "#228b22",
         headlineFont: "Kaushan Script",
-        heroImage: "/themes/jungle-safari-main.jpg",
+        heroImage: "/themes/jungle-safari-main.webp",
         decorations: {
             graphicType: "leaves"
         }
@@ -339,7 +339,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#0a0a1a",
         secondaryColor: "#ff00ff",
         headlineFont: "Montserrat",
-        heroImage: "/themes/space-robots-main.jpg",
+        heroImage: "/themes/space-robots-main.webp",
         decorations: {
             graphicType: "neon"
         }
@@ -354,7 +354,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#fdf4f7",
         secondaryColor: "#b91964",
         headlineFont: "Playfair Display",
-        heroImage: "/themes/pink-princess-main.jpg",
+        heroImage: "/themes/pink-princess-main.webp",
         decorations: {
             graphicType: "ballerina"
         }
@@ -369,7 +369,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#eef6ff",
         secondaryColor: "#0b63ce",
         headlineFont: "Montserrat",
-        heroImage: "/themes/little-mvp-main.jpg",
+        heroImage: "/themes/little-mvp-main.webp",
         decorations: {
             graphicType: "sports"
         }
@@ -384,7 +384,7 @@ export const BIRTHDAY_THEMES = [
         primaryColor: "#fff8f2",
         secondaryColor: "#d14d2f",
         headlineFont: "Playfair Display",
-        heroImage: "/themes/gummy-bear-main.jpg",
+        heroImage: "/themes/gummy-bear-main.webp",
         decorations: {
             graphicType: "confetti"
         }

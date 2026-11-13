@@ -39,7 +39,7 @@ const featuredUseCases = [
   {
     title: "Wedding invites",
     body: "Start from the beautiful invitation, then give guests a simpler digital home for the details.",
-    image: "/phone-placeholders/wedding-couple.jpeg",
+    image: "/phone-placeholders/wedding-couple.webp",
     icon: Heart,
   },
 ] as const;
@@ -437,7 +437,7 @@ export default function SnapSignupLanding() {
                   </p>
                   <div className="mt-4 overflow-hidden rounded-[1.4rem]">
                     <Image
-                      src="/phone-placeholders/birthday-maya.jpeg"
+                      src="/phone-placeholders/birthday-maya.webp"
                       alt="Uploaded invite preview"
                       width={520}
                       height={700}
@@ -492,7 +492,7 @@ export default function SnapSignupLanding() {
                 <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.88fr]">
                   <div className="overflow-hidden rounded-[1.5rem]">
                     <Image
-                      src="/templates/hero-images/general-events-hero.jpeg"
+                      src="/templates/hero-images/general-events-hero.webp"
                       alt="Live event page preview"
                       width={900}
                       height={520}

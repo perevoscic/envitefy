@@ -34,8 +34,8 @@ const welcomeMessage: ChatMessage = {
 };
 
 const conciergeLogoMaskStyle = {
-  WebkitMask: "url(/logo-colored.png) center / contain no-repeat",
-  mask: "url(/logo-colored.png) center / contain no-repeat",
+  WebkitMask: "url(/logo-colored.webp) center / contain no-repeat",
+  mask: "url(/logo-colored.webp) center / contain no-repeat",
 };
 
 function makeMessageId() {

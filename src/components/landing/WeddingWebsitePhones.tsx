@@ -26,7 +26,7 @@ export default function WeddingWebsitePhones({ className = "" }: Props) {
           {/* Header image */}
           <div className="relative h-1/2 bg-[#f3f0ec]">
             <Image
-              src="/phone-placeholders/wedding-couple.jpeg"
+              src="/phone-placeholders/wedding-couple.webp"
               alt="Wedding couple"
               fill
               className="object-cover opacity-90 mix-blend-multiply"

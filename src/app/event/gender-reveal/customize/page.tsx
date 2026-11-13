@@ -706,9 +706,7 @@ const handleGalleryUpload = (e) => {
             All gender reveal designs
           </TemplateGalleryBackLink>
         )}
-        <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-          Add your details
-        </h2>
+        <EditorLayout title="Edit event page" showBack={false}>{null}</EditorLayout>
         <p className="text-slate-500 text-sm">
           Customize every aspect of your gender reveal website.
         </p>
@@ -1309,7 +1307,7 @@ const renderDesignEditor = () => (
       if (activeView === "main" || activeView === "images") return false;
       setActiveView("main");
       return true;
-    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "eventDetails": renderEventDetailsEditor, "hosts": renderHostsEditor, "photos": renderPhotosEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, details: renderEventDetailsEditor }} artwork={data.images.hero} editor={editor} templatesHref={"/event/gender-reveal"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "eventDetails": renderEventDetailsEditor, "hosts": renderHostsEditor, "photos": renderPhotosEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, details: renderEventDetailsEditor }} artwork={data.images.hero || heroImageSrc} editor={editor} templatesHref={"/event/gender-reveal"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
         ref={previewRef}
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"

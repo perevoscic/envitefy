@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
-import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_SERVER } from "next/constants";
+import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } from "next/constants";
 import retiredBabyDesigns from "./src/data/baby-shower-retired-designs.json";
+import repositoryImageMigrations from "./src/data/repository-image-migrations.json";
 
 const resolveDevDistDir = () => {
   const port = (process.env.PORT || "").trim();
@@ -51,6 +52,12 @@ const nextConfig = (phase: string): NextConfig => ({
   },
   async redirects() {
     return [
+      // Saved event records, cached pages and sent links may retain the old URL.
+      ...repositoryImageMigrations.filter(({ source }) => source.startsWith("public/")).map(({ source, destination }) => ({
+        source: encodeURI(source.slice(6)).replace(/[():*+?]/g, "\\$&"),
+        destination: encodeURI(destination.slice(6)),
+        permanent: true,
+      })),
       {
         source: "/admin/ad-studio/:path*",
         destination: "/admin",
@@ -137,9 +144,9 @@ const nextConfig = (phase: string): NextConfig => ({
 });
 
 export default async function config(phase: string): Promise<NextConfig> {
-  // Generate before Next resolves the stylesheet manifest. `next start` serves
-  // the assets produced by the build without loading build-time dependencies.
-  if (phase !== PHASE_PRODUCTION_SERVER) {
+  // Only production consumes these assets. Dev uses globals.css with HMR;
+  // rebuilding the manifest during dev/typegen invalidates the running app.
+  if (phase === PHASE_PRODUCTION_BUILD) {
     const { generateRuntimeStyles } = await import("./scripts/lib/runtime-styles.mjs");
     await generateRuntimeStyles();
   }

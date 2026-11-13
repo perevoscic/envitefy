@@ -412,7 +412,7 @@ test("landing preserves canonical wordmark, prepared assets and public font deli
   );
   assert.match(
     wordmark,
-    /linear-gradient\(96deg, #6b3cff 0%, #6757ff 22%, #5a7dff 54%, #37a8ff 100%\)/,
+    /linear-gradient\(135deg, #1d58f2 0%, #3728a6 50%, #570575 100%\)/,
   );
   assert.match(wordmark, /color: "#ffffff"/);
   assert.doesNotMatch(wordmark, /josefin-sans-variable|"Josefin Sans"/);

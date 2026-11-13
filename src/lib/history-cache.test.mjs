@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   getCachedHistory,
+  getCachedHistoryStale,
+  cleanupExpiredEntries,
   getHistoryCacheRevision,
   invalidateAllHistory,
   invalidateUserHistory,
@@ -13,6 +15,20 @@ import {
   getDashboardResponseCache,
   invalidateUserDashboard,
 } from "./dashboard-cache.ts";
+
+test("an expired fresh read preserves a bounded stale result for timeout recovery", t => {
+  t.mock.timers.enable({ apis: ["Date"], now: 1_800_000_000_000 });
+  invalidateAllHistory();
+  setCachedHistory("stale-owner", "sidebar", 200, "upcoming", [{ id: "retained" }]);
+  t.mock.timers.tick(31_000);
+  assert.equal(getCachedHistory("stale-owner", "sidebar", 200, "upcoming"), null);
+  cleanupExpiredEntries();
+  assert.deepEqual(getCachedHistoryStale("stale-owner", "sidebar", 200, "upcoming"), [{ id: "retained" }]);
+  assert.equal(getCachedHistoryStale("other-owner", "sidebar", 200, "upcoming"), null);
+  t.mock.timers.tick(5 * 60_000);
+  assert.equal(getCachedHistoryStale("stale-owner", "sidebar", 200, "upcoming"), null);
+  cleanupExpiredEntries();
+});
 
 test("deleting an event invalidates every history view and rejects an older query's cache write", () => {
   const user = "deleted-event-owner";

@@ -26,9 +26,10 @@ function loadEditor() {
     ...modules,
     "next/dynamic": {
       __esModule: true,
-      default: (loader) => {
+      default: (loader, options) => {
         function SharedNativeEditor() {}
         SharedNativeEditor.load = loader;
+        SharedNativeEditor.loading = options.loading;
         return SharedNativeEditor;
       },
     },
@@ -53,6 +54,8 @@ test("every public template loads the exact native internal editor with only acc
     assert.equal(provider.props.category, category);
     assert.equal(provider.props.templateId, templateId);
     const editor = provider.props.children;
+    const fallback = editor.type.loading();
+    assert.equal(fallback.type.name, "TemplateEditorLoading", `${category} loads with the shared animation`);
     assert.equal(typeof editor.type.load, "function", `${category} renders the native editor directly`);
     assert.deepEqual(Object.keys(editor.props), [], `${category} does not inject a separate guest canvas or toolset`);
     const imported = await editor.type.load();

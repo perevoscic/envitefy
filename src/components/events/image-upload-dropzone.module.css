@@ -1,0 +1,155 @@
+.dropzone {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 1px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--foreground, #302a3a);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+  text-align: center;
+}
+.dropzone:focus-visible {
+  outline: 2px solid var(--focus-ring, #a77bd4);
+  outline-offset: 4px;
+}
+.dropzone:disabled { cursor: wait; opacity: 0.65; }
+.glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  opacity: 0.5;
+  transition: opacity 200ms ease-out;
+  pointer-events: none;
+}
+.glow > span {
+  position: absolute;
+  bottom: -40px;
+  height: 128px;
+  filter: blur(28px);
+}
+.primaryBlob {
+  left: -5%;
+  width: 88%;
+  background: linear-gradient(90deg, #ff0080, #7928ca, #00d4ff, #0070f3);
+  animation: image-glow-primary 6s ease-in-out infinite;
+}
+.secondaryBlob {
+  left: 65%;
+  width: 52%;
+  background: linear-gradient(90deg, #ff4d4d, #f9cb28, #ff0080);
+  animation: image-glow-secondary 5s ease-in-out infinite;
+}
+.tertiaryBlob {
+  left: 25%;
+  width: 44%;
+  background: linear-gradient(90deg, #0070f3, #00d4ff, #7928ca);
+  animation: image-glow-tertiary 4s ease-in-out infinite;
+}
+.surface {
+  position: relative;
+  display: flex;
+  min-height: 184px;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  border: 1px solid var(--border, #e2dce6);
+  border-radius: 15px;
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--surface, #fff) 88%, transparent),
+    color-mix(in srgb, var(--surface, #fff) 70%, transparent));
+  box-shadow: inset 0 1px 0 #ffffff18, 0 4px 14px #2116380d;
+  backdrop-filter: blur(12px) saturate(1.5);
+  transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
+  pointer-events: none;
+}
+.icon {
+  display: flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--foreground, #302a3a) 10%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--muted, #f4f1f6) 85%, transparent);
+  color: var(--muted-foreground, #746775);
+  box-shadow: 0 1px 2px #21163812;
+  animation: image-upload-float 4.5s ease-in-out infinite;
+}
+.imagePreview {
+  width: 80px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 9px;
+  box-shadow: 0 2px 8px #21163826;
+}
+.imagePreview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.label { max-width: 100%; font-size: 14px; line-height: 1.5; font-weight: 500; text-wrap: balance; }
+.hint { max-width: 100%; color: var(--muted-foreground, #746775); font-size: 12px; line-height: 1.5; text-wrap: balance; }
+.rim {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: 1px;
+  border-radius: inherit;
+  opacity: 0;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  transition: opacity 200ms ease-out;
+  pointer-events: none;
+}
+.trailAmbient, .trailCore {
+  position: absolute;
+  width: 184px;
+  height: 32px;
+  border-radius: 999px;
+  offset-path: rect(0 auto auto 0 round 16px);
+  animation: image-border-trail 5.25s linear infinite paused;
+}
+.trailAmbient {
+  background: linear-gradient(90deg, transparent, #ff008061 24%, #7928ca80 50%, #00d4ff6b 76%, transparent);
+  filter: blur(12px);
+  box-shadow: 0 0 22px #7928ca47, 0 0 44px #00d4ff2e;
+}
+.trailCore {
+  background: linear-gradient(90deg, transparent, #ff0080b8 20%, #c88cffeb 50%, #00d4ffc7 80%, transparent);
+  filter: blur(4px);
+  box-shadow: 0 0 14px #ff008059, 0 0 28px #00d4ff52;
+}
+.dropzone:not(:disabled):is(:hover, :focus-visible, [data-dragging="true"]) .glow { opacity: 0.92; }
+.dropzone:not(:disabled):is(:hover, :focus-visible, [data-dragging="true"]) .surface {
+  border-color: color-mix(in srgb, var(--primary, #a77bd4) 55%, var(--border, #e2dce6));
+  box-shadow: inset 0 1px 0 #ffffff24, 0 4px 20px #21163824;
+}
+.dropzone:not(:disabled):is(:hover, :focus-visible, [data-dragging="true"]) .rim { opacity: 1; }
+.dropzone:not(:disabled):is(:hover, :focus-visible, [data-dragging="true"]) :is(.trailAmbient, .trailCore) { animation-play-state: running; }
+.dropzone:disabled :is(.glow > span, .icon) { animation-play-state: paused; }
+@keyframes image-glow-primary { 0%, 100% { left: -5%; } 50% { left: 75%; } }
+@keyframes image-glow-secondary { 0%, 100% { left: 65%; } 50% { left: 10%; } }
+@keyframes image-glow-tertiary { 0%, 100% { left: 25%; } 50% { left: 55%; } }
+@keyframes image-upload-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes image-border-trail { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+@keyframes image-border-pan { from { background-position: 0 0; } to { background-position: 300% 0; } }
+@supports not (offset-path: rect(0 auto auto 0 round 16px)) {
+  .rim {
+    background: linear-gradient(90deg, #ff0080, #7928ca, #00d4ff, #0070f3, #ff0080);
+    background-size: 300% 100%;
+    animation: image-border-pan 5.25s linear infinite paused;
+  }
+  .trailAmbient, .trailCore { display: none; }
+  .dropzone:not(:disabled):is(:hover, :focus-visible, [data-dragging="true"]) .rim { animation-play-state: running; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dropzone *, .rim { animation: none !important; transition: none !important; }
+  .rim { background: linear-gradient(90deg, #ff0080, #7928ca, #00d4ff); }
+}

@@ -104,7 +104,9 @@ export default function SchoolMemoDates({
   const request = useRef<AbortController | null>(null);
   const locked = useRef(false);
   const chooserTrigger = useRef<HTMLElement | null>(null);
-  const preference = useCalendarPreference();
+  const [calendarRequested, setCalendarRequested] = useState(false);
+  const pendingCalendarOpen = useRef(false);
+  const preference = useCalendarPreference({ enabled: calendarEnabled && calendarRequested });
   const accountKey = useContext(SessionContext)?.data?.user?.email || "";
   const selectionKey = `${accountKey}:${schedule.items.map(item => `${item.id}:${item.calendarSelected !== false}:${Boolean(scanScheduleCalendarEvent(item, schedule, eventId))}`).join("|")}`;
   const previousSelectionKey = useRef(selectionKey);
@@ -292,15 +294,29 @@ export default function SchoolMemoDates({
     }
   };
   const showChooser = () => {
+    setCalendarRequested(true);
     chooserTrigger.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setChooser(true);
   };
   const open = () => {
+    setCalendarRequested(true);
+    if (preference.loading) {
+      pendingCalendarOpen.current = true;
+      return;
+    }
+    pendingCalendarOpen.current = false;
     const preferred = connected.find((provider) => provider === preference.provider);
     if (preferred) void add(preferred);
     else showChooser();
   };
+  useEffect(() => {
+    if (!calendarEnabled) {
+      pendingCalendarOpen.current = false;
+      return;
+    }
+    if (pendingCalendarOpen.current && !preference.loading) open();
+  }, [calendarEnabled, calendarRequested, preference.loading, preference.provider]);
   const setDefaultAndAdd = async (provider: "google" | "microsoft") => {
     if (locked.current) return;
     locked.current = true;
@@ -451,11 +467,11 @@ export default function SchoolMemoDates({
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              disabled={busy || settingDefault || preference.loading || !selectedItems.length || (needsConnectedCalendar && calendarNeedsSave)}
+              disabled={busy || settingDefault || (calendarRequested && preference.loading) || !selectedItems.length || (needsConnectedCalendar && calendarNeedsSave)}
               onClick={open}
               className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#64405e] bg-[#64405e] px-5 py-3 text-sm font-semibold leading-5 text-white shadow-sm hover:bg-[#50324b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#704568] disabled:cursor-not-allowed disabled:opacity-45 @[680px]:w-auto"
             >
-              {busy ? "Adding dates…" : `Add selected dates to your calendar (${selectedItems.length})`}
+              {busy ? "Adding dates…" : calendarRequested && preference.loading ? "Loading calendars…" : `Add selected dates to your calendar (${selectedItems.length})`}
             </button>
             {needsConnectedCalendar && (
               <button

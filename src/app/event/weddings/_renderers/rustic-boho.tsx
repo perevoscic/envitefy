@@ -39,7 +39,7 @@ export default function RusticBoho({ theme, event }: Props) {
     (event as EventData & { customHeroImage?: string }).customHeroImage ||
     getGalleryImage(0) ||
     theme.decorations?.heroImage ||
-    "/templates/wedding-placeholders/sunset-vineyard-hero.jpeg";
+    "/templates/wedding-placeholders/sunset-vineyard-hero.webp";
   const bouquetImage =
     getGalleryImage(1) || "/templates/weddings/rustic-boho/detail-bouquet.webp";
   const handsImage =

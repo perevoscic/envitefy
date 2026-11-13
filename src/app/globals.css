@@ -817,13 +817,54 @@ html[data-auth-transition="true"] {
   animation: auth-transition-screen-wash 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@property --auth-transition-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: true;
+}
+
+.auth-transition-glow {
+  --auth-transition-light: conic-gradient(from var(--auth-transition-angle),
+    transparent 0deg 160deg,
+    #1e40af 230deg,
+    #005dff 290deg,
+    #38bdf8 330deg,
+    transparent 360deg);
+  isolation: isolate;
+  /* One angle drives both layers so their bright edges always travel together. */
+  animation: auth-transition-light 5s linear infinite;
+}
+
+.auth-transition-glow::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--auth-transition-light);
+  filter: blur(10px);
+  opacity: 0.75;
+}
+
 .auth-transition-mark {
+  isolation: isolate;
   border: 1px solid rgba(127, 103, 255, 0.12);
   background: rgba(255, 255, 255, 0.58);
   box-shadow:
     0 24px 70px rgba(88, 71, 171, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.82);
-  animation: auth-transition-mark-float 1.6s ease-in-out infinite;
+}
+
+.auth-transition-mark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--auth-transition-light);
+  filter: blur(10px);
+  opacity: 0.68;
 }
 
 .envitefy-wordmark-shine {
@@ -852,14 +893,8 @@ html[data-auth-transition="true"] {
   }
 }
 
-@keyframes auth-transition-mark-float {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-3px) scale(1.012);
-  }
+@keyframes auth-transition-light {
+  to { --auth-transition-angle: 360deg; }
 }
 
 @keyframes envitefy-wordmark-shine {
@@ -875,7 +910,10 @@ html[data-auth-transition="true"] {
   .nav-chrome-motion,
   .auth-transition-overlay,
   .auth-transition-overlay::before,
+  .auth-transition-glow,
+  .auth-transition-glow::before,
   .auth-transition-mark,
+  .auth-transition-mark::before,
   .envitefy-wordmark-shine {
     transition: none;
     animation: none;

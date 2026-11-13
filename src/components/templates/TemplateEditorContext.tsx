@@ -56,6 +56,7 @@ import {
 } from "@/lib/template-draft-storage";
 import type { SignupForm } from "@/types/signup";
 import { validateClientUploadFile } from "@/utils/media-upload-client";
+import TemplateEditorLoading from "./TemplateEditorLoading";
 import styles from "./template-editor.module.css";
 
 export { trackTemplateEvent } from "@/lib/template-tracking";
@@ -419,7 +420,7 @@ export default function TemplateEditorProvider({
         const imageFields = ["hero", "heroImage"];
         for (const key of imageFields)
           if (data[key] === previousTemplate?.heroImage ||
-            (category === "sport-events" && data[key] === "/templates/hero-images/general-sport-hero.jpeg")) data[key] = selected.heroImage;
+            (category === "sport-events" && data[key] === "/templates/hero-images/general-sport-hero.webp")) data[key] = selected.heroImage;
         const images = data.images;
         if (
           images &&
@@ -953,12 +954,11 @@ export default function TemplateEditorProvider({
             {children}
           </div>
         ) : (
-          <div className="p-12 text-center" role="status">
-            {error ? "Your draft could not be opened." : "Opening your template…"}
+          <TemplateEditorLoading error={Boolean(error)}>
             {editId && !authenticated && (
               <button
                 type="button"
-                className="ml-3 underline"
+                className={styles.openingLogin}
                 onClick={() => {
                   setAuthMode("login");
                   setAuthOpen(true);
@@ -967,7 +967,7 @@ export default function TemplateEditorProvider({
                 Log in
               </button>
             )}
-          </div>
+          </TemplateEditorLoading>
         )}
       </div>
       <AuthModal

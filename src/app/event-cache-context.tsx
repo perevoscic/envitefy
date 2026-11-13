@@ -192,6 +192,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   const deletionChannelRef = useRef<BroadcastChannel | null>(null);
   const cacheRevisionRef = useRef(0);
   const historyResetEpochRef = useRef(0);
+  const historyRefreshPromisesRef = useRef(new Map<string, Promise<void>>());
   const dashboardRef = useRef<DashboardPayload | null>(null);
   const dashboardRefreshPromiseRef = useRef<Promise<void> | null>(null);
   const isHydratedRef = useRef(false);
@@ -223,6 +224,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   const resetCacheState = useCallback(() => {
     cacheRevisionRef.current += 1;
     historyResetEpochRef.current += 1;
+    historyRefreshPromisesRef.current.clear();
     if (typeof window !== "undefined" && refreshTimerRef.current != null) {
       window.clearTimeout(refreshTimerRef.current);
     }
@@ -279,6 +281,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     const res = await fetch(`/api/history?${params.toString()}`, {
       credentials: "include",
       cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
     });
     if (res.status === 304 || !res.ok) return null;
     const json = await res.json().catch(() => null);
@@ -295,37 +298,50 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     if (!sessionIdentityKey || identityKeyRef.current !== sessionIdentityKey) return;
     const revision = cacheRevisionRef.current;
     const resetEpoch = historyResetEpochRef.current;
-    setHistoryLoading(true);
-    try {
-      const upcomingResult = await readSidebarHistory("upcoming", opts?.force);
-      if (!upcomingResult || resetEpoch !== historyResetEpochRef.current) return;
-      let past = pastLoadedRef.current ? pastRowsRef.current : [];
-      if (pastLoadedRef.current) {
-        const pastResult = await readSidebarHistory("past", opts?.force);
-        if (resetEpoch !== historyResetEpochRef.current) return;
-        if (pastResult) {
-          past = pastResult.items;
-          pastRowsRef.current = past;
+    const requestKey = `${resetEpoch}:${revision}:${Boolean(opts?.force)}`;
+    const pending = historyRefreshPromisesRef.current.get(requestKey);
+    if (pending) return pending;
+    const request = (async () => {
+      setHistoryLoading(true);
+      try {
+        const upcomingResult = await readSidebarHistory("upcoming", opts?.force);
+        if (!upcomingResult || resetEpoch !== historyResetEpochRef.current) return;
+        let past = pastLoadedRef.current ? pastRowsRef.current : [];
+        if (pastLoadedRef.current) {
+          const pastResult = await readSidebarHistory("past", opts?.force);
+          if (resetEpoch !== historyResetEpochRef.current) return;
+          if (pastResult) {
+            past = pastResult.items;
+            pastRowsRef.current = past;
+          }
         }
+        const pastIds = new Set(past.map((row) => row.id));
+        const items = [...upcomingResult.items.filter((row) => !pastIds.has(row.id)), ...past];
+        setHistoryDiagnostics(upcomingResult.diagnostics);
+        setHistorySidebarItems((prev) => {
+          // A pending read must not replace a row just seeded by a save.
+          const rows = mergeEventHistoryRefresh(
+            items,
+            prev,
+            revision !== cacheRevisionRef.current,
+            getRemovedKeys(),
+          );
+          return sortHistoryRows(rows).slice(0, 400);
+        });
+      } catch {
+        // Keep the last good history state on transient failures.
       }
-      const pastIds = new Set(past.map((row) => row.id));
-      const items = [...upcomingResult.items.filter((row) => !pastIds.has(row.id)), ...past];
-      setHistoryDiagnostics(upcomingResult.diagnostics);
-      setHistorySidebarItems((prev) => {
-        // An older read can still fill the rest of the sidebar without replacing
-        // the event just seeded by a save. Identity resets discard the read above.
-        const rows = mergeEventHistoryRefresh(
-          items,
-          prev,
-          revision !== cacheRevisionRef.current,
-          getRemovedKeys(),
-        );
-        return sortHistoryRows(rows).slice(0, 400);
-      });
-    } catch {
-      // Keep the last good history state on transient failures.
+    })();
+    historyRefreshPromisesRef.current.set(requestKey, request);
+    try {
+      await request;
     } finally {
-      if (resetEpoch === historyResetEpochRef.current) setHistoryLoading(false);
+      if (historyRefreshPromisesRef.current.get(requestKey) === request) {
+        historyRefreshPromisesRef.current.delete(requestKey);
+      }
+      if (resetEpoch === historyResetEpochRef.current) {
+        setHistoryLoading(historyRefreshPromisesRef.current.size > 0);
+      }
     }
   }, [getRemovedKeys, readSidebarHistory, sessionIdentityKey]);
 
@@ -550,16 +566,24 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     setCacheIdentityKey(sessionIdentityKey);
     if (status !== "authenticated" || isHydratedRef.current) return;
     let cancelled = false;
-    (async () => {
+    const load = async () => {
+      if (cancelled) return;
       await refreshHistory();
       if (!cancelled) {
         setIsHydrated(true);
       }
-    })();
+    };
+    // Let the page and navigation paint before requesting background list data.
+    const idleId = typeof window.requestIdleCallback === "function"
+      ? window.requestIdleCallback(() => { void load(); }, { timeout: 1000 })
+      : null;
+    const timerId = idleId === null ? window.setTimeout(() => { void load(); }, 50) : null;
     return () => {
       cancelled = true;
+      if (idleId !== null) window.cancelIdleCallback(idleId);
+      if (timerId !== null) window.clearTimeout(timerId);
     };
-  }, [refreshDashboard, refreshHistory, resetCacheState, sessionIdentityKey, status]);
+  }, [refreshHistory, resetCacheState, sessionIdentityKey, status]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

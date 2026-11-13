@@ -98,7 +98,7 @@ test("Event Page and Sign-up Form URLs save separately; Live Card editor navigat
     assert.equal(records.get(id).public_slug, "chosen-page-2026");
     await page.getByRole("button", { name: "Back to details" }).click();
     assert.equal(await page.getByLabel("Event title").inputValue(), "Pending corrected title");
-    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByRole("button", { name: "Save changes", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "Changes saved" }).waitFor();
     assert.equal(records.get(id).title, "Pending corrected title");
     assert.equal(records.get(id).public_slug, "chosen-page-2026", "later content saves preserve the custom URL");
@@ -154,7 +154,7 @@ test("Event Page and Sign-up Form URLs save separately; Live Card editor navigat
     await page.getByRole("group", { name: "Save event", exact: true }).getByRole("button", { name: "Preview", exact: true }).waitFor();
     await page.getByLabel("Event title", { exact: true }).fill("Co-host content edit");
     assert.equal(await page.getByRole("button", { name: /Custom URL/ }).count(), 0);
-    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByRole("button", { name: "Save changes", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "Changes saved" }).waitFor();
     assert.equal(await page.getByRole("button", { name: /Custom URL/ }).count(), 0, "content-only responses do not reveal owner URL controls to co-hosts");
     await page.goto(`${base}/fixture`);

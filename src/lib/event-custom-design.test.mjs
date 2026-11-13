@@ -16,6 +16,19 @@ function loader(mocks = {}) {
 
 const load = loader();
 const custom = load("src/lib/event-custom-design.ts");
+
+test("current memo editors and guests discard legacy instructional locations without changing source notes", () => {
+  const routine = "Binders are taken home and returned to school daily.";
+  const memo = { ...custom.emptyCustomEventDetails(), title: "Weekly Memo", venue: routine, location: routine, description: routine, scanSchedule: { kind: "school-memo", items: [] } };
+  const details = custom.normalizeCustomEventDetails(memo);
+  assert.equal(details.venue, "");
+  assert.equal(details.location, "");
+  assert.equal(details.description, routine);
+  assert.equal(memo.location, routine, "normalizing a saved record never mutates it");
+  const printed = custom.normalizeCustomEventDetails({ ...memo, venue: "Oak Academy", location: "123 Main St, Chicago" });
+  assert.equal(printed.venue, "Oak Academy");
+  assert.equal(printed.location, "123 Main St, Chicago");
+});
 const profiles = load("src/lib/category-custom-design-profiles.ts");
 const design = {
   version: 1,
@@ -41,6 +54,24 @@ const example = (category = "general") => ({
     sections: [{ title: "Schedule", body: "2:00 PM: Meet in the garden." }],
     registryLinks: [{ label: "Registry", url: "https://example.test/gifts" }],
   },
+});
+
+test("every custom category saves six accent recipes without rewriting its palette, fonts or artwork", () => {
+  for (const category of Object.keys(custom.CUSTOM_EVENT_CATEGORIES)) {
+    for (let accentCombination = 0; accentCombination < 6; accentCombination++) {
+      const original = example(category);
+      const page = custom.normalizeCustomEventPage(JSON.parse(JSON.stringify({ ...original,
+        design: { ...original.design, accentCombination },
+      })));
+      assert.equal(page.design.accentCombination, accentCombination);
+      assert.deepEqual(page.design.colors, original.design.colors);
+      assert.equal(page.design.font, original.design.font);
+      assert.equal(page.artwork, original.artwork);
+      assert.equal(custom.customEventPageData(page).customEventPage.design.accentCombination, accentCombination);
+    }
+  }
+  for (const accentCombination of [-1, 6, "1", 1.5, null])
+    assert.equal(custom.normalizeEventCustomDesign({ ...design, accentCombination }).accentCombination, undefined);
 });
 
 test("General Events and custom page editors use the signed-in category access path", () => {

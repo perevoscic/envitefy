@@ -4,10 +4,10 @@
   "category": "rustic",
   "family": "boho",
   "layout": "rustic-boho",
-  "thumbnail": "/templates/weddings/rustic-boho/thumb.jpeg",
+  "thumbnail": "/templates/weddings/rustic-boho/thumb.webp",
   "theme": {
     "colors": { "primary": "#FDF8F3", "secondary": "#4A4036", "background": "transparent" },
     "fonts": { "headline": "Playfair Display", "body": "Inter" },
-    "decorations": { "heroImage": "/templates/wedding-placeholders/sunset-vineyard-hero.jpeg" }
+    "decorations": { "heroImage": "/templates/wedding-placeholders/sunset-vineyard-hero.webp" }
   }
 }

@@ -827,9 +827,7 @@ const rawTextClass = currentTheme?.text || "";
     const renderMainMenu = () => (
       <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
         <div className="mb-2 w-full max-w-sm text-center">
-          <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-            Add your details
-          </h2>
+          <EditorLayout title="Edit event page" showBack={false}>{null}</EditorLayout>
           <p className="text-slate-500 text-sm">
             Customize every aspect of your {config.displayName.toLowerCase()}{" "}
             site.
@@ -1219,7 +1217,7 @@ const rawTextClass = currentTheme?.text || "";
         if (activeView === "main" || activeView === "images") return false;
         setActiveView("main");
         return true;
-      }} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/cheerleading"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+      }} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero || config.defaultHero} editor={editor} templatesHref={"/event/cheerleading"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{

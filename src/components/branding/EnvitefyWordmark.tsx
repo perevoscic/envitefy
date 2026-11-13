@@ -11,9 +11,9 @@ type EnvitefyWordmarkProps = {
 // Locked Envitefy brand asset. Do not change the canonical typography, scale, spacing,
 // padding, or color values below without an explicit user request. See AGENTS.md.
 const WORDMARK_GRADIENT =
-  "linear-gradient(96deg, #6b3cff 0%, #6757ff 22%, #5a7dff 54%, #37a8ff 100%)";
+  "linear-gradient(135deg, #1d58f2 0%, #3728a6 50%, #570575 100%)";
 const WORDMARK_SHINE_GRADIENT =
-  "linear-gradient(100deg, #6b3cff 0%, #6757ff 22%, #ffffff 39%, #5a7dff 52%, #37a8ff 100%)";
+  "linear-gradient(135deg, #1d58f2 0%, #3728a6 30%, #ffffff 39%, #3728a6 52%, #570575 100%)";
 
 export default function EnvitefyWordmark({
   className = "",

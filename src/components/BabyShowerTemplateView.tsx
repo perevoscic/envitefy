@@ -30,7 +30,7 @@ import {
 import { getTemplateBodyPresentation } from "@/lib/template-body-presentations";
 import { getThemedEventDesign, getThemedEventTheme } from "@/lib/event-page-themed-designs";
 
-const DEFAULT_HERO_IMAGE = "/templates/hero-images/baby-shower-hero.jpeg";
+const DEFAULT_HERO_IMAGE = "/templates/hero-images/baby-shower-hero.webp";
 
 // Theme catalog - must match the one in customize page
 const DESIGN_THEMES = [

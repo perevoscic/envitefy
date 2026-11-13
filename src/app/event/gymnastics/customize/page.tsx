@@ -1954,6 +1954,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
     const renderMainMenu = () => (
+      <>
+      {!isEmbed && <div className="hidden md:block">
+        <GymnasticsEditorLayout title="Edit meet page" showBack={false}>{null}</GymnasticsEditorLayout>
+      </div>}
       <div className="flex flex-col gap-6 pb-8 animate-fade-in">
         {!useParseDrivenSections && (
           templateEditor && !templateEditor.authenticated ? (
@@ -1979,6 +1983,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <EventEditorMenuCard title="Passcode" desc="" icon={<Lock size={20} />} onClick={() => setActiveView("passcode")} />
         </div>
       </div>
+      </>
     );
 
     const updateData = useCallback((field: string, value: any) => {
@@ -3002,7 +3007,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               ) : (
                 <SimpleTemplateView
                   key={`preview-${previewEventId}`}
-                  onMobileEdit={mobileMenuOpen ? undefined : openMobileMenu}
                   onPageTextChange={handlePageTextChange}
                   onHeroImagePositionChange={(positionY) => setData((prev) => ({
                     ...prev,
@@ -3028,6 +3032,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </div>
         </EventCanvas>}
  controlsHeader={sidebarHeader}
+ controlsTitle={null}
  controls={sidebarPanel}
 
 />

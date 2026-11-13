@@ -107,7 +107,7 @@ const copy: Record<Category, [ReactNode, string, string]> = {
 
 const artwork: Partial<Record<Category, string>> = {
   weddings: "/templates/weddings/generated-heroes/blush-linen-romance-hero.webp",
-  birthdays: "/themes/flower-fairy-main.jpg",
+  birthdays: "/themes/flower-fairy-main.webp",
   "baby-showers": "/templates/baby-showers/pear-orchard-cradle.webp",
   "bridal-showers": "/images/landing/template-proof/rose-garden-bridal-brunch.webp",
   "gender-reveal": "/templates/gender-reveal/collection-2026/secret-greenhouse.webp",

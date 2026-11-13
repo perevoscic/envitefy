@@ -231,6 +231,8 @@ const ThemeSwatch = ({
   onClick: () => void;
 }) => (
   <button
+    type="button"
+    aria-pressed={active}
     onClick={onClick}
     className={`relative overflow-hidden rounded-lg border text-left transition-all ${
       active
@@ -532,7 +534,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       });
     }, []);
 
-    const importedTheme = activeImportedTheme(data.importedTheme);
+    const savedImportedTheme = activeImportedTheme(data.importedTheme);
+    const importedTheme = savedImportedTheme?.preserveTemplateStyle ? null : savedImportedTheme;
     const currentTheme = importedSportsTheme(data.importedTheme) || config.themes.find((t) => t.id === themeId) || config.themes[0];
     const authoredTheme = !importedTheme && themedDesign && currentTheme.id === themedDesign.id;
     const authoredFont = !data.themeFontOverride && themedDesign?.font;
@@ -674,8 +677,8 @@ const rawTextClass = currentTheme?.text || "";
           value: data.hero,
           eventId: editEventId || undefined,
           fileName: `${config.slug}-hero.png`,
-          fallbackValue: activeImportedTheme(data.importedTheme) ? "" : config.defaultHero,
-        })) || (activeImportedTheme(data.importedTheme) ? "" : config.defaultHero);
+          fallbackValue: importedSportsTheme(data.importedTheme) ? "" : config.defaultHero,
+        })) || (importedSportsTheme(data.importedTheme) ? "" : config.defaultHero);
       const validThemeId =
         themeId && config.themes.find((t) => t.id === themeId)
           ? themeId
@@ -742,7 +745,7 @@ const rawTextClass = currentTheme?.text || "";
           theme: themeToSave,
           fontId: validFontId,
           fontSize: validFontSize,
-          fontFamily: activeImportedTheme(data.importedTheme) && !data.themeFontOverride ? IMPORTED_THEME_FONTS[data.importedTheme.font] : authoredFont || currentSelectedFont?.css,
+          fontFamily: importedSportsTheme(data.importedTheme) && !data.themeFontOverride ? IMPORTED_THEME_FONTS[data.importedTheme.font] : authoredFont || currentSelectedFont?.css,
           fontSizeClass: currentSelectedSize?.className,
           time: data.time,
           date: data.date,
@@ -833,9 +836,7 @@ const rawTextClass = currentTheme?.text || "";
               All sports designs
             </TemplateGalleryBackLink>
           )}
-          <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-            Add your details
-          </h2>
+          <EditorLayout title="Edit event page" showBack={false}>{null}</EditorLayout>
           <p className="text-slate-500 text-sm">
             Customize every aspect of your {config.displayName.toLowerCase()} site.
           </p>
@@ -936,7 +937,7 @@ const rawTextClass = currentTheme?.text || "";
       <EditorLayout title="Design" onBack={() => setActiveView("main")} showBack>
         <EventEditorFontStyle />
         <div className="space-y-3">
-          <ImportedThemeControls eventId={editEventId || templateEditor?.eventId || editor.eventId} value={data.importedTheme} context={{ title: data.title, sport: sportPreset.key, city: data.city, seed: editEventId || data.title }} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme, themeFontOverride: false }))} />
+          <ImportedThemeControls eventId={editEventId || templateEditor?.eventId || editor.eventId} value={data.importedTheme} context={{ title: data.title, sport: sportPreset.key, city: data.city, seed: editEventId || data.title }} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} />
           <button
             onClick={() => setThemesExpanded(!themesExpanded)}
             className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
@@ -948,12 +949,21 @@ const rawTextClass = currentTheme?.text || "";
           </button>
           {themesExpanded && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-none overflow-visible pr-1">
+              {readImportedEventTheme(data.importedTheme) && <button type="button" aria-pressed={Boolean(importedTheme)}
+                onClick={() => setData(previous => ({ ...previous, importedTheme: previous.importedTheme ? {
+                  ...previous.importedTheme, enabled: true, preserveTemplateStyle: undefined,
+                } : null }))}
+                className={`flex min-h-11 items-center gap-3 rounded-lg border p-3 text-left ${importedTheme ? "border-indigo-600 bg-indigo-50" : "border-slate-200 hover:border-indigo-300"}`}>
+                <span>Custom</span>
+              </button>}
               {config.themes.map((theme) => (
                 <ThemeSwatch
                   key={theme.id}
                   theme={theme}
-                  active={themeId === theme.id}
-                  onClick={() => { setThemeId(theme.id); setData(prev => ({ ...prev, theme, importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: false } : null })); }}
+                  active={!importedTheme && themeId === theme.id}
+                  onClick={() => { setThemeId(theme.id); setData(prev => ({ ...prev, theme, importedTheme: prev.importedTheme ? {
+                    ...prev.importedTheme, enabled: true, preserveTemplateStyle: true, templateColorCombination: undefined,
+                  } : null })); }}
                 />
               ))}
             </div>
@@ -965,7 +975,7 @@ const rawTextClass = currentTheme?.text || "";
                   currentTheme.preview?.split(" ")[0] || "bg-slate-200"
                 }`}
               ></div>
-              <span>Current theme: {currentTheme.name}</span>
+              <span>Current theme: {importedTheme ? "Custom" : currentTheme.name}</span>
             </div>
           )}
 
@@ -1154,7 +1164,7 @@ const rawTextClass = currentTheme?.text || "";
                 <ThemedEventHeader design={themedDesign} fontFamily={headingFontStyle.fontFamily}>
                 <TemplateImageTone enabled={data.heroImageFilterEnabled !== false} color={currentTheme.accent || currentTheme.bg}>
 <div className="relative w-full aspect-video">
-                  {importedTheme ? <img src={importedArtworkSrc(data.importedTheme, data.hero, config.defaultHero)} alt="Event artwork" className="template-hero-image w-full h-full object-cover" /> : data.hero ? (
+                  {importedArtworkSrc(data.importedTheme, data.hero, config.defaultHero) ? <img src={importedArtworkSrc(data.importedTheme, data.hero, config.defaultHero)} alt="Event artwork" className="template-hero-image w-full h-full object-cover" /> : data.hero ? (
                     <img src={data.hero} alt="Hero" className="template-hero-image w-full h-full object-cover" />
                   ) : (
                     <Image

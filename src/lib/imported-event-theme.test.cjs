@@ -40,6 +40,44 @@ test("generated artwork uses public storage delivery without changing the saved 
   assert.equal(themes.importedArtworkDisplayUrl("/media/event-media/../source.webp"), undefined);
 });
 
+test("all sports retain generated artwork across template styling, disabled themes and explicit replacements", () => {
+  for (const sport of ["gymnastics", "football", "soccer", "volleyball", "swimming", "dance", "track"]) {
+    const theme = { ...themes.createImportedEventTheme({ ...fixture, sport }), artworkUrl: "https://assets.test/original.webp" };
+    for (const flags of [{ enabled: false }, { enabled: true, preserveTemplateStyle: true }, { enabled: true }]) {
+      const selected = { ...theme, ...flags };
+      assert.equal(design.importedArtworkSrc(selected, "/template.webp", "/template.webp"), theme.artworkUrl, sport);
+      assert.equal(design.importedArtworkSrc(selected, "/templates/hero-images/sports.webp"), theme.artworkUrl, `${sport}: stored catalog fallback`);
+      assert.equal(design.importedArtworkSrc(selected, "/uploaded.webp", "/template.webp"), "/uploaded.webp", sport);
+      const restored = themes.readImportedEventTheme(JSON.parse(JSON.stringify(selected)));
+      assert.equal(design.importedArtworkSrc(restored, "/template.webp", "/template.webp"), theme.artworkUrl, `${sport}: reload`);
+    }
+  }
+});
+
+test("sports and football accent recipes retain generated surfaces, fonts, ink and media after reload", () => {
+  for (const sport of ["football", "volleyball", "soccer", "swimming", "track"]) {
+    const original = { ...themes.createImportedEventTheme({ ...fixture, sport }), artworkUrl: "https://assets.test/retained.webp" };
+    const baseline = design.importedThemeStyle(original);
+    for (let index = 0; index < 6; index++) {
+      const selected = themes.readImportedEventTheme(JSON.parse(JSON.stringify({ ...original,
+        templateColorCombination: { templateId: original.id, index },
+      })));
+      const style = design.importedThemeStyle(selected);
+      for (const key of ["backgroundColor", "backgroundImage", "color", "--event-paper", "--event-surface", "--event-ink", "--event-font", "--event-source-accent", "--ft-accent", "--ft-paper", "--ft-ground", "--ft-font"])
+        assert.equal(style[key], baseline[key], `${sport}/${index}: ${key}`);
+      assert.deepEqual(selected.colors, original.colors);
+      assert.equal(selected.enabled, original.enabled);
+      assert.equal(selected.preserveTemplateStyle, original.preserveTemplateStyle);
+      assert.equal(selected.artworkUrl, original.artworkUrl);
+    }
+    const template = { ...original, preserveTemplateStyle: true };
+    assert.equal(design.importedThemeStyle(template), undefined);
+    assert.equal(design.importedSportsTheme(template), null);
+    const chrome = { pageClass: "original", font: "original" };
+    assert.equal(design.importedFootballChrome(chrome, template), chrome);
+  }
+});
+
 test("source branding and confirmed geography create stable event-specific identity", () => {
   const theme = themes.createImportedEventTheme(fixture);
   assert.deepEqual(theme, themes.createImportedEventTheme(fixture));

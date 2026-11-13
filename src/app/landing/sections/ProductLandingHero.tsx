@@ -496,7 +496,7 @@ const steps = [
       "Flyer and screenshot uploads",
       "Details from an event link",
     ],
-    image: "/images/marketing/birthday-step-theme.png",
+    image: "/images/marketing/birthday-step-theme.webp",
     imagePosition: "50% 50%",
   },
   {
@@ -509,7 +509,7 @@ const steps = [
       "RSVPs and guest questions",
       "Potluck and volunteer sign-ups",
     ],
-    image: "/images/marketing/birthday-step-details.png",
+    image: "/images/marketing/birthday-step-details.webp",
     imagePosition: "34% 50%",
   },
   {
@@ -518,7 +518,7 @@ const steps = [
     detail:
       "Send your event page in a text, email or group chat. Guests can open the link without installing an app, and return to the same page for updates.",
     highlights: ["One page to come back to", "Responses in one place", "Updates on the same link"],
-    image: "/images/marketing/birthday-step-share.png",
+    image: "/images/marketing/birthday-step-share.webp",
     imagePosition: "48% 50%",
   },
 ];

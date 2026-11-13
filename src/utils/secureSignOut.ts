@@ -7,7 +7,7 @@ import { clearAppBrowserState } from "@/utils/clearAppBrowserState";
 import { clearCreationIntakes, suspendCreationIntakeWrites } from "@/lib/create/creation-intake";
 
 export async function secureSignOut(callbackUrl = "/") {
-  showAuthTransition("Signing you out...");
+  showAuthTransition("Logging you out…");
   suspendCreationIntakeWrites();
   try {
     await clearCreationIntakes().catch(() => {});

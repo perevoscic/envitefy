@@ -243,6 +243,15 @@ test("co-host entry matches the owner event canvas; access and signup/login reta
             return { left: rect.left, right: rect.right, height: rect.height };
           }));
           assert.ok(bounds.every(rect => rect.left >= 288 && rect.right <= width && rect.height >= 44), "expanded actions fit beside the desktop sidebar");
+          if (role === "owner" && width === 1024) {
+            const accessAction = page.getByRole("button", { name: /^(Invite co-host|Manage access)$/ });
+            await accessAction.hover();
+            await accessAction.evaluate(async element => Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {}))));
+            const expanded = await accessAction.boundingBox();
+            assert.ok(expanded.width >= 170 && expanded.x >= 288 && expanded.x + expanded.width <= width, "expanded access action fits the narrow desktop canvas");
+            assert.equal(await accessAction.locator("span").evaluate(element => getComputedStyle(element).opacity), "1");
+            await page.mouse.move(0, 0);
+          }
         }
         assert.equal(await page.getByText("Co-host", { exact: true }).count(), role === "cohost" ? 1 : 0);
         await openEventActions();

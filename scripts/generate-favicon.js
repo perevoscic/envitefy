@@ -13,7 +13,7 @@ async function ensureDir(dir) {
 async function main() {
   const { default: toIco } = await import("png-to-ico");
   const srcPath = path.resolve(__dirname, "../public/favicon.png");
-  const outDir = path.resolve(__dirname, "../src/app");
+  const outDir = path.resolve(__dirname, "../public");
   const sizes = [16, 24, 32, 48, 64];
 
   if (!fs.existsSync(srcPath)) {
@@ -33,9 +33,8 @@ async function main() {
     pngBuffers.push(buf);
   }
 
-  // Generate favicon.ico in src/app (Next.js App Router)
-  // Note: Do NOT also create public/favicon.ico as it conflicts with Next.js App Router's
-  // automatic serving of src/app/favicon.ico at /favicon.ico
+  // Serve the icon as a static asset without compiling an App Router route.
+  // Keep src/app/favicon.ico absent to avoid a route conflict.
   const icoOutput = path.join(outDir, "favicon.ico");
   const icoBuffer = await toIco(pngBuffers);
   await fs.promises.writeFile(icoOutput, icoBuffer);

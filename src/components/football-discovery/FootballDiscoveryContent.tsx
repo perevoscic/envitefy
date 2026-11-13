@@ -171,7 +171,7 @@ function FootballDiscoveryBody({
   if (showTemplateView) {
     return (
       <main
-        data-imported-theme={activeImportedTheme(eventData.importedTheme)?.id}
+        data-imported-theme={importedThemeStyle(eventData.importedTheme) ? activeImportedTheme(eventData.importedTheme)?.id : undefined}
         style={importedThemeStyle(eventData.importedTheme)}
         className={templateChrome.pageClass}
         data-page-template-id={pageTemplateId || templateChrome.id}

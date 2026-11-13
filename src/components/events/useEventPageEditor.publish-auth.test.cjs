@@ -150,8 +150,8 @@ test("the shared action area retains signed-in controls and keeps the same guest
   assert.match(guest, />Publish</);
   assert.doesNotMatch(guest, /Create an account|Sign in &amp; publish|Save and continue/);
   const clean = renderToStaticMarkup(React.createElement(EventEditorActions, { editor: { ...editor, published: true, dirty: false } }));
-  assert.match(clean, /<button[^>]*disabled=""[^>]*>Save<\/button>/);
+  assert.doesNotMatch(clean, /Save changes<\/button>/);
   const changed = renderToStaticMarkup(React.createElement(EventEditorActions, { editor: { ...editor, published: true } }));
-  assert.match(changed, /<button[^>]*>Save<\/button>/);
-  assert.doesNotMatch(changed, /<button[^>]*disabled=""[^>]*>Save<\/button>/);
+  assert.match(changed, /<button[^>]*>Save changes<\/button>/);
+  assert.doesNotMatch(changed, /<button[^>]*disabled=""[^>]*>Save changes<\/button>/);
 });

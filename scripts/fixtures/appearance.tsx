@@ -9,6 +9,7 @@ import EventPreviewViewport from "../../src/components/EventPreviewViewport";
 import GymnasticsPublicGallery from "../../src/components/templates/category-galleries/gymnastics";
 import TemplateGalleryLayout from "../../src/components/templates/TemplateGalleryLayout";
 import { Eye, Pencil, Share2, Users, Link2, Trash2 } from "lucide-react";
+import toolbarStyles from "../../src/components/event-preview-toolbar.module.css";
 
 function Workspace() {
   const { theme, preference } = useTheme();
@@ -37,7 +38,7 @@ function Workspace() {
         <EventPreviewViewport title="Authored iframe" initialDevice="mobile" preserveNavigation actions={
           <div role="group" aria-label="Event actions" className="flex flex-col lg:flex-row">
             {([["Preview", Eye], ["Edit", Pencil], ["Share", Share2], ["Manage access", Users], ["Custom URL", Link2], ["Delete", Trash2]] as const).map(([label, Icon]) => (
-              <button key={label} type="button" className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold"><Icon size={19} aria-hidden="true" /><span>{label}</span></button>
+              <button key={label} type="button" className={`${toolbarStyles.control} ${toolbarStyles.ownerControl} inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold`}><Icon size={19} aria-hidden="true" /><span>{label}</span></button>
             ))}
           </div>
         }>

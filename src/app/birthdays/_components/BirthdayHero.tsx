@@ -22,7 +22,7 @@ export default function BirthdayHero({
       }
       description="Make an invitation as memorable as the birthday. Keep RSVPs, directions, and every party detail together in one easy link."
       lead="A birthday worth getting everyone together."
-      image="/themes/flower-fairy-main.jpg"
+      image="/themes/flower-fairy-main.webp"
       imageAlt="Original storybook flower fairy birthday invitation artwork"
       primaryHref={primaryHref}
       primaryLabel="Create a birthday page"

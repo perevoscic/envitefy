@@ -104,10 +104,10 @@ test("Concierge uses an anchored popover, answers known questions instantly, and
         body: JSON.stringify({ ok: true, answer: "Guests can RSVP from the shared event page." }),
       });
     }
-    if (url.pathname === "/logo-colored.png")
+    if (url.pathname === "/logo-colored.webp")
       return route.fulfill({
-        contentType: "image/png",
-        body: fs.readFileSync("public/logo-colored.png"),
+        contentType: "image/webp",
+        body: fs.readFileSync("public/logo-colored.webp"),
       });
     if (url.pathname === "/brand/concierge-chat.webp")
       return route.fulfill({

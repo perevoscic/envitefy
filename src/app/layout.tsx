@@ -69,6 +69,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/favicon.ico", sizes: "any", type: "image/x-icon" },
       { url: "/icon.png?v=v10", sizes: "512x512", type: "image/png" },
       { url: "/icons/icon-192.png?v=v10", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512.png?v=v10", sizes: "512x512", type: "image/png" },
@@ -86,6 +87,7 @@ export const metadata: Metadata = {
       },
     ],
     apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
       { url: "/icons/apple-touch-icon-120.png?v=v10", sizes: "120x120" },
       { url: "/icons/apple-touch-icon-152.png?v=v10", sizes: "152x152" },
       { url: "/icons/apple-touch-icon-167.png?v=v10", sizes: "167x167" },

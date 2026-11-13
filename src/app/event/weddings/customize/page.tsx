@@ -1100,7 +1100,7 @@ const INITIAL_DATA = {
   },
   images: {
     hero: null as string | null,
-    headlineBg: "/templates/wedding-placeholders/ivory-ink-hero.jpeg",
+    headlineBg: "/templates/wedding-placeholders/ivory-ink-hero.webp",
   },
   travel: {
     hotels: [
@@ -1733,7 +1733,7 @@ const App = () => {
 
   const fallbackHeroImage =
     (selectedTemplate as any)?.theme?.decorations?.heroImage ||
-    "/templates/wedding-placeholders/ivory-ink-hero.jpeg";
+    "/templates/wedding-placeholders/ivory-ink-hero.webp";
 
 
 const previewEvent = useMemo(() => {
@@ -2118,9 +2118,7 @@ const handleGalleryUpload = (e) => {
           All wedding designs
         </button>
         <div className="text-center">
-          <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-            Add your details
-          </h2>
+          <EditorLayout title="Edit event page" showBack={false}>{null}</EditorLayout>
           <p className="text-slate-500 text-sm">
             Customize every aspect of your wedding website.
           </p>
@@ -2972,7 +2970,7 @@ const renderDesignEditor = () => (
       if (activeView === "main" || activeView === "images") return false;
       setActiveView("main");
       return true;
-    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "schedule": renderScheduleEditor, "story": renderStoryEditor, "photos": renderPhotosEditor, "thingsToDo": renderThingsToDoEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, "travel": renderTravelEditor, "party": renderPartyEditor, details: renderStoryEditor }} artwork={data.images.hero} editor={editor} templatesHref={"/event/weddings"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+    }} sectionEditors={{ "headline": renderHeadlineEditor, "design": renderDesignEditor, "schedule": renderScheduleEditor, "story": renderStoryEditor, "photos": renderPhotosEditor, "thingsToDo": renderThingsToDoEditor, "rsvp": renderRsvpEditor, "registry": renderRegistryEditor, "travel": renderTravelEditor, "party": renderPartyEditor, details: renderStoryEditor }} artwork={data.images.hero || fallbackHeroImage} editor={editor} templatesHref={"/event/weddings"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
         ref={previewRef}
         className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide scroll-smooth bg-[#f0f2f5] flex justify-center"

@@ -237,7 +237,7 @@ export default function EventAccessDialog({
                     placeholder="name@example.com"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    className="h-11 min-w-0 flex-1 rounded-lg bg-transparent px-1.5 text-base text-foreground outline-none placeholder:text-muted-foreground sm:text-sm"
+                    className="h-11 min-w-0 flex-1 rounded-lg border-0 bg-transparent! px-1.5 text-base text-foreground shadow-none outline-none placeholder:text-muted-foreground focus-visible:outline-none! sm:text-sm"
                   />
                   <button
                     type="submit"

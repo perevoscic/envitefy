@@ -1,4 +1,5 @@
 import { normalizeSchoolTemplate, type SchoolTemplateKind } from "./school-events";
+import { schoolMemoLocationValue } from "./school-memo";
 import { normalizeScanSchedule, scanScheduleHistoryFields, type ScanSchedule } from "./scan-schedule";
 import { addCalendarDays, parseCalendarDateTimeToIso } from "./calendar-date-time";
 import { normalizeArrivalMap, type EventArrivalMap } from "./event-arrival-map";
@@ -72,6 +73,7 @@ export type EventCustomDesign = {
   font: keyof typeof EVENT_DESIGN_FONTS;
   /** Exact catalog typography retained when an older template enters this editor. */
   fontFamily?: string;
+  accentCombination?: number;
   colors: { page: string; surface: string; ink: string; accent: string };
 };
 export const EVENT_DETAIL_FIELDS = [
@@ -247,6 +249,8 @@ export function normalizeEventCustomDesign(value: unknown): EventCustomDesign | 
     ...(hero ? { hero } : {}),
     font: raw.font as EventCustomDesign["font"],
     ...(typeof raw.fontFamily === "string" && /^[a-zA-Z0-9 '"(),-]{1,300}$/.test(raw.fontFamily) ? { fontFamily: raw.fontFamily } : {}),
+    ...(Number.isInteger(raw.accentCombination) && Number(raw.accentCombination) >= 0 && Number(raw.accentCombination) < 6
+      ? { accentCombination: Number(raw.accentCombination) } : {}),
     colors: palette,
   };
 }
@@ -266,6 +270,10 @@ export function normalizeCustomEventDetails(value: unknown): CustomEventDetails 
     if (text.length > (field === "description" ? 6000 : field === "location" ? 1000 : 300))
       return null;
     details[field] = text;
+  }
+  if (scanSchedule?.kind === "school-memo") {
+    details.venue = schoolMemoLocationValue(details.venue) || "";
+    details.location = schoolMemoLocationValue(details.location) || "";
   }
   for (const field of ["date", "endDate", "rsvpDeadline"] as const) {
     if (
