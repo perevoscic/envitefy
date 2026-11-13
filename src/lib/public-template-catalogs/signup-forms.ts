@@ -1,4 +1,5 @@
 import { SIGNUP_TEMPLATES } from "@/assets/signup-templates";
+import { signupPublicTemplateId } from "@/lib/signup-designs";
 import { SIGNUP_THEMES } from "../signup-themes";
 import { schoolSignupKeywords } from "../public-template-shared";
 import type { PublicTemplate } from "../public-template-shared";
@@ -21,10 +22,7 @@ export function getTemplates(): PublicTemplate[] {
         ...Object.entries(SIGNUP_TEMPLATES)
           .flatMap(([group, designs]) =>
             designs.map((design) => ({
-              id: design.path
-                .replace("/templates/signup/", "")
-                .replace(/\.webp$/, "")
-                .replaceAll("/", "--"),
+              id: signupPublicTemplateId(design.path),
               name: design.name,
               description:
                 design.description ||

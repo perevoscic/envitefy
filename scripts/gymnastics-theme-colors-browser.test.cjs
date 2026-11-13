@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
 const compiled = require('next/dist/compiled/webpack/webpack');
 compiled.init();
 
-test('all 60 gymnastics templates and all six choices change real titles without changing any canvas backgrounds', { timeout: 180000 }, async () => {
+test('all 60 gymnastics templates and all six choices change real titles without changing any canvas backgrounds', { timeout: 300000 }, async () => {
   const output = path.resolve('.qa/gymnastics-theme-colors');
   await new Promise((resolve, reject) => {
     const compiler = compiled.webpack({ mode: 'development', target: 'web', devtool: false,

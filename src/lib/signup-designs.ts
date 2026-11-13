@@ -440,16 +440,24 @@ export type SignupDesign = {
   fontPair: SignupFontPair;
   board: (typeof SIGNUP_COMPOSITIONS)[SignupComposition]["board"];
 };
+/** These files were named `.png`, and that suffix is part of the saved template id. */
+const LEGACY_PNG_SIGNUP_STEMS = new Set([
+  "clubs-and-groups--bird-watching-group",
+  "clubs-and-groups--hiking-club",
+]);
+
+export function signupPublicTemplateId(templatePath: string): string {
+  const id = templatePath
+    .replace("/templates/signup/", "")
+    .replace(/\.webp$/, "")
+    .replaceAll("/", "--");
+  return LEGACY_PNG_SIGNUP_STEMS.has(id) ? `${id}.png` : id;
+}
+
 const artworkById = new Map(
   Object.values(SIGNUP_TEMPLATES)
     .flat()
-    .map((item) => [
-      item.path
-        .replace("/templates/signup/", "")
-        .replace(/\.webp$/, "")
-        .replaceAll("/", "--"),
-      item,
-    ]),
+    .map((item) => [signupPublicTemplateId(item.path), item]),
 );
 const holidayCompositions = ["panorama", "botanical", "gazette", "journal", "poster", "invitation", "scrapbook", "menu", "studio", "ticket"] as const satisfies readonly SignupComposition[];
 type HolidaySignupRecipe = Pick<SignupDesign, "composition" | "palette" | "motif" | "reverse">;

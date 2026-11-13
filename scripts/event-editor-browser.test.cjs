@@ -452,12 +452,23 @@ test.describe("Event Page editor saves and navigation", () => {
     // Reproduce that window instead of relying on the runner's frame timing.
     await page.addInitScript(() => {
       const frame = window.requestAnimationFrame.bind(window);
-      window.requestAnimationFrame = callback => frame(time => setTimeout(() => callback(time), 100));
+      // A slow load can outlast a fixed frame delay. Hold the entrance until
+      // the test has observed it, then let the frames finish.
+      window.__releaseEditorEntrance = false;
+      window.requestAnimationFrame = callback => frame(time => {
+        const run = () => callback(time);
+        if (window.__releaseEditorEntrance) run();
+        else {
+          const wait = () => window.__releaseEditorEntrance ? run() : setTimeout(wait, 50);
+          wait();
+        }
+      });
     });
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${base}/event/design/customize?mode=create`);
       await page.locator('[data-event-page-editor][data-entered="false"]').waitFor();
+      await page.evaluate(() => { window.__releaseEditorEntrance = true; });
       await openControls();
       await page.getByRole("button", { name: /^Event details/ }).click();
       const title = page.getByLabel("Event title", { exact: true });
