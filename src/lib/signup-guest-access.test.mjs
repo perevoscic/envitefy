@@ -630,7 +630,7 @@ test("confirmation and recovery emails contain private management links in HTML 
       assert.match(message.html, /Sincerely,<br\/>/);
       assert.match(message.html, /<strong>Envitefy Team<\/strong>/);
       assert.match(message.html, /CREATE \| SHARE \| ENJOY/);
-      assert.match(message.html, /https:\/\/envitefy.com\/email\/wordmark-v2\/matte\/envitefy-wordmark-email.gif/);
+      assert.match(message.html, /src="https:\/\/envitefy\.com\/email\/wordmark-v2\/matte\/envitefy-wordmark-email\.webp"/);
       assert.match(message.html, /https:\/\/www.instagram.com\/envitefy\//);
       assert.match(message.text, /Sincerely,\nEnvitefy Team\nCREATE \| SHARE \| ENJOY/);
     }

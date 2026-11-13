@@ -78,9 +78,11 @@ const baseMocks = {
     Users: (props) => React.createElement("svg", props),
     UsersRound: (props) => React.createElement("svg", props),
     LoaderCircle: (props) => React.createElement("svg", props),
+    LogOut: (props) => React.createElement("svg", props),
   },
   "next/navigation": { useRouter: () => ({}) },
   "next-auth/react": { useSession: () => ({ status: "authenticated", update: async () => {} }) },
+  "@/app/sidebar-context": { useSidebar: () => ({ clearEventContext() {} }) },
   "@/components/auth/AuthModal": { __esModule: true, default: () => null },
   "@/components/EventDeleteModal": { __esModule: true, default: () => null },
   "@/components/templates/TemplateEditorContext": { useTemplateEditor: () => null },
@@ -146,8 +148,11 @@ test("saved signup drafts allow owner invitations and co-host controls omit owne
   const props = { eventId: "saved", eventTitle: "Signup", eventData: {}, form: createSignupThemeForm("harvest-table") };
   const owner = renderToStaticMarkup(React.createElement(Actions, props));
   assert.match(owner, /Invite co-host/);
+  assert.doesNotMatch(owner, /aria-label="Leave event as co-host"/);
   const cohost = renderToStaticMarkup(React.createElement(Actions, { ...props, isOwner: false }));
   assert.match(cohost, /aria-label="Edit event"/);
+  assert.match(cohost, />Co-host<\/span>/);
+  assert.match(cohost, /aria-label="Leave event as co-host"/);
   assert.doesNotMatch(cohost, /Invite co-host|Manage access|Duplicate form|Delete form/);
 });
 
