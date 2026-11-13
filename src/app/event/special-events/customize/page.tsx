@@ -4,7 +4,8 @@ import EventPageSections from "@/components/events/EventPageSections";
 
 import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
 import EventEditorFontStyle from "@/components/events/EventEditorFontStyle";
-import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventLocationTimezone } from "@/components/events/useEventLocationTimezone";
+import EventEditorWorkspace, { EventEditorPageSettings } from "@/components/events/EventEditorWorkspace";
 import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
 import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
 import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
@@ -1007,7 +1008,8 @@ export default function SpecialEventsCustomizePage() {
     return payload;
   }, [submitting, data, editEventId, router, locationParts, savedEventData, loadingExisting, loadError]);
 
-  const editor = useEventPageEditor({ snapshot: { data }, category: "Special Events", templateId: "special-events", eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
+  useEventLocationTimezone({ data, setData, enabled: !loadingExisting, saved: editEventId ? eventHistoryClient.read(`/api/history/${encodeURIComponent(editEventId)}`)?.data : undefined });
+    const editor = useEventPageEditor({ snapshot: { data }, restoreSnapshot: (snapshot) => { setData(snapshot.data); }, category: "Special Events", templateId: "special-events", eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
 
   // Filter out unwanted categories and get flat list of themes
   const availableThemes = useMemo(() => {
@@ -1036,6 +1038,7 @@ export default function SpecialEventsCustomizePage() {
           onClick={() => setActiveView("headline")}
         />
         <MenuCard title="Design" desc="Page style, typography, and colors." icon={<Type size={18} />} onClick={() => setActiveView("design")} />
+          <EventEditorPageSettings />
 
         <MenuCard
           title="Details"
@@ -1096,7 +1099,7 @@ export default function SpecialEventsCustomizePage() {
           placeholder="123 Main Street, Suite 100"
         />
       </div>
-    </EditorLayout>
+        </EditorLayout>
   );
 
   const renderDesignEditor = () => (

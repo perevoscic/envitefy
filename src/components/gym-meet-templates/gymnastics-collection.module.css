@@ -20,6 +20,8 @@
 
 .muted { opacity: 0.72; }
 .heroPanel { min-width: 0; }
+.imageActions { display: flex; justify-content: flex-end; min-width: 0; }
+.originalImageActions { padding: 0 1.5rem 1.25rem; }
 .lede { font-size: 0.95rem; line-height: 1.7; opacity: 0.82; }
 .sectionTitle { color: var(--gym-ink); font-family: var(--gym-font); }
 
@@ -133,6 +135,9 @@
 }
 
 .scene > * { min-width: 0; }
+.scene:has([data-inline-text-editor]:hover),
+.scene:has([data-inline-text-editor]:focus-within),
+.scene:has([data-menu-open]) { position: relative; overflow: visible; z-index: 25; }
 
 .masthead {
   grid-column: 1 / -1;
@@ -1081,3 +1086,13 @@
   .section { padding: 1.1rem 0.85rem; }
 }
 .primaryButton:focus-visible, .secondaryButton:focus-visible, .navIdle:focus-visible, .navActive:focus-visible { outline: 2px solid var(--gym-accent); outline-offset: 4px; }
+
+/* Color combinations style controls and headings; the scene palette stays intact. */
+[data-gym-color-combination] .sectionTitle { color: var(--gym-ui-heading); }
+[data-gym-color-combination] .primaryButton,
+[data-gym-color-combination] .navActive { background: var(--gym-ui-button); color: var(--gym-ui-on-button); }
+[data-gym-color-combination] .secondaryButton { color: var(--gym-ui-link); border-color: var(--gym-ui-link); }
+[data-gym-color-combination] .navIdle { color: var(--gym-ui-link); }
+
+/* The event name is part of the accent combination too, including inline editors. */
+[data-gym-color-combination] .headline h1 { color: var(--gym-ui-heading); }

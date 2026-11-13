@@ -1,6 +1,7 @@
 "use client";
 
 import HeroImageEditor from "@/components/events/HeroImageEditor";
+import SchoolMemoDates from "@/components/SchoolMemoDates";
 import { CloudSun, Link2, ListPlus, MapPinned, PanelsTopLeft } from "lucide-react";
 import { useEventHistoryClient } from "@/lib/event-history-client";
 import { readEventResponse } from "@/lib/event-response";
@@ -16,7 +17,8 @@ import {
   EventEditorToggle,
 } from "@/components/events/EventEditorFields";
 import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
-import { EventSectionBuilderProvider, EventSectionPalette, EventSectionsReadOnly } from "@/components/events/EventSectionBuilder";
+import { useEventLocationTimezone } from "@/components/events/useEventLocationTimezone";
+import { EventSectionBuilderProvider, EventSectionsReadOnly } from "@/components/events/EventSectionBuilder";
 import EventSectionExtrasEditor from "@/components/events/EventSectionExtrasEditor";
 import { useEventPageEditor } from "@/components/events/useEventPageEditor";
 import {
@@ -97,6 +99,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
   const intakeId = search?.get("intake");
   const [activeSection, setActiveSection] = useState("main");
   const [page, setPage] = useState<CustomEventPage | null>(null);
+  useEventLocationTimezone({ data: page?.details || {}, enabled: Boolean(page), setData: updater => setPage(current => current ? { ...current, details: typeof updater === "function" ? updater(current.details) : updater } : current) });
   const currentPage = useRef(page);
   currentPage.current = page;
   const [baseline, setBaseline] = useState("");
@@ -163,7 +166,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     let cancelled = false;
     async function load() {
       setError("");
-      if (initialPage) {
+      if (initialPage && !editId) {
         setPage(withCustomEventTimezone(initialPage));
         setBaseline("");
         return;
@@ -183,7 +186,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
         const row = await readEventResponse(response);
         const saved = normalizeCustomEventPage(
           row.data?.customEventPageDraft || row.data?.customEventPage,
-        );
+        ) || (await import("@/lib/general-event-page-compat")).legacyGeneralEventPage(row.data, row.title);
         if (!saved) throw new Error("This event uses a different editor.");
         if (cancelled) return;
         existing.current = row.data;
@@ -197,11 +200,21 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
         const session = await getSession();
         const intake = await readCreationIntake(creationIntakeOwner(session?.user), intakeId);
         if (cancelled) return;
-        const selected = normalizeCustomEventPage(intake?.customPage);
+        const selected = normalizeCustomEventPage(intake?.customPage) || (intake?.editorFamily === "general"
+          ? (await import("@/lib/general-event-page-compat")).legacyGeneralEventPage({ ...intake.information?.details, category: "general", bodyDesignId: intake.selectedTemplateId, manualEditor: { snapshot: intake.editorSnapshot } }) : null);
         if (!selected) throw new Error("This creation belongs to another account or has expired. Return to Create to start again.");
         setPage(withCustomEventTimezone(selected));
         setBaseline("");
         preparedWording.current = JSON.stringify(customEventWording(selected.details));
+      } else if (search?.get("templateId") || search?.get("collection") || search?.get("mode") === "manual") {
+        const { generalTemplateEventPage } = await import("@/lib/general-event-page-compat");
+        const selected = generalTemplateEventPage(search?.get("templateId"), { date: search?.get("d") || "" }, search?.get("collection"));
+        if (!selected) throw new Error("This template is unavailable. Return to Create and choose another design.");
+        if (!cancelled) {
+          setPage(withCustomEventTimezone(selected));
+          setBaseline("");
+          preparedWording.current = JSON.stringify(customEventWording(selected.details));
+        }
       } else {
         await Promise.resolve();
         if (cancelled) return;
@@ -318,6 +331,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
   };
   const editor = useEventPageEditor({
     snapshot: editorSnapshot(page),
+    restoreSnapshot: (snapshot) => setPage(snapshot.page),
     category,
     eventId: editId,
     historyClient: eventHistoryClient,
@@ -530,10 +544,12 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
               sections: current.details.sections.map((item, i) => i === index ? { ...item, ...patch } : item),
             },
           } : current);
-        return section ? <><EventEditorInput label="Section heading" value={section.title} maxLength={180} onChange={(title) => updateSection({ title })} /><EventEditorInput label="Section content" type="textarea" value={section.body} maxLength={6000} onChange={(body) => updateSection({ body })} /><EventSectionExtrasEditor key={id} value={section} onChange={updateSection} /></> : null;
+        return section ? <><EventEditorInput label="Title" value={section.title} maxLength={180} onChange={(title) => updateSection({ title })} /><EventEditorInput label="Section content" type="textarea" value={section.body} maxLength={6000} onChange={(body) => updateSection({ body })} /><EventSectionExtrasEditor key={id} value={section} onChange={updateSection} /></> : null;
       }}>
     <EventEditorWorkspace
       editor={editor}
+      pageEditing
+      viewLabels={{ page: "Close settings", controls: "Page settings" }}
       customUrlMenu={false}
       revealControls={activeSection}
       onBackWithinControls={() => {
@@ -563,6 +579,8 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
         <div className={styles.sharedPreview}>
           <CustomEventPageContent
             page={page}
+            scheduleEditor={d.scanSchedule?.kind === "school-memo" ? <SchoolMemoDates schedule={d.scanSchedule}
+              calendarNeedsSave={editor.dirty} onScheduleChange={(scanSchedule) => updateDetail("scanSchedule", scanSchedule)} /> : undefined}
             showGuestActions
             onGuestActionsChange={
               busy
@@ -597,6 +615,8 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
             activeSection={activeSection}
             onSectionChange={setActiveSection}
             sections={[
+              ...(d.scanSchedule?.kind === "school-memo" ? [{ id: "schedule", title: "Dates from this memo", description: "Review the dates before publishing.",
+                content: <SchoolMemoDates schedule={d.scanSchedule} interactive={false} onScheduleChange={(scanSchedule) => updateDetail("scanSchedule", scanSchedule)} /> }] : []),
               {
                 id: "details",
                 title: "Event details",
@@ -620,38 +640,14 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
               {
                 id: "design",
                 title: "Design",
-                description: "Photos, typography and colors.",
+                description: "Typography and colors.",
                 content: (
                   <>
                     <div className={styles.group}>
                       <h2>Design</h2>
-                      <HeroImageEditor
-                        label="Replace hero image"
-                        prepareImage={prepareCustomEventHeroImage}
-                        onBusyChange={setImageBusy}
-                        onChange={(artwork) =>
-                          setPage((current) =>
-                            current
-                              ? {
-                                  ...current,
-                                  artwork,
-                                  design: {
-                                    ...current.design,
-                                    description: "Hero image selected by the host.",
-                                  },
-                                }
-                              : current,
-                          )
-                        }
-                      />
-                      <p>
-                        {published
-                          ? "Your selected image is saved when you choose Save changes."
-                          : "Your selected image is saved when you choose Save draft or Publish."}
-                      </p>
                       <fieldset className={styles.field}>
                         <legend>Font style</legend>
-                        <FontPairingSelect options={EVENT_DESIGN_FONT_PAIRS} value={page.design.font} onChange={(font) => setPage({ ...page, design: { ...page.design, font } })} />
+                      <FontPairingSelect options={EVENT_DESIGN_FONT_PAIRS} value={page.design.font} onChange={(font) => setPage({ ...page, design: { ...page.design, font, fontFamily: undefined } })} />
                       </fieldset>
                       <div className={styles.columns}>
                         {(["page", "surface", "ink", "accent"] as const).map((key) => (
@@ -775,13 +771,12 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
               },
               {
                 id: "sections",
-                title: "Page sections",
-                description: "Arrange and edit guest information.",
+                title: "Parking / drop-off map",
+                description: "Add an arrival map for your guests.",
                 icon: <ListPlus size={20} />,
                 tool: true,
                 content: (
                   <>
-                    <EventSectionPalette />
                     <div className={styles.group}>
                       {!d.sections.some((section) => section.map) &&
                         (d.sections.length >= 20 && arrivalMapSectionIndex(d) < 0 ? (
@@ -802,8 +797,8 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
               },
               {
                 id: "layout",
-                title: "Layout",
-                description: "Adjust the hero image and title.",
+                title: "Event image settings",
+                description: "Upload an image and choose a design.",
                 icon: <PanelsTopLeft size={20} />,
                 tool: true,
                 action: page.design.hero ? (
@@ -819,6 +814,32 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                   </button>
                 ) : undefined,
                 content: (
+                  <>
+                      <HeroImageEditor
+                        label="Upload image"
+                        prepareImage={prepareCustomEventHeroImage}
+                        onBusyChange={setImageBusy}
+                        onChange={(artwork) =>
+                          setPage((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  artwork,
+                                  design: {
+                                    ...current.design,
+                                    description: "Hero image selected by the host.",
+                                  },
+                                }
+                              : current,
+                          )
+                        }
+                      />
+                      <p>
+                        {published
+                          ? "Your selected image is saved when you choose Save."
+                          : "Your selected image is saved when you choose Save draft or Publish."}
+                      </p>
+
                   <CustomEventLayoutPicker
                     page={page}
                     onChange={(hero) =>
@@ -829,6 +850,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
                       )
                     }
                   />
+                  </>
                 ),
               },
               ...(editor.urlEditor

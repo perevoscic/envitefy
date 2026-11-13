@@ -6,6 +6,7 @@ import EventPageSections, { eventPageSectionEntries } from "@/components/events/
 import { celebrationMaterialStyle, getCelebrationDirection } from "./celebration-materials";
 import materialStyles from "./celebration-materials.module.css";
 import styles from "./template-body-layout.module.css";
+import sectionStyles from "@/components/events/event-page-sections.module.css";
 
 export type BodyPresentation = {
   layout:
@@ -160,7 +161,7 @@ export default function TemplateBodyLayout({
         />
       );
     const content = visible.map((item) => <Fragment key={item.id}>{item.content}</Fragment>);
-    return fallbackClassName ? <div className={fallbackClassName}>{content}</div> : content;
+    return <div className={[sectionStyles.contentFlow, fallbackClassName].filter(Boolean).join(" ")}>{content}</div>;
   }
   const order = flows[activePresentation.flow];
   const rank = (id: string) => {
@@ -200,7 +201,7 @@ export default function TemplateBodyLayout({
   } as CSSProperties;
   return (
     <div
-      className={`${styles.body} ${direction ? materialStyles.body : ""} ${className}`}
+      className={`${styles.body} ${sectionStyles.contentFlow} ${direction ? materialStyles.body : ""} ${className}`}
       style={bodyStyle}
       data-template-body-layout={templateLayout ? activePresentation.layout : "custom"}
       data-body-surface={activePresentation.surface}

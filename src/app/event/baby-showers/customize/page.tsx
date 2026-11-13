@@ -3,7 +3,8 @@
 import { readEventRsvpSettings } from "@/lib/event-rsvp-settings";
 import { EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout, EventEditorInput as InputGroup } from "@/components/events/EventEditorFields";
 import EventEditorFontStyle from "@/components/events/EventEditorFontStyle";
-import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventLocationTimezone } from "@/components/events/useEventLocationTimezone";
+import EventEditorWorkspace, { EventEditorPageSettings } from "@/components/events/EventEditorWorkspace";
 import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
 import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
 import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
@@ -689,7 +690,8 @@ const handleGalleryUpload = (e) => {
     return payload;
   }, [templateEditor, submitting, data, template.id, editEventId, router, heroImageSrc, selectedThemedPalette, themedBridal]);
 
-  const editor = useEventPageEditor({ snapshot: { data, activeTemplateId, newHost, newRegistry }, category: isBridal ? "Bridal Showers" : "Baby Showers", templateId: activeTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !_loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: isBridal ? "bridal-showers" : "baby-showers" });
+  useEventLocationTimezone({ data, setData, enabled: !_loadingExisting, saved: editEventId ? eventHistoryClient.read(`/api/history/${encodeURIComponent(editEventId)}`)?.data : undefined });
+    const editor = useEventPageEditor({ snapshot: { data, activeTemplateId, newHost, newRegistry }, restoreSnapshot: (snapshot) => { setData(snapshot.data); setActiveTemplateId(snapshot.activeTemplateId); setNewHost(snapshot.newHost); setNewRegistry(snapshot.newRegistry); }, category: isBridal ? "Bridal Showers" : "Baby Showers", templateId: activeTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !_loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: isBridal ? "bridal-showers" : "baby-showers" });
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
@@ -722,6 +724,7 @@ const handleGalleryUpload = (e) => {
           onClick={() => setActiveView("headline")}
         />
         <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />
+          <EventEditorPageSettings />
 
         <MenuCard
           title={isBridal ? "Celebration details" : "About Baby"}
@@ -805,7 +808,7 @@ const handleGalleryUpload = (e) => {
           placeholder="Street address (optional)"
         />
       </div>
-    </EditorLayout>
+        </EditorLayout>
   );
 
 

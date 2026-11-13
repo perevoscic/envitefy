@@ -36,7 +36,7 @@ for (const extension of [".ts", ".tsx"])
       filename,
     );
 Module._extensions[".css"] = (module) => {
-  module.exports = new Proxy({}, { get: (_, key) => String(key) });
+  module.exports = new Proxy({}, { get: (_, key) => key === "__esModule" ? false : String(key) });
 };
 const { normalizeEventPageComposition } = require("./event-page-composition.ts");
 const { EVENT_DESIGN_LAYOUTS } = require("./event-custom-design.ts");
@@ -184,11 +184,11 @@ test("native galleries and resource links retain guest order, escaped text and h
   assert.deepEqual(raw, before, "rendering and normalization leave the input untouched");
 });
 
-test("old pages retain original markup and template drafts retain composition separately from category fields", () => {
+test("old pages retain native content inside the stacking scope and drafts retain composition separately", () => {
   const original = h("main", { className: "original-design" }, nativeSections());
   assert.equal(
     renderToStaticMarkup(h(EventPageCompositionProvider, {}, h(NativeBody, null, original))),
-    renderToStaticMarkup(original),
+    `<div class="contentFlow nativeContentFlow">${renderToStaticMarkup(original)}</div>`,
   );
   const snapshot = {
     data: { childName: "Olivia", age: "6", partyDetails: { theme: "Garden" } },

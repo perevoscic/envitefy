@@ -194,7 +194,7 @@ export default function MeetPageContent({
           eyebrow={pageText("supportEyebrow", "Operations")}
           className={variant.sectionClass}
         >
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3">
             {model.gear?.uniform ? (
               <div className={variant.summaryCardClass}>
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
@@ -299,7 +299,7 @@ export default function MeetPageContent({
         </button>
       ) : null}
       {!rsvpProps.submitted && !(onPageTextChange && previewRsvpConfirmation) ? (
-        <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid grid-cols-1 gap-4">
           <div className="space-y-4">
             <div>
               <div className="mb-2">
@@ -325,7 +325,7 @@ export default function MeetPageContent({
               ))}
             </div>
             {!rsvpProps.isSignedIn && rsvpProps.allowGuestAttendanceRsvp ? (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3">
                 {pageText("rsvpEmailHint", "Email", undefined, (text) => (
                   <input
                     className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
@@ -457,7 +457,7 @@ export default function MeetPageContent({
           <div className="py-5">
             <GymMeetDiscoveryContent model={model} variant={variant} presentation={presentation} onPageTextChange={onPageTextChange}
               additionalSections={[
-                ...(Object.values(model.guestPlanning || {}).some(Boolean) ? [{ id: "meet-details", label: "Meet Details", editorId: "meet", content: <EventGuestPlanningNotes value={model.guestPlanning} /> }] : []),
+                ...(Object.values(model.guestPlanning || {}).some(Boolean) ? [{ id: "meet-details", label: "Meet Details", editorId: "meet", content: <EventGuestPlanningNotes value={model.guestPlanning} fullWidth themed /> }] : []),
                 ...(model.schedule?.enabled !== false && model.schedule?.days?.length ? [{ id: "schedule", label: "Schedule", editorId: "schedule", content: <GymnasticsSchedule schedule={model.schedule} /> }] : []),
                 ...(rosterContent ? [{ id: "roster", label: "Roster", editorId: "roster", content: rosterContent }] : []),
                 ...(practiceContent ? [{ id: "practice", label: "Practice", editorId: "practice", content: practiceContent }] : []),

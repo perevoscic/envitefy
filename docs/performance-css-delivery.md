@@ -39,6 +39,21 @@ so open tabs can load their stylesheet from the matching deployment.
 
 ## Verification
 
+Public template editors load native editors on the client. Their complete CSS
+dependency set is imported eagerly by
+`src/components/templates/template-editor-styles.ts`, through
+`PublicTemplateEditor.tsx`. The route owns these styles before the editor opens.
+Keep new native editor, section, form and navigation styles in that import list.
+Relying on a lazy editor's separate CSS chunk left the Schedule panel unstyled on
+the live development route, including its header, width, spacing and footer.
+
+`PublicTemplateEditor.styles.test.mjs` follows runtime imports, dynamic imports
+and re-exports to reject any editor stylesheet missing from the eager route
+graph. The gymnastics browser fixture also exercises the route stylesheet alone,
+without automatically injecting CSS from lazy editor dependencies. Both checks
+run in Create validation; browser assertions cover panel width, scrolling, form
+spacing and the separated Done/footer text on phones and desktops.
+
 ```sh
 node --test scripts/runtime-styles.test.mjs scripts/runtime-css-parity.test.mjs scripts/run-lighthouse.test.mjs src/middleware.concierge-retirement.test.mjs
 npm run build

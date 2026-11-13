@@ -31,8 +31,56 @@ const { normalizeCustomEventPage, emptyCustomEventDetails, customEventPageData }
 const { buildTemplateDraftPayload } = load("src/lib/template-draft-payload.ts");
 const choice = EVENT_HERO_LAYOUT_PRESETS.find((preset) => preset.id === "arch").layout;
 
-test("premade hero choices provide twelve distinct arrangements without any section layout settings", () => {
+test("premade hero choices provide styled and classic arrangements without any section layout settings", () => {
   assert.deepEqual(EVENT_HERO_LAYOUT_PRESETS.map(({ id, label }) => ({ id, label })), [
+    { id: "diagonal-cut", label: "Diagonal cut" },
+    { id: "crossing-lines", label: "Crossing lines" },
+    { id: "offset-frame", label: "Offset frame" },
+    { id: "cut-corners", label: "Cut corners" },
+    { id: "sliced-bands", label: "Sliced bands" },
+    { id: "diagonal-rise", label: "Rising diagonal" },
+    { id: "chevron-edge", label: "Chevron edge" },
+    { id: "wave-edge", label: "Wave edge" },
+    { id: "scalloped-edge", label: "Scalloped edge" },
+    { id: "postage-stamp", label: "Postage stamp" },
+    { id: "torn-edge", label: "Torn paper" },
+    { id: "filmstrip", label: "Filmstrip" },
+    { id: "corner-brackets", label: "Corner brackets" },
+    { id: "double-rule", label: "Double rule" },
+    { id: "triple-stripe", label: "Triple stripe" },
+    { id: "window-grid", label: "Window panes" },
+    { id: "diamond-window", label: "Diamond window" },
+    { id: "hexagon-window", label: "Hexagon window" },
+    { id: "oval-window", label: "Oval portrait" },
+    { id: "soft-arch", label: "Soft arch" },
+    { id: "corner-ribbon", label: "Corner ribbon" },
+    { id: "inset-mat", label: "Gallery mat" },
+    { id: "half-frame", label: "Open frame" },
+    { id: "spotlight-ring", label: "Spotlight ring" },
+    { id: "stitched-edge", label: "Stitched edge" },
+    { id: "folded-corner", label: "Folded corner" },
+    { id: "stepped-edge", label: "Stepped edge" },
+    { id: "zigzag-edge", label: "Zigzag edge" },
+    { id: "ticket-edge", label: "Ticket cut" },
+    { id: "rounded-ticket", label: "Rounded ticket" },
+    { id: "diagonal-window", label: "Slanted window" },
+    { id: "octagon-window", label: "Octagon window" },
+    { id: "shield-window", label: "Shield window" },
+    { id: "fan-window", label: "Fan window" },
+    { id: "pebble-window", label: "Pebble window" },
+    { id: "clover-window", label: "Clover window" },
+    { id: "sunburst-edge", label: "Sunburst edge" },
+    { id: "three-panels", label: "Three panels" },
+    { id: "slanted-panels", label: "Slanted panels" },
+    { id: "horizon-line", label: "Horizon line" },
+    { id: "vertical-rule", label: "Vertical rules" },
+    { id: "sweeping-arc", label: "Sweeping arc" },
+    { id: "orbit-lines", label: "Orbit lines" },
+    { id: "art-deco", label: "Art Deco" },
+    { id: "geometric-corner", label: "Geometric corner" },
+    { id: "polaroid-mat", label: "Photo mat" },
+    { id: "double-oval", label: "Double oval" },
+    { id: "floating-border", label: "Floating border" },
     { id: "banner", label: "Wide banner" },
     { id: "title-first", label: "Title first" },
     { id: "image-left", label: "Image left" },
@@ -46,12 +94,32 @@ test("premade hero choices provide twelve distinct arrangements without any sect
     { id: "arch-left", label: "Arch left" },
     { id: "arch-right", label: "Arch right" },
   ]);
-  assert.equal(new Set(EVENT_HERO_LAYOUT_PRESETS.map(({ layout }) => JSON.stringify(layout))).size, 12);
+  assert.equal(new Set(EVENT_HERO_LAYOUT_PRESETS.map(({ layout }) => JSON.stringify(layout))).size, 60);
+  assert.equal(EVENT_HERO_LAYOUT_PRESETS.filter(({ layout }) => layout.imageStyle).length, 48);
   for (const { layout } of EVENT_HERO_LAYOUT_PRESETS) {
     assert.deepEqual(normalizeEventHeroLayout(layout), layout);
     assert.equal(layout.sectionLayout, undefined);
     assert.equal(layout.columns, undefined);
     assert.equal(layout.sections, undefined);
+  }
+});
+
+test("styled image treatments survive native and custom saves and reject unknown decorations", () => {
+  for (const { layout: hero } of EVENT_HERO_LAYOUT_PRESETS.filter(({ layout }) => layout.imageStyle)) {
+    const composition = { version: 1, sections: [], hero };
+    const draft = buildTemplateDraftPayload({ data: { title: "Meet" }, pageComposition: composition }, "gymnastics", "America/Chicago");
+    assert.deepEqual(normalizeEventPageComposition(JSON.parse(JSON.stringify(draft.data.eventPageComposition))), composition);
+    const page = normalizeCustomEventPage({
+      version: 1, artwork: "/templates/meet.webp", category: "general",
+      design: { version: 1, name: "Meet", description: "Meet artwork", layout: "split", font: "editorial", colors: { page: "#ffffff", surface: "#ffffff", ink: "#222222", accent: "#805050" }, hero },
+      details: { ...emptyCustomEventDetails(), title: "Meet" },
+    });
+    assert.ok(page);
+    const saved = customEventPageData(page);
+    assert.deepEqual(normalizeCustomEventPage(JSON.parse(JSON.stringify(saved.customEventPage))).design.hero, hero);
+  }
+  for (const imageStyle of [undefined, null, "url(javascript:bad)", {}, "unknown"]) {
+    assert.equal(normalizeEventHeroLayout({ ...choice, imageStyle }).imageStyle, undefined);
   }
 });
 

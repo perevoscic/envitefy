@@ -182,7 +182,7 @@ export type ReadCreateSourceResult = {
   links?: Array<{ url: string; label?: string; pageNumber?: number; contextText?: string; source?: "pdf_annotation" }>;
   usedOcr?: boolean;
 };
-export type ReadCreateSourceOptions = { onStage?: (stage: "reading" | "transcribing") => void };
+export type ReadCreateSourceOptions = { onStage?: (stage: "reading" | "transcribing") => void; skipBranding?: boolean };
 
 /** Extract every accepted page; reject over-budget documents instead of silently truncating. */
 export async function readCreateSource(input: { files?: File[]; url?: string; text?: string }, signal: AbortSignal, options: ReadCreateSourceOptions = {}): Promise<ReadCreateSourceResult> {
@@ -249,7 +249,7 @@ export async function readCreateSource(input: { files?: File[]; url?: string; te
   if (text.length > MAX_SOURCE_TEXT) throw new CreateSourceError("This source has too much text to read in one import. Split it into smaller files.", 413);
   if (!text && !input.text?.trim()) throw new CreateSourceError("Add a document, public link or event details first.");
   return {
-    sourceBranding: sourceBranding || (pages.length ? await brandingFromImages(pages.flatMap(page => page.image ? [page.image] : []), files.some(file => /pdf/i.test(file.type)) ? "pdf" : "image", url) : undefined),
+    sourceBranding: sourceBranding || (!options.skipBranding && pages.length ? await brandingFromImages(pages.flatMap(page => page.image ? [page.image] : []), files.some(file => /pdf/i.test(file.type)) ? "pdf" : "image", url) : undefined),
     text,
     images: pages.flatMap((page) => page.image ? [page.image] : []),
     url,

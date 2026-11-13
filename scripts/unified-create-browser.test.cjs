@@ -227,7 +227,7 @@ test("unified creation retains sources, recommends native templates and protects
     await page.screenshot({ path: path.join(output, name), fullPage: true });
   };
   const openEditorControls = async () => {
-    const edit = page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Edit", exact: true });
+    const edit = page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: /^(Edit|Close preview)$/, exact: true });
     if (await edit.isVisible()) await edit.click();
   };
   const openHeadline = async () => { await page.locator("[data-native-birthday] [data-event-page-editor]").waitFor(); await openEditorControls(); if (!await page.getByLabel("Venue", { exact: true }).count()) await page.getByRole("button", { name: /^Headline/ }).click(); };

@@ -21,7 +21,7 @@ const APPOINTMENT_CARDS: AppointmentCard[] = [
     label: "General Event / Meetup",
     icon: "🗓️",
     copy: "Flexible calendar sync and simple RSVP for business or personal use.",
-    href: "/event/general/customize",
+    href: "/event/design/customize?mode=manual",
   },
   {
     label: "Workshop / Class",

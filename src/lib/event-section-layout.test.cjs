@@ -270,6 +270,19 @@ test("untrusted column settings reject invalid sizes and duplicate or malformed 
   assert.equal(inheritedKey.widths.toString, 6);
 });
 
+test("moving a tab preserves its shared row and saved section data", () => {
+  const paired = changeEventSectionLayout(undefined, ["meet-details", "schedule", "venue-details"], {
+    type: "pair", id: "schedule", besideId: "meet-details",
+  });
+  const moved = changeEventSectionLayout(paired, paired.order, { type: "move-tab", id: "schedule", index: 0 });
+  assert.deepEqual(moved.order, ["schedule", "meet-details", "venue-details"]);
+  assert.deepEqual(moved.pairs, paired.pairs);
+  assert.deepEqual(moved.widths, paired.widths);
+  assert.deepEqual(normalizeEventSectionLayout(JSON.parse(JSON.stringify(moved))), moved);
+  const ownRow = changeEventSectionLayout(moved, moved.order, { type: "move", id: "schedule", index: 1 });
+  assert.deepEqual(ownRow.pairs, [], "moving a section itself retains the existing own-row behavior");
+});
+
 test("gymnastics explicit drafts preserve composition and every design respects saved order", () => {
   const layout = {
     version: 1,

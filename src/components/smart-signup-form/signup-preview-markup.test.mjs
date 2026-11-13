@@ -52,6 +52,8 @@ function load(relative, mocks, cache = new Map()) {
 }
 const baseMocks = {
   "lucide-react": {
+    EllipsisVertical: (props) => React.createElement("svg", props),
+    Move: (props) => React.createElement("svg", props),
     Pencil: (props) => React.createElement("svg", props),
     Check: (props) => React.createElement("svg", props),
     X: (props) => React.createElement("svg", props),

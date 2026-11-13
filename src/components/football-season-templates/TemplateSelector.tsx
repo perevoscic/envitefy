@@ -58,7 +58,7 @@ export default function TemplateSelector({
       </p>
       <div
         ref={scrollRoot}
-        className="max-h-[calc(100dvh-20rem)] overflow-y-auto overscroll-contain px-1 pt-1 touch-pan-y"
+        className="max-h-[calc(100dvh-20rem)] overflow-y-auto px-1 pt-1 touch-pan-y"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         <TemplateMasonryGrid compact>

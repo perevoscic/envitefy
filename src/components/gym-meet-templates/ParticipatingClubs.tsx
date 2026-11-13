@@ -35,7 +35,7 @@ export default function ParticipatingClubs({
       <p className="text-sm" aria-live="polite">
         {matching.length} {matching.length === 1 ? "club" : "clubs"}
       </p>
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-3">
         {matching.map((club) => (
           <li key={`${club.name}|${club.location}`} className={`${cardClass} p-4`}>
             <p className="font-semibold">{club.name}</p>

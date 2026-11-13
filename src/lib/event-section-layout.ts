@@ -136,6 +136,7 @@ export function orderEventSections<T extends { id: string }>(
 export type EventSectionChange =
   | { type: "add"; id: string; index: number }
   | { type: "move"; id: string; index: number }
+  | { type: "move-tab"; id: string; index: number }
   | { type: "remove"; id: string }
   | { type: "resize"; id: string; width: EventSectionWidth }
   | { type: "pair"; id: string; besideId: string }

@@ -94,7 +94,7 @@ test("a school memo upload opens editable draft dates and reveals calendar actio
       assert.equal(writes.filter(write => write.path === "/api/history").length, 1, "the normal scan save finishes the memo without another review action");
       assert.equal(await page.getByRole("dialog", { name: "Review your school memo", exact: true }).count(), 0);
       assert.equal(await page.getByRole("button", { name: "Save memo", exact: true }).count(), 0);
-      assert.equal(new URL(page.url()).pathname, "/event/general/customize", "parsing opens the native General editor route");
+      assert.equal(new URL(page.url()).pathname, "/event/design/customize", "parsing opens the current Event Page editor route");
       assert.equal(saved.data.status, "draft");
       assert.equal(await page.getByRole("checkbox").count(), 0);
       assert.equal(await page.getByRole("button", { name: /^Add selected dates/ }).count(), 0);

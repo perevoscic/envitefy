@@ -82,7 +82,7 @@
   [data-birthday-schedule-treatment]
   > div:last-child {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 .body[data-template-body-layout][data-celebration-design]
   [data-celebration-card]

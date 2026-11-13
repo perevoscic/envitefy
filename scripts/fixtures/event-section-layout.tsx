@@ -1,8 +1,9 @@
-import { useState, type CSSProperties } from "react";
+import React, { useState, type CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
 import {
   EventSectionBuilderProvider,
   EventSectionPalette,
+  EventSectionCanvas,
 } from "../../src/components/events/EventSectionBuilder";
 import { EventPageCompositionProvider } from "../../src/components/events/EventPageCompositionContext";
 import GymnasticsProgram from "../../src/components/gym-meet-templates/GymnasticsProgram";
@@ -15,6 +16,22 @@ import programStyles from "../../src/components/gym-meet-templates/gymnastics-pr
 import EventPlaceCard, { placeCardGridStyle } from "../../src/components/event-create/EventPlaceCard";
 import placeStyles from "../../src/components/event-create/event-place-card.module.css";
 import EventGuestPlanningNotes from "../../src/components/event-templates/EventGuestPlanningNotes";
+import { scheduleSection, type ScheduleInfo } from "../../src/components/event-templates/GymnasticsTemplate";
+import GymnasticsSchedule from "../../src/components/gym-meet-templates/GymnasticsSchedule";
+import { useEventLocationTimezone } from "../../src/components/events/useEventLocationTimezone";
+import { EventEditorSection } from "../../src/components/events/EventEditorFields";
+
+function TimezoneFixture() {
+  const [data, setData] = useState(() => JSON.parse(localStorage.getItem("location-timezone-fixture") || "null") || { date: "2027-01-15", time: "08:00", address: "One Haben Blvd., Palmetto, FL 34221", timezone: "America/Chicago" });
+  const timezone = useEventLocationTimezone({ data, setData });
+  return <main style={{ padding: 24, maxWidth: 640 }}>
+    <h1>Event location time zone</h1>
+    <label>Event address<input aria-label="Event address" value={data.address} onChange={event => setData((previous: any) => ({ ...previous, address: event.target.value }))} /></label>
+    <output data-zone-state>{timezone.status}</output>
+    <output data-zone>{data.timezone}</output>
+    <button onClick={() => localStorage.setItem("location-timezone-fixture", JSON.stringify(data))}>Save time zone</button>
+  </main>;
+}
 
 const sourceSections: GymMeetDiscoverySection[] = [
   ["details", "Meet Details", "Arrive at Tampa Convention Center by 8 AM. Check in with your coach before warming up."],
@@ -36,7 +53,7 @@ function App() {
   const sections = sourceSections.map(section => search.has("tabs") ? section : {
     ...section, id: section.id === "schedule" ? "timing" : section.id === "parking" ? "arrival" : section.id,
   });
-  if (search.has("documents")) sections.splice(0, sections.length, {
+  if (search.has("documents") || search.has("schedule-editor")) sections.splice(0, sections.length, {
     ...sourceSections[0], id: "meet-details",
   });
   if (search.has("planning")) {
@@ -69,6 +86,7 @@ function App() {
       }
     : undefined;
   const [layout, setLayout] = useState<EventSectionLayout | undefined>(restored?.layout || initialLayout);
+  const [schedule, setSchedule] = useState<ScheduleInfo>(restored?.schedule || { enabled: true, venueLabel: "", supportEmail: "", notes: [], days: [] });
   const [showSections, setShowSections] = useState(false);
   const [pageText, setPageText] = useState<GymnasticsPageText>(restored?.pageText || {});
   const updatePageText: GymnasticsPageTextChange = (key, value) => setPageText(previous => ({ ...previous, [key]: value }));
@@ -82,17 +100,22 @@ function App() {
       : search.get("design") === "moonbeam-balance" ? "moonbeam-balance"
         : "airborne-atlas";
   const presentation = GYMNASTICS_PRESENTATIONS[design];
-  const program = (
+  if (search.has("schedule-settings")) return (
+    <EventEditorSection title="Schedule" showBack={false}>
+      {scheduleSection.renderEditor({ state: schedule, setState: setSchedule, inputClass: "", textareaClass: "" })}
+    </EventEditorSection>
+  );
+  const program = search.has("shared") ? <EventSectionCanvas className={search.has("geometry") ? programStyles.chapters : undefined} layout={layout} sections={sections.map(section => ({ id: section.id, label: section.label, content: <section className={search.has("geometry") ? programStyles.chapter : undefined}><h2>{section.label}</h2><p>Section content</p></section> }))} /> : (
     <GymnasticsProgram
       sections={sections}
       presentation={presentation}
       sectionLayout={search.has("context-layout") && !previewing ? undefined : layout}
       pageTextOverrides={pageText}
       onPageTextChange={editing && !previewing ? updatePageText : undefined}
-      additionalSections={search.has("planning") ? [{
+      additionalSections={[...(search.has("planning") ? [{
         id: "meet-details", label: "Meet Details", editorId: "meet",
         content: <EventGuestPlanningNotes value={{ arrival: "Arrive 30 minutes before your session.", preparation: "Bring your grips and water bottle." }} />,
-      }] : []}
+      }] : []), ...(search.has("schedule-editor") && schedule.days.length && schedule.enabled !== false ? [{ id: "schedule", label: "Schedule", editorId: "schedule", content: <GymnasticsSchedule schedule={schedule} /> }] : [])]}
       renderBlock={(block) => block.type === "text" ? <p>{block.text}</p> : block.type === "card-grid" ? (
         <div data-program-cards="hotels" className={placeStyles.grid} style={placeCardGridStyle((block.cards || []).map(card => ({ name: card.label || "", values: card.highlights?.map(item => item.value) })))}>
           {block.cards?.map(card => <EventPlaceCard key={card.key} name={card.label || ""} eyebrow="Host hotel"
@@ -128,7 +151,7 @@ function App() {
       <div data-fixture-body style={{ paddingTop: 24 }}>
         <EventPageCompositionProvider value={composition} onChange={editing ? setComposition : undefined}>
           {search.has("saved-tabs") && <>
-            <button onClick={() => localStorage.setItem(storageKey, JSON.stringify({ layout, pageText, composition }))}>Save fixture</button>
+            <button onClick={() => localStorage.setItem(storageKey, JSON.stringify({ layout, pageText, composition, schedule }))}>Save fixture</button>
             <button onClick={() => setPreviewing(value => !value)}>{previewing ? "Close preview" : "Preview page"}</button>
           </>}
           {editing && !previewing ? (
@@ -137,10 +160,22 @@ function App() {
               onChange={setLayout}
               catalog={[
                 ...sections.map(({ id, label }) => ({ id, label })),
+                ...(search.has("schedule-editor") ? [{ id: "schedule", label: "Schedule", editorId: "schedule" }] : []),
                 ...(search.has("documents") ? [{ id: "documents", label: "Documents & links", editorId: "logistics" }, { id: "traffic-parking", label: "Travel & parking", editorId: "travel" }] : []),
               ]}
-              renderEditor={() => <p>Edit section details.</p>}
-              renderSectionLabelEditor={section => section.id.startsWith("info:") ? null : <label>Section name<input value={pageText[`section:${section.id}:label`] ?? section.label} onChange={event => updatePageText(`section:${section.id}:label`, event.target.value)} /></label>}
+              customSectionLabel={search.has("schedule-editor") ? "Custom" : undefined}
+              renderEditor={id => {
+                if (!id.startsWith("schedule") || !search.has("schedule-editor")) return <p>Edit section details.</p>;
+                const [, action, target = ""] = id.split(":");
+                const [targetDay, targetSession] = target.split("/").map(value => decodeURIComponent(value));
+                return <React.Fragment key={id}>{scheduleSection.renderEditor({
+                  state: schedule, setState: setSchedule, setActiveView: () => {}, inputClass: "", textareaClass: "",
+                  initialView: action === "remove" ? "remove-period" : action || "overview",
+                  initialDayId: targetDay || null, initialSessionId: targetSession || null,
+                  initialPeriodId: action === "remove" ? targetDay : null,
+                })}</React.Fragment>;
+              }}
+              renderSectionLabelEditor={section => section.id.startsWith("info:") || (section.editorId || section.id).startsWith("schedule") ? null : <label>Title<input value={pageText[`section:${section.id}:label`] ?? section.label} onChange={event => updatePageText(`section:${section.id}:label`, event.target.value)} /></label>}
             >
               <button type="button" onClick={() => setShowSections(value => !value)}>Page sections</button>
               {showSections && <EventSectionPalette />}
@@ -153,4 +188,4 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(new URLSearchParams(location.search).has("timezone") ? <TimezoneFixture /> : <App />);

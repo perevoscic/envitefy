@@ -81,6 +81,7 @@ export type TemplateEditorRuntime = {
   leave?: () => void;
   duplicateSignup?: (form: SignupForm) => void;
   record: (key: string, value: DraftValue) => void;
+  discardChanges?: () => Promise<void>;
   requestSave: () => Promise<void>;
   requestPublish: (mode?: "login" | "signup") => Promise<void>;
   /** Resume the same native validation and publication path after authentication. */
@@ -813,6 +814,18 @@ export default function TemplateEditorProvider({
       busy,
       startOver: () => setResetOpen(true),
       record,
+      async discardChanges() {
+        if (recoveryTimer.current) {
+          clearTimeout(recoveryTimer.current);
+          recoveryTimer.current = null;
+        }
+        const discarded = draft.current;
+        // Stop record/unmount flushes before awaiting any outstanding recovery write.
+        draft.current = null;
+        await writeQueue.current.catch(() => {});
+        if (discarded) await deleteTemplateDraft(discarded.id);
+        setDirty(false);
+      },
       requestSave,
       requestPublish,
       registerPublisher,

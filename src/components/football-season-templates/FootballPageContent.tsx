@@ -13,6 +13,7 @@ import FootballSchedule from "./FootballSchedule";
 import type { useFootballSectionTabs } from "./FootballSectionTabs";
 import styles from "./football-page-content.module.css";
 import ScoreStreamScoreboard from "./ScoreStreamScoreboard";
+import { useEventPageComposition } from "@/components/events/EventPageCompositionContext";
 
 type Card = {
   id: string;
@@ -75,11 +76,14 @@ export default function FootballPageContent({
   sectionLayout?: EventSectionLayout;
 }) {
   const builder = useEventSectionBuilder();
+  const composition = useEventPageComposition();
+  const sharedNavigation = Boolean(builder || composition?.value?.sections.length);
   return (
     <EventSectionCanvas
       className={`${chrome.presentationClass || ""} ${styles.canvas}`}
       layout={sectionLayout}
-      rowProps={(section) => tabs.panelProps(section.id === "rsvp" ? "attendance" : section.id)}
+      navigation={sharedNavigation}
+      rowProps={sharedNavigation ? undefined : (section) => tabs.panelProps(section.id === "rsvp" ? "attendance" : section.id)}
       sections={sections
         .filter((section) => section.hasContent)
         .map((section) => ({

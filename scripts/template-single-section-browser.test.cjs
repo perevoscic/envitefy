@@ -100,7 +100,7 @@ test("native Event Page layout choices respect saved section order and narrow co
   const page = await browser.newPage();
   try {
     await page.setContent(
-      `<style>${stylesheets.join("\n")}body{margin:0}article{width:100%;margin:20px 0;box-sizing:border-box}section{box-sizing:border-box;min-width:0}</style>${markup}`,
+      `<style>${stylesheets.join("\n")}*{box-sizing:border-box}body{margin:0}article{width:100%;margin:20px 0}section{min-width:0}</style>${markup}`,
     );
     for (const width of [390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
@@ -152,6 +152,8 @@ function sharedBody(category, id, count = 1, presentation) {
           null,
           h("h2", null, "Food"),
           h("p", null, "Please bring enough for the class."),
+          h("div", { className: "grid", "data-default-collection": true },
+            h("p", null, "Arrival information"), h("p", null, "What to bring")),
         ),
       })),
       { id: "removed", content: false },
@@ -323,7 +325,7 @@ test("authored body treatments remain visible during section editing and saved c
   }
 });
 
-test("all template bodies and signup designs fill a single section within their page gutters", {
+test("all template bodies default to stacked full-width sections and content collections", {
   timeout: 120000,
 }, async (t) => {
   const Signup = load("src/components/smart-signup-form/SignupViewer.tsx").default;
@@ -346,7 +348,7 @@ test("all template bodies and signup designs fill a single section within their 
           h(
             "article",
             { key: `${slug}/${template.id}`, "data-case": `${slug}/${template.id}` },
-            sharedBody(slug, template.id, 1, profile),
+            sharedBody(slug, template.id, 3, profile),
           ),
         );
       }
@@ -382,7 +384,7 @@ test("all template bodies and signup designs fill a single section within their 
   try {
     const page = await browser.newPage();
     await page.route("**/*", (route) => route.abort());
-    const style = `${css.css}\n${stylesheets.join("\n")}\nbody{margin:0}article{max-width:1200px;margin:0 auto}`;
+    const style = `${css.css}\n${stylesheets.join("\n")}\nbody{margin:0}article{max-width:1200px;margin:0 auto}[data-default-collection]{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}`;
     await page.setContent(`<style>${style}</style>${html}`);
     for (const width of [390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
@@ -394,6 +396,19 @@ test("all template bodies and signup designs fill a single section within their 
             fixture.querySelector("[data-body-section]") ||
             fixture.querySelector("[data-signup-section]");
           if (!body || !panel) return [{ id: fixture.dataset.case, error: "Missing section" }];
+          const panels = [...fixture.querySelectorAll("[data-body-section]")];
+          for (let index = 0; index < panels.length; index++) {
+            const box = panels[index].getBoundingClientRect();
+            const first = panels[0].getBoundingClientRect();
+            if (Math.abs(box.x - first.x) > 1 || Math.abs(box.width - first.width) > 1 ||
+                (index && box.y < panels[index - 1].getBoundingClientRect().bottom - 1))
+              return [{ id: fixture.dataset.case, error: "Template introduced section columns" }];
+          }
+          for (const collection of fixture.querySelectorAll("[data-default-collection]")) {
+            const [first, second] = [...collection.children].map(element => element.getBoundingClientRect());
+            if (Math.abs(first.x - second.x) > 1 || second.y < first.bottom - 1)
+              return [{ id: fixture.dataset.case, error: "Template introduced nested card columns" }];
+          }
           const bounds = body.getBoundingClientRect();
           const bodyStyles = getComputedStyle(body);
           const paddingLeft = sharedBody ? parseFloat(bodyStyles.paddingLeft) : 0;
@@ -448,7 +463,7 @@ test("all template bodies and signup designs fill a single section within their 
       return element.getBoundingClientRect().width -
         parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
     });
-    assert.ok(before.width < contentWidth * 0.7, "two real sections keep their columns");
+    assert.ok(Math.abs(before.width - contentWidth) < 1, "adding content keeps the default single column");
     await page
       .locator("[data-body-section]")
       .last()

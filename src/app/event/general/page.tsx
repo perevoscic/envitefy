@@ -2,7 +2,7 @@
 
 import { CalendarDays } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import EventCreateWysiwyg from "@/components/EventCreateWysiwyg";
+import EventCustomEditor from "@/components/events/custom/EventCustomEditor";
 import CategoryGalleryBackdrop from "@/components/events/CategoryGalleryBackdrop";
 import EventDesignGallery from "@/components/events/EventDesignGallery";
 import TemplateArtworkThumbnail from "@/components/events/TemplateArtworkThumbnail";
@@ -16,10 +16,9 @@ export default function NewGeneralEventPage() {
   const collectionLabel = generalCreationCollectionLabel(collection);
   const designs = getGeneralCreationDesigns(collection, occasion);
 
-  // Saved manual drafts keep their original editor and snapshot shape.
+  // Saved legacy pages open in the current editor without changing their record.
   if (search?.get("edit")) {
-    const parsedDate = date ? new Date(date) : null;
-    return <EventCreateWysiwyg defaultDate={parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate : undefined} initialCategoryKey="general" />;
+    return <EventCustomEditor />;
   }
 
   return (
@@ -32,7 +31,7 @@ export default function NewGeneralEventPage() {
         if (collectionLabel && collection) params.set("collection", collection);
         if (collection === "holidays-seasonal" && occasion) params.set("occasion", occasion);
         if (date) params.set("d", date);
-        return `/event/general/customize?${params.toString()}`;
+        return `/event/design/customize?${params.toString()}`;
       }}
       renderPreview={(design) => <TemplateArtworkThumbnail design={design} />}
       header={(

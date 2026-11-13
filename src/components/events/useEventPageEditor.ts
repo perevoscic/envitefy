@@ -29,6 +29,8 @@ import { attachCreationIntakeEvent, creationIntakeOwner, readCreationIntake, wri
 import { creationComposition, creationNativePayload } from "@/lib/create/editor-handoff";
 import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 import type { EventUrlUpdate } from "./EventUrlEditor";
+import { applyEventLocationTimezone, validEventTimeZone } from "@/lib/event-location-timezone";
+import { useEventEditorHistory } from "./useEventEditorHistory";
 
 export type EventPageEditorSession = {
   eventId?: string;
@@ -38,6 +40,7 @@ export type EventPageEditorSession = {
   busy: boolean;
   saveIntent?: "draft" | "publish" | "changes" | null;
   ready: boolean;
+  calendarFields?: { date?: unknown; time?: unknown; endDate?: unknown; endTime?: unknown; timezone?: unknown };
   authenticated: boolean;
   error: string;
   message: string;
@@ -45,6 +48,7 @@ export type EventPageEditorSession = {
   saveChanges: () => Promise<void>;
   publishWithAccount?: (mode: "signup" | "login") => Promise<void>;
   cancel: () => void;
+  undo?: { canUndo: boolean; last: () => void; all: () => void };
   allowNavigation: (navigate: () => void) => void;
   requestLeave: (navigate: () => void) => void;
   composition?: EventPageComposition;
@@ -57,8 +61,9 @@ export type EventPageEditorSession = {
 };
 
 /** Creation supplies content; every page module shares this editing lifecycle. */
-export function useEventPageEditor({
+export function useEventPageEditor<S extends object>({
   snapshot,
+  restoreSnapshot,
   category,
   templateCategory,
   templateId,
@@ -75,7 +80,8 @@ export function useEventPageEditor({
   initialComposition,
   cancelHref,
 }: {
-  snapshot: object;
+  snapshot: S;
+  restoreSnapshot?: (snapshot: S) => void;
   category: string;
   templateCategory?: TemplateCategory;
   templateId?: string;
@@ -152,13 +158,21 @@ export function useEventPageEditor({
       ? { ...snapshot, pageComposition: normalizedComposition ?? null }
       : snapshot;
   const content = eventEditorContent(composedSnapshot);
+  const history = useEventEditorHistory(content, editorReady);
+  const restore = (value: object) => {
+    if (!restoreSnapshot) return;
+    restoreSnapshot(value as S);
+    if (!savePage) setComposition(normalizeEventPageComposition((value as EditorSnapshot).pageComposition));
+    setError("");
+    setMessage("");
+  };
   const latest = useRef({ snapshot, content, buildPayload });
   latest.current = {
     snapshot: composedSnapshot,
     content,
     buildPayload: buildPayload
       ? async () => {
-          const payload = creationNativePayload(await buildPayload(), composedSnapshot);
+          const payload = applyEventLocationTimezone(creationNativePayload(await buildPayload(), composedSnapshot), (snapshot as { data?: Record<string, any> }).data || {});
           return !savePage
             ? {
                 ...payload,
@@ -208,6 +222,10 @@ export function useEventPageEditor({
     const builder = latest.current.buildPayload;
     clientDraftId.current ||= crypto.randomUUID();
     try {
+      const dateFields = (capturedSnapshot as { data?: Record<string, any> }).data;
+      if (publish && dateFields?.date && dateFields?.time && !validEventTimeZone(dateFields.timezone)) {
+        throw new Error("Add the event city or full address so its local time can be confirmed.");
+      }
       let href: string | undefined;
       let savedContent = capturedContent;
       if (savePage) {
@@ -307,6 +325,7 @@ export function useEventPageEditor({
         });
       }
       progress.markSaved(savedContent);
+      history.markSaved(savedContent);
       if (id.current) onSaved?.(id.current);
       if (intakeId && id.current) {
         const savedId = id.current;
@@ -367,6 +386,11 @@ export function useEventPageEditor({
       }
       await perform(published, false);
     },
+    discard: async () => {
+      // Recovery must not resurrect edits the host explicitly discarded.
+      await template?.discardChanges?.();
+      restore(history.baseline());
+    },
   });
   const cancel = () => {
     const creationHref = template && !template.authenticated
@@ -404,6 +428,7 @@ export function useEventPageEditor({
     busy: busy || externalBusy || urlBusy,
     saveIntent,
     ready: editorReady,
+    calendarFields: (snapshot as { data?: Record<string, unknown>; page?: { details?: Record<string, unknown> } }).data || (snapshot as { page?: { details?: Record<string, unknown> } }).page?.details,
     authenticated: template?.authenticated ?? true,
     error,
     message,
@@ -411,6 +436,11 @@ export function useEventPageEditor({
     saveChanges: () => perform(true, !published),
     ...(template ? { publishWithAccount: (mode: "signup" | "login") => perform(true, true, mode) } : {}),
     cancel,
+    ...(restoreSnapshot ? { undo: {
+      canUndo: history.canUndo,
+      last: () => { if (!saving.current && !externalBusy && !urlBusy) restore(history.undo()); },
+      all: () => { if (!saving.current && !externalBusy && !urlBusy) restore(history.reset()); },
+    } } : {}),
     allowNavigation: progress.allowNavigation,
     requestLeave: progress.requestLeave,
     ...(template?.canManageCollaborators !== false && canEditUrl.current !== false

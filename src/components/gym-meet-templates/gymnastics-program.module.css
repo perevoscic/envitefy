@@ -15,12 +15,30 @@
 .program { display: grid; gap: var(--program-gap); align-items: start; }
 .tabPanel { min-width: 0; }
 .tabPanel:focus-visible { outline: 2px solid var(--gym-ink); outline-offset: 4px; }
-.tabs { display: flex; gap: 0.4rem; min-width: 0; overflow-x: auto; padding: 0.4rem; border: 1px solid var(--program-line); border-radius: 1rem; background: var(--gym-paper); }
+.tabs { display: flex; user-select: none; overscroll-behavior-x: contain; gap: 0.4rem; min-width: 0; overflow-x: auto; overflow-y: hidden; padding: 0.4rem; border: 1px solid var(--program-line); border-radius: 1rem; background: var(--gym-paper); }
 .tabs > span { flex: 1; }
 .tabs button { flex: 1; min-height: 48px; padding: 0.65rem 0.8rem; border-radius: 0.65rem; color: var(--gym-ink); font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
 .tabs button[aria-selected="true"] { background: var(--gym-ink); color: var(--gym-paper); }
 .tabs button:hover { text-decoration: underline; text-underline-offset: 4px; }
 .tabs button:focus-visible { outline: 2px solid var(--gym-ink); outline-offset: 2px; }
+.navigationShell { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; min-width: 0; }
+.navigationShell:not(:has(.addTab)) { grid-template-columns: minmax(0, 1fr); }
+.tabs > .sortableTab { display: flex; flex: 1 0 auto; align-items: center; min-width: 0; }
+.sortableTab > span { display: flex; flex: 1; }
+.tabs .tabGrip { flex: 0 0 32px; min-width: 32px; padding-inline: 4px; cursor: grab; touch-action: none; }
+.tabs .tabGrip:active { cursor: grabbing; }
+.addTab, .tabTools button, .emptySection button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--program-line); border-radius: 10px; background: var(--gym-paper); color: var(--gym-ink); font-family: inherit; font-size: 0.8rem; font-weight: 600; line-height: 1.4; cursor: pointer; }
+.addTab { margin-top: 5px; }
+.tabTools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: calc(-1 * var(--program-gap) + 8px); }
+.tabTools > span { margin-right: auto; min-width: 0; overflow-wrap: anywhere; font-size: 0.8rem; font-weight: 600; }
+@media (max-width: 767px) {
+  .tabTools { justify-content: flex-end; }
+  .tabTools > span { display: none; }
+}
+.tabTools button:disabled { opacity: 0.35; cursor: default; }
+.addTab:focus-visible, .tabTools button:focus-visible, .emptySection button:focus-visible { outline: 2px solid var(--gym-ink); outline-offset: 2px; }
+.emptySection { display: grid; justify-items: start; gap: 12px; }
+.emptySection p { margin: 0; line-height: 1.6; }
 .chapters { display: grid; gap: var(--program-gap); align-items: start; }
 .sectionColumn { container: gym / inline-size; }
 .chapter {
@@ -349,3 +367,33 @@
 
 /* Grouped information uses the same sections and saved layouts inside each tab. */
 .design .program[data-tabbed] { grid-template-columns: minmax(0, 1fr); }
+
+/* Templates stack content. Only saved section pairs create neighboring columns;
+   leave the canvas row/cell grid to EventSectionCanvas. */
+.design[data-gym-design][data-layout] :is(.bodyColumns, .program, .chapter, .blocks),
+.design[data-gym-design][data-layout] .chapters:not([data-event-body-layout]),
+.design[data-gym-design][data-layout] .chapter .blocks,
+.design[data-gym-design][data-layout] [data-program-cards],
+.design[data-gym-design][data-layout] [data-program-cards] > .detailCard,
+.design[data-gym-design][data-layout] .attendance > .panel > div:last-child {
+  grid-template-columns: minmax(0, 1fr);
+}
+.design[data-gym-design][data-layout] .chapter,
+.design[data-gym-design][data-layout] .chapter > *,
+.design[data-gym-design][data-layout] .blocks > *,
+.design[data-gym-design][data-layout] [data-program-cards] > .detailCard > * {
+  grid-column: 1 / -1;
+}
+.design[data-gym-design][data-layout] .chapter {
+  width: auto;
+  margin-inline: 0;
+}
+
+/* Dedicated UI roles never replace paper, ink, artwork, panel tints or fonts. */
+.design:where([data-gym-color-combination]) :where(a[href]) { color: var(--gym-ui-link); }
+.design[data-gym-color-combination] .chapterHeading h2,
+.design[data-gym-color-combination] .panel > h2 { color: var(--gym-ui-heading); }
+.design[data-gym-color-combination][data-heading="ribbon"] .chapterHeading h2 { color: var(--gym-ui-inverse-heading); }
+.design[data-gym-color-combination] .tabs button[aria-selected="true"],
+.design[data-gym-color-combination] .attendance button[aria-pressed="true"] { background: var(--gym-ui-button); color: var(--gym-ui-on-button); }
+.design[data-gym-color-combination] .tabs button:not([aria-selected="true"]) { color: var(--gym-ui-link); }

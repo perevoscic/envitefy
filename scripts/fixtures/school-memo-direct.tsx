@@ -21,7 +21,7 @@ const navigate = (url: string, replace = false) => {
 const router = { push: (url: string) => navigate(url), replace: (url: string) => navigate(url, true), back() {}, forward() {}, refresh() {}, prefetch: async () => {} };
 
 function FinishedMemo() {
-  const editing = location.pathname === "/event/general/customize";
+  const editing = location.pathname === "/event/design/customize";
   const [row, setRow] = useState<any>(null);
   useEffect(() => {
     const controller = new AbortController();

@@ -10,6 +10,10 @@ export const INDEPENDENT_CREATE_BROWSER_TESTS = Object.freeze([
   "scripts/event-collaboration-browser.test.cjs",
   "scripts/event-editor-browser.test.cjs",
   "scripts/event-editor-back-browser.test.cjs",
+  "scripts/generated-gymnastics-layout-browser.test.cjs",
+  "scripts/gymnastics-schedule-import-browser.test.cjs",
+  "scripts/gymnastics-theme-colors-browser.test.cjs",
+  "scripts/gymnastics-text-controls-browser.test.cjs",
   "scripts/product-urls-browser.test.cjs",
   "scripts/school-memo-direct-browser.test.cjs",
 ]);

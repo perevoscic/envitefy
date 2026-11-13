@@ -2,7 +2,8 @@
 "use client";
 import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
 import EventEditorFontStyle from "@/components/events/EventEditorFontStyle";
-import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventLocationTimezone } from "@/components/events/useEventLocationTimezone";
+import EventEditorWorkspace, { EventEditorPageSettings } from "@/components/events/EventEditorWorkspace";
 import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
 import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
 import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
@@ -30,13 +31,13 @@ import { useProgressNavigation } from "@/components/UnsavedProgressProvider";
 import ImportedThemeControls from "@/components/event-create/ImportedThemeControls";
 import ImportedThemeArtwork from "@/components/event-create/ImportedThemeArtwork";
 import { readImportedEventTheme } from "@/lib/imported-event-theme";
-import { importedThemeStyle, importedFootballChrome, activeImportedTheme } from "@/lib/imported-event-design";
+import { importedThemeStyle, importedFootballChrome, activeImportedTheme, importedArtworkSrc } from "@/lib/imported-event-design";
 import FootballHero from "@/components/football-season-templates/FootballHero";
 import FootballPageContent from "@/components/football-season-templates/FootballPageContent";
 import { FootballPageTextProvider } from "@/components/football-season-templates/FootballPageText";
 import { normalizeFootballEventData } from "@/components/football-discovery/normalizeFootballEventData.mjs";
 import { normalizeFootballPageText, updateFootballPageText, type FootballPageText, type FootballPageTextChange } from "@/lib/football-page-text";
-import { resolveFootballHero } from "@/components/football-season-templates/footballDesigns";
+import { getFootballDesign, resolveFootballHero } from "@/components/football-season-templates/footballDesigns";
 import FootballPageActions from "@/components/football-season-templates/FootballPageActions";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDateParts, getEventEndLocal } from "@/lib/event-guest-planning";
@@ -808,7 +809,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       router,
     ]);
 
-    const editor = useEventPageEditor({ snapshot: { data: { ...data, title: resolvedTitle }, advancedState, pageTemplateId, loadedDiscoverySource, isDiscoveryEdit }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !progressLoading && creationReady, busy: discoverBusy, onBusyChange: setSubmitting, buildPayload: buildEventPayload, onSaved: () => setDidExplicitSave(true) });
+    useEventLocationTimezone({ data, setData, enabled: !progressLoading && creationReady, saved: editEventId ? eventHistoryClient.read(`/api/history/${encodeURIComponent(editEventId)}`)?.data : undefined });
+    const editor = useEventPageEditor({ snapshot: { data: { ...data, title: resolvedTitle }, advancedState, pageTemplateId, loadedDiscoverySource, isDiscoveryEdit }, restoreSnapshot: (snapshot) => { setData(snapshot.data); setAdvancedState(snapshot.advancedState); setPageTemplateId(snapshot.pageTemplateId); setLoadedDiscoverySource(snapshot.loadedDiscoverySource); setIsDiscoveryEdit(snapshot.isDiscoveryEdit); }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !progressLoading && creationReady, busy: discoverBusy, onBusyChange: setSubmitting, buildPayload: buildEventPayload, onSaved: () => setDidExplicitSave(true) });
 
     const buildEventDetails = () => {
       const title = resolvedTitle || config.displayName;
@@ -890,6 +892,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             onClick={() => setActiveView("headline")}
           />
           <MenuCard title="Design" desc="Page style, typography, and colors." icon={<Type size={18} />} onClick={() => setActiveView("design")} />
+          <EventEditorPageSettings />
           {editor.urlEditor && <MenuCard title="Custom URL" desc="Choose your page's shareable web address." icon={<LinkIcon size={18} />} onClick={() => setActiveView("url")} />}
 
           <MenuCard title="RSVP / Attendance" desc={data.rsvpEnabled ? "Enabled" : "Off"} icon={<Type size={18} />} onClick={() => setActiveView("rsvp")} />
@@ -952,7 +955,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           {data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate) ? (
             <p role="alert" className="text-sm text-red-700">End time must be after the start. For an overnight event, choose the next end date.</p>
           ) : null}
-            <InputGroup label="Timezone" value={data.timezone || ""} onChange={(value) => updateData("timezone", value)} placeholder="America/Chicago" />
             <InputGroup
               key="venue"
               label="Venue"
@@ -1362,7 +1364,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (activeView === "main" || activeView === "images") return false;
         setActiveView("main");
         return true;
-      }} customUrlMenu={false} notices={creationError ? <p role="alert">{creationError}</p> : undefined} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, "section": renderSectionEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/football-season"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
+      }} customUrlMenu={false} notices={creationError ? <p role="alert">{creationError}</p> : undefined} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, "section": renderSectionEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={importedArtworkSrc(data.importedTheme, resolvedHero, getFootballDesign(pageTemplateId).hero) || resolvedHero} editor={editor} templatesHref={"/event/football-season"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
 
  preview={<EventCanvas
             className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"

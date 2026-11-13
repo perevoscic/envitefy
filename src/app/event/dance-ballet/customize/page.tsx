@@ -5,7 +5,8 @@ import EventPageSections from "@/components/events/EventPageSections";
 
 import { EventEditorInput as InputGroup, EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout } from "@/components/events/EventEditorFields";
 import EventEditorFontStyle from "@/components/events/EventEditorFontStyle";
-import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventLocationTimezone } from "@/components/events/useEventLocationTimezone";
+import EventEditorWorkspace, { EventEditorPageSettings } from "@/components/events/EventEditorWorkspace";
 import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
 import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
 import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
@@ -2159,7 +2160,8 @@ const rawTextClass = currentTheme?.text || "";
       themeId,
     ]);
 
-    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !_loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
+    useEventLocationTimezone({ data, setData, enabled: !_loadingExisting, saved: editEventId ? eventHistoryClient.read(`/api/history/${encodeURIComponent(editEventId)}`)?.data : undefined });
+    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, restoreSnapshot: (snapshot) => { setData(snapshot.data); setAdvancedState(snapshot.advancedState); setThemeId(snapshot.themeId); }, category: config.category, templateId: config.slug, eventId: editEventId, historyClient: eventHistoryClient, ready: !_loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
@@ -2232,6 +2234,7 @@ const rawTextClass = currentTheme?.text || "";
             onClick={() => setActiveView("headline")}
           />
           <MenuCard title="Design" desc="Page style, typography, and colors." icon={<Type size={18} />} onClick={() => setActiveView("design")} />
+          <EventEditorPageSettings />
 
           <MenuCard
             title="Details"

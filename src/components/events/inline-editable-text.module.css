@@ -1,9 +1,117 @@
 .editable {
+  --inline-control-ink: var(--inline-edit-ink, var(--gym-ink, #172033));
+  --inline-control-paper: var(--inline-edit-paper, var(--gym-paper, #fff));
+  position: relative;
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem;
   max-width: 100%;
   vertical-align: middle;
+}
+
+.view {
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: inherit;
+  cursor: text;
+  transition: background-color 160ms ease;
+}
+.view:hover { background: color-mix(in srgb, currentColor 6%, transparent); }
+.view:focus-visible { outline: 2px solid var(--gym-accent, currentColor); outline-offset: 3px; }
+
+.toolbar {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 2px);
+  left: var(--toolbar-shift, 0px);
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  border-radius: 8px;
+  background: var(--inline-edit-paper, var(--gym-paper, #fff));
+  color: var(--inline-edit-ink, var(--gym-ink, #172033));
+  box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.97);
+  transform-origin: top right;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.toolbar[data-above] { top: auto; bottom: calc(100% + 2px); transform-origin: bottom right; }
+.toolbar[data-inline] { top: 50%; bottom: auto; transform: translate(-4px, -50%) scale(0.97); transform-origin: left center; }
+.toolbar::before { content: ""; position: absolute; left: 0; right: 0; top: -4px; height: 4px; }
+.toolbar[data-above]::before { top: auto; bottom: -4px; }
+.toolbar[data-inline]::before { left: -8px; right: auto; top: 0; bottom: 0; width: 8px; height: auto; }
+.editable:hover > .toolbar,
+.editable:focus-within > .toolbar,
+.editable[data-menu-open] > .toolbar {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+@keyframes inline-tools-enter {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.editable:hover > .toolbar[data-inline],
+.editable:focus-within > .toolbar[data-inline] { transform: translate(0, -50%) scale(1); }
+
+.mobileTrigger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  width: 28px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.moveButton { touch-action: none; cursor: grab; }
+.moveButton:active { cursor: grabbing; }
+.editable[data-moving] { outline: 1px dashed currentColor; outline-offset: 4px; cursor: grab; touch-action: none; }
+.editable[data-moving] > .text { user-select: none; }
+.positionAnchor { display: inline-block; max-width: 100%; vertical-align: middle; }
+.positioned { position: absolute; z-index: 40; max-width: 100%; overflow-wrap: anywhere; white-space: pre-line; }
+.ghost { visibility: hidden; pointer-events: none; }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+@media (max-width: 639px), (hover: none), (pointer: coarse) {
+  .editable { flex-wrap: nowrap; }
+  .mobileTrigger { display: inline-flex; }
+  .toolbar { display: none; }
+  .editable[data-menu-open] > .toolbar { display: inline-flex; animation: inline-tools-enter 160ms ease; }
+  .toolbar > .button, .actions > .button { width: 44px; height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbar, .view { transition: none; }
+  .toolbar { transform: none; }
+  .toolbar[data-inline] { transform: translateY(-50%); }
+}
+
+.copies {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 100%;
 }
 
 .text {
@@ -26,9 +134,10 @@
 
 .editing {
   display: inline-flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.25rem;
-  width: 26ch;
+  width: min(100%, 38ch);
   max-width: 100%;
   vertical-align: middle;
 }
@@ -36,11 +145,12 @@
 .input {
   --inline-input-ink: var(--inline-edit-ink, var(--gym-ink, #172033));
   --inline-input-paper: var(--inline-edit-paper, var(--gym-paper, #fff));
-  width: 100%;
+  flex: 1 1 16ch;
+  width: 16ch;
   min-width: 0;
   min-height: 44px;
-  border: 1px solid currentColor;
-  border-radius: 0.5rem;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 0.625rem;
   padding: 0.4rem 0.5rem;
   font: inherit;
   font-size: max(1em, 16px);
@@ -59,11 +169,15 @@
 }
 
 .actions {
+  margin-inline-start: auto;
+  justify-content: flex-end;
   display: inline-flex;
   flex-wrap: wrap;
   gap: 0.25rem;
 }
 .description {
+  flex-basis: 100%;
+  order: 2;
   font-size: 0.75rem;
   font-weight: 400;
   line-height: 1.5;
@@ -81,11 +195,11 @@ textarea.input {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
-  border-radius: 50%;
+  border: 0;
+  border-radius: 6px;
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -95,18 +209,90 @@ textarea.input {
   background: color-mix(in srgb, currentColor 10%, transparent);
 }
 
-.editable > .button {
+.toolbar > .button {
   border: 0;
   border-radius: 0.25rem;
 }
 
-.editable > .button:hover {
-  background: transparent;
-  opacity: 0.75;
+.toolbar > .button:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 
 .button:focus-visible,
+.mobileTrigger:focus-visible,
 .input:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbar { animation: none !important; }
+}
+
+/* Tab labels and their edit action share one row, never a vertical scroll area. */
+:global([data-event-navigation-rail]) .editable { flex-wrap: nowrap; }
+:global([data-event-navigation-rail]) .mobileTrigger { display: none; }
+:global([data-event-navigation-rail]) .toolbar {
+  position: static;
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: none;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  box-shadow: none;
+}
+:global([data-event-navigation-rail]) .editable:hover > .toolbar,
+:global([data-event-navigation-rail]) .editable:focus-within > .toolbar { transform: none; }
+
+.toolbar .button > span { display: none; }
+.mobileSheet {
+  position: fixed;
+  inset: auto 0 0;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  max-height: min(80dvh, 560px);
+  overflow: auto;
+  padding: 0;
+  border: 1px solid var(--app-border, #d9cfea);
+  border-radius: 20px 20px 0 0;
+  background: var(--app-surface, #faf8ff);
+  color: var(--app-foreground, #302a3a);
+  box-shadow: 0 -12px 48px #21163833;
+  font: 500 15px/1.5 system-ui, sans-serif;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+}
+.mobileSheet::backdrop { background: #15102066; }
+.sheetBody { padding: 12px 16px max(16px, env(safe-area-inset-bottom, 0px)); }
+.sheetBody header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.sheetBody h2 { margin: 0; font: 600 16px/1.4 system-ui, sans-serif; overflow-wrap: anywhere; }
+.sheetBody header .button { width: 44px; height: 44px; }
+.sheetBody [role="group"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.sheetBody [role="group"] .button {
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  height: auto;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border, #d9cfea);
+  border-radius: 10px;
+  font: inherit;
+  text-align: left;
+}
+.sheetBody .button svg { flex-shrink: 0; }
+@media (max-width: 767px), (hover: none), (pointer: coarse) {
+  .editable { flex-wrap: nowrap; }
+  .mobileTrigger { display: none; width: 44px; flex-basis: 44px; }
+  .editable[data-selected] { outline: 1px solid currentColor; outline-offset: 5px; border-radius: 3px; }
+  /* Selecting text must not insert a button that shifts the next field during a tap. */
+  .editable[data-selected] > .mobileTrigger { display: none; }
+  .editable > .toolbar { display: none !important; }
+  :global([data-event-navigation-rail]) .editable { outline: none; }
+  :global([data-event-navigation-rail]) .editable > .toolbar { display: none !important; }
+  :global([data-event-navigation-rail]) .editable[data-selected] > .mobileTrigger { display: inline-flex; }
 }

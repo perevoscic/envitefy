@@ -63,17 +63,6 @@ const renderLineList = (
   </ul>
 );
 
-const gridClassForColumns = (columns?: number) => {
-  switch (columns) {
-    case 4:
-      return "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(170px,1fr))]";
-    case 3:
-      return "grid gap-4 md:grid-cols-2 xl:grid-cols-3";
-    default:
-      return "grid gap-4 md:grid-cols-2";
-  }
-};
-
 
 const getCollectionItemKey = (
   parentId: string | undefined,
@@ -342,7 +331,7 @@ export default function GymMeetDiscoveryContent({
                 values: (card.highlights || []).map(highlight => String(highlight.value || "")),
               }))) : undefined}
               className={
-                (block.id === "hotel-cards" || block.id === "attraction-cards") ? placeStyles.grid : gridClassForColumns(block.columns)
+                (block.id === "hotel-cards" || block.id === "attraction-cards") ? placeStyles.grid : "grid grid-cols-1 gap-4"
               }
             >
               {(block.cards || []).map((card: any, index: number) => {

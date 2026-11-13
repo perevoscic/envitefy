@@ -8,7 +8,8 @@ import { readImportedEventTheme } from "@/lib/imported-event-theme";
 import { importedThemeStyle, importedSportsTheme, importedArtworkSrc, activeImportedTheme } from "@/lib/imported-event-design";
 import { IMPORTED_THEME_FONTS } from "@/lib/imported-event-theme";
 import EventEditorFontStyle from "@/components/events/EventEditorFontStyle";
-import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventLocationTimezone } from "@/components/events/useEventLocationTimezone";
+import EventEditorWorkspace, { EventEditorPageSettings } from "@/components/events/EventEditorWorkspace";
 import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
 import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
 import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
@@ -778,7 +779,8 @@ const rawTextClass = currentTheme?.text || "";
       style,
     ]);
 
-    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId, activeTemplateId }, category: config.category, templateId: activeTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !_loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "sport-events" });
+    useEventLocationTimezone({ data, setData, enabled: !_loadingExisting, saved: editEventId ? eventHistoryClient.read(`/api/history/${encodeURIComponent(editEventId)}`)?.data : undefined });
+    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId, activeTemplateId }, restoreSnapshot: (snapshot) => { setData(snapshot.data); setAdvancedState(snapshot.advancedState); setThemeId(snapshot.themeId); setActiveTemplateId(snapshot.activeTemplateId); }, category: config.category, templateId: activeTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !_loadingExisting, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "sport-events" });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
@@ -847,6 +849,7 @@ const rawTextClass = currentTheme?.text || "";
             onClick={() => setActiveView("headline")}
           />
           <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />
+          <EventEditorPageSettings />
 
           <MenuCard
             title="Details"
@@ -1133,7 +1136,7 @@ const rawTextClass = currentTheme?.text || "";
         if (activeView === "main" || activeView === "images") return false;
         setActiveView("main");
         return true;
-      }} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={data.hero} editor={editor} templatesHref={"/event/sport-events"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
+      }} sectionEditors={{ "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "details": renderDetailsEditor, "rsvp": renderRsvpEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) }} artwork={importedArtworkSrc(data.importedTheme, data.hero, config.defaultHero)} editor={editor} templatesHref={"/event/sport-events"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }}
  preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{

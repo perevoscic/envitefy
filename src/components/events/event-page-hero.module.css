@@ -17,6 +17,16 @@
   aspect-ratio: 16 / 9;
   overflow: hidden;
 }
+.artworkGroup { display: grid; gap: 12px; width: 100%; min-width: 0; }
+.artworkShadow { display: grid; width: 100%; min-width: 0; }
+.hero[data-image-shape="square"] .artworkGroup,
+.hero[data-image-shape="circle"] .artworkGroup,
+.hero[data-image-shape="square"] .artworkShadow,
+.hero[data-image-shape="circle"] .artworkShadow { max-width: 720px; justify-self: center; }
+.hero[data-image-shape="portrait"] .artworkGroup,
+.hero[data-image-shape="arch"] .artworkGroup,
+.hero[data-image-shape="portrait"] .artworkShadow,
+.hero[data-image-shape="arch"] .artworkShadow { max-width: 600px; justify-self: center; }
 .artwork > * {
   position: relative !important;
   inset: auto !important;

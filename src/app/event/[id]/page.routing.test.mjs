@@ -82,8 +82,8 @@ test("the real exported page executes missing-row and draft routing through its 
     } },
   });
   await assert.rejects(draft.page({ params: Promise.resolve({ id: "saved-manual" }), searchParams: Promise.resolve({}) }),
-    (error) => error.href === "/event/general/customize?edit=saved-manual");
-  assert.deepEqual(draft.calls.redirects, ["/event/general/customize?edit=saved-manual"]);
+    (error) => error.href === "/event/design/customize?edit=saved-manual");
+  assert.deepEqual(draft.calls.redirects, ["/event/design/customize?edit=saved-manual"]);
   assert.equal(draft.calls.warnings.length, 0, "Next redirects must never become outage notices");
 });
 
@@ -137,7 +137,7 @@ test("saved owner drafts resume supported manual editors before entering the pub
       name: `supported manual draft ${path}`,
       owner: true,
       data: { status: "draft", createdVia: "manual", manualEditor: { path, snapshot: { data: { title: "" } } } },
-      expected: `${path}?edit=saved-manual`,
+      expected: `${path === "/event/general/customize" ? "/event/design/customize" : path}?edit=saved-manual`,
     })),
     { name: "template draft", owner: true, data: { status: "draft", templateEditor: { category: "birthdays", templateId: "candy-dreams" } }, expected: "/resolved-editor" },
     { name: "custom draft", owner: true, data: { draftStatus: "draft", customEventPage: { version: 1 } }, expected: "/resolved-editor" },

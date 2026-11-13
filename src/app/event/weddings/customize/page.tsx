@@ -4,7 +4,8 @@ import { readEventRsvpSettings } from "@/lib/event-rsvp-settings";
 import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
 import { EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout, EventEditorInput as InputGroup } from "@/components/events/EventEditorFields";
 import EventEditorFontStyle from "@/components/events/EventEditorFontStyle";
-import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventLocationTimezone } from "@/components/events/useEventLocationTimezone";
+import EventEditorWorkspace, { EventEditorPageSettings } from "@/components/events/EventEditorWorkspace";
 import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
 import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
 import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
@@ -2100,7 +2101,8 @@ const handleGalleryUpload = (e) => {
     return payload;
   }, [templateEditor, buildHistoryPayload, editEventId, router, submitting]);
 
-  const editor = useEventPageEditor({ snapshot: { data, newEvent, newItem, tempHotel, tempAirport }, category: "Weddings", templateId: data.theme.themeId, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingProgress, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "weddings" });
+  useEventLocationTimezone({ data, setData, enabled: !loadingProgress, saved: editEventId ? eventHistoryClient.read(`/api/history/${encodeURIComponent(editEventId)}`)?.data : undefined });
+    const editor = useEventPageEditor({ snapshot: { data, newEvent, newItem, tempHotel, tempAirport }, restoreSnapshot: (snapshot) => { setData(snapshot.data); setNewEvent(snapshot.newEvent); setNewItem(snapshot.newItem); setTempHotel(snapshot.tempHotel); setTempAirport(snapshot.tempAirport); }, category: "Weddings", templateId: data.theme.themeId, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingProgress, busy: false, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "weddings" });
 
 
 // Render helpers instead of nested components so inputs keep focus across state updates.
@@ -2134,6 +2136,7 @@ const handleGalleryUpload = (e) => {
             onClick={() => setActiveView("headline")}
           />
           <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />
+          <EventEditorPageSettings />
 
           <MenuCard
             title="Schedule"
@@ -2223,7 +2226,7 @@ const handleGalleryUpload = (e) => {
         </div>
         <EventGuestPlanningEditor category="Weddings" value={data.guestPlanning} onChange={(value) => setData((prev) => ({ ...prev, guestPlanning: value }))} />
       </div>
-    </EditorLayout>
+        </EditorLayout>
   );
 
 

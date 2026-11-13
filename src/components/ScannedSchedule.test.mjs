@@ -169,7 +169,7 @@ test("owner Edit and Continue creating open full school memos while sports retai
       for (const name of ["buildEditLink", "resolveEditHref", "resolveOwnerEditHref"]) {
         assert.equal(
           routeModule.exports[name]("saved memo", memo, "Weekly memo"),
-          "/event/general/customize?collection=school&templateId=school--weekly-memo&edit=saved%20memo",
+          "/event/design/customize?collection=school&templateId=school--weekly-memo&edit=saved%20memo",
         );
       }
     }

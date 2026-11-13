@@ -36,7 +36,7 @@ export function eventEditorActions(published: boolean, dirty: boolean) {
     showDraft: !published,
     showPrimary: true,
     primaryDisabled: published && !dirty,
-    primaryLabel: published ? "Save changes" : "Publish",
+    primaryLabel: published ? "Save" : "Publish",
   };
 }
 

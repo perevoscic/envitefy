@@ -7,6 +7,9 @@ import { EventEditorSection } from "../../src/components/events/EventEditorField
 import { EventPageCompositionProvider } from "../../src/components/events/EventPageCompositionContext";
 import type { EventPageComposition } from "../../src/lib/event-page-composition";
 
+import { EVENT_HERO_LAYOUT_PRESETS } from "../../src/lib/event-hero-layout";
+(window as any).heroLayoutPresets = EVENT_HERO_LAYOUT_PRESETS.filter(({ layout }) => layout.imageStyle);
+
 const image = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500"><rect width="800" height="500" fill="#677966"/><circle cx="400" cy="250" r="160" fill="#e6c886"/></svg>');
 
 function App() {

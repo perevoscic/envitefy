@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import UnsavedProgressProvider from "../../src/components/UnsavedProgressProvider";
-import EventEditorWorkspace from "../../src/components/events/EventEditorWorkspace";
+import EventEditorWorkspace, { EventEditorPageSettings } from "../../src/components/events/EventEditorWorkspace";
 import { useEventPageEditor } from "../../src/components/events/useEventPageEditor";
 import { useEventHistoryClient } from "../../src/lib/event-history-client";
 import EventUrlDialog from "../../src/components/events/EventUrlEditor";
@@ -28,7 +28,9 @@ function PageEditor() {
   const editor = useEventPageEditor({ snapshot: { data: { title } }, category: "general", eventId: id, historyClient: client, ready,
     buildPayload: async () => ({ title, data: { title, primaryOutput: "event_page" } }),
   });
-  return <EventEditorWorkspace editor={editor} preview={<h1>{title}</h1>} controls={<label>Event title<input value={title} onChange={event => setTitle(event.target.value)} /></label>} />;
+  return <EventEditorWorkspace editor={editor} preview={<h1>{title}</h1>}
+    sectionEditors={{ details: () => <p>Event details</p> }}
+    controls={<><EventEditorPageSettings showImageLayout={false} /><label>Event title<input value={title} onChange={event => setTitle(event.target.value)} /></label></>} />;
 }
 
 function App() {

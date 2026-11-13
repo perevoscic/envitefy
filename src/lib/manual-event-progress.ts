@@ -33,7 +33,7 @@ export function manualEventEditHref(
   if (!editor || typeof editor !== "object" || Array.isArray(editor)) return null;
   const path = (editor as Record<string, unknown>).path;
   return typeof path === "string" && EDITOR_PATHS.has(path)
-    ? `${path}?edit=${encodeURIComponent(eventId)}`
+    ? `${path === "/event/general" || path === "/event/general/customize" ? "/event/design/customize" : path}?edit=${encodeURIComponent(eventId)}`
     : null;
 }
 

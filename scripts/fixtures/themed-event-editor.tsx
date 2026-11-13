@@ -6,6 +6,8 @@ import TemplateEditorProvider from "../../src/components/templates/TemplateEdito
 import Sports from "../../src/app/event/sport-events/customize/page";
 import Bridal from "../../src/app/event/baby-showers/customize/page";
 import General from "../../src/app/event/general/customize/page";
+import CustomEventPageContent from "../../src/components/events/custom/CustomEventPageContent";
+import { normalizeCustomEventPage } from "../../src/lib/event-custom-design";
 import SimpleTemplateView from "../../src/components/SimpleTemplateView";
 import BabyShowerTemplateView from "../../src/components/BabyShowerTemplateView";
 import { useSearchParams } from "./signup-editor/navigation";
@@ -19,6 +21,8 @@ function Guest({ id, bridal }: { id: string; bridal: boolean }) {
   const [row, setRow] = useState<any>(null);
   useEffect(() => { void fetch(`/api/history/${id}`).then((response) => response.json()).then(setRow); }, [id]);
   if (!row) return null;
+  const current = normalizeCustomEventPage(row.data.customEventPage);
+  if (current) return <CustomEventPageContent page={current} eventId={id} />;
   return bridal
     ? <BabyShowerTemplateView eventId={id} eventData={row.data} eventTitle={row.title} isOwner={false} isReadOnly shareUrl="" editHref="" preview />
     : <SimpleTemplateView eventId={id} eventData={row.data} eventTitle={row.title} isOwner={false} isReadOnly viewerKind="readonly" shareUrl="" sessionEmail={null} />;

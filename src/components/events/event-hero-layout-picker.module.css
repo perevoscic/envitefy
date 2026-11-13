@@ -1,4 +1,5 @@
 .picker { display: grid; gap: 14px; min-width: 0; color: var(--app-foreground, #493d5c); }
+.groupTitle { margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: .04em; }
 .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .choice {
   display: flex; flex-direction: column; gap: 9px; min-width: 0; min-height: 44px;
@@ -15,7 +16,9 @@
   width: 100%; height: 112px; padding: 8px; overflow: hidden;
   background: #f1edf5; color: #493d5c; border-radius: 5px;
 }
-.picture { display: block; width: 100%; height: 100%; min-height: 0; overflow: hidden; background: #c8bdd7; }
+.picture { display: block; width: 100%; height: 100%; min-height: 0; --hero-cut-shadow-ink: #493d5c; }
+.pictureSurface { display: block; width: 100%; height: 100%; overflow: hidden; background: #c8bdd7; border-radius: inherit; }
+.pictureSurface:has(img) { background: transparent; }
 .picture img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .heading { max-width: 100%; min-width: 0; font: 600 11px/1.25 Georgia, serif; text-align: center; overflow-wrap: anywhere; }
 .thumbnail[data-title-position="above"] { grid-template-rows: auto minmax(0, 1fr); }

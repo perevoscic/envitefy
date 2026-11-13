@@ -348,7 +348,7 @@ test("custom event menus toggle maps and weather, preview twelve hero layouts, a
       await previewImage.waitFor({ state: "attached" });
       assert.equal(await previewImage.getAttribute("src"), map.mapImage, "Manual uploads also prepare the provider screenshot");
       await sectionControls.getByRole("button", { name: "Edit Parking & drop-off", exact: true }).click();
-      assert.equal(await page.getByLabel("Section heading", { exact: true }).inputValue(), "Parking & drop-off");
+      assert.equal(await page.getByLabel("Title", { exact: true }).inputValue(), "Parking & drop-off");
       await page.getByRole("button", { name: "Done", exact: true }).click();
       assert.equal(await sectionControls.getByRole("button", { name: "Edit Activities", exact: true }).count(), 1);
       assert.equal(await page.getByRole("button", { name: "Add parking / drop-off map", exact: true }).count(), 0);

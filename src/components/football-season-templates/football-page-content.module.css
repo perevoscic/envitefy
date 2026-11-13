@@ -143,15 +143,15 @@
 }
 @container football-cell (min-width: 620px) {
   .section {
-    grid-template-columns: var(--ft-columns, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @container football-section (min-width: 620px) {
   .attendance {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
   .cards {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 639px) {

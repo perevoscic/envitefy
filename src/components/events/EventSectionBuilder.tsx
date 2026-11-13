@@ -1,6 +1,6 @@
 "use client";
 import InformationSectionBody from "./InformationSectionBody";
-import { EventSectionEditorClose as EditorClose, EventSectionEditorBusy, EventSectionEditorHeaderTarget } from "./EventSectionEditorContext";
+import { EventSectionEditorClose as EditorClose, EventSectionEditorBusy, EventSectionEditorHeaderTarget, EventSectionEditorTitle, EventSectionEditorAction, type SectionEditorAction } from "./EventSectionEditorContext";
 import {
   EventPageCompositionProvider,
   useEventPageComposition,
@@ -11,6 +11,8 @@ import { EventPageReadOnlyProvider } from "./EventPageReadOnlyContext";
 import EventArrivalMap from "./custom/EventArrivalMap";
 import EventSectionExtrasEditor from "./EventSectionExtrasEditor";
 import EventSectionExtrasContent from "./EventSectionExtrasContent";
+import EventSectionNavigation from "./EventSectionNavigation";
+import { useEventSectionSwipe } from "./useEventSectionSwipe";
 
 import {
   closestCenter,
@@ -70,23 +72,38 @@ import {
   type EventInformationSectionPreset,
 } from "@/lib/event-information-section-presets";
 import styles from "./event-section-builder.module.css";
+import { EventSectionTextScope, type SectionTextField } from "./EventSectionTextContext";
 
 export type EventSectionOption = { id: string; label: string; editorId?: string };
-export type EventSectionEntry = EventSectionOption & { content: ReactNode };
+export type EventSectionEntry = EventSectionOption & { content: ReactNode; editContentOnClick?: boolean };
 type BuilderContext = {
   layout?: EventSectionLayout;
   catalog: readonly EventSectionOption[];
   entries: EventSectionOption[];
   register: (entries: EventSectionOption[]) => void;
   change: (change: EventSectionChange) => void;
-  edit: (section: EventSectionOption) => void;
+  edit: (section: EventSectionOption, focusLabel?: string) => void;
   addAt: (index: number) => void;
   add: (section: EventSectionOption, index: number) => void;
   placeBeside: (section: EventSectionOption) => void;
   createSection?: (content: EventInformationSectionContent) => EventSectionOption | undefined;
   sectionLimitReached?: boolean;
+  customSectionLabel?: string;
+  registerText: (sectionId: string, field: SectionTextField) => void;
+  unregisterText: (sectionId: string, fieldId: string) => void;
 };
 const Builder = createContext<BuilderContext | null>(null);
+function isDialogBackdrop(event: {
+  target: EventTarget;
+  currentTarget: HTMLDialogElement;
+  clientX: number;
+  clientY: number;
+}) {
+  if (event.target !== event.currentTarget) return false;
+  const bounds = event.currentTarget.getBoundingClientRect();
+  return event.clientX < bounds.left || event.clientX > bounds.right ||
+    event.clientY < bounds.top || event.clientY > bounds.bottom;
+}
 // Keyboard movement advances between whole sections, skipping the mouse drop gaps.
 const sectionKeyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
   const rectangles = new Map(
@@ -113,7 +130,7 @@ function InformationSectionEditor({ id, fallback }: { id: string; fallback: Reac
   return (
     <>
       <EventEditorInput
-        label="Section heading"
+        label="Title"
         value={section.title}
         onChange={(title) => update({ title })}
         maxLength={240}
@@ -168,7 +185,7 @@ function AddInformationSection({
     >
       <Plus size={18} aria-hidden="true" />
       <span>
-        {preset?.title || "Other"}
+        {preset?.title || builder.customSectionLabel || "Custom"}
         <small>{preset?.description || "Add your own heading and information"}</small>
       </span>
     </button>
@@ -221,6 +238,7 @@ export function EventSectionBuilderProvider({
   renderSectionLabelEditor,
   createSection,
   sectionLimitReached,
+  customSectionLabel,
   initialEntries,
   composition,
   children,
@@ -232,25 +250,59 @@ export function EventSectionBuilderProvider({
   renderSectionLabelEditor?: (section: EventSectionOption) => ReactNode;
   createSection?: (content: EventInformationSectionContent) => EventSectionOption | undefined;
   sectionLimitReached?: boolean;
+  customSectionLabel?: string;
   initialEntries?: EventSectionOption[];
   composition?: EventPageCompositionRuntime;
   children: ReactNode;
 }) {
   const [registeredEntries, setEntries] = useState<EventSectionOption[]>([]);
+  const [textFields, setTextFields] = useState<Record<string, Record<string, SectionTextField>>>({});
+  const registerText = useCallback((sectionId: string, field: SectionTextField) => {
+    setTextFields(previous => {
+      const old = previous[sectionId]?.[field.id];
+      if (old && old.label === field.label && old.value === field.value && old.fallback === field.fallback &&
+        old.maxLength === field.maxLength && old.multiline === field.multiline) return previous;
+      return { ...previous, [sectionId]: { ...previous[sectionId], [field.id]: field } };
+    });
+  }, []);
+  const unregisterText = useCallback((sectionId: string, fieldId: string) => {
+    setTextFields(previous => {
+      if (!previous[sectionId]?.[fieldId]) return previous;
+      const next = { ...previous[sectionId] };
+      delete next[fieldId];
+      return { ...previous, [sectionId]: next };
+    });
+  }, []);
   const entries = initialEntries || registeredEntries;
   const [panel, setPanel] = useState<
-    { kind: "add"; index: number } | { kind: "edit" | "beside"; section: EventSectionOption } | null
+    { kind: "add"; index: number } | { kind: "edit" | "beside"; section: EventSectionOption; focusLabel?: string } | null
   >(null);
   const [dragLabel, setDragLabel] = useState("");
   const [sectionBusy, setSectionBusy] = useState(false);
+  const [editorTitle, setEditorTitle] = useState<string | null>(null);
+  const [editorAction, setEditorAction] = useState<SectionEditorAction | null>(null);
   const [headerActionTarget, setHeaderActionTarget] = useState<HTMLSpanElement | null>(null);
   const [notice, setNotice] = useState<{ message: string } | null>(null);
   const [undo, setUndo] = useState<Array<EventSectionLayout | undefined>>([]);
   const dialog = useRef<HTMLDialogElement>(null);
+  const backdropPointerDown = useRef(false);
   const focusReturn = useRef<HTMLElement | null>(null);
   const editedSectionId = useRef<string | null>(null);
   const undoButton = useRef<HTMLButtonElement>(null);
   const titleId = useId();
+  useEffect(() => {
+    if (panel?.kind !== "edit" || !panel.focusLabel) return;
+    const frame = requestAnimationFrame(() => {
+      const label = [...(dialog.current?.querySelectorAll("label") || [])]
+        .find(candidate => candidate.textContent?.trim() === panel.focusLabel);
+      const control = label?.control;
+      if (control instanceof HTMLElement) {
+        control.focus({ preventScroll: true });
+        control.scrollIntoView({ block: "center", behavior: "instant" });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [panel]);
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sectionKeyboardCoordinates }),
@@ -334,10 +386,11 @@ export function EventSectionBuilderProvider({
     [layout, visible, onChange, catalog, entries],
   );
   const edit = useCallback(
-    (section: EventSectionOption) => {
+    (section: EventSectionOption, focusLabel?: string) => {
       rememberFocus();
       editedSectionId.current = section.id;
-      setPanel({ kind: "edit", section });
+      setEditorTitle(null);
+      setPanel({ kind: "edit", section, focusLabel });
     },
     [rememberFocus],
   );
@@ -373,8 +426,11 @@ export function EventSectionBuilderProvider({
       placeBeside,
       createSection,
       sectionLimitReached,
+      customSectionLabel,
+      registerText,
+      unregisterText,
     }),
-    [layout, catalog, entries, register, change, edit, addAt, add, placeBeside, createSection, sectionLimitReached],
+    [layout, catalog, entries, register, change, edit, addAt, add, placeBeside, createSection, sectionLimitReached, customSectionLabel, registerText, unregisterText],
   );
   function onDragEnd(event: DragEndEvent) {
     setDragLabel("");
@@ -458,13 +514,22 @@ export function EventSectionBuilderProvider({
         ref={dialog}
         className={styles.dialog}
         aria-labelledby={titleId}
+        onPointerDown={(event) => {
+          backdropPointerDown.current = event.button === 0 && isDialogBackdrop(event);
+        }}
+        onPointerCancel={() => { backdropPointerDown.current = false; }}
+        onClick={(event) => {
+          const dismiss = backdropPointerDown.current && isDialogBackdrop(event);
+          backdropPointerDown.current = false;
+          if (dismiss) close();
+        }}
         onCancel={(event) => { event.preventDefault(); close(); }}
-        onClose={close}
+        onClose={(event) => { if (!event.currentTarget.open) close(); }}
       >
         <div className={styles.dialogHeader}>
           <h2 id={titleId}>
             {panel?.kind === "edit"
-              ? entries.find((section) => section.id === panel.section.id)?.label || panel.section.label
+              ? editorTitle || entries.find((section) => section.id === panel.section.id)?.label || panel.section.label
               : panel?.kind === "beside"
                 ? `Place beside ${panel.section.label}`
                 : "Add section"}
@@ -538,11 +603,25 @@ export function EventSectionBuilderProvider({
             <EventSectionEditorBusy.Provider value={setSectionBusy}>
               <EditorClose.Provider value={close}>
                 <EventSectionEditorHeaderTarget.Provider value={headerActionTarget}>
+                <EventSectionEditorTitle.Provider value={setEditorTitle}>
+                <EventSectionEditorAction.Provider value={setEditorAction}>
                 {renderSectionLabelEditor?.(panel.section)}
+                {Object.values(textFields[panel.section.id] || {}).filter(field => !field.label.endsWith(" section heading")).map(field => (
+                  <div key={field.id}>
+                  <EventEditorInput label={field.label} value={field.value ?? field.fallback}
+                    type={field.multiline ? "textarea" : "text"} maxLength={field.maxLength}
+                    onChange={field.onChange} />
+                  {field.value !== undefined && <button type="button" className={styles.resetText}
+                    aria-label={`Reset ${field.label.toLowerCase()} to template wording`}
+                    onClick={() => field.onChange(undefined)}>Reset to template wording</button>}
+                  </div>
+                ))}
                 <InformationSectionEditor
                   id={panel.section.id}
                   fallback={renderEditor(panel.section.editorId || panel.section.id)}
                 />
+                </EventSectionEditorAction.Provider>
+                </EventSectionEditorTitle.Provider>
                 </EventSectionEditorHeaderTarget.Provider>
               </EditorClose.Provider>
             </EventSectionEditorBusy.Provider>
@@ -550,10 +629,9 @@ export function EventSectionBuilderProvider({
         </div>
         {panel?.kind === "edit" ? (
           <div className={styles.dialogFooter}>
-            <button type="button" onClick={close} disabled={sectionBusy}>
-              Done
+            <button type="button" onClick={editorAction?.onClick || close} disabled={sectionBusy} data-destructive={editorAction?.destructive || undefined}>
+              {editorAction?.label || "Done"}
             </button>
-            <span>Save progress when you’re ready.</span>
           </div>
         ) : null}
       </dialog>
@@ -602,6 +680,7 @@ function CatalogItem({ section, index }: { section: EventSectionOption; index: n
 
 export function EventSectionPalette() {
   const builder = useEventSectionBuilder();
+  const [selectedId, setSelectedId] = useState("");
   if (!builder) return null;
   // Added catalog sections still belong to the page before they have content
   // to register with the canvas (for example, a schedule document to upload).
@@ -628,8 +707,9 @@ export function EventSectionPalette() {
         </span>
         <ol className={styles.sectionList} aria-label="Page section order">
           {current.map((section, index) => (
-            <li key={section.id}>
-              <span>{section.label}</span>
+            <li key={section.id} data-selected={selectedId === section.id || undefined}>
+              <button type="button" className={styles.paletteSelect} aria-label={`Select ${section.label} section`}
+                onClick={() => setSelectedId(section.id)} onFocus={() => setSelectedId(section.id)}>{section.label}</button>
               <span className={styles.actions}>
                 <button
                   type="button"
@@ -639,6 +719,14 @@ export function EventSectionPalette() {
                 >
                   <Pencil size={17} aria-hidden="true" />
                 </button>
+                <button type="button" aria-label={`Place another section beside ${section.label}`}
+                  onClick={() => builder.placeBeside(section)}>
+                  <Columns2 size={18} aria-hidden="true" />
+                </button>
+                {builder.layout?.pairs?.some(pair => pair.includes(section.id)) && (
+                  <button type="button" aria-label={`Move ${section.label} to its own row`}
+                    onClick={() => builder.change({ type: "unpair", id: section.id })}>Own row</button>
+                )}
                 <button
                   type="button"
                   aria-label={`Move ${section.label} up`}
@@ -680,14 +768,14 @@ export function EventSectionPalette() {
   );
 }
 
-function InsertionPoint({ index }: { index: number }) {
+function InsertionPoint({ index, onAdd }: { index: number; onAdd?: () => void }) {
   const builder = useEventSectionBuilder();
   const { setNodeRef, isOver } = useDroppable({ id: `insert:${index}` });
   return (
     <div ref={setNodeRef} className={`${styles.insertion} ${isOver ? styles.dropTarget : ""}`}>
       <button
         type="button"
-        onClick={() => builder?.addAt(index)}
+        onClick={() => onAdd ? onAdd() : builder?.addAt(index)}
         aria-label={`Add section at position ${index + 1}`}
       >
         <Plus size={18} aria-hidden="true" />
@@ -695,6 +783,31 @@ function InsertionPoint({ index }: { index: number }) {
       </button>
     </div>
   );
+}
+
+function EditableSectionContent({ section, children }: { section: EventSectionEntry; children: ReactNode }) {
+  const builder = useEventSectionBuilder();
+  const textScope = useMemo(() => section.editContentOnClick && builder ? {
+    register: (field: SectionTextField) => builder.registerText(section.id, field),
+    unregister: (id: string) => builder.unregisterText(section.id, id),
+  } : null, [section.editContentOnClick, section.id, builder?.registerText, builder?.unregisterText]);
+  if (!section.editContentOnClick) return children;
+  return <EventSectionTextScope.Provider value={textScope}>
+    <div className={styles.contentHitArea} data-section-content-editor={section.id}
+      role="group" aria-label={`Edit ${section.label} section content`} tabIndex={0}
+      onClick={(event) => {
+        const target = event.target as Element;
+        if (target.closest("a,button,input,textarea,select,[role='button'],[role='link'],[contenteditable='true']")) return;
+        event.currentTarget.focus({ preventScroll: true });
+        const label = target.closest("[data-section-focus-label]")?.getAttribute("data-section-focus-label");
+        builder?.edit(section, !label || label.endsWith(" section heading") ? "Title" : label);
+      }}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault(); event.stopPropagation(); builder?.edit(section, "Title");
+        }
+      }}>{children}</div>
+  </EventSectionTextScope.Provider>;
 }
 
 function EditableSection({
@@ -709,6 +822,18 @@ function EditableSection({
   paired: boolean;
 }) {
   const builder = useEventSectionBuilder();
+  const [selected, setSelected] = useState(false);
+  const element = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!selected) return;
+    const deselect = (event: Event) => {
+      if (event.target instanceof Element && event.target.closest("dialog[open]")) return;
+      if (!element.current?.contains(event.target as Node)) setSelected(false);
+    };
+    document.addEventListener("pointerdown", deselect);
+    document.addEventListener("focusin", deselect);
+    return () => { document.removeEventListener("pointerdown", deselect); document.removeEventListener("focusin", deselect); };
+  }, [selected]);
   const {
     attributes,
     listeners,
@@ -720,8 +845,14 @@ function EditableSection({
   } = useSortable({ id: `section:${section.id}` });
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => { element.current = node; setNodeRef(node); }}
       className={styles.section}
+      tabIndex={0}
+      role="group"
+      aria-label={`${section.label} section`}
+      data-selected={selected || undefined}
+      onFocusCapture={(event) => { if (event.target === event.currentTarget && event.currentTarget.matches(":focus-visible")) setSelected(true); }}
+      onClick={() => setSelected(true)}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
@@ -799,15 +930,17 @@ function EditableSection({
           </button>
         ) : null}
       </div>
+      <EditableSectionContent section={section}>
       {section.content || (
         <div className={styles.empty}>
-          <p>Add your {section.label.toLowerCase()} content.</p>
+          <p>{/schedule/i.test(`${section.id} ${section.label}`) ? "Add days and sessions so guests can plan their visit." : `Add your ${section.label.toLowerCase()} content.`}</p>
           <button type="button" onClick={() => builder?.edit(section)}>
             <Pencil size={16} aria-hidden="true" />
-            Edit section
+            {/schedule/i.test(`${section.id} ${section.label}`) ? "Add schedule" : "Edit section"}
           </button>
         </div>
       )}
+      </EditableSectionContent>
     </div>
   );
 }
@@ -821,6 +954,8 @@ export function EventSectionCanvas({
   renderSection,
   rowProps,
   visibleSectionIds,
+  navigation,
+  onAddSection,
 }: {
   sections: EventSectionEntry[];
   layout?: EventSectionLayout;
@@ -833,6 +968,10 @@ export function EventSectionCanvas({
   rowProps?: (section: EventSectionEntry) => HTMLAttributes<HTMLDivElement>;
   /** Presentation-only filtering; retain all entries for editing, ordering and Undo. */
   visibleSectionIds?: readonly string[];
+  /** Existing native tab panels own their navigation. Other pages use the shared section rail. */
+  navigation?: boolean;
+  /** Native tabs can add their own subsections without adding another page tab. */
+  onAddSection?: () => void;
 }) {
   const builder = useEventSectionBuilder();
   const composition = useEventPageComposition();
@@ -843,11 +982,16 @@ export function EventSectionCanvas({
       .map((section) => ({
         id: section.id,
         label: section.title || "Information",
+        editContentOnClick: true,
         content: (
           <section data-event-section={section.id} className={styles.information}>
             <h2>{section.title}</h2>
             <InformationSectionBody title={section.title} body={section.body} />
             <EventSectionExtrasContent value={section} />
+            {builder && !section.body.trim() && !section.photos?.length && !section.links?.length && !section.map && <div className={styles.empty}>
+              <p>Add information for your guests.</p>
+              <button type="button" onClick={() => builder.edit({ id: section.id, label: section.title || "Information" })}><Plus size={16} aria-hidden="true" />{/schedule/i.test(section.title) ? "Add schedule" : "Add content"}</button>
+            </div>}
             {section.map && <EventArrivalMap map={section.map} />}
           </section>
         ),
@@ -872,6 +1016,16 @@ export function EventSectionCanvas({
     : sections;
   const rows = groupEventSectionRows(candidates, currentLayout);
   const ordered = rows.flat();
+  const showNavigation = navigation ?? (!visibleSectionIds && !rowProps);
+  const prefix = useId();
+  const [selectedSection, setSelectedSection] = useState("");
+  const activeSection = ordered.find(section => section.id === selectedSection)?.id || ordered[0]?.id || "";
+  const rowId = (id: string) => `${prefix}-section-${rows.find(row => row.some(section => section.id === id))?.[0].id || id}`;
+  const selectSection = (id: string) => {
+    setSelectedSection(id);
+    document.getElementById(rowId(id))?.scrollIntoView({ block: "start", behavior: "auto" });
+  };
+  const swipeHandlers = useEventSectionSwipe(ordered.map(section => section.id), activeSection, selectSection);
   if (
     !builder &&
     !currentLayout?.widths &&
@@ -881,6 +1035,7 @@ export function EventSectionCanvas({
     !itemClassName &&
     !visibleSectionIds &&
     !composition?.value?.layout
+    && !showNavigation
   )
     return (
       <div className={className} data-body-sections>
@@ -902,6 +1057,7 @@ export function EventSectionCanvas({
         style={{ ...attributes?.style, ...(!visible ? { display: "none" } : {}) }}
         className={`${styles.row} ${!builder ? itemClassName : ""} ${attributes?.className || ""}`}
         data-section-row={row.map((section) => section.id).join(" ")}
+        id={showNavigation ? rowId(row[0].id) : attributes?.id}
       >
         {row.map((section, offset) => {
           // A saved pair can have a hidden or unavailable neighbor. Its sole
@@ -943,7 +1099,7 @@ export function EventSectionCanvas({
         hidden={!visible}
         style={!visible ? { display: "none" } : undefined}
       >
-        <InsertionPoint index={index} />
+        <InsertionPoint index={index} onAdd={onAddSection} />
         {rowContent}
       </div>
     ) : (
@@ -955,14 +1111,19 @@ export function EventSectionCanvas({
       className={`${className} ${styles.canvas}`}
       data-body-sections
       data-event-body-layout={composition?.value?.layout}
+      {...(showNavigation ? swipeHandlers : {})}
     >
+      {showNavigation && <EventSectionNavigation sections={ordered} selected={activeSection} select={selectSection} href={id => `#${rowId(id)}`}
+        add={builder ? () => builder.addAt(ordered.length) : undefined}
+        edit={builder?.edit}
+        move={builder ? (id, index) => { builder.change({ type: "move-tab", id, index }); setSelectedSection(id); } : undefined} />}
       {builder ? (
         <SortableContext
           items={ordered.map((section) => `section:${section.id}`)}
           strategy={rectSortingStrategy}
         >
           {content}
-          <InsertionPoint index={ordered.length} />
+          <InsertionPoint index={ordered.length} onAdd={onAddSection} />
         </SortableContext>
       ) : (
         content

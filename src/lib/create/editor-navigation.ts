@@ -17,6 +17,15 @@ export async function prepareCreationEditor(intake: CreationIntake, template: Cr
       sections: information.details.sections.length ? information.details.sections : schoolStarterSections(school.schoolTemplate),
     } } };
   }
+  if (template.family === "custom" && intake.customPage?.sourceTemplateId !== template.id && template.category === "general") {
+    const { generalTemplateEventPage } = await import("../general-event-page-compat");
+    const details = intake.customPage?.details || informationForCreation(intake).details;
+    const customPage = generalTemplateEventPage(template.id, { ...details,
+      schoolTemplate: school?.schoolTemplate,
+      ...(school && !details.sections.length ? { sections: schoolStarterSections(school.schoolTemplate) } : {}),
+    }, intake.guess?.category);
+    if (customPage) intake = { ...intake, customPage };
+  }
   const guess = intake.guess || intake.classification;
   const changingFamily = intake.editorFamily && intake.editorFamily !== template.family;
   const current = await writeCreationIntake({ ...intake, phase: "editor", selectedTemplateId: template.id, editorFamily: template.family, ...(changingFamily ? { editorSnapshot: undefined, eventId: undefined } : {}) });

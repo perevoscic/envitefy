@@ -1,6 +1,8 @@
 "use client";
-import { importedThemeStyle, activeImportedTheme } from "@/lib/imported-event-design";
+import { activeImportedTheme, importedThemeStyle } from "@/lib/imported-event-design";
 import "@/components/event-create/imported-event-theme.css";
+import { templateAccentColorCombinations, readImportedEventTheme, importedEventAccentPalette } from "@/lib/imported-event-theme";
+import type { CSSProperties } from "react";
 
 import GymnasticsScene, { gymnasticsDesignStyle } from "./GymnasticsScene";
 import { getGymMeetTemplateMeta, resolveGymMeetTemplateId } from "./registry";
@@ -37,10 +39,23 @@ function gymMeetPageVariant(design: GymMeetPageTemplateMeta) {
 export default function GymMeetTemplateRenderer(props: GymMeetTemplateRendererProps) {
   const design = getGymMeetTemplateMeta(resolveGymMeetTemplateId(props.model));
   const presentation = GYMNASTICS_PRESENTATIONS[design.id];
+  const theme = readImportedEventTheme(props.model.importedTheme);
+  const choice = theme?.templateColorCombination;
+  const combination = choice?.templateId === design.id && choice.index > 0
+    ? templateAccentColorCombinations(importedEventAccentPalette(design, theme))[choice.index] : undefined;
+  const accentStyle = combination ? {
+    "--gym-ui-button": combination.button,
+    "--gym-ui-on-button": combination.onButton,
+    "--gym-ui-heading": combination.heading,
+    "--gym-ui-inverse-heading": combination.inverseHeading,
+    "--gym-ui-link": combination.link,
+  } as CSSProperties : undefined;
 
   return (
     <div
-      style={{ ...gymnasticsDesignStyle(design), ...importedThemeStyle(props.model.importedTheme) }}
+      style={{ position: "relative", ...gymnasticsDesignStyle(design), ...importedThemeStyle(theme), ...accentStyle }}
+      data-text-canvas=""
+      data-gym-color-combination={combination?.index}
       data-generated-event={props.model.generatedFromDiscovery || undefined}
       data-imported-theme={activeImportedTheme(props.model.importedTheme)?.id}
       className={programStyles.design}

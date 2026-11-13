@@ -241,6 +241,7 @@ export type GymMeetScheduleDay = {
   date: string;
   shortDate: string;
   isoDate?: string;
+  source?: unknown;
   sessions: GymMeetScheduleSession[];
 };
 
@@ -252,6 +253,7 @@ export type GymMeetScheduleInfo = {
   annotations?: GymMeetScheduleAnnotation[];
   assignments?: GymMeetScheduleAssignment[];
   days: GymMeetScheduleDay[];
+  periods?: import("@/lib/gymnastics-schedule-range").GymnasticsSchedulePeriod[];
 };
 
 export type GymMeetDiscoverySectionKind =

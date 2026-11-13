@@ -1,6 +1,7 @@
 "use client";
 import TemplateImageTone from "@/components/events/TemplateImageTone";
 import EventPageHero from "@/components/events/EventPageHero";
+import { useEventPageReadOnly } from "@/components/events/EventPageReadOnlyContext";
 import { useRef, type CSSProperties, type ReactNode } from "react";
 import HeroImageDragOverlay from "@/components/events/HeroImageDragOverlay";
 import InlineEditableText from "@/components/events/InlineEditableText";
@@ -45,6 +46,12 @@ export default function GymnasticsScene({
   onPageTextChange?: GymnasticsPageTextChange;
 }) {
   const address = model.address ?? model.mapAddress ?? model.headerLocation;
+  const readOnly = useEventPageReadOnly();
+  const imageActions = !readOnly && heroImageAction ? (
+    <div className={styles.imageActions} role="group" aria-label="Event image controls">
+      {heroImageAction}
+    </div>
+  ) : null;
   const host = model.hostGym || model.team;
   const typography = getGymMeetTitleTypography(design.id);
   const imageSettings = normalizeHeroImageSettings(model.heroImageSettings);
@@ -99,17 +106,6 @@ export default function GymnasticsScene({
               positionY={imageSettings.positionY}
               onChange={onHeroImagePositionChange}
             />
-          ) : null}
-          {heroImageAction ? (
-            <div
-              className={
-                imageSettings.fit === "contain"
-                  ? "relative z-10 flex justify-center p-4"
-                  : "absolute inset-x-4 bottom-6 z-10 flex justify-center"
-              }
-            >
-              {heroImageAction}
-            </div>
           ) : null}
         </figure>;
   const copy = <>
@@ -205,7 +201,7 @@ export default function GymnasticsScene({
       </>;
   return (
     <TemplateImageTone color={design.accent} enabled={model.heroImageFilterEnabled !== false}>
-      <EventPageHero artwork={artwork} copy={<>{masthead}{copy}</>}>
+      <EventPageHero artwork={artwork} artworkActions={imageActions} copy={<>{masthead}{copy}</>}>
       <header
         className={styles.scene}
         data-design={design.id}
@@ -214,6 +210,7 @@ export default function GymnasticsScene({
       >
         {masthead}{artwork}{copy}
       </header>
+      {imageActions && <div className={styles.originalImageActions}>{imageActions}</div>}
       </EventPageHero>
     </TemplateImageTone>
   );

@@ -1,0 +1,150 @@
+/* Shared by the picker and saved header so every thumbnail shows its real treatment. */
+.shadow {
+  /* Authored ink stays light on dark templates and dark on light templates. */
+  --hero-cut-shadow-color: color-mix(in srgb, var(--hero-cut-shadow-ink, var(--gym-ink, var(--event-ink, currentColor))) 24%, transparent);
+  filter: drop-shadow(0 2px 2px var(--hero-cut-shadow-color)) drop-shadow(0 6px 9px var(--hero-cut-shadow-color));
+}
+.treatment {
+  position: relative;
+  isolation: isolate;
+  --hero-line: #fff7e8;
+  --hero-accent: var(--gym-accent, var(--event-accent, #d5ae64));
+}
+.treatment[data-image-style]::before,
+.treatment[data-image-style]::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+.treatment[data-image-style="diagonal-cut"] {
+  clip-path: polygon(0 0, 100% 0, 100% 84%, 0 100%);
+}
+.treatment[data-image-style="diagonal-cut"]::before {
+  inset: 0;
+  background: var(--hero-line);
+  clip-path: polygon(0 91%, 100% 75%, 100% 76%, 0 92%);
+}
+.treatment[data-image-style="diagonal-cut"]::after {
+  inset: 0;
+  background: var(--hero-accent);
+  clip-path: polygon(0 95%, 100% 79%, 100% 81%, 0 97%);
+}
+.treatment[data-image-style="crossing-lines"]::before {
+  inset: 0;
+  background: linear-gradient(166deg, transparent 0 40%, var(--hero-line) 40% 40.5%, transparent 40.5%),
+    linear-gradient(14deg, transparent 0 69%, var(--hero-line) 69% 69.5%, transparent 69.5%);
+}
+.treatment[data-image-style="crossing-lines"]::after {
+  inset: 0;
+  background: var(--hero-accent);
+  clip-path: polygon(0 16%, 18% 16%, 18% 18%, 0 18%);
+}
+.treatment[data-image-style="offset-frame"]::before {
+  inset: 6% 10% 10% 6%;
+  border: 1px solid var(--hero-line);
+}
+.treatment[data-image-style="offset-frame"]::after {
+  inset: 10% 6% 6% 10%;
+  border: 2px solid var(--hero-accent);
+}
+.treatment[data-image-style="cut-corners"] {
+  clip-path: polygon(0 12%, 12% 0, 100% 0, 100% 88%, 88% 100%, 0 100%);
+}
+.treatment[data-image-style="cut-corners"]::before {
+  inset: 5%;
+  border: 1px solid var(--hero-line);
+  clip-path: polygon(0 16%, 16% 0, 100% 0, 100% 84%, 84% 100%, 0 100%);
+}
+.treatment[data-image-style="cut-corners"]::after {
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0 12%, var(--hero-accent) 12% 13%, transparent 13% 87%, var(--hero-accent) 87% 88%, transparent 88%);
+}
+.treatment[data-image-style="sliced-bands"] img {
+  mask-image: linear-gradient(174deg, #000 0 32%, transparent 32% 34%, #000 34% 65%, transparent 65% 67%, #000 67%);
+}
+.treatment[data-image-style="sliced-bands"]::after {
+  inset: 0;
+  background: var(--hero-accent);
+  clip-path: polygon(0 84%, 22% 80%, 22% 81%, 0 85%);
+}
+
+.treatment[data-image-style="diagonal-rise"] { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 82%); }
+.treatment[data-image-style="diagonal-rise"]::after { inset: 0; background: var(--hero-accent); clip-path: polygon(0 73%, 100% 91%, 100% 93%, 0 75%); }
+.treatment[data-image-style="chevron-edge"] { clip-path: polygon(0 0, 100% 0, 100% 82%, 50% 100%, 0 82%); }
+.treatment[data-image-style="chevron-edge"]::after { inset: 0; background: var(--hero-line); clip-path: polygon(0 73%, 50% 91%, 100% 73%, 100% 74%, 50% 92%, 0 74%); }
+.treatment[data-image-style="wave-edge"] { clip-path: polygon(0 0, 100% 0, 100% 87%, 95% 90%, 90% 93%, 85% 95%, 80% 96%, 75% 96%, 70% 95%, 65% 93%, 60% 90%, 55% 87%, 50% 85%, 45% 84%, 40% 84%, 35% 85%, 30% 87%, 25% 90%, 20% 93%, 15% 95%, 10% 96%, 5% 96%, 0 95%); }
+.treatment[data-image-style="wave-edge"]::after { inset: 0; background: var(--hero-accent); clip-path: ellipse(60% 1% at 36% 78%); }
+.treatment[data-image-style="scalloped-edge"] { mask-image: radial-gradient(circle at 12px 100%, transparent 9px, #000 10px); mask-size: 24px 100%; mask-repeat: repeat-x; }
+.treatment[data-image-style="scalloped-edge"]::after { inset: 5% 5% 10%; border-bottom: 1px solid var(--hero-line); }
+.treatment[data-image-style="postage-stamp"] { clip-path: polygon(0 0, 10% 2%, 20% 0, 30% 2%, 40% 0, 50% 2%, 60% 0, 70% 2%, 80% 0, 90% 2%, 100% 0, 98% 10%, 100% 20%, 98% 30%, 100% 40%, 98% 50%, 100% 60%, 98% 70%, 100% 80%, 98% 90%, 100% 100%, 90% 98%, 80% 100%, 70% 98%, 60% 100%, 50% 98%, 40% 100%, 30% 98%, 20% 100%, 10% 98%, 0 100%, 2% 90%, 0 80%, 2% 70%, 0 60%, 2% 50%, 0 40%, 2% 30%, 0 20%, 2% 10%); }
+.treatment[data-image-style="postage-stamp"]::after { inset: 5%; border: 2px solid var(--hero-line); }
+.treatment[data-image-style="torn-edge"] { clip-path: polygon(0 0, 100% 0, 100% 94%, 96% 96%, 91% 93%, 87% 97%, 81% 95%, 76% 99%, 70% 96%, 63% 98%, 57% 94%, 51% 97%, 45% 95%, 39% 100%, 32% 96%, 26% 98%, 21% 94%, 15% 97%, 9% 95%, 4% 98%, 0 96%); }
+.treatment[data-image-style="torn-edge"]::after { inset: 0; background: var(--hero-line); clip-path: polygon(3% 86%, 97% 83%, 97% 83.5%, 3% 86.5%); }
+.treatment[data-image-style="filmstrip"]::before { inset: 0; border-block: clamp(12px, 3cqi, 24px) solid #191b21; }
+.treatment[data-image-style="filmstrip"]::after { inset: 0; background: repeating-linear-gradient(90deg, transparent 0 12px, var(--hero-line) 12px 22px, transparent 22px 34px) top 6px left / 100% 5px no-repeat, repeating-linear-gradient(90deg, transparent 0 12px, var(--hero-line) 12px 22px, transparent 22px 34px) bottom 6px left / 100% 5px no-repeat; }
+.treatment[data-image-style="corner-brackets"]::after { inset: 6%; background: linear-gradient(var(--hero-line),var(--hero-line)) top left / 24% 2px no-repeat, linear-gradient(var(--hero-line),var(--hero-line)) top left / 2px 24% no-repeat, linear-gradient(var(--hero-accent),var(--hero-accent)) bottom right / 24% 3px no-repeat, linear-gradient(var(--hero-accent),var(--hero-accent)) bottom right / 3px 24% no-repeat; }
+.treatment[data-image-style="double-rule"]::before { inset: 8% 0; border-block: 1px solid var(--hero-line); }
+.treatment[data-image-style="double-rule"]::after { inset: 10% 0; border-block: 2px solid var(--hero-accent); }
+.treatment[data-image-style="triple-stripe"]::after { inset: 0; background: repeating-linear-gradient(120deg, transparent 0 12px, var(--hero-accent) 12px 24px, transparent 24px 36px); clip-path: polygon(78% 0, 100% 0, 100% 100%, 92% 100%); }
+.treatment[data-image-style="window-grid"]::after { inset: 0; background: linear-gradient(90deg, transparent 32.9%, var(--hero-line) 32.9% 33.5%, transparent 33.5% 66.3%, var(--hero-line) 66.3% 66.9%, transparent 66.9%), linear-gradient(transparent 49.6%, var(--hero-line) 49.6% 50.4%, transparent 50.4%); }
+.treatment[data-image-style="diamond-window"] { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.treatment[data-image-style="diamond-window"]::after { inset: 0; background: var(--hero-line); clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%, 50% 5%, 50% 6%, 6% 50%, 50% 94%, 94% 50%, 50% 6%); }
+.treatment[data-image-style="hexagon-window"] { clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); }
+.treatment[data-image-style="hexagon-window"]::after { inset: 0; background: var(--hero-accent); clip-path: polygon(26% 5%, 74% 5%, 74% 6%, 26% 6%, 26% 5%, 26% 95%, 74% 95%, 74% 96%, 26% 96%); }
+.treatment[data-image-style="oval-window"] { border-radius: 50%; }
+.treatment[data-image-style="oval-window"]::after { inset: 5%; border: 1px solid var(--hero-line); border-radius: 50%; }
+.treatment[data-image-style="soft-arch"] { border-radius: 48% 48% 12% 12%; }
+.treatment[data-image-style="soft-arch"]::after { inset: 5%; border: 1px solid var(--hero-accent); border-radius: 48% 48% 10% 10%; }
+.treatment[data-image-style="corner-ribbon"]::after { inset: 0; background: var(--hero-accent); clip-path: polygon(74% 0, 83% 0, 100% 17%, 100% 26%); }
+.treatment[data-image-style="inset-mat"]::before { inset: 0; border: clamp(5px, 2cqi, 18px) solid var(--hero-line); }
+.treatment[data-image-style="inset-mat"]::after { inset: 7%; border: 1px solid var(--hero-accent); }
+.treatment[data-image-style="half-frame"]::before { inset: 5% 12% 12% 5%; border-top: 3px solid var(--hero-line); border-left: 3px solid var(--hero-line); }
+.treatment[data-image-style="half-frame"]::after { inset: 12% 5% 5% 12%; border-right: 2px solid var(--hero-accent); border-bottom: 2px solid var(--hero-accent); }
+.treatment[data-image-style="spotlight-ring"]::after { inset: 10%; border: 1px solid var(--hero-line); border-radius: 50%; box-shadow: 0 0 0 1000px #11182733; }
+.treatment[data-image-style="stitched-edge"]::before { inset: 4%; border: 1px dashed var(--hero-line); }
+.treatment[data-image-style="stitched-edge"]::after { inset: 7%; border: 1px solid color-mix(in srgb, var(--hero-accent) 80%, transparent); }
+
+.treatment[data-image-style="folded-corner"] { clip-path: polygon(0 0, 86% 0, 100% 20%, 100% 100%, 0 100%); }
+.treatment[data-image-style="folded-corner"]::after { inset: 0; background: var(--hero-line); clip-path: polygon(86% 0, 86% 20%, 100% 20%); }
+.treatment[data-image-style="stepped-edge"] { clip-path: polygon(0 0, 100% 0, 100% 70%, 80% 70%, 80% 80%, 60% 80%, 60% 90%, 40% 90%, 40% 100%, 0 100%); }
+.treatment[data-image-style="stepped-edge"]::after { inset: 5% 0 0 5%; border-top: 2px solid var(--hero-accent); border-left: 2px solid var(--hero-accent); }
+.treatment[data-image-style="zigzag-edge"] { clip-path: polygon(0 0, 100% 0, 100% 87%, 90% 100%, 80% 87%, 70% 100%, 60% 87%, 50% 100%, 40% 87%, 30% 100%, 20% 87%, 10% 100%, 0 87%); }
+.treatment[data-image-style="zigzag-edge"]::after { inset: 0; background: var(--hero-accent); clip-path: polygon(0 77%, 100% 77%, 100% 78%, 0 78%); }
+.treatment[data-image-style="ticket-edge"] { mask-image: radial-gradient(circle at 0 50%, transparent 6%, #000 6.3%), radial-gradient(circle at 100% 50%, transparent 6%, #000 6.3%); mask-composite: intersect; }
+.treatment[data-image-style="ticket-edge"]::after { inset: 7% 10%; border: 1px dashed var(--hero-line); }
+.treatment[data-image-style="rounded-ticket"] { border-radius: 18px; mask-image: radial-gradient(circle at 0 50%, transparent 7%, #000 7.3%), radial-gradient(circle at 100% 50%, transparent 7%, #000 7.3%); mask-composite: intersect; }
+.treatment[data-image-style="rounded-ticket"]::after { inset: 8% 14%; border-left: 1px dashed var(--hero-line); border-right: 1px dashed var(--hero-line); }
+.treatment[data-image-style="diagonal-window"] { clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%); }
+.treatment[data-image-style="diagonal-window"]::after { inset: 0; background: var(--hero-accent); clip-path: polygon(18% 0, 19% 0, 7% 100%, 6% 100%); }
+.treatment[data-image-style="octagon-window"] { clip-path: polygon(25% 0, 75% 0, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0 75%, 0 25%); }
+.treatment[data-image-style="octagon-window"]::after { inset: 7%; border: 1px solid var(--hero-line); clip-path: polygon(25% 0, 75% 0, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0 75%, 0 25%); }
+.treatment[data-image-style="shield-window"] { border-radius: 8% 8% 0 0; clip-path: polygon(0 0, 100% 0, 100% 76%, 50% 100%, 0 76%); }
+.treatment[data-image-style="shield-window"]::after { inset: 0; background: var(--hero-line); clip-path: polygon(0 69%, 50% 93%, 100% 69%, 100% 70%, 50% 94%, 0 70%); }
+.treatment[data-image-style="fan-window"] { border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+.treatment[data-image-style="fan-window"]::after { inset: 9% 6% 0; border: 1px solid var(--hero-accent); border-bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+.treatment[data-image-style="pebble-window"] { border-radius: 58% 42% 32% 68% / 40% 32% 68% 60%; }
+.treatment[data-image-style="pebble-window"]::after { inset: 5%; border: 1px solid var(--hero-line); border-radius: inherit; }
+.treatment[data-image-style="clover-window"] { mask-image: radial-gradient(circle at 33% 33%, #000 31%, transparent 31.3%), radial-gradient(circle at 67% 33%, #000 31%, transparent 31.3%), radial-gradient(circle at 33% 67%, #000 31%, transparent 31.3%), radial-gradient(circle at 67% 67%, #000 31%, transparent 31.3%); }
+.treatment[data-image-style="clover-window"]::after { inset: 0; background: var(--hero-accent); clip-path: circle(2% at 50% 50%); }
+.treatment[data-image-style="sunburst-edge"] { clip-path: polygon(50% 0, 57% 10%, 68% 3%, 71% 16%, 85% 15%, 84% 29%, 97% 32%, 90% 43%, 100% 50%, 90% 57%, 97% 68%, 84% 71%, 85% 85%, 71% 84%, 68% 97%, 57% 90%, 50% 100%, 43% 90%, 32% 97%, 29% 84%, 15% 85%, 16% 71%, 3% 68%, 10% 57%, 0 50%, 10% 43%, 3% 32%, 16% 29%, 15% 15%, 29% 16%, 32% 3%, 43% 10%); }
+.treatment[data-image-style="sunburst-edge"]::after { inset: 12%; border: 1px solid var(--hero-line); border-radius: 50%; }
+.treatment[data-image-style="three-panels"] img { mask-image: linear-gradient(90deg, #000 0 32%, transparent 32% 34%, #000 34% 66%, transparent 66% 68%, #000 68%); }
+.treatment[data-image-style="three-panels"]::after { inset: 5% 0; border-block: 1px solid var(--hero-accent); }
+.treatment[data-image-style="slanted-panels"] img { mask-image: linear-gradient(105deg, #000 0 31%, transparent 31% 33%, #000 33% 65%, transparent 65% 67%, #000 67%); }
+.treatment[data-image-style="slanted-panels"]::after { inset: 0; background: var(--hero-line); clip-path: polygon(0 88%, 100% 78%, 100% 78.5%, 0 88.5%); }
+.treatment[data-image-style="horizon-line"]::before { inset: 70% 5% auto; height: 1px; background: var(--hero-line); }
+.treatment[data-image-style="horizon-line"]::after { width: 3%; aspect-ratio: 1; right: 8%; top: 70%; border-radius: 50%; background: var(--hero-accent); transform: translateY(-50%); }
+.treatment[data-image-style="vertical-rule"]::before { inset: 0 10%; border-left: 1px solid var(--hero-line); }
+.treatment[data-image-style="vertical-rule"]::after { inset: 0 13%; border-left: 3px solid var(--hero-accent); }
+.treatment[data-image-style="sweeping-arc"]::after { inset: 40% -15% -45%; border: 2px solid var(--hero-line); border-radius: 50%; transform: rotate(-12deg); }
+.treatment[data-image-style="orbit-lines"]::before { inset: 10% -20%; border: 1px solid var(--hero-line); border-radius: 50%; transform: rotate(40deg); }
+.treatment[data-image-style="orbit-lines"]::after { inset: -20% 10%; border: 1px solid var(--hero-accent); border-radius: 50%; transform: rotate(40deg); }
+.treatment[data-image-style="art-deco"]::before { inset: 5% 12%; border-block: 2px solid var(--hero-accent); }
+.treatment[data-image-style="art-deco"]::after { inset: 8% 8%; border: 1px solid var(--hero-line); clip-path: polygon(0 10%, 10% 10%, 10% 0, 90% 0, 90% 10%, 100% 10%, 100% 90%, 90% 90%, 90% 100%, 10% 100%, 10% 90%, 0 90%); }
+.treatment[data-image-style="geometric-corner"]::after { inset: 0; background: linear-gradient(135deg, transparent 18%, var(--hero-line) 18% 18.5%, transparent 18.5% 23%, var(--hero-accent) 23% 24%, transparent 24% 28%, var(--hero-line) 28% 28.5%, transparent 28.5%); clip-path: polygon(0 0, 70% 0, 0 70%); }
+.treatment[data-image-style="polaroid-mat"]::after { inset: 0; border: clamp(5px, 2cqi, 18px) solid var(--hero-line); border-bottom-width: clamp(22px, 9cqi, 64px); }
+.treatment[data-image-style="double-oval"]::before { inset: 5% 10%; border: 1px solid var(--hero-line); border-radius: 50%; }
+.treatment[data-image-style="double-oval"]::after { inset: 10% 5%; border: 1px solid var(--hero-accent); border-radius: 50%; }
+.treatment[data-image-style="floating-border"]::before { inset: 6% 12% 12% 6%; border: 2px solid var(--hero-line); box-shadow: 6px 6px 0 color-mix(in srgb, var(--hero-accent) 60%, transparent); }
+.treatment[data-image-style="floating-border"]::after { inset: 12% 6% 6% 12%; border-right: 1px solid var(--hero-accent); border-bottom: 1px solid var(--hero-accent); }

@@ -1,7 +1,9 @@
 "use client";
 
 import { CalendarPlus, Check, Link, Navigation, Share2, X } from "lucide-react";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useContext, useRef, useState } from "react";
+import { EventEditorCalendarContext } from "@/components/events/EventEditorCalendarContext";
+import { eventLocationDateTimes } from "@/lib/event-location-timezone";
 import CalendarAction from "@/components/CalendarAction";
 import { useEventPageReadOnly } from "@/components/events/EventPageReadOnlyContext";
 import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
@@ -57,6 +59,15 @@ export default function EventGuestActions({
   const [copied, setCopied] = useState(false);
   const templateEditor = useTemplateEditor();
   const readOnly = useEventPageReadOnly();
+  const localFields = useContext(EventEditorCalendarContext);
+  if (localFields?.date) {
+    const dates = eventLocationDateTimes(localFields);
+    start = dates.startISO;
+    eventEnd = dates.endISO;
+    suppliedAllDay = dates.allDay;
+    timezone = typeof localFields.timezone === "string" ? localFields.timezone : undefined;
+    calendarLinks = null;
+  }
   const [manualShareUrl, setManualShareUrl] = useState("");
   const updateVisibility = readOnly ? undefined : onVisibilityChange;
   const destination = location || "";

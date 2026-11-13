@@ -47,7 +47,7 @@ jobs:
         run: node scripts/ci-host-tools.mjs
       - name: Check Create facts, prompts, output contracts and guest actions offline
         run: npm run test:create-remediation
-      - name: Check rendered previews and RSVP recovery with external requests blocked
+      - name: Check guest previews, RSVP recovery and event editors offline
         # Keep browser evidence when the offline suite fails; its failure still fails the job.
         if: ${{ !cancelled() && steps.bun.outcome == 'success' && steps.typecheck.outcome == 'success' && steps.chromium.outcome == 'success' && steps.ffmpeg.outcome == 'success' }}
         run: npm run test:create-browser

@@ -96,7 +96,7 @@ export function resolveArtworkEditHref(eventId: string, eventData: unknown): str
 export const buildEditLink = (eventId: string, eventData: any, eventTitle: string): string => {
   if (eventData?.createdVia === "custom-event-page" || eventData?.customEventPage?.version === 1) return `/event/design/customize?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.createdVia === "livecard-builder") return `/live-cards?edit=${encodeURIComponent(eventId)}`;
-  if (eventData?.scanSchedule?.kind === "school-memo") return `/event/general/customize?collection=school&templateId=school--weekly-memo&edit=${encodeURIComponent(eventId)}`;
+  if (eventData?.scanSchedule?.kind === "school-memo") return `/event/design/customize?collection=school&templateId=school--weekly-memo&edit=${encodeURIComponent(eventId)}`;
   if (eventData?.scanSchedule?.items?.length) return `/event/schedule/customize?edit=${encodeURIComponent(eventId)}`;
   const legacyHref = resolveLegacyCreatedEditHref(eventId, eventData, eventTitle);
   if (legacyHref) return legacyHref;
@@ -172,7 +172,7 @@ export function resolveOwnerEditHref(
 export const resolveEditHref = (eventId: string, eventData: any, eventTitle: string): string => {
   if (eventData?.createdVia === "custom-event-page" || eventData?.customEventPage?.version === 1) return `/event/design/customize?edit=${encodeURIComponent(eventId)}`;
   if (eventData?.createdVia === "livecard-builder") return `/live-cards?edit=${encodeURIComponent(eventId)}`;
-  if (eventData?.scanSchedule?.kind === "school-memo") return `/event/general/customize?collection=school&templateId=school--weekly-memo&edit=${encodeURIComponent(eventId)}`;
+  if (eventData?.scanSchedule?.kind === "school-memo") return `/event/design/customize?collection=school&templateId=school--weekly-memo&edit=${encodeURIComponent(eventId)}`;
   if (eventData?.scanSchedule?.items?.length) return `/event/schedule/customize?edit=${encodeURIComponent(eventId)}`;
   const legacyHref = resolveLegacyCreatedEditHref(eventId, eventData, eventTitle);
   if (legacyHref) return legacyHref;

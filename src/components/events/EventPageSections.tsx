@@ -116,10 +116,11 @@ export default function EventPageSections({
     );
   return (
     <div
-      className={`${styles.sections} ${className}`}
+      className={`${styles.sections} ${styles.contentFlow} ${className}`}
       data-event-body-layout={composition.value?.layout || "template"}
     >
       <EventSectionCanvas
+        navigation
         className={`${styles.canvas} ${canvasClassName}`}
         itemClassName={itemClassName}
         renderSection={renderSection}

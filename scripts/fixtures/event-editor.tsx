@@ -42,7 +42,8 @@ import SimpleTemplateView from "../../src/components/SimpleTemplateView";
 import EventGuestActions from "../../src/components/event-templates/EventGuestActions";
 import type { EventGuestActionVisibility } from "../../src/lib/event-guest-actions";
 import { usePathname, useSearchParams, useRouter } from "./signup-editor/navigation";
-import { emptyCustomEventDetails } from "../../src/lib/event-custom-design";
+import { emptyCustomEventDetails, normalizeCustomEventPage } from "../../src/lib/event-custom-design";
+import CustomEventPageContent from "../../src/components/events/custom/CustomEventPageContent";
 
 const customPage = {
   version: 1 as const,
@@ -87,7 +88,7 @@ const customPage = {
     information: { version: 1, kind: "information", category: "general", design: customPage.design,
       details: { ...emptyCustomEventDetails(), title: schedule.title, schoolTemplate: "weekly-memo", scanSchedule: schedule, timezone: schedule.timezone, sections: [{ title: "School memo", body: source }] } },
   });
-  return prepareCreationEditor(intake, { id: "school--weekly-memo", family: "general", category: "general", title: "Weekly memo", description: "", style: "", imageUrl: "", href: "/event/general/customize?collection=school&templateId=school--weekly-memo" });
+  return prepareCreationEditor(intake, { id: "school--weekly-memo", family: "custom", category: "general", title: "Weekly memo", description: "", style: "", imageUrl: "", href: "/event/design/customize?collection=school&templateId=school--weekly-memo" });
 };
 
 const navigate = (url: string, replace = false) => {
@@ -221,7 +222,7 @@ function SavedSchoolMemo() {
   return <EventPageCompositionProvider value={row.data.eventPageComposition}>
     <a href={`${resolveOwnerEditHref(id, row.data, row.title)}&mode=manual&schoolCalendar=1`}>Edit school memo</a>
     <ScannedScheduleProvider schedule={row.data.scanSchedule} eventId={id} canManage published={!isEventDraft(row.data)}>
-      <SimpleTemplateView eventId={id} eventData={row.data} eventTitle={row.title} isOwner={false} isReadOnly viewerKind="readonly" shareUrl={`http://localhost:43128/event/${id}`} sessionEmail="host@test.com" disableProtectedSectionLocks hideOwnerActions />
+      {normalizeCustomEventPage(row.data.customEventPage) ? <CustomEventPageContent page={normalizeCustomEventPage(row.data.customEventPage)!} eventId={id} /> : <SimpleTemplateView eventId={id} eventData={row.data} eventTitle={row.title} isOwner={false} isReadOnly viewerKind="readonly" shareUrl={`http://localhost:43128/event/${id}`} sessionEmail="host@test.com" disableProtectedSectionLocks hideOwnerActions />}
     </ScannedScheduleProvider>
   </EventPageCompositionProvider>;
 }
@@ -255,7 +256,7 @@ function App() {
   const pathname = usePathname();
   const search = useSearchParams();
   if (!pathname.includes("customize")) return <div data-destination>{pathname}</div>;
-  const mode = search.get("mode") || (pathname.startsWith("/sport-events/") ? "sport-events" : pathname.includes("/gymnastics/templates/") ? "gymnastics-template" : pathname.includes("gymnastics") ? "gymnastics" : null);
+  const mode = search.get("mode") || (pathname === "/event/design/customize" ? "create" : pathname.startsWith("/sport-events/") ? "sport-events" : pathname.includes("/gymnastics/templates/") ? "gymnastics-template" : pathname.includes("gymnastics") ? "gymnastics" : null);
   if (search.get("toolsAudit") === "saved") return <SavedTypographyPreview />;
   if (search.get("toolsAudit") === "recovered-rsvp") return <RecoveredRsvpSwitch />;
   const routeParts = pathname.split("/").filter(Boolean);
@@ -288,7 +289,7 @@ function App() {
       ) : mode === "wedding" ? (
         <Weddings />
       ) : mode === "upload" || mode === "create" ? (
-        <EventCustomEditor initialPage={search.has("edit") ? undefined : customPage} />
+        <EventCustomEditor initialPage={search.has("edit") || search.has("templateId") || search.has("intake") ? undefined : customPage} />
       ) : (
         <LifecycleEditor />
       )}

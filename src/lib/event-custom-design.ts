@@ -1,6 +1,6 @@
 import { normalizeSchoolTemplate, type SchoolTemplateKind } from "./school-events";
 import { normalizeScanSchedule, scanScheduleHistoryFields, type ScanSchedule } from "./scan-schedule";
-import { parseCalendarDateTimeToIso } from "./calendar-date-time";
+import { addCalendarDays, parseCalendarDateTimeToIso } from "./calendar-date-time";
 import { normalizeArrivalMap, type EventArrivalMap } from "./event-arrival-map";
 import { normalizeEventGuestActions, type EventGuestActionVisibility } from "./event-guest-actions";
 import { colorContrast } from "./color-contrast";
@@ -70,6 +70,8 @@ export type EventCustomDesign = {
   layout: (typeof EVENT_DESIGN_LAYOUTS)[number];
   hero?: EventHeroLayout;
   font: keyof typeof EVENT_DESIGN_FONTS;
+  /** Exact catalog typography retained when an older template enters this editor. */
+  fontFamily?: string;
   colors: { page: string; surface: string; ink: string; accent: string };
 };
 export const EVENT_DETAIL_FIELDS = [
@@ -89,6 +91,8 @@ export const EVENT_DETAIL_FIELDS = [
   "rsvpDeadline",
 ] as const;
 export type CustomEventDetails = Record<(typeof EVENT_DETAIL_FIELDS)[number], string> & {
+  timezoneSource?: "location" | "manual";
+  timezoneLocation?: string;
   schoolTemplate?: SchoolTemplateKind;
   scanSchedule?: ScanSchedule;
   guestActions?: EventGuestActionVisibility;
@@ -102,6 +106,7 @@ export type CustomEventDetails = Record<(typeof EVENT_DETAIL_FIELDS)[number], st
 };
 export type CustomEventPage = {
   version: 1;
+  sourceTemplateId?: string;
   category: CustomEventCategory;
   design: EventCustomDesign;
   artwork: string;
@@ -241,6 +246,7 @@ export function normalizeEventCustomDesign(value: unknown): EventCustomDesign | 
     layout: raw.layout as EventCustomDesign["layout"],
     ...(hero ? { hero } : {}),
     font: raw.font as EventCustomDesign["font"],
+    ...(typeof raw.fontFamily === "string" && /^[a-zA-Z0-9 '"(),-]{1,300}$/.test(raw.fontFamily) ? { fontFamily: raw.fontFamily } : {}),
     colors: palette,
   };
 }
@@ -248,6 +254,8 @@ export function normalizeCustomEventDetails(value: unknown): CustomEventDetails 
   const raw = record(value);
   if (!raw) return null;
   const details = emptyCustomEventDetails();
+  if (raw.timezoneSource === "location" || raw.timezoneSource === "manual") details.timezoneSource = raw.timezoneSource;
+  if (typeof raw.timezoneLocation === "string") details.timezoneLocation = raw.timezoneLocation.slice(0, 1000);
   const schoolTemplate = normalizeSchoolTemplate(raw.schoolTemplate);
   if (schoolTemplate) details.schoolTemplate = schoolTemplate;
   const scanSchedule = normalizeScanSchedule(raw.scanSchedule);
@@ -353,24 +361,31 @@ export function normalizeCustomEventPage(value: unknown): CustomEventPage | null
     )
   )
     return null;
-  return { version: 1, category, design, details, artwork: raw.artwork };
+  return { version: 1, category, design, details, artwork: raw.artwork,
+    ...(typeof raw.sourceTemplateId === "string" && /^[a-z0-9-]{1,300}$/.test(raw.sourceTemplateId) ? { sourceTemplateId: raw.sourceTemplateId } : {}) };
 }
 export function customEventGalleryHref(category: CustomEventCategory): string {
   return category === "bridal-showers" ? "/bridal-showers/templates" : `/event/${category}`;
 }
 export function customEventPageData(page: CustomEventPage) {
   const d = page.details;
+  const sourceCollection = page.sourceTemplateId?.split("--")[0];
   const start = d.date
-    ? parseCalendarDateTimeToIso(`${d.date}${d.time ? `T${d.time}` : ""}`, d.timezone || "UTC")
+    ? d.time && !d.timezone ? null : parseCalendarDateTimeToIso(`${d.date}${d.time ? `T${d.time}` : ""}`, d.timezone || "UTC")
     : null;
-  const end =
-    d.endTime && (d.endDate || d.date)
+  const end = !d.time && d.endDate && d.endDate >= d.date
+    ? addCalendarDays(d.endDate, 1)
+    :
+    d.endTime && d.timezone && (d.endDate || d.date)
       ? parseCalendarDateTimeToIso(`${d.endDate || d.date}T${d.endTime}`, d.timezone || "UTC")
       : null;
   return {
     title: d.title,
     description: d.description,
     category: d.schoolTemplate ? "School & classroom" : CUSTOM_EVENT_CATEGORIES[page.category],
+    ...(page.sourceTemplateId ? { bodyDesignId: page.sourceTemplateId } : {}),
+    ...(sourceCollection === "holidays" ? { creationCollection: "holidays-seasonal", holidayOccasion: page.sourceTemplateId?.split("--")[1] } :
+      sourceCollection && ["graduations", "housewarming", "open-house", "religious-events"].includes(sourceCollection) ? { creationCollection: sourceCollection } : {}),
     ...(d.schoolTemplate ? { creationCollection: "school", schoolTemplate: d.schoolTemplate } : {}),
     customEventPage: page,
     customEventPageDraft: null,
@@ -390,6 +405,8 @@ export function customEventPageData(page: CustomEventPage) {
     allDay: Boolean(d.date && !d.time),
     timezone: d.timezone || "UTC",
     tz: d.timezone || "UTC",
+    timezoneSource: d.timezoneSource,
+    timezoneLocation: d.timezoneLocation,
     venue: d.venue,
     location: d.location || d.venue,
     hostName: d.host,

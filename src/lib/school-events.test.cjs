@@ -36,7 +36,7 @@ test("four school purposes select current designs in the expanded Create collect
     assert.ok(selected.id.startsWith(`school--${kind}--`));
     assert.equal(getGeneralEventPageDesign(selected.id).schoolTemplate, kind);
     const href = new URL(selected.href, "https://envitefy.test");
-    assert.equal(href.pathname, "/event/general/customize");
+    assert.equal(href.pathname, "/event/design/customize");
     assert.equal(href.searchParams.get("collection"), "school");
     const design = getGeneralEventPageDesign(selected.id);
     assert.ok(design && getGeneralEventBodyPresentation(selected.id));

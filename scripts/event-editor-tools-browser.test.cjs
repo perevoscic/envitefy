@@ -7,10 +7,10 @@ const compiled = require("next/dist/compiled/webpack/webpack");
 const { resolveThemeCssVariables } = require("./lib/event-messages-test-loader.cjs")("src/themes/registry.ts");
 compiled.init();
 
-test("event editors keep the earlier layout with fonts inside Design and separate RSVP settings", {
-  timeout: 300000,
-}, async () => {
-  const output = path.resolve(".qa/event-editor-tools-browser");
+const output = path.resolve(process.env.EVENT_EDITOR_TOOLS_OUTPUT || ".qa/event-editor-tools-browser");
+let fixtureBuild;
+const fixture = () => fixtureBuild ??= buildFixture();
+async function buildFixture() {
   await new Promise((resolve, reject) => {
     const compiler = compiled.webpack({
       mode: "development",
@@ -18,7 +18,7 @@ test("event editors keep the earlier layout with fonts inside Design and separat
       devtool: false,
       entry: path.resolve("scripts/fixtures/event-editor.tsx"),
       output: { path: output, filename: "fixture.js" },
-      plugins: [
+      plugins: [new compiled.webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
         new compiled.webpack.DefinePlugin({
           "process.env": JSON.stringify({ NODE_ENV: "development" }),
         }),
@@ -61,6 +61,11 @@ test("event editors keep the earlier layout with fonts inside Design and separat
   ).css;
   const script = fs.readFileSync(path.join(output, "fixture.js"));
 
+  return { script, css };
+}
+
+async function editorToolsCase({ width = 1440, category, specialized, menuKind, zone, fonts, recovered }) {
+  const { script, css } = await fixture();
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
   const page = await browser.newPage({ reducedMotion: "reduce" });
   page.setDefaultTimeout(12000);
@@ -89,19 +94,21 @@ test("event editors keep the earlier layout with fonts inside Design and separat
       records.set(id, row);
       return route.fulfill({ contentType: "application/json", body: JSON.stringify(row) });
     }
+    if (url.pathname === "/api/events/timezone") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ timezone: request.postDataJSON().query.includes("Palmetto") ? "America/New_York" : null }) });
     if (url.pathname.startsWith("/api/")) return route.fulfill({ contentType: "application/json", body: "{}" });
     if (url.origin === base) return route.fulfill({ contentType: "text/html", body: `<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}body{margin:0}</style></head><body><main id="root"></main><script src="/fixture.js"></script></body></html>` });
     return route.abort();
   });
-  const categories = process.env.EVENT_EDITOR_RSVP_FOCUS === "specialized" ? [] : ["general", "appointments", "workshops", "special-events", "cheerleading", "dance-ballet", "soccer", "football-season", "sport-events", "weddings", "birthdays", "anniversaries", "baby-showers", "bridal-showers", "gender-reveal"];
+  const categories = category ? [category] : [];
   const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
   const openControls = async () => {
-    const button = page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: /^(Edit|Page settings)$/ });
+    const button = page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: /^(Edit|Page settings|Close preview)$/ });
     await Promise.race([button.waitFor({ state: "visible" }), controls.waitFor({ state: "visible" })]);
     if (await button.isVisible()) await button.click();
     await controls.waitFor();
   };
   try {
+    if (recovered) {
     await page.goto(`${base}/event/sport-events/customize?toolsAudit=recovered-rsvp`);
     const recoveredSwitch = page.getByRole("switch", { name: "Enable RSVP", exact: true });
     assert.equal(await recoveredSwitch.getAttribute("aria-checked"), "false");
@@ -113,7 +120,8 @@ test("event editors keep the earlier layout with fonts inside Design and separat
     assert.equal(await recoveredSwitch.isChecked(), false);
     assert.equal(await page.getByText("Recovered RSVP settings", { exact: true }).isVisible(), false);
     assert.deepEqual(errors, [], "older RSVP state stays controlled when enabled and disabled");
-    for (const width of [1440, 390]) for (const category of categories) {
+    }
+    for (const category of categories) {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: category === "general" ? "dark" : "light" });
       const id = `${category}-${width}`;
@@ -126,10 +134,32 @@ test("event editors keep the earlier layout with fonts inside Design and separat
       const routeCategory = category === "bridal-showers" ? "baby-showers" : category;
       await page.goto(`${base}/event/${routeCategory}/customize?toolsAudit=${category}&edit=${id}${category === "bridal-showers" ? "&occasion=bridal-shower" : ""}`);
       await openControls();
-      const tools = controls.getByRole("group", { name: "Page tools", exact: true });
-      for (const name of ["Page sections", "Layout"]) await tools.getByRole("button", { name, exact: true }).waitFor();
+      assert.equal(await controls.getByRole("group", { name: "Page tools", exact: true }).count(), 0, "settings have one menu list");
+      assert.equal(await controls.getByRole("button", { name: "Page sections", exact: true }).count(), 0, "sections are managed on the page");
+      await controls.getByRole("button", { name: /^Event image settings/ }).waitFor();
       await controls.getByRole("button", { name: /^Custom URL/ }).waitFor();
-      assert.equal(await tools.getByRole("button").count(), category === "football-season" ? 2 : 3, `${category}: the original three-tool toolbar is preserved`);
+      assert.equal(await controls.getByRole("button", { name: /^Custom URL/ }).count(), 1, "Custom URL appears once");
+      const actions = page.getByRole("group", { name: "Save event", exact: true });
+      const actionNames = await actions.getByRole("button").allTextContents();
+      assert.equal(await page.getByRole("button", { name: "Cancel", exact: true }).count(), 0, "Exit replaces duplicate Cancel");
+      await controls.getByRole("button", { name: "Exit", exact: true }).waitFor();
+      const exitBounds = await controls.getByRole("button", { name: "Exit", exact: true }).boundingBox();
+      const panelBounds = await controls.boundingBox();
+      assert.ok(exitBounds.x > panelBounds.x + panelBounds.width / 2 &&
+        panelBounds.x + panelBounds.width - exitBounds.x - exitBounds.width <= 24,
+        `${category}/${width}: Exit stays on the right of the settings header`);
+      if (category === "appointments" && width === 390) {
+        await page.setViewportSize({ width: 320, height: 900 });
+        const narrowExit = await controls.getByRole("button", { name: "Exit", exact: true }).boundingBox();
+        assert.ok(narrowExit.x > 160 && narrowExit.x + narrowExit.width >= 296 && narrowExit.x + narrowExit.width <= 320, "Appointments settings keep Exit on the right at 320px");
+        for (const action of await actions.getByRole("button").all()) {
+          const bounds = await action.boundingBox();
+          assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 320 && bounds.height >= 44, "all narrow-phone save actions remain usable");
+        }
+        await page.screenshot({ path: path.join(output, "appointments-tools-320.png") });
+        await page.setViewportSize({ width, height: 900 });
+      }
+      assert.ok(actionNames.findIndex(name => name.trim() === "Preview") < actionNames.findIndex(name => name.trim() === "Save draft"));
       assert.equal(await controls.getByRole("button", { name: "Font style", exact: true }).count(), 0, "font styling never becomes a separate menu tile");
       await controls.getByRole("button", { name: /^(RSVP|Attendance|Reminders)/ }).waitFor();
       if (["weddings", "general", "sport-events"].includes(category)) {
@@ -167,6 +197,17 @@ test("event editors keep the earlier layout with fonts inside Design and separat
       const previewHeading = page.locator('[aria-label="Event page preview panel"] h1').first();
       assert.match(await previewHeading.evaluate(node => getComputedStyle(node).fontFamily), /Montserrat/, `${category}: live preview uses the selected font`);
       assert.equal(writes.length, before, "choosing a font never saves implicitly");
+      await page.getByRole("button", { name: width < 768 ? "Back to page" : "Hide settings", exact: true }).click();
+      const pageSettings = page.getByRole("button", { name: "Page settings", exact: true });
+      await pageSettings.waitFor();
+      assert.equal(await page.getByRole("button", { name: "Cancel", exact: true }).count(), 0, "the editable canvas also has no duplicate Cancel");
+      const canvasExit = await page.getByRole("button", { name: "Exit", exact: true }).boundingBox();
+      const settingsBounds = await pageSettings.boundingBox();
+      assert.ok(width < 768 ? canvasExit.x < settingsBounds.x : canvasExit.x > settingsBounds.x + settingsBounds.width,
+        "phone canvas places Exit on the left and Edit page on the right; desktop Exit stays right");
+      assert.equal(writes.length, before, "returning to the canvas retains pending edits without saving");
+      await openControls();
+      assert.equal(await font.inputValue(), "montserrat", "reopening settings retains its mounted field and pending font");
       await page.getByRole("button", { name: "Save draft", exact: true }).click();
       await page.getByText("Draft saved.", { exact: true }).waitFor();
       assert.equal(writes.at(-1).id, id);
@@ -216,7 +257,7 @@ test("event editors keep the earlier layout with fonts inside Design and separat
       assert.equal(records.get(id).data.rsvpPhone, "");
       if (["weddings", "general", "sport-events"].includes(category)) await page.screenshot({ path: path.join(output, `${category}-${width}.png`) });
     }
-    for (const width of [1440, 390]) for (const kind of ["gymnastics", "custom"]) {
+    for (const kind of specialized ? [specialized] : []) {
       await page.setViewportSize({ width, height: 900 });
       const id = `rsvp-persistence-${kind}-${width}`;
       if (kind === "gymnastics") records.set(id, { id, title: "Existing meet", revision: `${id}-initial`, data: {
@@ -227,27 +268,44 @@ test("event editors keep the earlier layout with fonts inside Design and separat
       await page.goto(kind === "gymnastics" ? `${base}/event/gymnastics/customize?mode=gymnastics&edit=${id}` : `${base}/event/design/customize?mode=upload`);
       await openControls();
       if (kind === "gymnastics") {
+        assert.equal(await controls.getByRole("button", { name: "Event basics", exact: true }).count(), 0, "event details are edited on the canvas");
+        assert.equal(await controls.getByRole("button", { name: "Page sections", exact: true }).count(), 0, "gymnastics section choices live on the canvas");
+        const imageLayout = controls.getByRole("button", { name: /^Event image settings/ });
+        assert.equal(await imageLayout.count(), 1, "gymnastics settings retain one image layout entry");
+        await imageLayout.click();
+        await controls.getByRole("button", { name: "Upload image", exact: true }).waitFor();
+        assert.equal(await controls.getByRole("button", { name: /^Choose .* hero layout$/ }).count(), 48);
+        assert.equal(await controls.getByRole("button", { name: /^(Show full image|Fill image frame)$/ }).count(), 0);
+        const beforeUpload = writes.length;
+        await controls.getByLabel("Choose hero image", { exact: true }).setInputFiles({ name: "meet.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64") });
+        await controls.getByRole("button", { name: "Use template image", exact: true }).waitFor();
+        assert.equal(writes.length, beforeUpload, "image upload stays local until an explicit save");
+        await controls.getByRole("button", { name: "Use template image", exact: true }).click();
+        await controls.screenshot({ path: path.join(output, `gymnastics-image-settings-${width}.png`) });
+        const styledLayout = controls.getByRole("button", { name: "Choose Diagonal cut hero layout", exact: true });
+        await styledLayout.click();
+        assert.equal(await styledLayout.getAttribute("aria-pressed"), "true");
+        assert.equal(records.get(id).data.eventPageComposition?.hero, undefined, "layout choices wait for an explicit save");
+        await controls.getByRole("button", { name: "Back to details", exact: true }).click();
+        await controls.getByRole("button", { name: /^Custom URL/ }).waitFor();
         const workspace = page.locator("[data-event-page-editor]");
         const preview = page.getByRole("region", { name: "Event page preview panel", includeHidden: true });
         const previewElement = await preview.elementHandle();
         const before = writes.length;
         assert.equal(await controls.getByRole("button", { name: "Change hero image", exact: true }).count(), 0, "the main menu has no image-change row");
-        await controls.getByRole("button", { name: "Image position", exact: true }).click();
-        await controls.getByRole("button", { name: "Change hero image", exact: true }).waitFor();
-        if (width < 768) {
-          await page.getByRole("button", { name: "Back", exact: true }).click();
-          await controls.getByRole("button", { name: "Image position", exact: true }).waitFor();
-        } else {
-          await controls.getByRole("button", { name: "Back to details", exact: true }).click();
-        }
+        await controls.getByRole("button", { name: "Design", exact: true }).click();
+        await controls.getByRole("combobox", { name: "Title font", exact: true }).waitFor();
+        await controls.getByRole("button", { name: "Back to details", exact: true }).click();
+        await controls.getByRole("button", { name: "Design", exact: true }).waitFor();
         await page.emulateMedia({ reducedMotion: "no-preference" });
-        if (width < 768) await page.getByRole("button", { name: "Back", exact: true }).click();
-        else await controls.getByRole("button", { name: "Close settings", exact: true }).click();
+        await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
         await page.waitForFunction(() => {
           const panel = document.querySelector('[aria-label="Event editing controls"]');
           return panel && getComputedStyle(panel).visibility === "hidden";
         });
         assert.equal(await workspace.locator('[aria-label="Event editing controls"]').evaluate(element => element.inert), true, "closed settings cannot receive focus");
+        assert.equal(await preview.locator("[data-hero-image-control]").count(), 0, "image upload is no longer on the canvas");
+        assert.equal(await preview.getByRole("button", { name: /^(Show full image|Fill image frame)$/ }).count(), 0, "the fit icon is removed");
         await workspace.getByRole("button", { name: "Page settings", exact: true }).click();
         await page.waitForFunction(() => {
           const workspace = document.querySelector('[data-event-page-editor]');
@@ -258,7 +316,8 @@ test("event editors keep the earlier layout with fonts inside Design and separat
         });
         assert.equal(await previewElement.evaluate(element => element === document.querySelector('[aria-label="Event page preview panel"]')), true, "sliding settings preserves the mounted event");
         if (width < 768) {
-          assert.ok(await preview.evaluate(element => element.getBoundingClientRect().right <= 1), "the event slides left off the phone canvas");
+          const menuBounds = await controls.boundingBox();
+          assert.ok(menuBounds.x >= 0 && menuBounds.x + menuBounds.width <= width + 1, "the sliding editing menu fits the phone canvas");
           assert.equal(await preview.evaluate(element => element.inert), true, "the offscreen event cannot receive focus");
         } else {
           assert.ok(await preview.evaluate(element => element.getBoundingClientRect().width < element.parentElement.clientWidth - 300), "desktop settings push the event canvas left");
@@ -278,6 +337,23 @@ test("event editors keep the earlier layout with fonts inside Design and separat
       await controls.getByRole("textbox", { name: /^RSVP email/ }).fill("sam@test.com");
       await controls.getByRole("textbox", { name: /^RSVP phone/ }).fill("+1 555 222 3333");
       await controls.locator('input[type="date"]:visible').fill("2027-04-05");
+      const beforePreview = writes.length;
+      await page.getByRole("group", { name: "Save event", exact: true }).getByRole("button", { name: "Preview", exact: true }).click();
+      const cleanPreview = page.getByRole("region", { name: "Event page preview panel", exact: true });
+      await cleanPreview.waitFor();
+      assert.equal(await cleanPreview.locator("[data-editable-section]").count(), 0, "Preview removes section editing controls");
+      assert.equal(await cleanPreview.getByRole("button", { name: "Add tab", exact: true }).count(), 0);
+      assert.equal(await cleanPreview.getByRole("group", { name: "Event image controls", exact: true }).count(), 0, "clean preview has no image toolbar");
+      assert.equal(writes.length, beforePreview, "Preview never saves");
+      assert.equal(await page.getByRole("group", { name: "Save event", exact: true }).count(), 0, "preview has no save or publication actions");
+      assert.equal(await page.getByRole("button", { name: /^(Page settings|Back)$/, exact: true }).count(), 0, "preview replaces editing navigation with a close button");
+      const closePreview = page.getByRole("button", { name: "Close preview", exact: true });
+      const closeBounds = await closePreview.boundingBox();
+      assert.ok(closeBounds.width >= 44 && closeBounds.height >= 44 && closeBounds.x + closeBounds.width >= width - 25 && closeBounds.y < 40, "preview close is a top-right touch target");
+      assert.equal(await closePreview.evaluate(element => element === document.activeElement), true, "preview focuses its close action");
+      await page.screenshot({ path: path.join(output, `${kind}-clean-preview-${width}.png`) });
+      await openControls();
+      assert.equal(await controls.getByRole("textbox", { name: "RSVP contact name", exact: true }).inputValue(), "Sam Rivera", "Preview preserves the active panel and pending fields");
       await switchControl.click();
       assert.equal(await controls.getByRole("textbox").count(), 0, `${kind}: disabled RSVP hides every contact row`);
       await page.getByRole("button", { name: "Save draft", exact: true }).click();
@@ -288,9 +364,18 @@ test("event editors keep the earlier layout with fonts inside Design and separat
       assert.equal(records.get(savedId).data.rsvpName, "Sam Rivera");
       assert.equal(records.get(savedId).data.rsvpEmail, "sam@test.com");
       assert.equal(records.get(savedId).data.rsvpPhone, "+1 555 222 3333");
+      if (kind === "gymnastics") {
+        assert.equal(records.get(savedId).data.eventPageComposition.hero.imageStyle, "diagonal-cut");
+        assert.equal(records.get(savedId).data.eventPageComposition.hero.imagePosition, "top");
+      }
       await page.reload();
       if (kind === "gymnastics") await page.waitForURL("**/gymnastics/templates/airborne-atlas/customize?edit=" + savedId);
       await openControls();
+      if (kind === "gymnastics") {
+        await controls.getByRole("button", { name: /^Event image settings/ }).click();
+        assert.equal(await controls.getByRole("button", { name: "Choose Diagonal cut hero layout", exact: true }).getAttribute("aria-pressed"), "true", "saved gymnastics image layout reloads");
+        await controls.getByRole("button", { name: "Back to details", exact: true }).click();
+      }
       const menu = controls.getByRole("button", { name: /^(RSVP|Attendance)/ });
       if (await menu.isVisible()) await menu.click();
       assert.equal(await switchControl.isChecked(), false, `${kind}: the saved off state reloads`);
@@ -303,14 +388,68 @@ test("event editors keep the earlier layout with fonts inside Design and separat
       await page.getByRole("button", { name: "Save draft", exact: true }).click();
       await page.getByText("Draft saved.", { exact: true }).waitFor();
       assert.equal(records.get(savedId).data.rsvpEnabled, true, `${kind}: re-enabled RSVP saves with its retained details`);
+      const published = records.get(savedId);
+      published.data.status = published.data.draftStatus = "published";
+      await page.reload();
+      await openControls();
+      const rsvpMenu = controls.getByRole("button", { name: /^(RSVP|Attendance)/ });
+      if (await rsvpMenu.isVisible()) await rsvpMenu.click();
+      await controls.getByRole("textbox", { name: "RSVP contact name", exact: true }).fill("Pending contact");
+      assert.equal(await page.getByRole("button", { name: "Save", exact: true }).isEnabled(), true);
+      const beforePublishedPreview = writes.length;
+      await page.getByRole("button", { name: "Preview", exact: true }).click();
+      assert.equal(await page.getByRole("button", { name: "Save", exact: true }).count(), 0, "published preview also hides Save");
+      await page.getByRole("button", { name: "Close preview", exact: true }).waitFor();
+      await page.keyboard.press("Escape");
+      assert.equal(await controls.getByRole("textbox", { name: "RSVP contact name", exact: true }).inputValue(), "Pending contact", "closing preview preserves the mounted settings and unsaved changes");
+      assert.equal(await page.getByRole("button", { name: "Save", exact: true }).isEnabled(), true);
+      assert.equal(writes.length, beforePublishedPreview, "opening and closing published preview never saves");
     }
-    for (const width of [1440, 390]) for (const kind of ["custom", "signup"]) {
+    if (zone) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    records.set("location-zone-required", { id: "location-zone-required", title: "Location zone meet", revision: "location-zone-initial", permissions: { role: "owner" }, data: {
+      title: "Location zone meet", status: "published", createdVia: "simple-template", category: "gymnastics", pageTemplateId: "airborne-atlas",
+      date: "2027-04-10", time: "09:30", timezone: "", venue: "Original venue", address: "Unknown event location", details: "Meet details", heroImage: "https://cdn.example.test/meet.webp",
+    }});
+    await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics&edit=location-zone-required`);
+    await openControls();
+    const locationPreview = page.getByRole("region", { name: "Event page preview panel", exact: true });
+    await locationPreview.getByRole("button", { name: "Edit event title", exact: true }).locator("xpath=ancestor::*[@data-inline-text-editor]").hover();
+    await locationPreview.getByRole("button", { name: "Edit event title", exact: true }).click();
+    await locationPreview.getByRole("textbox", { name: "Event title", exact: true }).fill("Location zone meet updated");
+    await locationPreview.getByRole("button", { name: "Done editing event title", exact: true }).click();
+    const beforeLocationSave = writes.length;
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByText("Add the event city or full address so its local time can be confirmed.", { exact: true }).waitFor();
+    assert.equal(writes.length, beforeLocationSave, "unresolved location clocks are rejected before writes");
+    assert.equal(await page.locator("[data-event-timezone]").count(), 0);
+    assert.equal(await controls.getByLabel("Event time zone", { exact: true }).count(), 0);
+    const matchedLocation = page.waitForResponse(response => response.url().endsWith("/api/events/timezone") && response.request().postDataJSON().query.includes("Palmetto"));
+    await locationPreview.getByRole("button", { name: "Edit address", exact: true }).locator("xpath=ancestor::*[@data-inline-text-editor]").hover();
+    await locationPreview.getByRole("button", { name: "Edit address", exact: true }).click();
+    await locationPreview.getByRole("textbox", { name: "Address", exact: true }).fill("One Haben Blvd., Palmetto, FL 34221");
+    await locationPreview.getByRole("button", { name: "Done editing address", exact: true }).click();
+    await matchedLocation;
+    await page.waitForTimeout(100);
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByText("Changes saved.", { exact: true }).waitFor();
+    assert.equal(records.get("location-zone-required").data.startISO, "2027-04-10T13:30:00.000Z");
+    assert.equal(records.get("location-zone-required").data.timezoneSource, "location");
+    await locationPreview.locator("h1").filter({ hasText: "Location zone meet updated" }).waitFor();
+    }
+    for (const kind of menuKind ? [menuKind] : []) {
       await page.setViewportSize({ width, height: 900 });
-      const url = kind === "signup"
+      if (kind === "general") records.set(`general-menu-${width}`, { id: `general-menu-${width}`, data: { category: "general", title: "Shared editor", date: "2027-04-10", time: "09:30", timezone: "America/Chicago", venue: "Original venue", createdVia: "simple-template", status: "draft" } });
+      const url = kind === "general" ? `${base}/event/general/customize?toolsAudit=general&edit=general-menu-${width}` : kind === "signup"
         ? `${base}/signup-forms/templates/editorial--school-days/customize?toolsAudit=signup-forms`
         : `${base}/event/design/customize?mode=upload`;
       await page.goto(url);
       await openControls();
+      if (kind !== "signup") {
+        assert.equal(await controls.getByRole("group", { name: "Page tools", exact: true }).count(), 0);
+        await controls.getByRole("button", { name: /^Event image settings/ }).waitFor();
+        await controls.getByRole("button", { name: /^Custom URL/ }).waitFor();
+      }
       await controls.getByRole("button", { name: /^Design/ }).click();
       const option = controls.getByRole("button", { name: /^Modern:/ });
       await option.click();
@@ -325,14 +464,35 @@ test("event editors keep the earlier layout with fonts inside Design and separat
       if (!(await option.isVisible())) await controls.getByRole("button", { name: /^Design/ }).click();
       assert.equal(await option.getAttribute("aria-pressed"), "true", `${kind}: the saved font pair reloads`);
     }
+    if (fonts) {
     records.set("saved-font", { id: "saved-font", data: { eventPageComposition: { version: 1, sections: [], titleFont: "orbitron" } } });
     await page.goto(`${base}/event/general/customize?toolsAudit=saved&edit=saved-font`);
     assert.match(await page.getByRole("heading", { level: 1, name: "Saved event title", exact: true }).evaluate(node => getComputedStyle(node).fontFamily), /Orbitron/, "saved guest pages apply the same font boundary");
     assert.match(await page.getByRole("heading", { name: "Application heading", exact: true }).evaluate(node => getComputedStyle(node).fontFamily), /Arial/, "nested application controls retain app typography");
     assert.doesNotMatch(await page.locator("p").evaluate(node => getComputedStyle(node).fontFamily), /Orbitron/, "title font choices preserve body typography");
+    }
     assert.deepEqual(errors, []);
   } catch (error) {
-    await page.screenshot({ path: path.join(output, "failure.png") });
+    await page.screenshot({ path: path.join(output, `failure-${category || specialized || menuKind || (zone ? "timezone" : fonts ? "fonts" : "recovered")}-${width}.png`) });
     throw new Error(`${error.message}\nURL: ${page.url()}\nBrowser errors: ${errors.join("; ")}`, { cause: error });
   } finally { await browser.close(); }
-});
+}
+
+// Build once; each behavior gets fresh browser storage, records and a bounded budget.
+// Keeping the category matrix in one timed case let unrelated journeys exhaust its timer.
+test.before(fixture, { timeout: 30000 });
+const focus = process.env.EVENT_EDITOR_RSVP_FOCUS;
+if (!focus) {
+  for (const width of [1440, 390]) for (const category of ["appointments", "workshops", "special-events", "cheerleading", "dance-ballet", "soccer", "football-season", "sport-events", "weddings", "birthdays", "anniversaries", "baby-showers", "bridal-showers", "gender-reveal"]) {
+    test(`${category} controls, Exit, fonts and RSVP save/reload at ${width}px`, { timeout: 30000 }, () => editorToolsCase({ category, width }));
+  }
+}
+if (focus !== "timezone") {
+  for (const width of [1440, 390]) {
+    for (const specialized of ["gymnastics", "custom"]) test(`${specialized} mounted settings and clean Preview at ${width}px`, { timeout: 45000 }, () => editorToolsCase({ specialized, width }));
+    for (const menuKind of ["custom", "general", "signup"]) test(`${menuKind} font-pair persistence at ${width}px`, { timeout: 30000 }, () => editorToolsCase({ menuKind, width }));
+  }
+  test("saved guest title fonts preserve body and application typography", { timeout: 15000 }, () => editorToolsCase({ fonts: true }));
+}
+test("recovered RSVP settings remain controlled while toggled", { timeout: 15000 }, () => editorToolsCase({ recovered: true }));
+test("location confirmation rejects unknown places before writes and resolves authored addresses", { timeout: 30000 }, () => editorToolsCase({ zone: true }));

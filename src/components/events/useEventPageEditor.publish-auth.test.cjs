@@ -113,7 +113,7 @@ test("published saves stay in the mounted editor and clear only the saved change
   const fixture = editorHarness({ published: true });
   fixture.authenticate("First saved title");
   await fixture.render().saveChanges();
-  assert.deepEqual(fixture.destinations, [], "Save changes never routes away from a published editor");
+  assert.deepEqual(fixture.destinations, [], "Save never routes away from a published editor");
   assert.equal(fixture.render().dirty, false);
   fixture.authenticate("Another edit");
   assert.equal(fixture.render().dirty, true);
@@ -150,8 +150,8 @@ test("the shared action area retains signed-in controls and keeps the same guest
   assert.match(guest, />Publish</);
   assert.doesNotMatch(guest, /Create an account|Sign in &amp; publish|Save and continue/);
   const clean = renderToStaticMarkup(React.createElement(EventEditorActions, { editor: { ...editor, published: true, dirty: false } }));
-  assert.match(clean, /<button[^>]*disabled=""[^>]*>Save changes<\/button>/);
+  assert.match(clean, /<button[^>]*disabled=""[^>]*>Save<\/button>/);
   const changed = renderToStaticMarkup(React.createElement(EventEditorActions, { editor: { ...editor, published: true } }));
-  assert.match(changed, /<button[^>]*>Save changes<\/button>/);
-  assert.doesNotMatch(changed, /<button[^>]*disabled=""[^>]*>Save changes<\/button>/);
+  assert.match(changed, /<button[^>]*>Save<\/button>/);
+  assert.doesNotMatch(changed, /<button[^>]*disabled=""[^>]*>Save<\/button>/);
 });

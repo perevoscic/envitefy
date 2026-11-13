@@ -198,7 +198,7 @@
 .page[data-layout="minimal"] .section { padding-inline: 0; border-radius: 0; background: transparent; border-bottom: 1px solid color-mix(in srgb, var(--event-ink) 20%, transparent); }
 .page[data-layout="cards"] .hero { grid-template-columns: 1.3fr 1fr; }
 .page[data-layout="cards"] .artwork { border-radius: 18px; }
-.page[data-layout="cards"] .content { max-width: 1200px; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+.page[data-layout="cards"] .content { max-width: 1200px; grid-template-columns: minmax(0, 1fr); align-items: start; }
 .page[data-layout="cards"] .content > :not(.section), .page[data-layout="cards"] [data-event-section="overview"], .page[data-layout="cards"] [data-has-map="true"] { grid-column: 1 / -1; }
 @media (max-width: 700px) {
   .page[data-layout="cards"] .hero, .page[data-layout="cards"] .content { grid-template-columns: 1fr; }

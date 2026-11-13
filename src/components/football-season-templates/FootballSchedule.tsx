@@ -108,6 +108,7 @@ export default function FootballSchedule({
     <div className="@container">
       {!upcomingOnly ? (
         <FootballSectionTabs
+          pageSections={false}
           tabs={tabs}
           ariaLabel="Game schedule periods"
           shellClassName={navigationClassName}
@@ -127,7 +128,7 @@ export default function FootballSchedule({
             </p>
           ) : null}
           <div
-            className={`grid grid-cols-1 gap-4 ${view.games.length > 1 ? "@3xl:grid-cols-2" : ""}`}
+            className="grid grid-cols-1 gap-4"
           >
             {view.games.map((game) => {
               const score = game.score?.trim();

@@ -14,7 +14,7 @@ export function getCreationTemplates(guess: CreateGuess): CreationTemplate[] {
   const category = customCategoryForGuess(guess);
   if (category === "general")
     return getGeneralCreationDesigns(guess.category, guess.occasion)
-      .map(design => ({ id: design.id, title: design.name, imageUrl: design.artwork, description: design.description, style: design.style, category, family: "general", href: `/event/${category}/customize?templateId=${encodeURIComponent(design.id)}&collection=${encodeURIComponent(guess.category)}${guess.occasion ? `&occasion=${encodeURIComponent(guess.occasion)}` : ""}` }));
+      .map(design => ({ id: design.id, title: design.name, imageUrl: design.artwork, description: design.description, style: design.style, category, family: "custom", href: `/event/design/customize?templateId=${encodeURIComponent(design.id)}&collection=${encodeURIComponent(guess.category)}${guess.occasion ? `&occasion=${encodeURIComponent(guess.occasion)}` : ""}` }));
   if (category === "football") return FOOTBALL_GALLERY_DESIGNS.map(design => ({ id: design.id, title: design.name, imageUrl: getFootballDesign(design.id).hero, description: design.description, style: design.style, category, family: "football", href: `/event/football/customize?templateId=${encodeURIComponent(design.id)}` }));
   const catalog = getTemplateCategory(guess.category === "sports" && guess.sport !== "gymnastics" ? "sport-events" : category);
   if (!catalog) return [];

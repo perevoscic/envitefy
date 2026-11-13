@@ -16,7 +16,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       mode: "development", target: "web", devtool: false,
       entry: path.resolve("scripts/fixtures/event-editor.tsx"),
       output: { path: output, filename: "fixture.js" },
-      plugins: [new compiled.webpack.DefinePlugin({ "process.env": JSON.stringify({ NODE_ENV: "development" }) })],
+      plugins: [new compiled.webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }), new compiled.webpack.DefinePlugin({ "process.env": JSON.stringify({ NODE_ENV: "development" }) })],
       resolve: {
         extensions: [".tsx", ".ts", ".js", ".json"],
         alias: {
@@ -37,7 +37,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       ? reject(error || new Error(stats.toString({ all: false, errors: true }))) : resolve()));
   });
   const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process(
-    '@import "tailwindcss" source(none); @source "../src/components/UnsavedProgressProvider.tsx"; @source "../src/app/event/gymnastics/customize/page.tsx"; @source "../src/components/events"; @source "../src/components/gym-meet-templates"; @source "../src/components/templates/TemplateEditorContext.tsx";',
+    '@import "tailwindcss" source(none); @source "../src/components/UnsavedProgressProvider.tsx"; @source "../src/app/event/gymnastics/customize/page.tsx"; @source "../src/components/event-create/ImportedThemeControls.tsx"; @source "../src/components/events"; @source "../src/components/gym-meet-templates"; @source "../src/components/templates/TemplateEditorContext.tsx";',
     { from: path.resolve("scripts/gymnastics-roundtrip-fixture.css") },
   )).css;
   const script = fs.readFileSync(path.join(output, "fixture.js"));
@@ -97,9 +97,52 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
   };
   const preview = page.getByRole("region", { name: "Event page preview panel", exact: true });
   const imageSettings = page.getByRole("complementary", { name: "Event editing controls", exact: true });
-  const openImageSettings = () => imageSettings.getByRole("button", { name: "Image position", exact: true }).click();
+  const openImageSettings = () => imageSettings.getByRole("button", { name: "Design", exact: true }).click();
   const regionText = async () => preview.getByRole("region").evaluateAll(elements => elements.map(element => ({ name: element.getAttribute("aria-label") || element.querySelector("h2")?.innerText || "", text: element.innerText })));
   try {
+    // A generated event keeps its saved navy canvas instead of inheriting catalog paper.
+    for (const width of [1440, 390]) for (const dark of [false, true]) {
+      const id = `generated-navy-${width}-${dark}`;
+      const importedTheme = { ...createImportedEventTheme({ title: "Coastal Invitational", sport: "gymnastics", seed: id,
+        branding: { version: 1, origin: "pdf", tone: "dark", colors: ["#111b3a", "#ff78b7", "#b787ff"] },
+      }), artworkUrl: "/media/event-media/retained/original.webp" };
+      records.set(id, { id, title: "Coastal Invitational", revision: `${id}-initial`, data: {
+        title: "Coastal Invitational", category: "gymnastics", createdVia: "meet-discovery", createdManually: false,
+        status: "draft", draftStatus: "draft", pageTemplateId: "airborne-atlas", importedTheme, discoverySource: source,
+      } });
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${base}/event/gymnastics/customize?edit=${id}`);
+      const views = page.getByRole("group", { name: "Editor view", exact: true });
+      if (width === 390) await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+      const canvas = page.locator('[aria-label="Event page preview panel"] [data-imported-theme]').first();
+      await canvas.waitFor();
+      await page.evaluate(dark => document.documentElement.classList.toggle("dark", dark), dark);
+      const assertNavy = async locator => {
+        assert.equal(await locator.evaluate(el => getComputedStyle(el).getPropertyValue("--gym-paper").trim()), "#111b3a");
+        assert.equal(await locator.locator('[class*="shell"]').first().evaluate(el => getComputedStyle(el).backgroundColor), "rgb(17, 27, 58)");
+      };
+      await assertNavy(canvas);
+      if (width === 390) await views.getByRole("button", { name: "Page settings", exact: true }).click();
+      await openImageSettings();
+      const choices = imageSettings.getByRole("group", { name: "Theme color combinations", exact: true });
+      await choices.getByRole("button", { name: "Accent", exact: true }).click();
+      await assertNavy(canvas);
+      await imageSettings.getByRole("button", { name: "Back to details", exact: true }).click();
+      await page.getByRole("button", { name: "Save draft", exact: true }).click();
+      await page.getByText("Draft saved.", { exact: true }).waitFor();
+      await page.reload();
+      if (width === 390) await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+      await canvas.waitFor();
+      await assertNavy(canvas);
+      await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics-guest&edit=${id}`);
+      const guestCanvas = page.locator('[data-imported-theme]').first();
+      await guestCanvas.waitFor();
+      await page.evaluate(dark => document.documentElement.classList.toggle("dark", dark), dark);
+      await assertNavy(guestCanvas);
+      assert.equal(await page.locator('img[src="/media/event-media/retained/original.webp"]').count(), 1);
+      assert.equal(imageRequests.length, 0, "restoring the generated palette reuses the existing artwork");
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
     for (const variant of ["legacy", "v2"]) {
       const id = `gasparilla-${variant}`;
       const event = { title: "2026 Women’s Gasparilla Classic", date: "2026-03-06", time: "", endDate: "2026-03-08", endTime: "", timezone: "America/New_York", venue: "Tampa Convention Center", address: "333 S Franklin St, Tampa, FL 33602", pageTemplateId: "airborne-atlas", extra: { meetDateRangeLabel: "March 6–8, 2026" } };
@@ -119,7 +162,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
         for (const width of [390, 1440]) {
           await page.setViewportSize({ width, height: 900 });
           if (width === 390)
-            await page.getByRole("group", { name: "Editor view", exact: true }).getByRole("button", { name: "Close settings", exact: true }).click();
+            await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
           const placeholder = preview.locator("[data-artwork-placeholder]");
           await placeholder.scrollIntoViewIfNeeded();
           assert.equal(await placeholder.isVisible(), true);
@@ -138,7 +181,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
         await preview.getByText("Event image unavailable", { exact: true }).waitFor();
         assert.equal(await preview.getByRole("button", { name: "Retry event image", exact: true }).count(), 0);
         await openImageSettings();
-        await imageSettings.getByRole("button", { name: "Retry event image", exact: true }).waitFor();
+        assert.equal(await imageSettings.getByRole("button", { name: "Retry event image", exact: true }).count(), 0);
         assert.equal(await preview.locator("img.template-hero-image").count(), 0, "failure never restores a catalog gymnast");
         artwork.delete(id);
         await page.reload();
@@ -179,31 +222,27 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       assert.deepEqual(await regionText(), before, `${variant}: imported sections, list formatting and links survive the template redirect`);
       assert.equal(writes.length, count + 1, "reopening never persists automatically");
 
-      assert.equal(await preview.getByRole("button", { name: "Generate event image", exact: true }).count(), 0);
-      await openImageSettings();
-      await imageSettings.getByRole("button", { name: "Generate event image", exact: true }).click();
+      // The existing background job still synchronizes without image actions in Design.
+      artwork.set(id, { themeId: data.importedTheme.id, status: "generating" });
+      await page.reload();
       await preview.getByText("Generating your image…", { exact: true }).waitFor();
-      assert.equal(await preview.getByText("Creating event image…", { exact: true }).count(), 0);
-      assert.equal(await preview.locator("img.template-hero-image").count(), 0);
-      await imageSettings.getByRole("button", { name: "Back to details", exact: true }).click();
+      await openImageSettings();
+      const combinations = imageSettings.getByRole("group", { name: "Theme color combinations", exact: true });
+      assert.equal(await combinations.getByRole("button").count(), 6);
+      for (const removed of ["Redesign", "Use template style", "Use generated image", "Replace event image", "Change image"]) {
+        assert.equal(await imageSettings.getByRole("button", { name: removed, exact: true }).count(), 0, removed);
+      }
+      assert.equal(await imageSettings.getByLabel("Image fit", { exact: true }).count(), 0);
+      assert.equal(await imageSettings.getByLabel("Vertical position", { exact: true }).count(), 0);
+      artwork.set(id, { themeId: data.importedTheme.id, status: "ready", imageUrl: `/media/event-media/${id}/original.webp` });
       await preview.locator(`img[src="/media/event-media/${id}/original.webp"]`).waitFor();
       assert.equal(await preview.locator("[data-artwork-placeholder]").count(), 0);
-      await openImageSettings();
-      await imageSettings.getByRole("button", { name: "Replace event image", exact: true }).waitFor();
-      assert.equal(await preview.getByRole("button", { name: "Replace event image", exact: true }).count(), 0);
       await imageSettings.getByRole("button", { name: "Back to details", exact: true }).click();
-      assert.equal(writes.length, count + 1, "image generation updates editor memory without saving the event");
-      const imageRequest = imageRequests.at(-1);
-      assert.equal(imageRequest.theme.context.title, event.title);
-      assert.equal(imageRequest.theme.context.city, "Tampa, FL", "the image request retains the city printed in the address");
-      assert.equal(imageRequest.theme.context.venue, event.venue);
-      assert.equal(imageRequest.theme.context.address, event.address);
-      assert.equal(imageRequest.theme.context.date, event.date);
-      assert.equal(imageRequest.theme.preserveTemplateStyle, true);
+      assert.equal(writes.length, count + 1, "background image synchronization never saves the event");
 
       if (variant === "v2") {
         const beforeSwaps = imageRequests.length;
-        const retainedImage = preview.locator(`img[src="/media/event-media/${id}/original.webp"]`);
+        const retainedImage = page.locator(`[aria-label="Event page preview panel"] img[src="/media/event-media/${id}/original.webp"]`);
         for (const width of [1440, 390]) {
           await page.setViewportSize({ width, height: 900 });
           await imageSettings.getByRole("button", { name: "Design", exact: true }).click();
@@ -212,30 +251,38 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
           await imageSettings.locator('[data-template-masonry-card="moonbeam-balance"] button').click();
           await page.locator('[data-gym-design="moonbeam-balance"]').first().waitFor();
           assert.equal(await page.locator('[aria-label="Event page preview panel"] img[src$="/original.webp"]').count(), 1);
-          if (width === 1440) {
-            await imageSettings.getByRole("button", { name: "Redesign", exact: true }).click();
-            await retainedImage.waitFor();
-            await imageSettings.getByRole("button", { name: "Use template style", exact: true }).click();
-            await retainedImage.waitFor();
-            await imageSettings.getByRole("button", { name: "Use event theme", exact: true }).click();
-            await retainedImage.waitFor();
+          const choices = imageSettings.getByRole("group", { name: "Theme color combinations", exact: true }).getByRole("button");
+          assert.equal(await choices.count(), 6);
+          for (let index = 0; index < 6; index++) {
+            await choices.nth(index).click();
+            assert.equal(await choices.nth(index).getAttribute("aria-pressed"), "true");
+            assert.equal(await imageSettings.locator('[aria-label="Theme color combinations"] button[aria-pressed="true"]').count(), 1);
+            await retainedImage.waitFor({ state: "attached" });
+            const swatch = await choices.nth(index).locator('[style]').first().evaluate(el => el.style.backgroundColor);
+            const accent = await page.locator('[aria-label="Event page preview panel"] [data-imported-theme]').first().evaluate(el => el.style.getPropertyValue('--gym-ui-button'));
+            if (index) assert.equal(await page.evaluate(color => { const el = document.createElement('span'); el.style.color = color; return el.style.color; }, accent), swatch);
           }
+          await imageSettings.getByRole("group", { name: "Theme color combinations", exact: true }).scrollIntoViewIfNeeded();
+          await page.screenshot({ path: path.join(output, `theme-combinations-${width}.png`) });
           await search.fill("airborne");
           await imageSettings.locator('[data-template-masonry-card="airborne-atlas"] button').click();
           await imageSettings.getByRole("button", { name: "Back to details", exact: true }).click();
           if (width === 390) {
             const views = page.getByRole("group", { name: "Editor view", exact: true });
-            await views.getByRole("button", { name: "Close settings", exact: true }).click();
-            await retainedImage.waitFor();
+            await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
+            await retainedImage.waitFor({ state: "attached" });
             await views.getByRole("button", { name: "Page settings", exact: true }).click();
           }
         }
         await page.setViewportSize({ width: 1440, height: 900 });
-        assert.equal(imageRequests.length, beforeSwaps, "template swaps, Redesign and styling toggles never generate another image");
+        assert.equal(imageRequests.length, beforeSwaps, "template swaps and all six color combinations never generate another image");
       }
 
+      await openImageSettings();
+      await imageSettings.getByRole("button", { name: "Tonal", exact: true }).click();
+      await imageSettings.getByRole("button", { name: "Back to details", exact: true }).click();
       // A subsequent wrapper save must retain explicit clears and native fields.
-      await preview.getByRole("button", { name: "Edit welcome message", exact: true }).click();
+      await preview.getByRole("button", { name: "Edit welcome message text", exact: true }).click();
       await preview.getByLabel("Welcome message", { exact: true }).fill("");
       await preview.getByRole("button", { name: "Done editing welcome message", exact: true }).click();
       await page.getByRole("button", { name: "Save draft", exact: true }).click();
@@ -244,11 +291,13 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       assert.equal(writes.at(-1).data.createdVia, data.createdVia, "explicit saving repairs an older import's creation marker");
       assert.equal(writes.at(-1).data.createdManually, false);
       assert.equal(writes.at(-1).data.templateEditor.snapshot.data.importedTheme.artworkUrl, `/media/event-media/${id}/original.webp`);
+      const savedCombination = writes.at(-1).data.templateEditor.snapshot.data.importedTheme.templateColorCombination;
       await page.reload();
       await preview.locator(`img[src="/media/event-media/${id}/original.webp"]`).waitFor();
+      assert.equal(await preview.locator('[data-imported-theme]').first().getAttribute('data-gym-color-combination'), String(savedCombination.index));
       await preview.getByRole("tab", { name: "Venue Details", exact: true }).click();
       await preview.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
-      await preview.getByRole("button", { name: "Edit welcome message", exact: true }).click();
+      await preview.getByRole("button", { name: "Edit welcome message text", exact: true }).click();
       assert.equal(await preview.getByLabel("Welcome message", { exact: true }).inputValue(), "");
       await preview.getByRole("button", { name: "Done editing welcome message", exact: true }).click();
       assert.equal(writes.length, count + 2);
@@ -256,7 +305,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       const correctedTitle = "Host's updated Gasparilla meet";
       const correctedVenue = "Tampa Convention Center — East Hall";
       for (const [field, value] of [["Event title", correctedTitle], ["Venue", correctedVenue], ["Address", ""]]) {
-        await preview.getByRole("button", { name: `Edit ${field.toLowerCase()}`, exact: true }).click();
+        await preview.getByRole("button", { name: `Edit ${field.toLowerCase()} text`, exact: true }).click();
         await preview.getByLabel(field, { exact: true }).fill(value);
         await preview.getByRole("button", { name: `Done editing ${field.toLowerCase()}`, exact: true }).click();
       }
@@ -277,7 +326,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       await page.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
       await page.locator(`img[src="/media/event-media/${id}/original.webp"]`).waitFor();
       await page.goto(`${base}/gymnastics/templates/airborne-atlas/customize?edit=${id}`);
-      await preview.getByRole("button", { name: "Edit address", exact: true }).click();
+      await preview.getByRole("button", { name: "Edit address text", exact: true }).click();
       assert.equal(await preview.getByLabel("Address", { exact: true }).inputValue(), "");
       assert.equal(writes.length, count + 3, "guest rendering and reopening are read-only");
     }
@@ -320,12 +369,12 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       const venueIndex = (await sectionOrder.locator("li > span:first-child").allTextContents()).indexOf("Venue Details");
       await palette.getByRole("button", { name: "Move Venue Details up", exact: true }).click();
       await palette.getByRole("button", { name: "Edit Venue Details", exact: true }).click();
-      await page.getByLabel("Section name", { exact: true }).fill("Venue & arrival");
+      await page.getByLabel("Title", { exact: true }).fill("Venue & arrival");
       await page.getByRole("button", { name: "Close section panel", exact: true }).click();
       assert.equal(await sectionOrder.locator("li > span:first-child").nth(venueIndex - 1).innerText(), "Venue & arrival");
       await palette.getByRole("button", { name: "Remove Venue & arrival section", exact: true }).click();
       await palette.getByRole("button", { name: /^Other/ }).click();
-      await page.getByLabel("Section heading", { exact: true }).fill("Parent notes");
+      await page.getByLabel("Title", { exact: true }).fill("Parent notes");
       await page.getByLabel("Section content", { exact: true }).fill("Bring a water bottle.");
       await page.getByRole("button", { name: "Close section panel", exact: true }).click();
       assert.equal(writes.length, beforeWrites, "section changes wait for explicit save");
@@ -336,7 +385,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       await settings.getByRole("button", { name: "Page sections", exact: true }).click();
       const savedNames = await sectionOrder.locator("li > span:first-child").allTextContents();
       if (width === 390)
-        await settings.getByRole("button", { name: "Close settings", exact: true }).click();
+        await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
       assert.deepEqual(await preview.getByRole("tab").allTextContents(), savedNames);
       await preview.getByRole("tab", { name: "Parent notes", exact: true }).click();
       await preview.getByText("Bring a water bottle.", { exact: true }).waitFor();
@@ -352,7 +401,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       await palette.getByRole("button", { name: "Venue & arrival", exact: true }).click();
       await page.getByRole("button", { name: "Close section panel", exact: true }).click();
       if (width === 390)
-        await settings.getByRole("button", { name: "Close settings", exact: true }).click();
+        await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
       await preview.getByRole("tab", { name: "Venue & arrival", exact: true }).click();
       await preview.getByText("Enter by the West and Central Hall near the Coffee Bar.", { exact: true }).waitFor();
       assert.equal(writes.length, beforeWrites + 1, "reload, guest viewing and restore do not save automatically");
@@ -368,30 +417,31 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       const href = `${base}/gymnastics/templates/airborne-atlas/customize?edit=${id}&editor=menu&returnTo=${encodeURIComponent("/event/meet-return?tab=event")}`;
       const actions = page.getByRole("group", { name: "Save event", exact: true });
       const view = page.getByRole("group", { name: "Editor view", exact: true });
-      const cancel = actions.getByRole("button", { name: "Cancel", exact: true });
+      const cancel = page.getByRole("button", { name: "Exit", exact: true });
       const beforeWrites = writes.length, beforeImages = imageRequests.length;
       const expectExit = async () => {
         await page.locator("[data-destination]").waitFor();
         assert.equal(new URL(page.url()).pathname, published ? "/event/meet-return" : "/create");
         if (published) assert.equal(new URL(page.url()).searchParams.get("tab"), "event");
-        assert.equal(writes.length, beforeWrites, "Cancel never saves or publishes");
-        assert.equal(imageRequests.length, beforeImages, "Cancel never generates artwork");
+        assert.equal(writes.length, beforeWrites, "Exit never saves or publishes");
+        assert.equal(imageRequests.length, beforeImages, "Exit never generates artwork");
       };
       await page.setViewportSize({ width, height: 900 });
       await page.goto(href);
       await embeddedControls.waitFor({ state: "visible" });
       await cancel.waitFor({ state: "visible" });
-      assert.equal(await page.getByRole("button", { name: /^Preview(?: event)?$/, exact: false }).count(), 0, "both editor Preview controls are removed");
+      assert.equal(await actions.getByRole("button", { name: "Preview", exact: true }).count(), 1, "one explicit Preview remains beside save actions");
+      assert.equal(await actions.getByRole("button", { name: "Cancel", exact: true }).count(), 0, "Exit replaces duplicate Cancel");
       const bounds = await cancel.boundingBox();
-      assert.ok(bounds.width >= 44 && bounds.height >= 44 && bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y >= 0 && bounds.y + bounds.height <= 900, "Cancel is a visible touch target within the viewport");
+      assert.ok(bounds.width >= 44 && bounds.height >= 44 && bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y >= 0 && bounds.y + bounds.height <= 900, "Exit is a visible touch target within the viewport");
       await page.screenshot({ path: path.join(output, `exit-settings-${width}-${published}.png`) });
       await cancel.click();
       await expectExit();
-      assert.equal(await page.getByRole("dialog").count(), 0, "clean Cancel exits directly from settings");
+      assert.equal(await page.getByRole("dialog").count(), 0, "clean Exit leaves directly from settings");
 
       await page.goto(href);
       await embeddedControls.waitFor({ state: "visible" });
-      await view.getByRole("button", { name: "Close settings", exact: true }).click();
+      await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
       await embeddedControls.waitFor({ state: "hidden" });
       assert.equal(await cancel.isVisible(), true, "the clean canvas retains its exit action");
       await page.screenshot({ path: path.join(output, `exit-canvas-${width}-${published}.png`) });
@@ -407,18 +457,22 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       const dialog = page.getByRole("dialog");
       await dialog.getByRole("button", { name: "Keep editing", exact: true }).click();
       assert.equal(await title.inputValue(), "Unsaved meet title", "Keep editing retains the unsaved title");
-      await view.getByRole("button", { name: "Close settings", exact: true }).click();
+      await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
       await embeddedControls.waitFor({ state: "hidden" });
       await cancel.click();
       await dialog.getByRole("button", { name: "Keep editing", exact: true }).click();
       await view.getByRole("button", { name: "Page settings", exact: true }).click();
       assert.equal(await title.inputValue(), "Unsaved meet title", "canvas exit protection retains mounted settings");
-      await view.getByRole("button", { name: "Close settings", exact: true }).click();
+      await page.getByRole("button", { name: /^(Hide settings|Back to page)$/, exact: true }).click();
       await cancel.click();
       await dialog.getByRole("button", { name: "Discard and leave", exact: true }).click();
       await expectExit();
     }
     assert.deepEqual(errors, []);
+  } catch (error) {
+    await page.screenshot({ path: path.join(output, "failure.png"), fullPage: true });
+    if (errors.length) console.error(errors);
+    throw error;
   } finally {
     await browser.close();
   }

@@ -39,9 +39,10 @@ createRoot(document.getElementById("root")!).render(<AppRouterContext.Provider v
 const styles = new Map();
 const mocks = {
   "@/components/UnsavedProgressProvider": `
-    import Provider, {useUnsavedProgress as useRealProgress} from "real-unsaved-progress";
+    import Provider, {useUnsavedProgress as useRealProgress, useEventProgress as useRealEventProgress} from "real-unsaved-progress";
     export default Provider;
-    export {useEventProgress, useProgressNavigation} from "real-unsaved-progress";
+    export {useProgressNavigation} from "real-unsaved-progress";
+    export function useEventProgress(options) { const progress = useRealEventProgress(options); window.editorProgress = {...progress, busy: options.busy}; return progress; }
     export function useUnsavedProgress(progress) { window.editorProgress = progress; return useRealProgress(progress); }
   `,
   "@/utils/media-upload-client": `

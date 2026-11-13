@@ -4,6 +4,23 @@
   grid-column: 1 / -1;
   container-type: inline-size;
 }
+/* Native content collections stack independently of template art direction.
+   Saved section pairs live outside these sections and keep their own row grid. */
+.nativeContentFlow {
+  display: contents;
+}
+.contentFlow :is(section:not(:has(h1)), [data-body-section]),
+.contentFlow :is(main, div):has(> section):not(:has(h1)),
+.contentFlow :is(section:not(:has(h1)), [data-body-section])
+  :is([class~="grid"], [class*="grid-cols-"]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.contentFlow :is(section:not(:has(h1)), [data-body-section]) > *,
+.contentFlow :is(main, div):has(> section):not(:has(h1)) > *,
+.contentFlow :is(section:not(:has(h1)), [data-body-section])
+  :is([class~="grid"], [class*="grid-cols-"]) > * {
+  grid-column: 1 / -1;
+}
 .sections > div {
   display: grid;
   gap: 24px;

@@ -1,6 +1,7 @@
 "use client";
 import InformationSectionBody from "../InformationSectionBody";
 import ScannedSchedule from "@/components/ScannedSchedule";
+import SchoolMemoIssueDate from "@/components/SchoolMemoIssueDate";
 import Link from "next/link";
 import { type CSSProperties, type ReactNode, useState } from "react";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -23,6 +24,7 @@ import EventArrivalMap from "./EventArrivalMap";
 import { EventSectionCanvas } from "@/components/events/EventSectionBuilder";
 import EventPageHero from "@/components/events/EventPageHero";
 import EventSectionExtrasContent from "@/components/events/EventSectionExtrasContent";
+import { useEventPageReadOnly } from "@/components/events/EventPageReadOnlyContext";
 
 export default function CustomEventPageContent({
   page,
@@ -31,6 +33,7 @@ export default function CustomEventPageContent({
   isOwner = false,
   showGuestActions = Boolean(eventId),
   onGuestActionsChange,
+  scheduleEditor,
 }: {
   page: CustomEventPage;
   eventId?: string;
@@ -38,8 +41,10 @@ export default function CustomEventPageContent({
   isOwner?: boolean;
   showGuestActions?: boolean;
   onGuestActionsChange?: (value: EventGuestActionVisibility) => void;
+  scheduleEditor?: ReactNode;
 }) {
   const [rsvpOpen, setRsvpOpen] = useState(false);
+  const readOnly = useEventPageReadOnly();
   const { design, details: d } = page;
   const titleAboveDetails = ["split", "editorial", "minimal", "cards"].includes(design.layout);
   const title = <h1 className={styles.heroTitle}>{d.title || "Your event title"}</h1>;
@@ -64,6 +69,7 @@ export default function CustomEventPageContent({
   const intro = (
     <>
       {d.host && <p className={styles.host}>Hosted by {d.host}</p>}
+      {d.scanSchedule?.kind === "school-memo" && <SchoolMemoIssueDate schedule={d.scanSchedule} />}
       {(date || time) && (
         <p className={styles.when}>{[date, time && d.endTime ? `${time} – ${new Date(`2000-01-01T${d.endTime}:00Z`).toLocaleTimeString("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit" })}${d.endDate && d.endDate !== d.date ? ` (${d.endDate})` : ""}` : time].filter(Boolean).join(" · ")}</p>
       )}
@@ -91,7 +97,7 @@ export default function CustomEventPageContent({
     "--event-surface": design.colors.surface,
     "--event-ink": design.colors.ink,
     "--event-accent": design.colors.accent,
-    "--event-font": EVENT_DESIGN_FONTS[design.font],
+    "--event-font": design.fontFamily || EVENT_DESIGN_FONTS[design.font],
     "--event-body-font": EVENT_DESIGN_FONT_PAIRS.find((pair) => pair.id === design.font)?.body,
   } as CSSProperties;
   return (
@@ -126,7 +132,7 @@ export default function CustomEventPageContent({
           </div>
         </header>
       </EventPageHero>
-      {d.scanSchedule?.kind === "school-memo" ? <div className={styles.section}><ScannedSchedule schedule={d.scanSchedule} /></div> : null}
+      {d.scanSchedule?.kind === "school-memo" ? <div className={styles.section}>{scheduleEditor && !readOnly ? scheduleEditor : <ScannedSchedule schedule={d.scanSchedule} interactive={!readOnly} />}</div> : null}
       <EventSectionCanvas className={styles.content} layout={d.sectionLayout} sections={customEventSectionOrder(d).map((key) => {
           let content: ReactNode;
           if (key === "overview") content = d.description ? (

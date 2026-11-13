@@ -2,7 +2,8 @@
 "use client";
 import { EventEditorMenuCard, EventEditorSection as GymnasticsEditorLayout } from "@/components/events/EventEditorFields";
 import { EventEditorInput as InputGroup } from "@/components/events/EventEditorFields";
-import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventLocationTimezone } from "@/components/events/useEventLocationTimezone";
+import EventEditorWorkspace, { EventEditorPageSettings } from "@/components/events/EventEditorWorkspace";
 import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
 import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
 import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
@@ -32,7 +33,6 @@ import {
   CalendarDays,
   ListPlus,
   Link2,
-  MoveVertical,
   Lock,
   Palette,
   PanelsTopLeft,
@@ -50,7 +50,8 @@ import {
 import GymnasticsLauncher from "@/components/event-create/GymnasticsLauncher";
 import ImportedThemeControls from "@/components/event-create/ImportedThemeControls";
 import ImportedThemeArtwork, { type ImportedArtworkStatus } from "@/components/event-create/ImportedThemeArtwork";
-import { createImportedEventTheme, importedArtworkCity, readImportedEventTheme } from "@/lib/imported-event-theme";
+import { readImportedEventTheme } from "@/lib/imported-event-theme";
+import { importedArtworkSrc } from "@/lib/imported-event-design";
 import GymnasticsDesignGallery from "@/components/gym-meet-templates/GymnasticsDesignGallery";
 import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
 import SimpleTemplateView from "@/components/SimpleTemplateView";
@@ -88,11 +89,13 @@ type MissingEssentialItem = {
 };
 
 type AdvancedSectionRenderContext = {
+  eventId?: string | null;
   state: any;
   setState: (updater: any) => void;
   setActiveView: (view: string) => void;
   inputClass: string;
   textareaClass: string;
+  initialView?: "overview" | "add";
 };
 
 type AdvancedSectionPreviewContext = {
@@ -628,10 +631,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       title: "",
       date: initialDate,
       time: "14:00",
-      timezone:
-        typeof Intl !== "undefined" && Intl.DateTimeFormat().resolvedOptions().timeZone
-          ? Intl.DateTimeFormat().resolvedOptions().timeZone
-          : "America/Chicago",
+      timezone: "",
       hostGym: "",
       city: "",
       state: "",
@@ -1037,7 +1037,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const missingEssentials = [
       !data.title?.trim() ? { label: "Event title", view: "headline" } : null,
       !data.date ? { label: "Date", view: "headline" } : null,
-      !data.timezone?.trim() ? { label: "Timezone", view: "headline" } : null,
       !data.venue?.trim() && !data.address?.trim()
         ? { label: "Venue or address", view: "headline" }
         : null,
@@ -1609,7 +1608,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         ...prev,
         pageTemplateId,
         hero: prev.hero === getGymMeetTemplateMeta(resolveGymMeetTemplateId(prev)).artwork ? "" : prev.hero,
-        importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: true, preserveTemplateStyle: true } : null,
+        importedTheme: prev.importedTheme ? { ...prev.importedTheme, enabled: true, preserveTemplateStyle: true, templateColorCombination: undefined } : null,
       }));
     }, []);
 
@@ -1888,7 +1887,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       router,
     ]);
 
-    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, category: config.category, templateId: data.pageTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: discoverBusy, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "gymnastics", onSaved: () => setDidExplicitSave(true) });
+    useEventLocationTimezone({ data, setData, enabled: !loadingExisting, saved: editEventId ? eventHistoryClient.read(`/api/history/${encodeURIComponent(editEventId)}`)?.data : undefined });
+    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, restoreSnapshot: (snapshot) => { setData(snapshot.data); setAdvancedState(snapshot.advancedState); setThemeId(snapshot.themeId); }, category: config.category, templateId: data.pageTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: discoverBusy, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "gymnastics", onSaved: () => setDidExplicitSave(true) });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
@@ -1936,13 +1936,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     };
 
 
-    const eventImageTheme = readImportedEventTheme(data.importedTheme) || {
-      ...createImportedEventTheme({ title: data.title, sport: "gymnastics", city: importedArtworkCity(data.city, data.address), venue: data.venue, address: data.address, date: data.date, seed: editEventId || templateEditor?.eventId || editor.eventId || data.title }),
-      preserveTemplateStyle: true as const,
-    };
+    const imageDesignArtwork = importedArtworkSrc(data.importedTheme, data.hero, getGymMeetTemplateMeta(resolveGymMeetTemplateId(data)).artwork);
+
     const renderHeroImageEditor = (className?: string) => (
       <div className={`flex flex-wrap items-center justify-center gap-2 ${className || ""}`}>
       <HeroImageEditor
+        label="Upload image"
         value={data.hero}
         onChange={(hero) => setData((prev) => ({
           ...prev,
@@ -1951,21 +1950,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             ? { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY: 50 }
             : { ...DEFAULT_HERO_IMAGE_SETTINGS },
         }))}
-        settings={normalizeHeroImageSettings(data.heroImageSettings)}
-        onSettingsChange={(heroImageSettings) => setData((prev) => ({ ...prev, heroImageSettings }))}
       />
       </div>
     );
-    const renderEventImageControls = () => (
-      <ImportedThemeArtwork
-        eventId={editEventId || templateEditor?.eventId || editor.eventId}
-        value={{ ...eventImageTheme, context: { ...eventImageTheme.context, title: data.title, city: importedArtworkCity(data.city, data.address) || eventImageTheme.context.city, venue: data.venue, address: data.address, date: data.date } }}
-        onStatusChange={setImageStatus}
-        onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))}
-        onUseImage={() => setData(prev => ({ ...prev, hero: "", heroImageSettings: { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY: 50 } }))}
-      />
-    );
-
     const renderMainMenu = () => (
       <div className="flex flex-col gap-6 pb-8 animate-fade-in">
         {!useParseDrivenSections && (
@@ -1984,9 +1971,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         )}
 
         <div className="grid grid-cols-1 gap-3">
-          <EventEditorMenuCard title="Event basics" desc="" icon={<CalendarDays size={20} />} onClick={() => setActiveView("headline")} />
+          {isEmbed && <EventEditorMenuCard title="Event basics" desc="" icon={<CalendarDays size={20} />} onClick={() => setActiveView("headline")} />}
           <EventEditorMenuCard title="Design" desc="" icon={<Palette size={20} />} onClick={() => setActiveView("design")} />
-          <EventEditorMenuCard title="Image position" desc="" icon={<MoveVertical size={20} />} onClick={() => setActiveView("image-position")} />
+          <EventEditorPageSettings />
 
           <EventEditorMenuCard title="RSVP" desc="" icon={<CalendarDays size={20} />} onClick={() => setActiveView("rsvp")} />
           <EventEditorMenuCard title="Passcode" desc="" icon={<Lock size={20} />} onClick={() => setActiveView("passcode")} />
@@ -2122,12 +2109,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               (e.g. March 6-8, 2026) in the header. Leave blank to use the single date.
             </p>
             <InputGroup
-              label="Timezone"
-              value={data.timezone || ""}
-              onChange={(v) => updateData("timezone", v)}
-              placeholder="America/Chicago"
-            />
-            <InputGroup
               label="Host Gym"
               value={data.hostGym || ""}
               onChange={(v) => updateData("hostGym", v)}
@@ -2175,7 +2156,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         showBack
       >
         <div className="space-y-4">
-          <ImportedThemeControls eventId={editEventId || templateEditor?.eventId || editor.eventId} value={data.importedTheme} context={{ title: data.title, sport: "gymnastics", city: data.city, seed: editEventId || data.title }} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} />
+          <ImportedThemeControls templatePalette={getGymMeetTemplateMeta(resolveGymMeetTemplateId(data))} eventId={editEventId || templateEditor?.eventId || editor.eventId} value={data.importedTheme} context={{ title: data.title, sport: "gymnastics", city: data.city, seed: editEventId || data.title }} onChange={(importedTheme) => setData(prev => ({ ...prev, importedTheme }))} />
         <div className="space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <label className="block text-sm font-semibold text-slate-700" htmlFor="gymnastics-title-font">Title font</label>
@@ -2225,6 +2206,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <TemplateSelector
             value={resolveGymMeetTemplateId(data)}
             onChange={handleTemplateSelection}
+            importedTheme={data.importedTheme}
+            onSelectCustom={() => setData(prev => prev.importedTheme && (!prev.importedTheme.enabled || prev.importedTheme.preserveTemplateStyle) ? ({
+              ...prev, importedTheme: { ...prev.importedTheme, enabled: true, preserveTemplateStyle: undefined, templateColorCombination: undefined },
+            }) : prev)}
           />
           {!useParseDrivenSections ? (
             <div className="grid grid-cols-2 gap-2">
@@ -2235,45 +2220,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         </div>
       </GymnasticsEditorLayout>
     );
-
-    const renderImagePositionEditor = () => {
-      const settings = normalizeHeroImageSettings(data.heroImageSettings);
-      return (
-        <GymnasticsEditorLayout title="Image position" onBack={handleBackToMain} showBack>
-          <div className="space-y-6">
-            {renderHeroImageEditor()}
-            <label className="block text-sm font-semibold text-slate-700" htmlFor="gymnastics-image-fit">
-              Image fit
-              <select
-                id="gymnastics-image-fit"
-                value={settings.fit}
-                onChange={(event) => updateData("heroImageSettings", { ...settings, fit: event.target.value })}
-                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
-              >
-                <option value="cover">Fill image frame</option>
-                <option value="contain">Show full image</option>
-              </select>
-            </label>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700" htmlFor="gymnastics-image-position">Vertical position</label>
-              <input
-                id="gymnastics-image-position"
-                type="range"
-                min="0"
-                max="100"
-                value={settings.positionY}
-                disabled={settings.fit === "contain"}
-                onChange={(event) => updateData("heroImageSettings", { ...settings, positionY: Number(event.target.value) })}
-                className="mt-2 min-h-11 w-full accent-violet-700 disabled:opacity-40"
-              />
-              <div className="flex justify-between text-xs text-slate-500"><span>Top</span><span>Bottom</span></div>
-              <p className="mt-3 text-sm text-slate-500">Fill the frame to adjust the crop, or drag the image directly on your page.</p>
-            </div>
-            {renderEventImageControls()}
-          </div>
-        </GymnasticsEditorLayout>
-      );
-    };
 
     const renderDetailsEditor = () => (
       <GymnasticsEditorLayout
@@ -2555,7 +2501,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 Passcode Required
               </span>
               <p className="text-xs text-slate-600">
-                Require a shared code before anyone can open this page.
+                If you’re sharing personal information, such as athletes’ names
+                and locations, you can add a passcode to this page.
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer ml-4">
@@ -2589,8 +2536,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           )}
 
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
-            <strong>How it works:</strong> Guests need both the event link and this code. If you
-            rotate codes often, update it here before sharing to families.
+            <strong>How it works:</strong> When enabled, guests need both the event
+            link and passcode to open this page. Share the passcode only with
+            people you want to give access.
           </div>
         </div>
       </GymnasticsEditorLayout>
@@ -2604,6 +2552,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         showBack
       >
         {section.renderEditor({
+          eventId: editEventId || templateEditor?.eventId || editor.eventId,
           state: advancedState?.[section.id],
           setState: (updater: any) => setAdvancedSectionState(section.id, updater),
           setActiveView,
@@ -2836,11 +2785,29 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <EventSectionBuilderProvider composition={{ value: editor.composition, onChange: editor.setComposition }} layout={data.sectionLayout}
         onChange={(sectionLayout) => setData((previous) => ({ ...previous, sectionLayout }))}
         catalog={GYMNASTICS_SECTION_CATALOG}
-        renderSectionLabelEditor={(section) => section.id.startsWith("info:") ? null : (
-          <InputGroup label="Section name" value={data.gymnasticsPageText?.[`section:${encodeURIComponent(section.id)}:label`] ?? section.label}
+        customSectionLabel="Custom"
+        renderSectionLabelEditor={(section) => section.id.startsWith("info:") || (section.editorId || section.id).startsWith("schedule") ? null : (
+          <InputGroup label="Title" value={data.gymnasticsPageText?.[`section:${encodeURIComponent(section.id)}:label`] ?? section.label}
             onChange={(value) => handlePageTextChange(`section:${encodeURIComponent(section.id)}:label`, value)} />
         )}
         renderEditor={(id) => {
+          if (id === "schedule" || id.startsWith("schedule:")) {
+            const [, action, target = ""] = id.split(":");
+            const [targetDay, targetSession] = target.split("/").map(value => decodeURIComponent(value));
+            const section = config.advancedSections?.find((item) => item.id === "schedule");
+            return section ? <React.Fragment key={id}>{section.renderEditor({
+              eventId: editEventId || templateEditor?.eventId || editor.eventId,
+              state: advancedState?.schedule,
+              setState: (updater: any) => setAdvancedSectionState("schedule", updater),
+              setActiveView,
+              inputClass: baseInputClass,
+              textareaClass: baseTextareaClass,
+              initialView: action === "remove" ? "remove-period" : action || "overview",
+              initialDayId: targetDay || null,
+              initialSessionId: targetSession || null,
+              initialPeriodId: action === "remove" ? targetDay : null,
+            })}</React.Fragment> : null;
+          }
           if (id === "rsvp") return renderRsvpEditor();
           if (id === "details") return renderDetailsEditor();
           if (id === "admission") return <InputGroup label="Admission" type="textarea" value={data.extra.admission || ""} onChange={(value) => updateExtra("admission", value)} placeholder="Adults: $15\nChildren: $10\nUnder 5: Free" />;
@@ -2855,7 +2822,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </EventSectionBuilderProvider>
     );
 
-    const sectionEditors = { "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "image-position": renderImagePositionEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) };
+    const sectionEditors = { "headline": () => renderHeadlineEditor, "design": renderDesignEditor, "image-position": renderDesignEditor, "details": renderDetailsEditor, "discover": renderDiscoverEditor, "rsvp": renderRsvpEditor, "passcode": renderPasscodeEditor, ...Object.fromEntries((config.advancedSections || []).map((section) => [section.id, () => renderAdvancedEditor(section)])) };
 
     const sidebarHeader = (headerAction: React.ReactNode) => (
         <div className="flex min-h-[60px] items-center justify-between gap-3 px-4 py-2 md:px-6">
@@ -2896,7 +2863,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
             {activeView === "design" && renderDesignEditor()}
             {activeView === "font-style" && renderDesignEditor()}
-            {activeView === "image-position" && renderImagePositionEditor()}
+            {activeView === "image-position" && renderDesignEditor()}
             {activeView === "details" && renderDetailsEditor()}
             {activeView === "discover" && renderDiscoverEditor()}
             {activeView === "rsvp" && renderRsvpEditor()}
@@ -2998,20 +2965,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     if (isEmbed) {
       return wrapSectionBuilder(
-        <EventEditorWorkspace imageControlsInMenu={false} onBackWithinControls={() => {
+        <EventEditorWorkspace imageControls={renderHeroImageEditor()} imageControlsInMenu={false} onBackWithinControls={() => {
           if (activeView === "main" || activeView === "images") return false;
           setActiveView("main");
           return true;
-        }} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} sectionEditors={sectionEditors} artwork={data.hero} controlsHeader={sidebarHeader} controls={sidebarPanel()} />
+        }} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed} preview={null} sectionEditors={sectionEditors} artwork={imageDesignArtwork} controlsHeader={sidebarHeader} controls={sidebarPanel()} />
       );
     }
 
     return wrapSectionBuilder(
-      <EventEditorWorkspace imageControlsInMenu={false} onBackWithinControls={() => {
+      <EventEditorWorkspace pageSectionsMenu={false} imageControls={renderHeroImageEditor()} imageControlsInMenu={false} onBackWithinControls={() => {
         if (activeView === "main" || activeView === "images") return false;
         setActiveView("main");
         return true;
-      }} sectionEditors={sectionEditors} artwork={data.hero} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
+      }} sectionEditors={sectionEditors} artwork={imageDesignArtwork} editor={editor} templatesHref={"/event/gymnastics"} drawer={{ mobileMenuOpen, openMobileMenu, dismissMobileMenu, previewTouchHandlers, drawerTouchHandlers }} embedded={isEmbed}
  pageEditing viewLabels={{ page: "Close settings", controls: "Page settings" }}
  preview={<EventCanvas
           className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
@@ -3041,7 +3008,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     ...prev,
                     heroImageSettings: { ...normalizeHeroImageSettings(prev.heroImageSettings), positionY },
                   }))}
-                  heroImageAction={renderHeroImageEditor()}
                   eventId={previewEventId}
                   eventData={previewEventData}
                   eventTitle={data.title || config.displayName}

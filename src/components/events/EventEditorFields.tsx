@@ -2,7 +2,7 @@
 
 import { ArrowLeft, ChevronRight, FileText } from "lucide-react";
 import { type ChangeEvent, type ReactNode, useId, useState } from "react";
-import { useSectionEditorClose } from "./EventSectionEditorContext";
+import { EventSectionEditorTitle, useSectionEditorClose } from "./EventSectionEditorContext";
 import styles from "./event-editor.module.css";
 
 export function EventEditorInput({
@@ -156,8 +156,10 @@ export function EventEditorSection({
   children: ReactNode;
 }) {
   const sectionDialog = useSectionEditorClose();
+  const [subsectionTitle, setSubsectionTitle] = useState<string | null>(null);
   if (sectionDialog) return <>{children}</>;
   return (
+    <EventSectionEditorTitle.Provider value={setSubsectionTitle}>
     <div className={styles.section}>
       <div className={styles.sectionHeader}>
         {showBack && onBack && (
@@ -170,12 +172,13 @@ export function EventEditorSection({
             <ArrowLeft size={17} aria-hidden="true" />
           </button>
         )}
-        <h2>{title}</h2>
+        <h2>{subsectionTitle || title}</h2>
         {action}
         {headerAction}
       </div>
       {children}
     </div>
+    </EventSectionEditorTitle.Provider>
   );
 }
 
@@ -262,24 +265,8 @@ export function EventEditorSections({
   const [localSection, setLocalSection] = useState("main");
   const active = activeSection ?? localSection;
   const select = onSectionChange ?? setLocalSection;
-  const tools = sections.filter((section) => section.tool);
   return (
     <div className={styles.sectionNavigation}>
-      {tools.length > 0 && (
-        <EventEditorToolsRow>
-          {tools.map((section) => (
-            <EventEditorMenuCard
-              key={section.id}
-              compact
-              active={section.id === active}
-              title={section.title}
-              desc={section.description}
-              icon={section.icon}
-              onClick={() => select(section.id)}
-            />
-          ))}
-        </EventEditorToolsRow>
-      )}
       <div hidden={active !== "main"} className={styles.sectionMenu}>
         <header className={styles.menuHeader}>
           <h2>Add your details</h2>
@@ -288,7 +275,6 @@ export function EventEditorSections({
         <p>Edit your event details and design.</p>
         {menuContent}
         {sections
-          .filter((section) => !section.tool)
           .map((section) => (
             <EventEditorMenuCard
               key={section.id}

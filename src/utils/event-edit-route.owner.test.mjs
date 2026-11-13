@@ -12,11 +12,18 @@ vm.runInNewContext(ts.transpileModule(fs.readFileSync("src/utils/event-edit-rout
   require(name) {
     if (name === "@/lib/manual-event-progress") return { manualEventEditHref: (_id, data) => data?.manualEditor?.path || null };
     if (name === "@/lib/template-categories") return { getTemplateCategory: () => null };
-    if (name === "./event-url") return { buildEventPath: (id) => `/event/${encodeURIComponent(id)}` };
+    if (name === "./event-url") return { buildEventPath: (id, _title, options) => `/event/${encodeURIComponent(id)}${options?.tab ? `?tab=${options.tab}` : ""}` };
     throw new Error(`Unexpected import ${name}`);
   },
 });
-const { resolveOwnerEditHref, resolveEditHref } = module.exports;
+const { buildEditLink, resolveOwnerEditHref, resolveEditHref } = module.exports;
+
+test("school memo edit links open the current Event Page editor", () => {
+  const data = { category: "School & classroom", scanSchedule: { kind: "school-memo" } };
+  for (const editHref of [buildEditLink, resolveOwnerEditHref, resolveEditHref]) {
+    assert.equal(editHref("saved memo", data, "Class memo"), "/event/design/customize?collection=school&templateId=school--weekly-memo&edit=saved%20memo");
+  }
+});
 
 test("owner edits keep chat-created cards, flyers and event pages in Design", () => {
   for (const primaryOutput of ["live_card", "digital_flyer", "event_page"]) {
@@ -24,7 +31,7 @@ test("owner edits keep chat-created cards, flyers and event pages in Design", ()
     assert.equal(resolveOwnerEditHref("saved", data, "Saved event", "/event/custom-slug?tab=rsvps"), "/event/custom-slug?tab=design");
     assert.equal(resolveOwnerEditHref("saved", data, "Saved event", "/event/custom-slug?edit=saved&editor=menu&preview=owner&embed=dashboard-preview&returnTo=%2Fchat&view=details"), "/event/custom-slug?tab=design");
     assert.equal(resolveOwnerEditHref("saved", data, "Saved event"), "/event/saved?tab=design");
-    assert.equal(resolveEditHref("saved", data, "Saved event"), "/chat?thread=original-thread", "the creation resume route remains available outside owner editing");
+    assert.equal(resolveEditHref("saved", data, "Saved event"), "/event/saved?tab=design", "saved artwork opens its existing design workspace");
   }
 });
 

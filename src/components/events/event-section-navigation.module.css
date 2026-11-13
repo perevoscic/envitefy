@@ -1,0 +1,20 @@
+.navigation { min-width: 0; width: 100%; grid-column: 1 / -1; color: inherit; }
+.header { display: flex; align-items: start; gap: 8px; min-width: 0; }
+.rail { display: flex; user-select: none; overscroll-behavior-x: contain; flex: 1; gap: 4px; overflow-x: auto; overflow-y: hidden; min-width: 0; padding: 5px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 14px; }
+.rail > span { display: flex; flex: 1 0 auto; }
+.rail a { display: flex; flex: 1; align-items: center; justify-content: center; min-height: 44px; padding: 8px 14px; border-radius: 9px; font-size: 14px; font-weight: 600; color: inherit; white-space: nowrap; text-decoration: none; }
+.rail a[aria-current] { background: color-mix(in srgb, currentColor 15%, transparent); box-shadow: inset 0 0 0 1px currentColor; }
+.sortableTab { display: flex; flex: 1 0 auto; align-items: center; min-width: 0; }
+.sortableTab > span { display: flex; flex: 1; }
+.sortableTab button.tabGrip { display: inline-flex; flex: 0 0 36px; align-items: center; justify-content: center; min-width: 36px; min-height: 44px; padding: 4px; background: transparent; border: 0; color: inherit; cursor: grab; touch-action: none; }
+.sortableTab button.tabGrip:active { cursor: grabbing; }
+.add, .tools button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 10px; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.add { margin-top: 5px; flex-shrink: 0; }
+.tools { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tools > span { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
+.tools button:disabled { opacity: 0.35; cursor: default; }
+.navigation :is(button, a):focus-visible, .tabGrip:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+@media (max-width: 767px) {
+  .tools { justify-content: flex-end; }
+  .tools > span { display: none; }
+}

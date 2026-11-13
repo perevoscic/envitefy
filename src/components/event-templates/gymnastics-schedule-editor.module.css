@@ -1,0 +1,186 @@
+.editor {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  font: 400 14px / 1.5 system-ui, sans-serif;
+}
+.editor p { margin: 0; }
+.fields, .section { display: grid; gap: 12px; min-width: 0; }
+.monthAndYear { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.section { padding-top: 12px; border-top: 1px solid var(--app-border, #dfd4ed); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.editor label { display: grid; gap: 4px; min-width: 0; font-size: 13px; font-weight: 500; }
+.editor button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--app-border, #dfd4ed);
+  border-radius: 10px;
+  color: inherit;
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.editor button:hover { background: color-mix(in srgb, currentColor 7%, transparent); }
+.editor button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.editor input, .editor textarea, .editor select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--app-input, #cabbdc);
+  border-radius: 10px;
+  color: var(--app-foreground, #30223e);
+  background: var(--app-field-background, #fff);
+  font: inherit;
+  font-size: 16px;
+}
+.editor input::placeholder, .editor textarea::placeholder { color: var(--app-muted-foreground, #74677e); }
+.day {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--app-border, #dfd4ed);
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.actions button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 88px; text-align: center; padding: 12px 4px; font-size: 13px; font-weight: 600; background: var(--app-field-background, #fff); }
+.actions svg { color: var(--app-primary, #68458c); flex-shrink: 0; }
+.importActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.importActions button { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.importActions svg { flex-shrink: 0; }
+.editor input[hidden] { display: none; }
+.editor button:disabled { opacity: .5; cursor: default; }
+.sourceText { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow-y: auto; }
+.day legend { padding: 0 4px; font-weight: 600; }
+.importSection, .manualSection { display: grid; gap: 14px; min-width: 0; }
+.importSection { padding: 18px; border: 1px solid var(--app-border, #dfd4ed); border-radius: 16px; background: var(--app-surface-alt, #f8f5fb); }
+.manualSection { padding-block: 6px 20px; border-bottom: 1px solid var(--app-border, #dfd4ed); }
+.sectionHeading { display: grid; gap: 4px; }
+.sectionHeading h3 { margin: 0; font: 650 15px / 1.4 system-ui, sans-serif; }
+.sectionHeading p, .fileHint, .reviewHint { color: var(--app-muted-foreground, #74677e); font-size: 13px; line-height: 1.6; }
+.editor .fileHint { font-size: 12px; }
+.importActions button { min-height: 48px; gap: 8px; background: var(--app-field-background, #fff); font-size: 13px; font-weight: 600; }
+.editor .uploadButton, .importDialog .primaryButton { background: var(--app-primary, #68458c); border-color: transparent; color: var(--app-primary-foreground, #fff); }
+.editor .uploadButton:hover, .importDialog .primaryButton:hover { background: color-mix(in srgb, var(--app-primary, #68458c) 90%, #000); }
+.importDialog {
+  --meet-panel-ink: var(--app-foreground, #30223e);
+  width: min(720px, calc(100vw - 48px));
+  max-width: none;
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--app-border, #dfd4ed);
+  border-radius: 20px;
+  background: var(--app-surface, #fff);
+  color: var(--app-foreground, #30223e);
+  font: 400 14px / 1.5 system-ui, sans-serif;
+  box-shadow: 0 24px 90px #100c203d;
+  overflow: hidden;
+}
+.importDialog[open] { display: flex; flex-direction: column; }
+.importDialog::backdrop { background: #141020a8; backdrop-filter: blur(6px); }
+.progressDialog { width: min(480px, calc(100vw - 48px)); }
+.popupHeader { display: flex; align-items: center; gap: 12px; flex-shrink: 0; padding: 20px 24px; border-bottom: 1px solid var(--app-border, #dfd4ed); }
+.popupHeader > div { min-width: 0; flex: 1; }
+.popupHeader h3 { margin: 0; font: 650 18px / 1.4 system-ui, sans-serif; }
+.popupHeader p { font-size: 12px; color: var(--app-muted-foreground, #74677e); overflow-wrap: anywhere; }
+.popupIcon { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; background: var(--app-surface-alt, #f8f5fb); color: var(--app-primary, #68458c); }
+.importDialog .closeButton { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; flex-shrink: 0; border: 0; border-radius: 50%; }
+.progressBody { padding: 28px 24px; }
+.progressBody > p { margin-top: 16px; text-align: center; }
+.progressBody button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 20px; }
+.reviewBody { display: grid; gap: 16px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 20px 24px; }
+.reviewBody .day { background: var(--app-field-background, #fff); }
+.reviewBody .day .day { background: var(--app-surface-alt, #f8f5fb); }
+.reviewFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; min-width: 0; }
+.reviewFields .fullField { grid-column: 1 / -1; }
+.popupFooter { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px; flex-shrink: 0; border-top: 1px solid var(--app-border, #dfd4ed); }
+.popupFooter button { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; }
+.importError { padding: 12px 24px; overflow-wrap: anywhere; }
+:global(html.dark) .importDialog { color-scheme: dark; }
+:global(html.dark) .actions svg, :global(html.dark) .popupIcon { color: var(--app-primary, #d0b6ff); }
+@media (max-width: 600px) {
+  .reviewFields { grid-template-columns: minmax(0, 1fr); }
+  .importSection { padding: 14px; }
+  .importActions { grid-template-columns: 1fr; }
+  .importDialog, .progressDialog { width: 100%; height: 100dvh; max-height: 100dvh; border: 0; border-radius: 0; }
+  .popupHeader { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left)); }
+  .popupHeader h3 { font-size: 16px; }
+  .reviewBody { flex: 1; padding: 16px; }
+  .popupFooter { padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .popupFooter .primaryButton { flex: 1; }
+  .progressBody { display: flex; flex-direction: column; justify-content: center; flex: 1; padding: 24px 20px max(24px, env(safe-area-inset-bottom)); }
+}
+.calendar { display: grid; gap: 16px; min-width: 0; color: inherit; }
+.calendar button { color: inherit; font: inherit; cursor: pointer; background: transparent; }
+.periods { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; }
+.periodBar { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.periodBar .periods { flex: 1; min-width: 0; }
+.dayTools { display: flex; gap: 4px; flex-shrink: 0; }
+.calendar .dayIcon, .scheduleSection .dayIcon { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; padding: 0; border: 0; border-radius: 10px; color: inherit; background: transparent; cursor: pointer; }
+.calendar .dayIcon:hover, .scheduleSection .dayIcon:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+.scheduleSection .dayIcon:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.calendar .addPeriod { flex-shrink: 0; width: 44px; height: 44px; padding: 0; border: 1px solid currentColor; border-radius: 10px; font-size: 24px; line-height: 1; }
+.periods button { flex-shrink: 0; min-height: 44px; border: 1px solid currentColor; border-radius: 999px; padding: 8px 14px; white-space: nowrap; }
+.calendar button[aria-pressed="true"] { background: color-mix(in srgb, currentColor 12%, transparent); border-color: currentColor; }
+.calendar button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.calendarHeading h3 { margin: 0; font: inherit; font-size: 1.2em; font-weight: 650; }
+.calendarHeading p { margin: 4px 0 0; font-size: 13px; }
+.calendarTitle { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.calendar .removeItem, .removeItem { min-height: 44px; padding: 8px 10px; border: 1px solid currentColor; border-radius: 8px; font: inherit; font-size: 13px; color: inherit; background: transparent; cursor: pointer; }
+.itemHeading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.itemHeading h3, .itemHeading h4 { min-width: 0; margin: 0; }
+.itemActions { display: flex; flex-shrink: 0; gap: 4px; }
+.calendarGrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.weekday { display: block; font-size: 11px; text-align: center; font-weight: 500; }
+.calendar .calendarDay { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; min-height: 52px; padding: 6px 0; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 8px; font-size: 14px; }
+.calendarDay:hover, .singleDay button:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
+.sessionDot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.missingDay { display: flex; align-items: center; justify-content: center; min-height: 52px; opacity: .45; font-size: 14px; }
+.singleDay button { display: grid; gap: 4px; width: 100%; padding: 14px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 10px; text-align: start; }
+.singleDay span { font-size: 13px; }
+.selectedDay { margin-top: 20px; padding-top: 16px; border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
+.selectedDay > .itemHeading { margin-bottom: 12px; }
+.scheduleSection { container-type: inline-size; }
+.exposedDay { margin-top: 16px; padding-top: 0; border-top: 0; }
+.sessionGrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.sessionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  min-width: 0;
+  padding: clamp(18px, 3cqi, 28px);
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 16px;
+  background:
+    linear-gradient(150deg, color-mix(in srgb, currentColor 7%, transparent), transparent 52%, rgb(0 0 0 / 5%)),
+    var(--gym-paper, var(--event-surface, transparent));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 12%),
+    inset 0 -1px 0 rgb(0 0 0 / 8%),
+    2px 3px 5px -2px color-mix(in srgb, currentColor 8%, transparent),
+    5px 7px 12px -5px color-mix(in srgb, currentColor 14%, transparent);
+  overflow-wrap: anywhere;
+}
+.sessionCard .itemHeading { align-items: flex-start; }
+.sessionCard .sessionTitle { align-self: center; font-family: var(--gym-font, inherit); font-size: 22px; font-weight: 500; line-height: 1.3; }
+.sessionCard p { margin: 0; }
+.sessionCard .sessionGroup { align-self: flex-start; max-width: 100%; padding: 5px 10px; border: 1px solid color-mix(in srgb, currentColor 12%, transparent); border-radius: 8px; background: color-mix(in srgb, currentColor 5%, transparent); font-size: 13px; font-weight: 600; line-height: 1.5; }
+.sessionTiming { display: flex; align-items: center; gap: 12px; min-width: 0; padding-top: 14px; border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
+.sessionTiming > div { min-width: 0; }
+.timeIcon { display: grid; place-items: center; flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px; background: color-mix(in srgb, currentColor 7%, transparent); }
+.sessionTime { font-size: clamp(18px, 2.5cqi, 24px); font-weight: 650; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.sessionCard .sessionWarmup { margin-top: 3px; font-size: 13px; line-height: 1.6; opacity: .75; }
+.sessionNote { white-space: pre-wrap; font-size: 14px; line-height: 1.65; opacity: .85; }
+.sessionClubs { padding-top: 14px; border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
+.clubsHeading { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
+.sessionClubs ul { display: grid; gap: 5px; margin: 10px 0 0; padding: 0; list-style: none; font-size: 14px; line-height: 1.6; }
+.scheduleSection .dayIcon { border: 1px solid color-mix(in srgb, currentColor 12%, transparent); background: color-mix(in srgb, currentColor 4%, transparent); }
+.scheduleSection .periods button { border-color: color-mix(in srgb, currentColor 18%, transparent); border-radius: 12px; font-size: 14px; font-weight: 500; }
+.scheduleSection .periods button[aria-pressed="true"] { background: var(--gym-ink, #1c3041); color: var(--gym-paper, #fff); border-color: transparent; box-shadow: 0 2px 5px rgb(0 0 0 / 10%); }
+@container (min-width: 560px) { .sessionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (min-width: 900px) { .sessionGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

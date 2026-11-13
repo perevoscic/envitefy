@@ -23,7 +23,7 @@ export function buildTemplateDraftPayload(
       (data.partner1 ? `${data.partner1} & ${data.partner2 || ""}` : "") ||
       `${info.name} draft`,
   );
-  const timezone = String(data.timezone || data.tz || (category === "gymnastics" ? "" : browserTimezone));
+  const timezone = String(data.timezone || data.tz || (category === "signup-forms" ? browserTimezone : ""));
   const text = (value: (typeof data)[string]) => (typeof value === "string" ? value : "");
   const localStart = data.date
     ? `${text(data.date)}${data.time ? `T${text(data.time)}` : ""}`
@@ -35,8 +35,9 @@ export function buildTemplateDraftPayload(
   const gymnasticsDates = category === "gymnastics"
     ? buildGymnasticsEventDateTimes({ ...data, timezone })
     : null;
-  const start = gymnasticsDates ? gymnasticsDates.startISO : parseCalendarDateTimeToIso(localStart, timezone);
-  const end = gymnasticsDates ? gymnasticsDates.endISO : parseCalendarDateTimeToIso(localEnd, timezone);
+  const localClock = (value: string) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value);
+  const start = gymnasticsDates ? gymnasticsDates.startISO : !timezone && localClock(localStart) ? null : parseCalendarDateTimeToIso(localStart, timezone || "UTC");
+  const end = gymnasticsDates ? gymnasticsDates.endISO : !timezone && localClock(localEnd) ? null : parseCalendarDateTimeToIso(localEnd, timezone || "UTC");
   const record = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
   const designText = (value: unknown) => typeof value === "string" ? value : "";
   const savedTheme = record(data.theme);

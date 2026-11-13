@@ -61,16 +61,62 @@ test('travel presentation omits source photos and retains place names, booking p
   assert.ok(html.includes('width=600&amp;height=260'));
   assert.ok(html.includes('Directions'));
 });
-test('imported identity retains the template photo and source palette while original artwork is pending', () => {
+test('explicit template styling preserves template surfaces and source data while artwork is pending', () => {
   const { createImportedEventTheme } = require('../../lib/imported-event-theme.ts');
-  const importedTheme = createImportedEventTheme({ title: 'Coastal Invitational', sport: 'gymnastics', city: 'Savannah', seed: 'coastal/2027', branding: { version: 1, origin: 'pdf', colors: ['#0c6478', '#e29327'] } });
+  const importedTheme = { ...createImportedEventTheme({ title: 'Coastal Invitational', sport: 'gymnastics', city: 'Savannah', seed: 'coastal/2027', branding: { version: 1, origin: 'pdf', colors: ['#0c6478', '#e29327'] } }), preserveTemplateStyle: true };
   const eventData = JSON.parse(JSON.stringify({ title: 'Coastal Invitational', pageTemplateId: designs[0].id, importedTheme }));
   const model = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData, navItems: [], rosterAthletes: [] });
   const html = renderToStaticMarkup(React.createElement(Renderer, { ...props(designs[0]), model }));
   assert.ok(html.includes(`data-imported-theme="${importedTheme.id}"`));
-  assert.ok(html.includes('--gym-accent:#0c6478'));
-  assert.ok(html.includes(designs[0].artwork));
+  assert.ok(html.includes(`--gym-accent:${designs[0].accent}`));
+  assert.ok(html.includes(`--gym-paper:${designs[0].background}`));
+  assert.equal(model.importedTheme.colors.accent, '#0c6478');
+  assert.ok(html.includes('Preparing your image'));
+  assert.ok(!html.includes(`src="${designs[0].artwork}"`));
   assert.ok(!html.includes('data:image/svg+xml'));
+});
+
+test('generated colors survive saved guest rendering while all six controls remain accent-only', () => {
+  const { createImportedEventTheme } = require('../../lib/imported-event-theme.ts');
+  const Controls = require('../event-create/ImportedThemeControls.tsx').default;
+  const original = { ...createImportedEventTheme({ title: 'Coastal Invitational', sport: 'gymnastics', seed: 'coastal/2027',
+    branding: { version: 1, origin: 'pdf', tone: 'dark', colors: ['#111b3a', '#ff78b7', '#b787ff'] },
+  }), artworkUrl: 'https://assets.test/retained.webp', templateColorCombination: { templateId: designs[0].id, index: 2 } };
+  for (const flags of [{}, { preserveTemplateStyle: true }, { preserveTemplateStyle: false }, { enabled: false }]) {
+    const importedTheme = { ...original, ...flags };
+    const eventData = JSON.parse(JSON.stringify(buildTemplateDraftPayload({ data: { title: 'Coastal Invitational', pageTemplateId: designs[0].id, importedTheme } }, 'gymnastics', 'America/Chicago'))).data;
+    const model = normalizeGymMeetEventData({ eventTitle: eventData.title, eventData, navItems: [], rosterAthletes: [] });
+    const html = renderToStaticMarkup(React.createElement(Renderer, { ...props(designs[0]), model }));
+    const generated = importedTheme.enabled && !importedTheme.preserveTemplateStyle;
+    assert.ok(html.includes(`--gym-paper:${generated ? original.colors.page : designs[0].background}`));
+    assert.ok(html.includes(`--gym-ink:${generated ? original.colors.ink : designs[0].foreground}`));
+    assert.ok(html.includes('https://assets.test/retained.webp'));
+    assert.equal(html.includes('--event-paper:'), Boolean(generated));
+    const controls = renderToStaticMarkup(React.createElement(Controls, { value: model.importedTheme, templatePalette: designs[0], onChange: noAction }));
+    for (const label of ['Event colors', 'Rose &amp; violet', 'Ocean blue', 'Midnight &amp; gold']) assert.ok(!controls.includes(label), label);
+    assert.ok(controls.includes('Title, buttons, links and section titles'));
+    assert.equal((controls.match(/aria-pressed=/g) || []).length, 6);
+  }
+});
+
+test('generated design selectors select Custom instead of the fallback catalog template', () => {
+  const Selector = require('./TemplateSelector.tsx').default;
+  const { createImportedEventTheme } = require('../../lib/imported-event-theme.ts');
+  const original = { ...createImportedEventTheme({ title: 'Our generated meet', sport: 'gymnastics', seed: 'custom-selector' }),
+    artworkUrl: '/api/blob/event-media/our-meet/original.webp' };
+  for (const customSelected of [true, false]) {
+    const importedTheme = { ...original, ...(customSelected ? {} : { preserveTemplateStyle: true }) };
+    const html = renderToStaticMarkup(React.createElement(Selector, {
+      value: 'airborne-atlas', importedTheme, onChange: noAction, onSelectCustom: noAction,
+    }));
+    const selected = [...html.matchAll(/<article[^>]*data-template-masonry-card="([^"]+)"[^>]*data-selected="true"/g)].map(match => match[1]);
+    assert.deepEqual(selected, [customSelected ? 'custom' : 'airborne-atlas']);
+    assert.ok(html.includes('Select Custom'));
+    assert.ok(html.includes('/media/event-media/our-meet/original.webp'));
+  }
+  const native = renderToStaticMarkup(React.createElement(Selector, { value: 'airborne-atlas', onChange: noAction }));
+  assert.ok(!native.includes('Select Custom'));
+  assert.ok(native.includes('aria-label="Select Airborne Atlas" aria-pressed="true"'));
 });
 
 test('a fresh unsaved import renders completed canonical artwork instead of its stale builder theme', () => {
@@ -101,8 +147,9 @@ test('football hero and imported theme controls render the shared sport design w
   assert.ok(!html.includes('data:image/svg+xml'));
   assert.ok(html.includes('Event Athletic'));
   const controls = renderToStaticMarkup(React.createElement(Controls, { value: importedTheme, onChange: noAction }));
-  assert.ok(controls.includes('Redesign'));
-  assert.ok(controls.includes('Use template style'));
+  assert.equal((controls.match(/aria-pressed=/g) || []).length, 6);
+  assert.ok(controls.includes('Theme color combinations'));
+  for (const removed of ['Redesign', 'Use template style', 'Replace event image', 'Use generated image']) assert.ok(!controls.includes(removed));
   const original = renderToStaticMarkup(React.createElement(Hero, { title: 'Coastal Lions', importedTheme, heroSrc: '/uploads/original.webp' }));
   assert.ok(original.includes('/uploads/original.webp'));
   assert.ok(!original.includes('data:image/svg+xml'));
@@ -607,4 +654,32 @@ test('navigation, link captions and RSVP wording survive saves with valid guest 
   const confirmed = renderToStaticMarkup(React.createElement(Renderer,{...p,rsvpProps:{...rsvpProps,submitted:true}}));
   assert.ok(confirmed.includes(wording.rsvpConfirmation));
   assert.ok(confirmed.includes(wording.rsvpAgain));
+});
+
+test('all gymnastics template combinations retain original surfaces, fonts, artwork and saved guest rendering', () => {
+  const { createImportedEventTheme, templateAccentColorCombinations } = require('../../lib/imported-event-theme.ts');
+  for (const design of designs) {
+    const original = { ...createImportedEventTheme({ title: 'Our meet', sport: 'gymnastics', seed: design.id }), preserveTemplateStyle: true, artworkUrl: 'https://assets.test/unchanged.webp' };
+    for (const choice of templateAccentColorCombinations(design)) {
+      const selected = { ...original, templateColorCombination: { templateId: design.id, index: choice.index } };
+      const saved = JSON.parse(JSON.stringify(buildTemplateDraftPayload({ data: { pageTemplateId: design.id, importedTheme: selected } }, 'gymnastics', 'America/Chicago')));
+      const p = props(design);
+      p.model = normalizeGymMeetEventData({ eventTitle: 'Our meet', eventData: saved.data, navItems: [], rosterAthletes: [] });
+      const html = renderToStaticMarkup(React.createElement(Renderer, p));
+      assert.ok(html.includes(`--gym-paper:${design.background}`), design.id);
+      assert.ok(html.includes(`--gym-ink:${design.foreground}`), design.id);
+      assert.ok(html.includes(`--gym-accent:${design.accent}`), design.id);
+      assert.ok(html.includes('https://assets.test/unchanged.webp'), design.id);
+      assert.ok(!html.includes('--event-paper:') && !html.includes('--event-font:'), 'imported palettes never override template surfaces or fonts');
+      if (choice.index) {
+        assert.ok(html.includes(`data-gym-color-combination="${choice.index}"`), design.id);
+        assert.ok(html.includes(`--gym-ui-button:${choice.button}`), design.id);
+        assert.ok(html.includes(`--gym-ui-heading:${choice.heading}`), design.id);
+        assert.ok(html.includes(`--gym-ui-link:${choice.link}`), design.id);
+      } else assert.ok(!html.includes('data-gym-color-combination='), 'Original restores native styling');
+    }
+    const p = props(design);
+    p.model.importedTheme = { ...original, templateColorCombination: { templateId: 'another-design', index: 4 } };
+    assert.ok(!renderToStaticMarkup(React.createElement(Renderer, p)).includes('data-gym-color-combination='), 'another template never lends its accents');
+  }
 });

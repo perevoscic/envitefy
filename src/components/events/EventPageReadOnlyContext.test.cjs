@@ -43,11 +43,16 @@ const Hero = load("src/components/events/HeroImageEditor.tsx", {
 }).default;
 const Inline = load("src/components/events/InlineEditableText.tsx", {
   "./EventPageReadOnlyContext": context,
+  "./EventSectionTextContext": require("../../../scripts/lib/event-messages-test-loader.cjs")("src/components/events/EventSectionTextContext.tsx"),
 }).default;
 const actions = load("src/lib/event-guest-actions.ts");
 const planning = load("src/lib/event-guest-planning.ts");
+const calendarContext = load("src/components/events/EventEditorCalendarContext.tsx");
+const calendar = require("../../../scripts/lib/event-messages-test-loader.cjs")("src/lib/event-location-timezone.ts");
 const guestImports = {
   "@/components/events/EventPageReadOnlyContext": context,
+  "@/components/events/EventEditorCalendarContext": calendarContext,
+  "@/lib/event-location-timezone": calendar,
   "@/components/templates/TemplateEditorContext": {
     useTemplateEditor: () => ({ requestSave: async () => {} }),
   },
@@ -128,6 +133,7 @@ test("sharing from a clean page never requests a template save or changes visibi
       {
         ...guestImports,
         react: {
+          useContext: () => null,
           useRef: () => ({ current: null }),
           useState: (value) => [value, (next) => states.push(next)],
         },

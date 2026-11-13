@@ -10,7 +10,6 @@ const customizePages = [
   "dance-ballet",
   "football-season",
   "gender-reveal",
-  "general",
   "gymnastics",
   "soccer",
   "special-events",
@@ -37,6 +36,7 @@ test("event customize previews fill the responsive workspace", () => {
     assert.match(source, /^(?:\/\/ @ts-nocheck\s*)?["']use client["'];/, `${eventType} remains a client editor`);
     assert.match(source, /<EventEditorWorkspace/, `${eventType} uses the shared editor`);
     assert.match(source, /useEventPageEditor\(/, `${eventType} uses the shared save lifecycle`);
+    assert.doesNotMatch(source, /eventTimezone\.field|label="Timezone"|label="Event time zone"/, `${eventType} keeps timezone handling out of the frontend`);
     assert.match(source, /EventEditorFields/, `${eventType} uses the same fields and section controls`);
     assert.match(source, /sectionEditors=\{(?:\{|sectionEditors\})/, `${eventType} supplies scoped inline section editors`);
     assert.doesNotMatch(source, /<LegacyTemplateDraftButton|const handlePublish\s*=/, `${eventType} cannot maintain another save workflow`);
@@ -53,7 +53,8 @@ test("native and custom editors keep section management separate from hero layou
   assert.match(workspace, /<EventPageLayoutPicker/);
   const custom = readFileSync(new URL("../../components/events/custom/EventCustomEditor.tsx", import.meta.url), "utf8");
   assert.match(custom, /<EventSectionBuilderProvider/);
-  assert.match(custom, /<EventSectionPalette\s*\/>/);
+  assert.doesNotMatch(custom, /<EventSectionPalette\s*\/>/, "custom pages use the canvas section chooser");
+  assert.match(custom, /title: "Parking \/ drop-off map"/, "the unique map editor remains available");
   assert.match(custom, /<CustomEventLayoutPicker/);
   const native = readFileSync(new URL("../../components/events/EventPageLayoutPicker.tsx", import.meta.url), "utf8");
   assert.match(native, /<EventHeroLayoutPicker/);

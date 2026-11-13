@@ -21,7 +21,7 @@ async function readCatalog(guess: CreateGuess): Promise<CreationCatalog> {
   if (category === "general" && guess.category !== "signup-forms") {
     const { getGeneralCreationDesigns } = await import("./event-page-collections");
     const designs = getGeneralCreationDesigns(guess.category, guess.occasion);
-    result.templates = designs.map(design => ({ id: design.id, title: design.name, imageUrl: design.artwork, description: design.description, style: design.style, category, family: "general", href: `/event/${category}/customize?templateId=${encodeURIComponent(design.id)}&collection=${encodeURIComponent(guess.category)}${guess.occasion ? `&occasion=${encodeURIComponent(guess.occasion)}` : ""}` }));
+    result.templates = designs.map(design => ({ id: design.id, title: design.name, imageUrl: design.artwork, description: design.description, style: design.style, category, family: "custom", href: `/event/design/customize?templateId=${encodeURIComponent(design.id)}&collection=${encodeURIComponent(guess.category)}${guess.occasion ? `&occasion=${encodeURIComponent(guess.occasion)}` : ""}` }));
     for (const design of designs) {
       result.previews[design.id] = design;
       if ("subtype" in design && "label" in design) result.themes[design.id] = { subtype: String(design.subtype), label: design.label };

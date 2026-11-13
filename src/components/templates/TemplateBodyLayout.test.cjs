@@ -38,7 +38,7 @@ for (const ext of [".ts", ".tsx"])
       file,
     );
 Module._extensions[".css"] = (mod) => {
-  mod.exports = { body: "body", sections: "sections", panel: "panel", index: "index" };
+  mod.exports = { body: "body", sections: "sections", panel: "panel", index: "index", contentFlow: "contentFlow" };
 };
 const Body = require("./TemplateBodyLayout.tsx").default;
 const { EventPageCompositionProvider } = require("../events/EventPageCompositionContext.tsx");
@@ -103,7 +103,7 @@ test("the dated audit still covers every body override with a distinct arrangeme
   }
 });
 
-test("preserved designs retain their markup and the existing signup spacing wrapper", () => {
+test("preserved designs retain native content and signup spacing inside the single-column scope", () => {
   const children = React.createElement(
     React.Fragment,
     null,
@@ -116,10 +116,10 @@ test("preserved designs retain their markup and the existing signup spacing wrap
     ),
   );
   const original = renderToStaticMarkup(children);
-  assert.equal(renderToStaticMarkup(React.createElement(Body, null, children)), original);
+  assert.equal(renderToStaticMarkup(React.createElement(Body, null, children)), `<div class="contentFlow">${original}</div>`);
   assert.equal(
     renderToStaticMarkup(React.createElement(Body, { fallbackClassName: "space-y-5" }, children)),
-    `<div class="space-y-5">${original}</div>`,
+    `<div class="contentFlow space-y-5">${original}</div>`,
   );
 });
 

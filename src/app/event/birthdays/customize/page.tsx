@@ -3,7 +3,8 @@
 import { readEventRsvpSettings } from "@/lib/event-rsvp-settings";
 import { EventEditorMenuCard as MenuCard, EventEditorSection as EditorLayout, EventEditorInput as InputGroup } from "@/components/events/EventEditorFields";
 import EventEditorFontStyle from "@/components/events/EventEditorFontStyle";
-import EventEditorWorkspace from "@/components/events/EventEditorWorkspace";
+import { useEventLocationTimezone } from "@/components/events/useEventLocationTimezone";
+import EventEditorWorkspace, { EventEditorPageSettings } from "@/components/events/EventEditorWorkspace";
 import EventEditorRsvpSection from "@/components/events/EventEditorRsvpSection";
 import EventRsvpContactEditor from "@/components/events/EventRsvpContactEditor";
 import { readEventRsvpContact } from "@/lib/event-rsvp-contact";
@@ -963,7 +964,7 @@ const handleGalleryUpload = useCallback(
         time: data.time,
         endTime: data.endTime,
         endDate: data.endTime ? data.endDate || data.date : "",
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timezone: data.timezone || undefined,
         location,
         venue: data.venue || undefined,
         address: data.address || undefined,
@@ -1030,7 +1031,8 @@ const handleGalleryUpload = useCallback(
     router,
   ]);
 
-  const editor = useEventPageEditor({ snapshot: { data, activeTemplateId, activeVariationId, newHost, newRegistry }, category: isAnniversaryDesign ? "Anniversaries" : "Birthdays", templateId: data.theme.professionalThemeId, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: uploadingAssets, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: isAnniversaryDesign ? "anniversaries" : "birthdays" });
+  useEventLocationTimezone({ data, setData, enabled: !loadingExisting, saved: editEventId ? eventHistoryClient.read(`/api/history/${encodeURIComponent(editEventId)}`)?.data : undefined });
+    const editor = useEventPageEditor({ snapshot: { data, activeTemplateId, activeVariationId, newHost, newRegistry }, restoreSnapshot: (snapshot) => { setData(snapshot.data); setActiveTemplateId(snapshot.activeTemplateId); setActiveVariationId(snapshot.activeVariationId); setNewHost(snapshot.newHost); setNewRegistry(snapshot.newRegistry); }, category: isAnniversaryDesign ? "Anniversaries" : "Birthdays", templateId: data.theme.professionalThemeId, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: uploadingAssets, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: isAnniversaryDesign ? "anniversaries" : "birthdays" });
 
   useEffect(() => {
     if (galleryIndex >= data.gallery.length) {
@@ -1088,6 +1090,7 @@ const handleGalleryUpload = useCallback(
           onClick={() => setActiveView("headline")}
         />
         <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />
+          <EventEditorPageSettings />
 
         <MenuCard
           title="Party Details"
@@ -1172,7 +1175,7 @@ const handleGalleryUpload = useCallback(
           placeholder="Street address (optional)"
         />
       </div>
-    </EditorLayout>
+        </EditorLayout>
   );
 
   const renderDesignEditor = () => {

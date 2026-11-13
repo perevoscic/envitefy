@@ -1,9 +1,10 @@
 "use client";
-import { Children, cloneElement, Fragment, isValidElement, type CSSProperties, type ReactNode } from "react";
+import { Children, cloneElement, Fragment, isValidElement, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import { useEventPageComposition } from "./EventPageCompositionContext";
 import { hasEventPageBodyComposition } from "@/lib/event-page-composition";
 import EventPageHero from "./EventPageHero";
 import EventPageSections from "./EventPageSections";
+import styles from "./event-page-sections.module.css";
 
 function containsTitle(node: ReactNode): boolean {
   return (
@@ -48,7 +49,7 @@ function retainNativeSections(node: ReactNode): ReactNode {
 }
 
 /** A template's hero stays anchored while its body uses the shared section canvas. */
-export default function EventPageNativeSections({
+function NativeSections({
   children,
   supplemental,
   supplementalSections,
@@ -126,4 +127,8 @@ export default function EventPageNativeSections({
     </>,
   );
   return <>{withHero(nodes)}</>;
+}
+
+export default function EventPageNativeSections(props: ComponentProps<typeof NativeSections>) {
+  return <div className={`${styles.contentFlow} ${styles.nativeContentFlow}`}><NativeSections {...props} /></div>;
 }

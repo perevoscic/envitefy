@@ -33,6 +33,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import styles from "./responsive-event-navigation.module.css";
+import { useEventNavigationScroll } from "./useEventNavigationScroll";
+import { useEventPageComposition } from "./EventPageCompositionContext";
+import { hasEventPageBodyComposition } from "@/lib/event-page-composition";
 
 export type EventNavigationItem = {
   id: string;
@@ -79,6 +82,7 @@ export default function ResponsiveEventNavigation({
   background,
   foreground,
   renderItem,
+  managedNavigation = false,
 }: {
   items: EventNavigationItem[];
   activeId?: string;
@@ -89,7 +93,10 @@ export default function ResponsiveEventNavigation({
   background?: string;
   foreground?: string;
   renderItem?: (item: EventNavigationItem, content: ReactNode) => ReactNode;
+  /** Gymnastics and football panels manage their native tabs with the shared editing tools. */
+  managedNavigation?: boolean;
 }) {
+  const composition = useEventPageComposition();
   const prefix = useId();
   const reducedMotion = useReducedMotion();
   const [selectedId, setSelectedId] = useState(items[0]?.id || "");
@@ -98,6 +105,7 @@ export default function ResponsiveEventNavigation({
   const cancelHint = useRef<() => void>(() => {});
   const buttons = useRef<Record<string, HTMLButtonElement | HTMLAnchorElement | null>>({});
   const rail = useRef<HTMLDivElement>(null);
+  const railScroll = useEventNavigationScroll();
   const selected = items.some((item) => item.id === (activeId ?? selectedId))
     ? (activeId ?? selectedId)
     : items[0]?.id;
@@ -195,6 +203,11 @@ export default function ResponsiveEventNavigation({
     };
   }, [items, activeId]);
 
+  if (!managedNavigation && composition && (composition.onChange || hasEventPageBodyComposition(composition.value))) {
+    // The shared canvas owns section navigation; keep authored external actions available.
+    const external = items.filter(item => item.href && !item.href.startsWith("#"));
+    return external.length ? <nav aria-label={ariaLabel}>{external.map(item => <a key={item.id} href={item.href}>{item.label}</a>)}</nav> : null;
+  }
   if (items.length <= 3) return <>{children}</>;
 
   const reveal = (id: string) => {
@@ -239,6 +252,7 @@ export default function ResponsiveEventNavigation({
         <div
           ref={rail}
           className={styles.rail}
+          {...railScroll}
           {...(tabbed ? { role: "tablist", "aria-label": ariaLabel } : {})}
         >
           {items.map((item, index) => {

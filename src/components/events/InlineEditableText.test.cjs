@@ -33,6 +33,7 @@ function editor(value, multiline = false) {
       return slots[index];
     },
     useEffect() {},
+    useLayoutEffect() {},
     useId: () => "description",
   };
   const module = { exports: {} };
@@ -44,6 +45,10 @@ function editor(value, multiline = false) {
           ? {}
           : name === "./EventPageReadOnlyContext"
             ? { useEventPageReadOnly: () => readOnly }
+          : name === "./InlineTextPositioner"
+            ? require("../../../scripts/lib/event-messages-test-loader.cjs")("src/components/events/InlineTextPositioner.tsx", { react: hooks })
+          : name === "./EventSectionTextContext"
+            ? { useSectionTextField: () => false }
           : name.endsWith(".css")
             ? {}
             : require(name),

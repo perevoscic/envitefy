@@ -1,13 +1,15 @@
 "use client";
 
-import { ArrowLeft, Check, CircleAlert, ExternalLink, Eye, Link2, ListPlus, PanelsTopLeft, Pencil, Save, Share2, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, CircleAlert, ExternalLink, Eye, Link2, ListPlus, LogOut, PanelsTopLeft, Pencil, Save, Share2, Trash2, Undo2, X } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import { resolveNativeShareData } from "@/utils/native-share";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
-import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useId, useRef, useState } from "react";
 import type { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { eventEditorActions } from "@/lib/event-editor";
 import { EventEditorImageControlsContext } from "./EventEditorImageControlsContext";
+import { EventEditorCalendarContext } from "./EventEditorCalendarContext";
 import { EventEditorMenuCard, EventEditorSection, EventEditorToolsRow } from "./EventEditorFields";
 import { EventPageCompositionProvider } from "./EventPageCompositionContext";
 import EventPageLayoutPicker from "./EventPageLayoutPicker";
@@ -107,19 +109,21 @@ export function EventEditorActions({
   editor,
   children,
   onBack,
+  showBack = true,
 }: {
   editor: EventPageEditorSession;
   children?: ReactNode;
   onBack?: () => void;
+  showBack?: boolean;
 }) {
   const actions = eventEditorActions(editor.published, editor.dirty);
   const disabled = editor.busy || !editor.ready;
   return (
-    <div className={styles.actions} role="group" aria-label="Save event">
-      <button type="button" className={styles.mobileBack} disabled={disabled} onClick={onBack || editor.cancel}>
+    <div className={styles.actions} role="group" aria-label="Save event" data-compact-save={editor.published && Boolean(editor.undo)}>
+      {showBack && <button type="button" className={styles.mobileBack} disabled={disabled} onClick={onBack || editor.cancel}>
         <ArrowLeft size={17} aria-hidden="true" />
         Back
-      </button>
+      </button>}
       {children}
       {actions.showDraft && (
         <button
@@ -140,6 +144,7 @@ export function EventEditorActions({
           aria-busy={editor.saveIntent === "publish" || editor.saveIntent === "changes"}
           onClick={() => void editor.saveChanges().catch(() => {})}
         >
+          {editor.published && <Save size={17} aria-hidden="true" />}
           {editor.saveIntent === "publish"
             ? "Publishing…"
             : editor.saveIntent === "changes" ? "Saving…" : actions.primaryLabel}
@@ -154,6 +159,7 @@ type EventEditorTool = "sections" | "layout" | "url";
 type EventEditorTools = {
   openTool: (tool: EventEditorTool) => void;
   canEditUrl?: boolean;
+  canEditSections?: boolean;
 };
 const EventEditorToolsContext = createContext<EventEditorTools | null>(null);
 
@@ -165,6 +171,16 @@ export function EventEditorToolsConsumer({
 }) {
   const tools = useContext(EventEditorToolsContext);
   return tools ? children(tools) : null;
+}
+
+export function EventEditorPageSettings({ showImageLayout = true }: { showImageLayout?: boolean } = {}) {
+  const tools = useContext(EventEditorToolsContext);
+  if (!tools) return null;
+  return <>
+    {tools.canEditSections && <EventEditorMenuCard title="Page sections" desc="Add, edit and move sections." icon={<ListPlus size={20} />} onClick={() => tools.openTool("sections")} />}
+    {showImageLayout && <EventEditorMenuCard title="Event image settings" desc="Upload an image and choose a design." icon={<PanelsTopLeft size={20} />} onClick={() => tools.openTool("layout")} />}
+    {tools.canEditUrl && <EventEditorMenuCard title="Custom URL" desc="Choose your shareable web address." icon={<Link2 size={20} />} onClick={() => tools.openTool("url")} />}
+  </>;
 }
 
 /** The same mounted preview, editing panel and actions for every authored Event Page. */
@@ -181,12 +197,14 @@ export default function EventEditorWorkspace({
   sectionEditors,
   artwork,
   title,
-  compositionMenu = "cards",
+  compositionMenu = "inline",
+  pageSectionsMenu = embedded || !preview,
   customUrlMenu = true,
-  pageEditing = false,
+  pageEditing = Boolean(preview),
   viewLabels,
   onBackWithinControls,
   imageControlsInMenu = true,
+  imageControls,
 }: {
   editor: EventPageEditorSession;
   preview: ReactNode;
@@ -203,20 +221,28 @@ export default function EventEditorWorkspace({
   title?: string;
   /** "inline" hides the default cards; the controls render them through EventEditorToolsConsumer. */
   compositionMenu?: "cards" | "inline";
+  /** Canvas-first editors expose the section library through their page instead. */
+  pageSectionsMenu?: boolean;
   /** Editors with an existing URL entry keep that entry instead of the shared card. */
   customUrlMenu?: boolean;
-  /** The canvas stays editable when its settings panel is hidden. */
+  /** Page previews stay editable by default; embedded controls can opt out. */
   pageEditing?: boolean;
   viewLabels?: { page: string; controls: string };
   /** Return true after going back within the controls; shared tools request the main menu. */
   onBackWithinControls?: (toMainMenu?: boolean) => boolean;
   /** Editors with a dedicated image section can keep image actions there. */
   imageControlsInMenu?: boolean;
+  imageControls?: ReactNode;
 }) {
   const nativeBuilder = useEventSectionBuilder();
+  const editingPanelId = useId();
   const panelRef = useRef<HTMLElement>(null);
+  const workspaceRef = useRef<HTMLElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const previewCloseRef = useRef<HTMLButtonElement>(null);
   const [tool, setTool] = useState<EventEditorTool | null>(null);
+  const [undoOpen, setUndoOpen] = useState(false);
   const renderSectionEditor = (id: string) => {
     if (sectionEditors?.[id]) return sectionEditors[id]();
     const alias = /travel|getting.here/i.test(id)
@@ -243,8 +269,11 @@ export default function EventEditorWorkspace({
     );
   };
   const [editing, setEditing] = useState(true);
+  const [previewing, setPreviewing] = useState(false);
+  const previewReturnToControls = useRef(true);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [mobile, setMobile] = useState(false);
-  const [mobileImageControls, setMobileImageControls] = useState<HTMLDivElement | null>(null);
+  const [imageControlsTarget, setImageControlsTarget] = useState<HTMLDivElement | null>(null);
   const [entered, setEntered] = useState(false);
   useEffect(() => {
     let frame = requestAnimationFrame(() => {
@@ -261,6 +290,21 @@ export default function EventEditorWorkspace({
   }, []);
   const mobileEditing = embedded || (drawer ? drawer.mobileMenuOpen : editing);
   const currentEditing = mobile ? mobileEditing : editing;
+  const readOnlyPreview = !embedded && (previewing || (!currentEditing && !pageEditing));
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+    const footer = footerRef.current;
+    if (!workspace) return;
+    if (!footer) { workspace.style.setProperty("--event-editor-footer-height", "0px"); return; }
+    const measure = () => workspace.style.setProperty("--event-editor-footer-height", `${footer.getBoundingClientRect().height}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, [readOnlyPreview]);
+  useEffect(() => {
+    if (readOnlyPreview) previewCloseRef.current?.focus({ preventScroll: true });
+  }, [readOnlyPreview]);
   useEffect(() => {
     if (editor.error || (revealControls && revealControls !== "main")) {
       setEditing(true);
@@ -268,21 +312,20 @@ export default function EventEditorWorkspace({
     }
   }, [editor.error, revealControls, drawer?.openMobileMenu]);
   const showEditing = () => {
+    setPreviewing(false);
     setEditing(true);
     drawer?.openMobileMenu();
     requestAnimationFrame(() => panelRef.current?.focus({ preventScroll: true }));
   };
+  const closePreview = () => {
+    if (previewReturnToControls.current) showEditing();
+    else showPage();
+  };
   const showPage = () => {
+    setPreviewing(false);
     setEditing(false);
     drawer?.dismissMobileMenu();
-    requestAnimationFrame(() => previewRef.current?.focus({ preventScroll: true }));
-  };
-  const cancelEditing = () => {
-    if (!pageEditing && !embedded && !editor.dirty) {
-      showPage();
-      return;
-    }
-    editor.cancel();
+    requestAnimationFrame(() => (previewCloseRef.current || menuButtonRef.current || previewRef.current)?.focus({ preventScroll: true }));
   };
   const focusControlsMenu = () => {
     requestAnimationFrame(() => {
@@ -314,9 +357,21 @@ export default function EventEditorWorkspace({
     editor.cancel();
   };
   const inlineHeader = typeof controls === "function" || typeof controlsHeader === "function";
+  const canvasEditor = pageEditing && !embedded;
+  const exitButton = (
+    <button type="button" disabled={editor.busy} onClick={editor.cancel}>
+      <LogOut size={17} aria-hidden="true" />
+      Exit
+    </button>
+  );
   const viewActions = !embedded && (
     <div className={styles.views} role="group" aria-label="Editor view" data-owner-actions={!currentEditing && Boolean(editor.ownerActions)}>
-      {currentEditing ? (
+      {readOnlyPreview ? (<>
+        <PreviewOwnerActions editor={editor} />
+        <button ref={previewCloseRef} type="button" onClick={closePreview} className={styles.closeSettings} aria-label="Close preview" title="Close preview">
+          <X size={20} aria-hidden="true" />
+        </button>
+      </>) : currentEditing ? (
         <button
           type="button"
           onClick={showPage}
@@ -334,22 +389,27 @@ export default function EventEditorWorkspace({
           )}
         </button>
       ) : (<>
-        <button type="button" onClick={showEditing}>
+        {canvasEditor && mobile && exitButton}
+        <button ref={menuButtonRef} type="button" onClick={showEditing} aria-label={pageEditing ? "Page settings" : undefined}
+          aria-expanded={currentEditing} aria-controls={editingPanelId}>
           {pageEditing ? (
-            <PanelsTopLeft size={17} aria-hidden="true" />
+            mobile ? <Pencil size={17} aria-hidden="true" /> : <PanelsTopLeft size={17} aria-hidden="true" />
           ) : (
             <Pencil size={17} aria-hidden="true" />
           )}
-          {viewLabels?.controls || "Edit"}
+          {mobile && pageEditing ? "Edit page" : viewLabels?.controls || "Edit"}
         </button>
-        <PreviewOwnerActions editor={editor} />
+        {!canvasEditor && <PreviewOwnerActions editor={editor} />}
+        {canvasEditor && !mobile && exitButton}
       </>)}
     </div>
   );
-  const settingsInFooter = pageEditing && !currentEditing;
+  const settingsInFooter = pageEditing && !currentEditing && !readOnlyPreview;
   const workspace = (
-    <EventEditorImageControlsContext.Provider value={mobile && currentEditing && imageControlsInMenu ? mobileImageControls : null}>
+    <EventEditorCalendarContext.Provider value={editor.calendarFields || null}>
+    <EventEditorImageControlsContext.Provider value={imageControlsInMenu ? imageControlsTarget : null}>
     <section
+      ref={workspaceRef}
       className={styles.workspace}
       data-event-page-editor
       data-editing={editing}
@@ -357,13 +417,34 @@ export default function EventEditorWorkspace({
       data-embedded={embedded}
       data-bottom-settings={settingsInFooter}
       data-page-editing={pageEditing}
+      data-previewing={readOnlyPreview}
       data-entered={entered}
+      role={mobile && canvasEditor && currentEditing ? "dialog" : undefined}
+      aria-modal={mobile && canvasEditor && currentEditing ? true : undefined}
+      aria-label={mobile && canvasEditor && currentEditing ? "Edit event page" : undefined}
+      onKeyDown={(event) => {
+        if (mobile && canvasEditor && currentEditing && !event.defaultPrevented) {
+          if (event.key === "Escape") { event.preventDefault(); goBack(); return; }
+          if (event.key === "Tab") {
+            const controls = [...event.currentTarget.querySelectorAll<HTMLElement>("aside button:not(:disabled), aside input:not(:disabled), aside textarea:not(:disabled), aside select:not(:disabled), aside a[href], footer button:not(:disabled)")]
+              .filter(element => element.getClientRects().length && !element.closest("[hidden], [inert]"));
+            const first = controls[0], last = controls[controls.length - 1];
+            if (first && last && (!controls.includes(document.activeElement as HTMLElement) || (event.shiftKey && document.activeElement === first) || (!event.shiftKey && document.activeElement === last))) {
+              event.preventDefault(); (event.shiftKey ? last : first).focus();
+            }
+          }
+        }
+        if (readOnlyPreview && event.key === "Escape" && !event.defaultPrevented) {
+          event.preventDefault();
+          closePreview();
+        }
+      }}
     >
       {notices}
       <div className={styles.body}>
-        {!embedded && pageEditing && (
+        {!embedded && (readOnlyPreview || (pageEditing && !currentEditing)) && (
           <header className={styles.header}>
-            {(!inlineHeader || !currentEditing) && !settingsInFooter && viewActions}
+            {viewActions}
           </header>
         )}
         <div
@@ -377,11 +458,13 @@ export default function EventEditorWorkspace({
           inert={editor.busy || (mobile && currentEditing) ? true : undefined}
           {...drawer?.previewTouchHandlers}
         >
-          <EventSectionsReadOnly readOnly={!currentEditing && !pageEditing}>
+          <EventSectionsReadOnly readOnly={readOnlyPreview}>
             {preview}
           </EventSectionsReadOnly>
         </div>
+        {mobile && canvasEditor && currentEditing && <button type="button" className={styles.menuBackdrop} aria-label="Close editing menu" onClick={showPage} />}
         <aside
+          id={editingPanelId}
           className={styles.panel}
           ref={panelRef}
           tabIndex={-1}
@@ -389,35 +472,53 @@ export default function EventEditorWorkspace({
           inert={!currentEditing ? true : undefined}
           {...drawer?.drawerTouchHandlers}
         >
+          {canvasEditor && (
+            <div className={`${styles.panelNavigation} ${styles.views}`} role="group" aria-label="Editor view">
+              <div className={styles.desktopNavigation}>
+                {typeof controlsHeader === "function" ? controlsHeader(exitButton) : (
+                  <div className={styles.navigationRow}>
+                    <span className={styles.navigationTitle}>Edit event page</span>
+                    {exitButton}
+                  </div>
+                )}
+              </div>
+              <div className={`${styles.navigationRow} ${styles.mobileNavigation}`}>
+                <button type="button" disabled={editor.busy} onClick={showPage} aria-label="Back to page">
+                  <ArrowLeft size={17} aria-hidden="true" />Page
+                </button>
+                <span className={styles.navigationTitle}>Edit page</span>
+                {exitButton}
+              </div>
+            </div>
+          )}
           <div
             className={styles.controls}
             data-inline-header={inlineHeader}
             inert={editor.busy ? true : undefined}
           >
-            {typeof controlsHeader === "function"
-              ? controlsHeader(pageEditing ? viewActions : null)
-              : controlsHeader}
-            {imageControlsInMenu && <div ref={setMobileImageControls} className={styles.mobileImageControls} />}
+            {!canvasEditor && (typeof controlsHeader === "function"
+              ? controlsHeader(null)
+              : controlsHeader)}
             {compositionMenu === "cards" &&
               ((editor.setComposition && sectionEditors) ||
                 (customUrlMenu && editor.urlEditor)) && (
                 <EventEditorToolsRow>
                   {editor.setComposition && sectionEditors && (
                     <>
-                      <EventEditorMenuCard
+                      {pageSectionsMenu && <EventEditorMenuCard
                         compact
                         active={tool === "sections"}
                         title="Page sections"
                         icon={<ListPlus size={20} />}
                         desc="Add, edit and move sections on your page."
                         onClick={() => setTool("sections")}
-                      />
+                      />}
                       <EventEditorMenuCard
                         compact
                         active={tool === "layout"}
-                        title="Layout"
+                        title="Event image settings"
                         icon={<PanelsTopLeft size={20} />}
-                        desc="Arrange your hero image and title."
+                        desc="Upload an image and choose a design."
                         onClick={() => setTool("layout")}
                       />
                     </>
@@ -437,6 +538,7 @@ export default function EventEditorWorkspace({
             {(["sections", "layout", "url"] as const).map(
               (panel) =>
                 ((panel === "url" && customUrlMenu && editor.urlEditor) ||
+                  (panel === "sections" && nativeBuilder) ||
                   (panel !== "url" && editor.setComposition && sectionEditors)) && (
                   <div key={panel} hidden={tool !== panel} className={styles.toolPanel}>
                     <EventEditorSection
@@ -444,7 +546,7 @@ export default function EventEditorWorkspace({
                         panel === "url"
                           ? "Custom URL"
                           : panel === "layout"
-                            ? "Layout"
+                            ? "Event image settings"
                             : "Page sections"
                       }
                       onBack={closeTool}
@@ -468,13 +570,19 @@ export default function EventEditorWorkspace({
                           onBusyChange={editor.urlEditor?.onBusyChange}
                           disabled={editor.busy}
                         />
-                      ) : panel === "layout" ? (
+                      ) : panel === "layout" ? (<>
+                        {(imageControls || imageControlsInMenu) && <div className={styles.imageSettingsControls}>
+                          {imageControls}
+                          {imageControlsInMenu && <div ref={setImageControlsTarget} />}
+                          <p>Image and layout changes are saved only when you save the event.</p>
+                        </div>}
                         <EventPageLayoutPicker
                           value={editor.composition}
                           onChange={editor.setComposition!}
                           artwork={artwork}
                           title={title}
                         />
+                        </>
                       ) : (
                         <EventSectionPalette />
                       )}
@@ -483,24 +591,28 @@ export default function EventEditorWorkspace({
                 ),
             )}
             <div hidden={Boolean(tool)} className={styles.menuContent}>
+              {canvasEditor && (nativeBuilder || (editor.setComposition && sectionEditors)) && <div className={styles.mobileSections}>
+                <EventEditorMenuCard title="Sections" desc="Add, rename and organize page sections." icon={<ListPlus size={20} />} onClick={() => setTool("sections")} />
+              </div>}
               <EventEditorToolsContext.Provider
                 value={
                   editor.setComposition && sectionEditors
                     ? {
                         openTool: setTool,
-                        canEditUrl: Boolean(editor.urlEditor),
+                        canEditUrl: Boolean(customUrlMenu && editor.urlEditor),
+                        canEditSections: pageSectionsMenu,
                       }
                     : null
                 }
               >
                 {typeof controls === "function"
-                  ? controls(pageEditing ? viewActions : null)
+                  ? controls(null)
                   : controls}
               </EventEditorToolsContext.Provider>
             </div>
           </div>
         </aside>
-        <footer className={styles.footer} data-bottom-settings={settingsInFooter}>
+        {!readOnlyPreview && <footer ref={footerRef} className={styles.footer} data-bottom-settings={settingsInFooter}>
           {(editor.error || editor.message) && (
             <div className={styles.toastPosition}>
               <EditorToast
@@ -510,25 +622,57 @@ export default function EventEditorWorkspace({
               />
             </div>
           )}
-          {pageEditing && viewActions}
-          <EventEditorActions editor={editor} onBack={goBack}>
-            {!pageEditing && viewActions}
-            {(pageEditing || currentEditing || editor.dirty) && (
+          {pageEditing && !canvasEditor && viewActions}
+          <EventEditorActions editor={editor} onBack={goBack} showBack={!canvasEditor}>
+            {!pageEditing && !currentEditing && viewActions}
+            {editor.undo && (currentEditing || editor.dirty) && (
+              <Dialog.Root open={undoOpen} onOpenChange={setUndoOpen}>
+                <Dialog.Trigger asChild>
+                  <button type="button" disabled={editor.busy || !editor.ready || !editor.undo.canUndo}>
+                    <Undo2 size={17} aria-hidden="true" />Undo
+                  </button>
+                </Dialog.Trigger>
+                <Dialog.Portal>
+                  <Dialog.Overlay className={styles.undoOverlay} />
+                  <Dialog.Content className={styles.undoMenu}>
+                    <Dialog.Title>Undo changes</Dialog.Title>
+                    <Dialog.Description>Restore your last change, or all changes since opening this editor or your latest save.</Dialog.Description>
+                    <button type="button" className={styles.undoItem} onClick={() => { setUndoOpen(false); editor.undo?.last(); }}>Undo last change</button>
+                    <button type="button" className={styles.undoItem} onClick={() => { setUndoOpen(false); editor.undo?.all(); }}>Undo all unsaved changes</button>
+                    <Dialog.Close asChild><button type="button" className={styles.undoItem}>Keep editing</button></Dialog.Close>
+                  </Dialog.Content>
+                </Dialog.Portal>
+              </Dialog.Root>
+            )}
+            {canvasEditor && currentEditing && (
+              <button type="button" className={styles.hideSettings} disabled={editor.busy} onClick={showPage}>
+                Hide settings
+              </button>
+            )}
+            {!canvasEditor && (currentEditing || editor.dirty) && (
               <button
                 type="button"
                 disabled={editor.busy}
-                onClick={cancelEditing}
+                onClick={editor.cancel}
               >
                 {pageEditing && <X size={17} aria-hidden="true" />}
                 Cancel
               </button>
             )}
+            {!embedded && !previewing && (currentEditing || pageEditing) && (
+              <button type="button" disabled={editor.busy} onClick={() => {
+                previewReturnToControls.current = currentEditing;
+                showPage();
+                setPreviewing(true);
+              }}><Eye size={17} aria-hidden="true" />Preview</button>
+            )}
           </EventEditorActions>
-        </footer>
+        </footer>}
       </div>
       {children}
     </section>
     </EventEditorImageControlsContext.Provider>
+    </EventEditorCalendarContext.Provider>
   );
   if (!editor.setComposition || !sectionEditors) return workspace;
   const composed = nativeBuilder ? (

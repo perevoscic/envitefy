@@ -7,7 +7,7 @@ const compiled = require("next/dist/compiled/webpack/webpack");
 compiled.init();
 
 test("premade hero thumbnails rearrange artwork and title while native sections stay stacked and save explicitly", { timeout: 120000 }, async () => {
-  const output = path.resolve(".qa/event-hero-layout-browser");
+  const output = path.resolve(process.env.EVENT_HERO_LAYOUT_OUTPUT || ".qa/event-hero-layout-browser");
   await new Promise((resolve, reject) => {
     const compiler = compiled.webpack({
       mode: "development", target: "web", devtool: false,
@@ -47,20 +47,8 @@ test("premade hero thumbnails rearrange artwork and title while native sections 
       assert.equal(await controls.getByRole("slider").count(), 0, "hero choices do not expose sliders");
       assert.equal(await controls.locator("input,select,textarea").count(), 0, "hero layout is a thumbnail gallery");
       assert.equal(await controls.getByRole("button", { name: "Reset", exact: true }).count(), 0, "Reset stays hidden until a hero layout is selected");
-      const presets = [
-        { label: "Wide banner", imagePosition: "top", imageShape: "landscape", titlePosition: "below", titleAlign: "center" },
-        { label: "Title first", imagePosition: "top", imageShape: "landscape", titlePosition: "above", titleAlign: "center" },
-        { label: "Image left", imagePosition: "left", imageShape: "square", titlePosition: "below", titleAlign: "left" },
-        { label: "Image right", imagePosition: "right", imageShape: "square", titlePosition: "below", titleAlign: "left" },
-        { label: "Circle portrait", imagePosition: "left", imageShape: "circle", titlePosition: "below", titleAlign: "left" },
-        { label: "Arch portrait", imagePosition: "top", imageShape: "arch", titlePosition: "below", titleAlign: "center" },
-        { label: "Square portrait", imagePosition: "top", imageShape: "square", titlePosition: "below", titleAlign: "center" },
-        { label: "Tall portrait", imagePosition: "top", imageShape: "portrait", titlePosition: "below", titleAlign: "center" },
-        { label: "Centered circle", imagePosition: "top", imageShape: "circle", titlePosition: "below", titleAlign: "center" },
-        { label: "Circle right", imagePosition: "right", imageShape: "circle", titlePosition: "below", titleAlign: "left" },
-        { label: "Arch left", imagePosition: "left", imageShape: "arch", titlePosition: "below", titleAlign: "left" },
-        { label: "Arch right", imagePosition: "right", imageShape: "arch", titlePosition: "below", titleAlign: "left" },
-      ];
+      const presets = await page.evaluate(() => window.heroLayoutPresets.map(({ label, layout }) => ({ label, ...layout })));
+      assert.equal(presets.length, 48, "the gallery contains forty-eight styled designs");
       assert.equal(await controls.getByRole("button", { name: /^Choose .* hero layout$/ }).count(), presets.length);
       const bodyGeometry = async () => page.locator("[data-fixture-body]").evaluate((body) => {
         const origin = body.getBoundingClientRect();
@@ -70,7 +58,7 @@ test("premade hero thumbnails rearrange artwork and title while native sections 
         });
       });
       const baseline = await bodyGeometry();
-      for (const { label, imagePosition, imageShape, titlePosition, titleAlign } of presets) {
+      for (const { label, imagePosition, imageShape, titlePosition, titleAlign, imageStyle } of presets) {
           const button = controls.getByRole("button", { name: `Choose ${label} hero layout`, exact: true });
           assert.equal(await button.locator("img").count(), 1, `${label}: thumbnail contains the event artwork`);
           const bounds = await button.boundingBox();
@@ -86,6 +74,20 @@ test("premade hero thumbnails rearrange artwork and title while native sections 
           assert.equal(await page.locator("[data-event-hero]").getAttribute("data-image-position"), imagePosition);
           assert.equal(await page.locator("[data-event-hero]").getAttribute("data-image-shape"), imageShape);
           assert.equal(await page.locator("[data-event-hero]").getAttribute("data-title-position"), titlePosition);
+          assert.equal(await page.locator("[data-event-hero]").getAttribute("data-image-style"), imageStyle || null);
+          if (imageStyle) {
+            const effect = await page.locator("[data-event-hero-artwork]").evaluate(node => ({
+              clip: getComputedStyle(node).clipPath,
+              mask: getComputedStyle(node.querySelector("img")).maskImage,
+              overlay: getComputedStyle(node, "::after").content,
+              pointerEvents: getComputedStyle(node, "::after").pointerEvents,
+            }));
+            if (["diagonal-cut", "cut-corners"].includes(imageStyle)) assert.notEqual(effect.clip, "none");
+            if (imageStyle === "sliced-bands") assert.notEqual(effect.mask, "none");
+            assert.equal(effect.overlay, '\"\"');
+            assert.equal(effect.pointerEvents, "none", "decorative lines never intercept image controls");
+            await page.locator("[data-event-hero]").screenshot({ path: path.join(output, `${screen.name}-${imageStyle}.png`) });
+          }
           assert.equal(await page.locator("[data-event-hero-copy] h1").evaluate((node) => getComputedStyle(node).textAlign), titleAlign);
           const geometry = await page.locator("[data-event-hero]").evaluate((hero) => {
             const box = (element) => { const rect = element.getBoundingClientRect(); return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }; };
@@ -116,13 +118,13 @@ test("premade hero thumbnails rearrange artwork and title while native sections 
       const headingBox = await heading.boundingBox();
       assert.ok(resetBox.x >= headingBox.x + headingBox.width - 1, "Reset is placed to the right of Layout");
       assert.ok(Math.abs(resetBox.y + resetBox.height / 2 - headingBox.y - headingBox.height / 2) < 1, "Reset aligns vertically with Layout");
-      const selectedPreset = controls.getByRole("button", { name: "Choose Arch right hero layout", exact: true });
+      const selectedPreset = controls.getByRole("button", { name: "Choose Floating border hero layout", exact: true });
       await selectedPreset.click();
       await page.locator("[data-original-hero]").waitFor();
       assert.equal(await selectedPreset.getAttribute("aria-pressed"), "false", "clicking the selected thumbnail deselects it");
       assert.equal(await reset.count(), 0, "deselection hides Reset");
       assert.deepEqual(await bodyGeometry(), baseline, "deselection preserves body sections");
-      const keyboardPreset = controls.getByRole("button", { name: "Choose Title first hero layout", exact: true });
+      const keyboardPreset = controls.getByRole("button", { name: "Choose Crossing lines hero layout", exact: true });
       await keyboardPreset.focus();
       await page.keyboard.press("Enter");
       assert.equal(await keyboardPreset.getAttribute("aria-pressed"), "true", "keyboard activates the thumbnail");
@@ -132,13 +134,13 @@ test("premade hero thumbnails rearrange artwork and title while native sections 
       await selectedPreset.click();
       await page.getByRole("button", { name: "Save draft", exact: true }).click();
       const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("hero-layout")));
-      assert.equal(saved.hero.imageShape, "arch");
+      assert.equal(saved.hero.imageShape, "square");
       assert.equal(saved.hero.titleAlign, "left");
       assert.equal(saved.hero.imagePositionY, 50);
       assert.equal(saved.layout, undefined, "new hero choices do not create body columns");
       await page.reload();
-      await page.locator('[data-event-hero][data-image-shape="arch"]').waitFor();
-      assert.equal(await page.getByRole("button", { name: "Choose Arch right hero layout", exact: true }).getAttribute("aria-pressed"), "true");
+      await page.locator('[data-event-hero][data-image-style="floating-border"]').waitFor();
+      assert.equal(await page.getByRole("button", { name: "Choose Floating border hero layout", exact: true }).getAttribute("aria-pressed"), "true");
       assert.deepEqual(await bodyGeometry(), baseline, "saved hero keeps section content and geometry after reload");
       await page.screenshot({ path: path.join(output, `${screen.name}.png`), fullPage: true });
       await controls.screenshot({ path: path.join(output, `picker-${screen.name}.png`) });
@@ -146,9 +148,32 @@ test("premade hero thumbnails rearrange artwork and title while native sections 
       await page.locator("[data-original-hero]").waitFor();
       assert.equal(await page.locator("[data-event-hero]").count(), 0, "reset restores the authored header");
       assert.deepEqual(await bodyGeometry(), baseline, "reset retains the section content and geometry");
+      await controls.getByRole("button", { name: "Choose Crossing lines hero layout", exact: true }).click();
+      assert.equal(await controls.locator('button[aria-pressed="true"]').count(), 1, "only one styled design is selected");
+      await page.getByRole("button", { name: "Save draft", exact: true }).click();
+      await page.reload();
+      await page.locator('[data-event-hero][data-image-style="crossing-lines"]').waitFor();
+      assert.equal(await controls.getByRole("button", { name: "Choose Crossing lines hero layout", exact: true }).getAttribute("aria-pressed"), "true", "the saved treatment reloads");
+      assert.equal(await controls.getByRole("button", { name: "Choose Wide banner hero layout", exact: true }).count(), 0, "classic layouts are removed from the gallery");
+      assert.equal(await controls.getByText("Classic layouts", { exact: true }).count(), 0);
+      await controls.getByRole("button", { name: "Choose Diagonal cut hero layout", exact: true }).click();
+      assert.equal(await page.locator("[data-event-hero]").getAttribute("data-image-style"), "diagonal-cut", "switching designs replaces the treatment");
+      for (const darkTemplate of [true, false]) {
+        await page.evaluate(dark => {
+          const article = document.querySelector('article[aria-label="Event page"]');
+          article.style.setProperty("--gym-ink", dark ? "#ffffff" : "#000000");
+          article.style.backgroundColor = dark ? "#171e2b" : "#f6f0e5";
+          article.style.color = dark ? "#ffffff" : "#000000";
+          document.documentElement.classList.toggle("dark", !dark);
+        }, darkTemplate);
+        const shadow = await page.locator("[data-image-edge-shadow]").evaluate(element => getComputedStyle(element).filter);
+        assert.notEqual(shadow, "none");
+        assert.match(shadow, darkTemplate ? /color\(srgb 1 1 1 \/ 0\.24\)/ : /color\(srgb 0 0 0 \/ 0\.24\)/, "cut shadows follow the template palette, independently of application appearance");
+        await page.locator("[data-event-hero]").screenshot({ path: path.join(output, `${screen.name}-cut-shadow-${darkTemplate ? "dark" : "light"}.png`) });
+      }
       await page.goto(`http://localhost:43140/?width=${screen.width}&placeholder=1`);
-      await controls.getByRole("button", { name: "Choose Wide banner hero layout", exact: true }).waitFor();
-      assert.equal(await controls.getByText("Event title", { exact: true }).count(), 12, "empty event titles use the requested thumbnail placeholder");
+      await controls.getByRole("button", { name: "Choose Diagonal cut hero layout", exact: true }).waitFor();
+      assert.equal(await controls.getByText("Event title", { exact: true }).count(), 48, "empty event titles use the requested thumbnail placeholder");
       assert.equal(await controls.getByText("Your event", { exact: true }).count(), 0);
       assert.deepEqual(errors, [], `${screen.name}: no browser errors`);
       await page.close();

@@ -23,6 +23,8 @@ export type ImportedEventTheme = {
   context: { title: string; sport: string; city: string; seed: string; venue?: string; address?: string; date?: string };
   /** Generate original artwork while retaining a deliberately selected template's presentation. */
   preserveTemplateStyle?: true;
+  /** Accent roles only; template surfaces and typography remain authored. */
+  templateColorCombination?: { templateId: string; index: number };
   branding: SourceBranding | null;
   colors: {
     page: string;
@@ -139,6 +141,9 @@ export function readImportedEventTheme(value: unknown): ImportedEventTheme | nul
       ...(clean(raw.context.date, 160) ? { date: clean(raw.context.date, 160) } : {}),
     },
     ...(raw.preserveTemplateStyle === true ? { preserveTemplateStyle: true as const } : {}),
+    ...(raw.templateColorCombination && clean(raw.templateColorCombination.templateId) &&
+      Number.isInteger(raw.templateColorCombination.index) && raw.templateColorCombination.index >= 0 && raw.templateColorCombination.index < 6
+      ? { templateColorCombination: { templateId: clean(raw.templateColorCombination.templateId), index: raw.templateColorCombination.index } } : {}),
     branding: readSourceBranding(raw.branding),
     colors,
     font: raw.font,
@@ -277,6 +282,74 @@ export function createImportedEventTheme(input: {
     shape: (["rounded", "angular", "arched"] as const)[shapeIndex],
   };
 }
+export type TemplateAccentPalette = {
+  id: string;
+  name: string;
+  background: string;
+  foreground: string;
+  accent: string;
+};
+
+/** Accent choices start from the event's saved palette, including generated dark pages. */
+export function importedEventAccentPalette(palette: TemplateAccentPalette, value: unknown): TemplateAccentPalette {
+  const theme = readImportedEventTheme(value);
+  if (!theme?.enabled || theme.preserveTemplateStyle) return palette;
+  const { page, ink, accent } = theme.colors;
+  return { ...palette, name: "Custom", background: page, foreground: ink,
+    accent: colorContrast(accent, page) >= 4.5 ? accent : ink };
+}
+
+/** Six related accent recipes from this template, never new page backgrounds. */
+export function templateAccentColorCombinations(palette: TemplateAccentPalette) {
+  const { background, foreground, accent } = palette;
+  // Links and titles also sit on the template's lightly tinted information panels.
+  const surfaces = [background, mix(accent, background, 0.92), mix(accent, background, 0.84)];
+  const readable = (color: string) => {
+    for (let step = 0; step <= 20; step++) {
+      const candidate = mix(color, foreground, step / 20);
+      if (surfaces.every(surface => colorContrast(candidate, surface) >= 4.5)) return candidate;
+    }
+    return foreground;
+  };
+  const base = readable(accent);
+  const headingTarget = colorContrast("#000000", background) > colorContrast("#ffffff", background) ? "#000000" : "#ffffff";
+  return [
+    { name: "Original", button: foreground, heading: foreground, link: base },
+    { name: "Accent", button: base, heading: base, link: readable(mix(base, foreground, 0.25)) },
+    { name: "Balanced", button: foreground, heading: readable(mix(base, headingTarget, 0.18)), link: readable(mix(base, foreground, 0.3)) },
+    { name: "Soft", button: readable(mix(base, background, 0.1)), heading: readable(mix(base, headingTarget, 0.35)), link: base },
+    { name: "Deep", button: readable(mix(base, foreground, 0.35)), heading: readable(mix(base, headingTarget, 0.55)), link: readable(mix(base, foreground, 0.55)) },
+    { name: "Tonal", button: readable(mix(base, foreground, 0.7)), heading: readable(mix(base, headingTarget, 0.75)), link: readable(mix(base, foreground, 0.4)) },
+  ].map((colors, index) => {
+    let inverseHeading = mix(background, accent, [0, 0.25, 0.15, 0.12, 0.3, 0.4][index]);
+    for (let step = 0; colorContrast(inverseHeading, foreground) < 4.5 && step <= 20; step++) {
+      inverseHeading = mix(inverseHeading, background, step / 20);
+    }
+    return { ...colors, index, inverseHeading,
+      onButton: colorContrast(colors.button, "#ffffff") >= 4.5 ? "#ffffff" : "#000000",
+    };
+  });
+}
+
+/** Color changes retain the artwork job identity, typography and saved media. */
+export function importedEventThemeColorCombinations(theme: ImportedEventTheme) {
+  const palettes = [
+    { name: "Rose & violet", accent: "#ff78b7", secondary: "#b787ff", page: "#111b3a", surface: "#202b49", ink: "#fff8fc" },
+    { name: "Ocean blue", accent: "#036f86", secondary: "#3b66ae", page: "#f0f8fc", surface: "#ffffff", ink: "#142431" },
+    { name: "Emerald & gold", accent: "#17624f", secondary: "#b38a27", page: "#f2f8f3", surface: "#ffffff", ink: "#142d25" },
+    { name: "Berry & blush", accent: "#9c3158", secondary: "#945f98", page: "#fff3f6", surface: "#ffffff", ink: "#36202e" },
+    { name: "Midnight & gold", accent: "#f0c66c", secondary: "#8faff2", page: "#131d30", surface: "#202d43", ink: "#fff8eb" },
+  ].map(({ name, ...colors }) => ({ name, colors: {
+    ...colors,
+    onAccent: colorContrast(colors.accent, "#ffffff") >= 4.5 ? "#ffffff" : "#000000",
+  } }));
+  const usesPreset = palettes.some(({ colors }) => Object.entries(colors).every(([key, color]) => theme.colors[key as keyof typeof colors] === color));
+  const original = usesPreset
+    ? createImportedEventTheme({ ...theme.context, branding: theme.branding }).colors
+    : theme.colors;
+  return [{ name: "Event colors", colors: original }, ...palettes];
+}
+
 export function redesignImportedEventTheme(theme: ImportedEventTheme) {
   const next = createImportedEventTheme({
     ...theme.context,

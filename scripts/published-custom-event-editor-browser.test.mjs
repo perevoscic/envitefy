@@ -70,10 +70,10 @@ test("published custom Event Pages open editing controls, hide footer Back and r
         if (ready) await page.getByRole("button", { name: "Preview", exact: true }).click();
       };
       const toolbar = page.getByRole("group", { name: "Editor view", exact: true });
-      const save = page.getByRole("button", { name: "Save changes", exact: true });
+      const save = page.getByRole("button", { name: "Save", exact: true });
       const expectSaveEnabled = async (enabled) => {
         await page.waitForFunction(value => [...document.querySelectorAll("button")].some(button =>
-          button.textContent.trim() === "Save changes" && button.disabled !== value), enabled);
+          button.textContent.trim() === "Save" && button.disabled !== value), enabled);
       };
       const backToDetails = page.getByRole("button", { name: "Back to details", exact: true });
       const title = page.locator("#event-field-title");
@@ -122,14 +122,14 @@ test("published custom Event Pages open editing controls, hide footer Back and r
           return { label: button.textContent.trim(), x, y, width, height, radius: Math.max(...[style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomLeftRadius, style.borderBottomRightRadius].map(parseFloat)), border: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth].reduce((sum, value) => sum + parseFloat(value), 0), background: style.backgroundColor, role: button.getAttribute("role"), pressed: button.getAttribute("aria-pressed"), selected: button.getAttribute("aria-selected") };
         }));
         assert.match(buttons[0].label, /^(Edit|Preview)$/);
-        assert.deepEqual(buttons.slice(1).map((button) => button.label), ["Save changes"], "published pages retain Save changes after the view action");
+        assert.deepEqual(buttons.slice(1).map((button) => button.label), ["Save"], "published pages retain Save after the view action");
         for (const [index, button] of buttons.entries()) {
           assert.equal(button.radius, desktop ? 12 : 0, `${button.label} keeps ${desktop ? "regular desktop button" : "square mobile"} corners`);
           assert.notEqual(button.role, "tab", `${button.label} remains an action button`);
           assert.equal(button.pressed, null, `${button.label} does not claim a selected tool state`);
           assert.equal(button.selected, null, `${button.label} does not claim a selected tab state`);
-          if (button.label === "Save changes") {
-            assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(button.background), "Save changes keeps its filled primary surface");
+          if (button.label === "Save") {
+            assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(button.background), "Save keeps its filled primary surface");
           } else if (desktop) {
             assert.equal(button.border, 4, `${button.label} has a one-pixel border on each side`);
             assert.match(button.background, /^rgb\(/, `${button.label} has its own opaque desktop button surface`);
@@ -320,21 +320,21 @@ test("published custom Event Pages open editing controls, hide footer Back and r
       await page.getByRole("button", { name: "Edit", exact: true }).click();
       await title.fill(initial.details.title);
       await expectSaveEnabled(false);
-      assert.equal(await save.isEnabled(), false, "Reverting a change disables Save changes");
-      await openSection(/^Layout/);
-      await page.getByRole("button", { name: "Choose Circle portrait hero layout", exact: true }).click();
+      assert.equal(await save.isEnabled(), false, "Reverting a change disables Save");
+      await openSection(/^Event image settings/);
+      await page.getByRole("button", { name: "Choose Oval portrait hero layout", exact: true }).click();
       await expectSaveEnabled(true);
       const resetLayout = page.getByRole("button", { name: "Reset", exact: true });
-      const layoutHeading = page.getByRole("heading", { name: "Layout", exact: true });
-      assert.equal(await resetLayout.evaluate((node) => node.parentElement.querySelector("h2")?.textContent), "Layout", "custom Reset shares the Layout heading row");
+      const layoutHeading = page.getByRole("heading", { name: "Event image settings", exact: true });
+      assert.equal(await resetLayout.evaluate((node) => node.parentElement.querySelector("h2")?.textContent), "Event image settings", "custom Reset shares the Layout heading row");
       const resetLayoutBox = await resetLayout.boundingBox();
       const layoutHeadingBox = await layoutHeading.boundingBox();
       assert.ok(resetLayoutBox.x >= layoutHeadingBox.x + layoutHeadingBox.width - 1, "custom Reset sits beside Layout");
       assert.ok(Math.abs(resetLayoutBox.y + resetLayoutBox.height / 2 - layoutHeadingBox.y - layoutHeadingBox.height / 2) < 1, "custom Reset aligns with Layout");
-      await page.getByRole("button", { name: "Choose Circle portrait hero layout", exact: true }).click();
+      await page.getByRole("button", { name: "Choose Oval portrait hero layout", exact: true }).click();
       await expectSaveEnabled(false);
       assert.equal(await resetLayout.count(), 0, "clicking the selected custom preset deselects it and hides Reset");
-      await page.getByRole("button", { name: "Choose Circle portrait hero layout", exact: true }).click();
+      await page.getByRole("button", { name: "Choose Oval portrait hero layout", exact: true }).click();
       await expectSaveEnabled(true);
       await resetLayout.click();
       await expectSaveEnabled(false);
@@ -377,13 +377,13 @@ test("published custom Event Pages open editing controls, hide footer Back and r
       await page.getByRole("alert").filter({ hasText: "The event could not be saved. Try again." }).waitFor();
       assert.equal(await title.inputValue(), "Saved field trip update");
       assert.deepEqual(await page.evaluate(() => window.navigations || []), []);
-      await page.waitForFunction(() => [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Save changes" && !button.disabled));
+      await page.waitForFunction(() => [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Save" && !button.disabled));
       assert.equal(await save.isEnabled(), true);
       rejectSave = false;
       await save.click();
       await page.getByText("Changes saved.", { exact: true }).waitFor();
       await expectSaveEnabled(false);
-      assert.equal(await title.isVisible(), true, "Save changes leaves the current editor open");
+      assert.equal(await title.isVisible(), true, "Save leaves the current editor open");
       assert.deepEqual(await page.evaluate(() => window.navigations || []), []);
       assert.equal(writes.length, 2);
       for (const write of writes) assertLiveSave(write, "Saved field trip update");
@@ -417,7 +417,7 @@ test("published custom Event Pages open editing controls, hide footer Back and r
       await save.click();
       await page.getByText("Changes saved.", { exact: true }).waitFor();
       await expectSaveEnabled(false);
-      assert.equal(await title.isVisible(), true, "Save changes leaves the current editor open");
+      assert.equal(await title.isVisible(), true, "Save leaves the current editor open");
       assert.deepEqual(await page.evaluate(() => window.navigations || []), []);
       assertLiveSave(writes.at(-1), "Co-host event details update");
       assert.equal(await page.getByRole("button", { name: "Custom URL", exact: true, includeHidden: true }).count(), 0, "content-only save responses do not reveal owner URL controls");

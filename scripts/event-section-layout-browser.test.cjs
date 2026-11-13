@@ -51,8 +51,11 @@ test("Event Page layouts keep readable widths and respond to the canvas in edito
         for (const editing of [true, false]) {
           for (const layout of ["template", "split", "banner", "poster", "editorial", "spotlight", "minimal", "cards"]) {
             const context = `${design}/${screen.name}/${editing ? "editing" : "guest"}/${layout}`;
-            await page.goto(`http://localhost:43139/?layout=${layout}&design=${design}&width=${screen.width}${editing ? "&editing" : ""}`);
-            await page.getByRole("heading", { name: "Meet Details", exact: true }).waitFor();
+            // The layout canvas shows all rows. GymnasticsProgram's individual tabs
+            // intentionally hide other rows and are covered by its browser matrix.
+            await page.goto(`http://localhost:43139/?shared&geometry&layout=${layout}&design=${design}&width=${screen.width}${editing ? "&editing" : ""}`);
+            await page.getByRole("heading", { name: "Meet Details", exact: true }).waitFor()
+              .catch(error => { throw new Error(`${context}: ${error.message}; browser errors: ${errors.join("; ")}`); });
             const canvas = page.locator('[data-fixture-body] [class*="gymnastics_program_module_css_chapters"]');
             if (editing && ["poster", "minimal"].includes(layout))
               await page.screenshot({ path: path.join(output, `${design === "airborne-atlas" ? "" : `${design}-`}${screen.name}-${layout}.png`), fullPage: true });

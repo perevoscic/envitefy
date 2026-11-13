@@ -21,8 +21,11 @@ export function customEventFieldErrors(page: CustomEventPage, publishing: boolea
   }
   if (publishing) {
     if (!d.title.trim()) errors.title = "Add an event title.";
-    if (!d.date) errors.date = "Add an event date.";
-    if (!d.location.trim() && !d.venue.trim()) errors.venue = "Add a venue or location.";
+    if (d.scanSchedule?.kind !== "school-memo") {
+      if (!d.date) errors.date = "Add an event date.";
+      if (!d.location.trim() && !d.venue.trim()) errors.venue = "Add a venue or location.";
+    }
+    if (d.time && !d.timezone) errors.location = "Add the event city or full address so its local time can be confirmed.";
   }
   for (const key of ["date", "endDate"] as const) {
     if (d[key] && (!/^\d{4}-\d{2}-\d{2}$/.test(d[key]) || !parseCalendarDateTimeToIso(d[key], "UTC")))
@@ -52,14 +55,8 @@ export function customEventFieldErrors(page: CustomEventPage, publishing: boolea
 }
 
 export function withCustomEventTimezone(page: CustomEventPage): CustomEventPage {
-  if (page.details.timezone) return page;
-  return {
-    ...page,
-    details: {
-      ...page.details,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-    },
-  };
+  // Missing venue zones stay visible for correction; never substitute the host's device zone.
+  return page;
 }
 
 export async function saveCustomEventPage({
@@ -94,8 +91,7 @@ export async function saveCustomEventPage({
   if (status === "published") {
     if (
       !valid.details.title ||
-      !valid.details.date ||
-      !(valid.details.location || valid.details.venue)
+      (valid.details.scanSchedule?.kind !== "school-memo" && (!valid.details.date || !(valid.details.location || valid.details.venue)))
     )
       throw new Error("Add an event title, date, and location before publishing.");
   }

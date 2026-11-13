@@ -532,3 +532,22 @@
     display: grid;
   }
 }
+
+/* A design supplies surfaces and typography, never automatic content columns.
+   Explicit Place beside pairs retain their own nested canvas row grid. */
+.body[data-template-body-layout] .sections {
+  grid-template-columns: minmax(0, 1fr);
+  margin-inline: 0;
+  padding-inline: 0;
+}
+.body[data-template-body-layout] .sections > .item:nth-child(n) {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+}
+.body[data-template-body-layout="ledger"] .panel > section {
+  grid-template-columns: minmax(0, 1fr);
+}
+.body[data-template-body-layout="ledger"] .panel > section > :not(h2):not(:first-child) {
+  grid-column: 1 / -1;
+}

@@ -1,12 +1,21 @@
 // @ts-nocheck
 "use client";
 import FileUploadInput from "@/components/ui/FileUploadInput";
+import { useSectionEditorAction, useSectionEditorClose, useSectionEditorTitle } from "@/components/events/EventSectionEditorContext";
+import GymnasticsScheduleCalendar from "@/components/gym-meet-templates/GymnasticsScheduleCalendar";
+import GymnasticsSchedule from "@/components/gym-meet-templates/GymnasticsSchedule";
+import GymnasticsScheduleImport from "./GymnasticsScheduleImport";
+import scheduleEditorStyles from "./gymnastics-schedule-editor.module.css";
+import { appendGymnasticsScheduleDays, appendGymnasticsSchedulePeriod, createGymnasticsScheduleDay, gymnasticsScheduleDayDate, gymnasticsSchedulePeriods, gymnasticsScheduleRangeDates, removeGymnasticsSchedulePeriod, type GymnasticsSchedulePeriod } from "@/lib/gymnastics-schedule-range";
 
 import { parseEventGuestDate } from "@/lib/event-guest-planning";
 
 import React, { useEffect, useState } from "react";
 import {
   Calendar as CalendarIcon,
+  CalendarDays,
+  CalendarRange,
+  CalendarPlus,
   Users,
   Trophy,
   ClipboardList,
@@ -165,6 +174,7 @@ type ScheduleInfo = {
   supportEmail: string;
   notes: string[];
   days: ScheduleDay[];
+  periods?: GymnasticsSchedulePeriod[];
 };
 
 type GearItem = {
@@ -2485,55 +2495,65 @@ const coachesSection = {
 // SECTION 6: MEET SCHEDULE
 // ═══════════════════════════════════════════════════════════════════════════
 
-const scheduleSection = {
-  id: "schedule",
-  menuTitle: "Schedule",
-  menuDesc: "Meet days, sessions, clubs, and award flags.",
-  initialState: {
-    enabled: true,
-    venueLabel: "",
-    supportEmail: "",
-    notes: [],
-    days: [
-      {
-        id: "schedule-day-1",
-        date: "Friday, March 13, 2026",
-        shortDate: "Friday • Mar 13",
-        isoDate: "2026-03-13",
-        sessions: [
-          {
-            id: "schedule-session-1",
-            code: "FR1",
-            label: "Session FR1",
-            group: "Bronze",
-            startTime: "8:00 AM",
-            warmupTime: "8:00 AM",
-            note: "General Stretch & Warmup",
-            clubs: [
-              {
-                id: "schedule-club-1",
-                name: "Browns Gym",
-                teamAwardEligible: true,
-                athleteCount: null,
-                divisionLabel: "",
-              },
-              {
-                id: "schedule-club-2",
-                name: "Twisters Canada",
-                teamAwardEligible: false,
-                athleteCount: null,
-                divisionLabel: "",
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  } as ScheduleInfo,
-  renderEditor: ({ state, setState, inputClass, textareaClass }) => {
+function GymnasticsScheduleEditor({ state, setState, inputClass, textareaClass, eventId, initialView = "overview", initialDayId = null, initialSessionId = null, initialPeriodId = null }) {
     const schedule: ScheduleInfo = state || {};
-    const updateField = (field: string, value: any) =>
-      setState((current: any) => ({ ...current, [field]: value }));
+    const [view, setView] = useState(initialView);
+    const [dayId, setDayId] = useState<string | null>(initialDayId);
+    const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
+    const [periodId, setPeriodId] = useState<string | null>(initialPeriodId);
+    const closeEditor = useSectionEditorClose();
+    const [rangeValue, setRangeValue] = useState("");
+    const [rangeError, setRangeError] = useState("");
+    const [rangeYear = "", rangeMonth = ""] = rangeValue.split("-");
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+    const earliestRangeYear = currentYear + (rangeMonth && Number(rangeMonth) < currentMonth ? 1 : 0);
+    const rangeYears = [...new Set([
+      ...Array.from({ length: 16 }, (_, index) => currentYear + index),
+      ...(schedule.days || []).map(day => Number(day.isoDate?.slice(0, 4))).filter(year => year >= currentYear && year <= 9999),
+    ])].filter(year => year >= earliestRangeYear).sort((a, b) => a - b);
+    const day = schedule.days?.find(day => day.id === dayId);
+    const session = day?.sessions?.find(session => session.id === sessionId);
+    const removing = view.startsWith("remove-");
+    const removalPeriod = view === "remove-period" ? gymnasticsSchedulePeriods({ ...schedule, days: schedule.days || [] }).find(period => period.id === periodId) : null;
+    const removalKind = view === "remove-period" ? removalPeriod?.kind || "period" : view === "remove-day" ? "day" : "session";
+    const afterPeriodRemoval = removalPeriod ? removeGymnasticsSchedulePeriod(schedule, removalPeriod.id) : schedule;
+    const removedDays = view === "remove-period" ? (schedule.days || []).filter(day => !afterPeriodRemoval.days.some(retained => retained.id === day.id)) : view === "remove-day" && day ? [day] : [];
+    const removedSessions = removedDays.reduce((total, day) => total + (day.sessions?.length || 0), 0);
+    const title = removing ? `Remove ${removalKind}` : view === "add" ? "Add to schedule"
+      : view === "new-day" ? "Add day" : view === "week" ? "Add week" : view === "month" ? "Add month"
+      : view === "session" ? session?.label || session?.code || "New session"
+      : view === "day" ? day?.shortDate || day?.date || "New day" : "Schedule";
+    useSectionEditorTitle(title);
+    const openDay = (id: string) => { setDayId(id); setSessionId(null); setView("day"); };
+    const openSession = (dayId: string, sessionId: string) => { setDayId(dayId); setSessionId(sessionId); setView("session"); };
+    const openRange = (kind: "day" | "week" | "month") => {
+      setRangeValue("");
+      setRangeError("");
+      setView(kind === "day" ? "new-day" : kind);
+    };
+    const addRange = () => {
+      const kind = view === "new-day" ? "day" : view;
+      const dates = gymnasticsScheduleRangeDates(kind, rangeValue);
+      if (!dates.length) { setRangeError(kind === "day" ? "Choose a date." : kind === "week" ? "Choose the first day of the week." : "Choose a calendar month."); return; }
+      setState((current: any) => ({ ...current, enabled: true,
+        days: appendGymnasticsScheduleDays(current?.days || [], dates, genId),
+        periods: appendGymnasticsSchedulePeriod(current?.periods, { kind, startDate: dates[0] }),
+      }));
+      setView("overview");
+      closeEditor?.();
+    };
+    const rangeActionLabel = ["new-day", "week", "month"].includes(view) ? "Add to event" : null;
+    const removalActionLabel = `Remove ${removalKind} from schedule`;
+    const removeItem = () => {
+      if (view === "remove-period" && removalPeriod) setState(current => removeGymnasticsSchedulePeriod(current, removalPeriod.id));
+      else if (view === "remove-day" && dayId) removeDay(dayId);
+      else if (view === "remove-session" && dayId && sessionId) removeSession(dayId, sessionId);
+      setView("overview");
+      closeEditor?.();
+    };
+    const hasFooterAction = useSectionEditorAction(removing ? removalActionLabel : rangeActionLabel, removing ? removeItem : addRange, removing);
     const updateDay = (dayId: string, patch: Record<string, any>) =>
       setState((current: any) => ({
         ...current,
@@ -2542,48 +2562,25 @@ const scheduleSection = {
         ),
       }));
     const removeDay = (dayId: string) =>
-      setState((current: any) => ({
-        ...current,
-        days: (current?.days || []).filter((day: ScheduleDay) => day.id !== dayId),
+      setState((current: any) => {
+        const removed = current?.days?.find((day: ScheduleDay) => day.id === dayId);
+        const date = removed ? gymnasticsScheduleDayDate(removed) : null;
+        return { ...current,
+          days: (current?.days || []).filter((day: ScheduleDay) => day.id !== dayId),
+          ...(current?.periods ? { periods: current.periods.filter(period => period.kind !== "day" || period.startDate !== date) } : {}),
+        };
+      });
+    const addDay = () => openRange("day");
+    const addSession = (dayId: string) => {
+      const id = genId();
+      setState((current: any) => ({ ...current, enabled: true,
+        days: (current?.days || []).map((day: ScheduleDay) => day.id === dayId
+          ? { ...day, sessions: [...(day.sessions || []), {
+              id, code: "", label: "", group: "", startTime: "", warmupTime: "", note: "", clubs: [],
+            }] } : day),
       }));
-    const addDay = () =>
-      setState((current: any) => ({
-        ...current,
-        days: [
-          ...(current?.days || []),
-          {
-            id: genId(),
-            date: "",
-            shortDate: "",
-            isoDate: "",
-            sessions: [],
-          },
-        ],
-      }));
-    const addSession = (dayId: string) =>
-      setState((current: any) => ({
-        ...current,
-        days: (current?.days || []).map((day: ScheduleDay) =>
-          day.id === dayId
-            ? {
-                ...day,
-                sessions: [
-                  ...(day.sessions || []),
-                  {
-                    id: genId(),
-                    code: "",
-                    label: "",
-                    group: "",
-                    startTime: "",
-                    warmupTime: "",
-                    note: "",
-                    clubs: [],
-                  },
-                ],
-              }
-            : day
-        ),
-      }));
+      openSession(dayId, id);
+    };
     const updateSession = (dayId: string, sessionId: string, patch: Record<string, any>) =>
       setState((current: any) => ({
         ...current,
@@ -2686,122 +2683,111 @@ const scheduleSection = {
         ),
       }));
 
+    if (removing) return <div className={scheduleEditorStyles.editor}>
+      <h3>{removalPeriod?.label || (view === "remove-day" ? day?.shortDate || day?.date : session?.label || session?.code) || "Schedule item"}</h3>
+      {view === "remove-session" ? <p>This removes this session from {day?.shortDate || day?.date || "the day"}. The day and its other sessions are kept.</p>
+        : removalPeriod && !removedDays.length ? <p>This removes the {removalKind} entry. Its dates and sessions are kept in the other added schedule entries.</p>
+        : <p>This removes {removedDays.length} day{removedDays.length === 1 ? "" : "s"} and {removedSessions} session{removedSessions === 1 ? "" : "s"} from your schedule.</p>}
+      {removalPeriod && removedDays.length > 0 && removedDays.length < removalPeriod.days.length && <p>Dates also added in another day, week or month are kept with their sessions.</p>}
+      <button type="button" onClick={() => view === "remove-session" && dayId && sessionId ? openSession(dayId, sessionId) : view === "remove-day" && dayId ? openDay(dayId) : setView("overview")}>Keep {removalKind}</button>
+      {!hasFooterAction && <button type="button" onClick={removeItem}>{removalActionLabel}</button>}
+    </div>;
+    if (view === "overview" || view === "add") return (
+      <div className={scheduleEditorStyles.editor}>
+        <GymnasticsScheduleImport eventId={eventId} setState={setState} />
+        <div className={scheduleEditorStyles.manualSection}>
+          <div className={scheduleEditorStyles.sectionHeading}><h3>Add dates manually</h3><p>Choose a day, a full week or a calendar month. Add sessions to each date.</p></div>
+          <div className={scheduleEditorStyles.actions}>
+            <button type="button" onClick={addDay}><CalendarPlus size={22} aria-hidden="true" /> Add Day</button>
+            <button type="button" onClick={() => openRange("week")}><CalendarRange size={22} aria-hidden="true" /> Add Week</button>
+            <button type="button" onClick={() => openRange("month")}><CalendarDays size={22} aria-hidden="true" /> Add Month</button>
+          </div>
+        </div>
+        <GymnasticsScheduleCalendar schedule={{ ...schedule, days: schedule.days || [] }} editing onSelectDay={day => openDay(day.id)}
+          onRemovePeriod={period => { setPeriodId(period.id); setView("remove-period"); }} />
+        {view === "overview" && <label>Schedule notes
+          <BufferedTextarea value={(schedule.notes || []).join("\n")} onCommit={value =>
+            setState((current: any) => ({ ...current, notes: value.split(/\n+/).map(item => item.trim()).filter(Boolean) }))}
+            placeholder="Optional notes for guests" rows={3} />
+        </label>}
+      </div>
+    );
     return (
-      <div className="space-y-6">
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <CalendarIcon className="text-slate-700 mt-0.5" size={20} />
-            <div>
-              <h4 className="font-semibold text-slate-900">Public Meet Schedule</h4>
-              <p className="text-sm text-slate-600">
-                Add the session schedule shown on the public event page. If no days are listed, the Schedule tab stays hidden.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <SectionToggle
-          label="Show Schedule Section"
-          checked={schedule.enabled !== false}
-          onChange={(value) => updateField("enabled", value)}
-        />
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Venue Label
+      <div className={scheduleEditorStyles.editor}>
+        <button type="button" onClick={() => view === "session" && dayId ? openDay(dayId) : setView("overview")}>
+          ← {view === "session" ? "Back to day" : "Back to schedule"}
+        </button>
+        {(view === "new-day" || view === "week" || view === "month") && <div className={scheduleEditorStyles.fields}>
+          {view !== "month" ? <label>{view === "new-day" ? "Date" : "Week starting"}
+            <input type="date" value={rangeValue}
+              onChange={event => { setRangeValue(event.target.value); setRangeError(""); }} />
+          </label> : <div className={scheduleEditorStyles.monthAndYear}>
+            <label>Month
+              <select value={rangeMonth} onChange={event => {
+                const month = event.target.value;
+                const year = month && Number(month) < currentMonth && Number(rangeYear) === currentYear ? "" : rangeYear;
+                setRangeValue(`${year}-${month}`);
+                setRangeError("");
+              }}>
+                <option value="">Choose month</option>
+                {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((month, index) =>
+                  <option key={month} value={String(index + 1).padStart(2, "0")}>{month}</option>)}
+              </select>
             </label>
-            <BufferedInput
-              className={inputClass}
-              placeholder="Greater Fort Lauderdale / Broward County Convention Center"
-              value={schedule.venueLabel || ""}
-              onCommit={(value) => updateField("venueLabel", value)}
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Support Email
+            <label>Year
+              <select value={rangeYear} onChange={event => { setRangeValue(`${event.target.value}-${rangeMonth}`); setRangeError(""); }}>
+                <option value="">Choose year</option>
+                {rangeYears.map(year => <option key={year} value={String(year).padStart(4, "0")}>{year}</option>)}
+              </select>
             </label>
-            <BufferedInput
-              className={inputClass}
-              placeholder="info@example.com"
-              value={schedule.supportEmail || ""}
-              onCommit={(value) => updateField("supportEmail", value)}
-            />
-          </div>
-        </div>
+          </div>}
+          <p>{view === "new-day" ? "Add this day to your schedule." : view === "week" ? "Add seven days starting on this date." : "Add every day in this calendar month."} Then choose a day to add or edit sessions. Existing sessions are kept.</p>
+          {rangeError && <p role="alert">{rangeError}</p>}
+          {!hasFooterAction && <button type="button" onClick={addRange}>{rangeActionLabel}</button>}
+        </div>}
+        {(view === "day" || view === "session") && <div className={scheduleEditorStyles.fields}>
+          {view === "day" && <h4 className="font-semibold">Day details</h4>}
 
-        <div>
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-            Admin Notes
-          </label>
-          <BufferedTextarea
-            className={textareaClass}
-            placeholder="One note per line"
-            value={(schedule.notes || []).join("\n")}
-            onCommit={(value) =>
-              updateField(
-                "notes",
-                value
-                  .split(/\n+/)
-                  .map((item) => item.trim())
-                  .filter(Boolean)
-              )
-            }
-            rows={3}
-          />
-        </div>
-
-        <div className="space-y-4 border-t pt-4">
-          <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-slate-700">Schedule Days</h4>
-            <button
-              type="button"
-              onClick={addDay}
-              className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-            >
-              <Plus size={14} /> Add Day
-            </button>
-          </div>
-
-          {(schedule.days || []).map((day) => (
-            <div key={day.id} className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h5 className="font-semibold text-slate-800">
-                  {day.shortDate || day.date || "New Day"}
-                </h5>
+          {(schedule.days || []).filter(day => day.id === dayId).map((day) => (
+            <div key={day.id} className={scheduleEditorStyles.fields}>
+              {view === "day" && <>
+              <div className={scheduleEditorStyles.row}>
                 <button
                   type="button"
-                  onClick={() => removeDay(day.id)}
+                  onClick={() => setView("remove-day")}
                   className="text-sm text-red-600 hover:text-red-800"
                 >
                   Remove Day
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <BufferedInput
+              <div className={scheduleEditorStyles.fields}>
+                <label>Date<input type="date"
                   className={inputClass}
-                  placeholder="Friday, March 13, 2026"
-                  value={day.date || ""}
-                  onCommit={(value) => updateDay(day.id, { date: value })}
-                />
-                <BufferedInput
+                  value={gymnasticsScheduleDayDate(day) || ""}
+                  onChange={event => {
+                    const value = event.target.value;
+                    if (!value) { updateDay(day.id, { isoDate: "", date: "" }); return; }
+                    const next = createGymnasticsScheduleDay(value, day.id);
+                    const oldDate = gymnasticsScheduleDayDate(day);
+                    const oldTitle = oldDate ? createGymnasticsScheduleDay(oldDate, day.id).shortDate : "";
+                    updateDay(day.id, { isoDate: next.isoDate, date: next.date,
+                      ...(!day.shortDate || day.shortDate === oldTitle ? { shortDate: next.shortDate } : {}),
+                    });
+                  }}
+                /></label>
+                <label>Day title<BufferedInput
                   className={inputClass}
+                  aria-label="Day title"
                   placeholder="Friday • Mar 13"
                   value={day.shortDate || ""}
                   onCommit={(value) => updateDay(day.id, { shortDate: value })}
-                />
-                <BufferedInput
-                  className={inputClass}
-                  placeholder="2026-03-13"
-                  value={day.isoDate || ""}
-                  onCommit={(value) => updateDay(day.id, { isoDate: value })}
-                />
+                /></label>
               </div>
 
-              <div className="space-y-4 border-t pt-4">
-                <div className="flex items-center justify-between">
+              </>}
+              <div className={scheduleEditorStyles.fields}>
+                {view === "day" && <div className={scheduleEditorStyles.row}>
                   <h6 className="font-semibold text-slate-700">Sessions</h6>
                   <button
                     type="button"
@@ -2810,64 +2796,68 @@ const scheduleSection = {
                   >
                     <Plus size={14} /> Add Session
                   </button>
-                </div>
+                </div>}
 
-                {(day.sessions || []).map((session) => (
-                  <div key={session.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-slate-800">
-                        {session.label || session.code || "Session"}
-                      </span>
+
+                {view === "day" && (day.sessions || []).map(session => (
+                  <button type="button" key={session.id} onClick={() => openSession(day.id, session.id)}>
+                    {session.label || session.code || "Session"} · Edit session
+                  </button>
+                ))}
+                {(day.sessions || []).filter(session => view === "session" && session.id === sessionId).map((session) => (
+                  <div key={session.id} className={scheduleEditorStyles.fields}>
+                    <div className={scheduleEditorStyles.row}>
                       <button
                         type="button"
-                        onClick={() => removeSession(day.id, session.id)}
+                        onClick={() => setView("remove-session")}
                         className="text-sm text-red-600 hover:text-red-800"
                       >
                         Remove Session
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                      <BufferedInput
+                    <div className={scheduleEditorStyles.fields}>
+                      <label>Session code<BufferedInput
                         className={inputClass}
                         placeholder="FR1"
                         value={session.code || ""}
                         onCommit={(value) => updateSession(day.id, session.id, { code: value })}
-                      />
-                      <BufferedInput
+                      /></label>
+                      <label>Session title<BufferedInput
                         className={inputClass}
+                        aria-label="Session title"
                         placeholder="Session FR1"
                         value={session.label || ""}
                         onCommit={(value) => updateSession(day.id, session.id, { label: value })}
-                      />
-                      <BufferedInput
+                      /></label>
+                      <label>Group or level<BufferedInput
                         className={inputClass}
                         placeholder="Bronze"
                         value={session.group || ""}
                         onCommit={(value) => updateSession(day.id, session.id, { group: value })}
-                      />
-                      <BufferedInput
+                      /></label>
+                      <label>Start time<BufferedInput
                         className={inputClass}
                         placeholder="8:00 AM"
                         value={session.startTime || ""}
                         onCommit={(value) => updateSession(day.id, session.id, { startTime: value })}
-                      />
-                      <BufferedInput
+                      /></label>
+                      <label>Warm-up time<BufferedInput
                         className={inputClass}
                         placeholder="8:00 AM"
                         value={session.warmupTime || ""}
                         onCommit={(value) => updateSession(day.id, session.id, { warmupTime: value })}
-                      />
-                      <BufferedInput
+                      /></label>
+                      <label>Session note<BufferedInput
                         className={inputClass}
                         placeholder="General Stretch & Warmup"
                         value={session.note || ""}
                         onCommit={(value) => updateSession(day.id, session.id, { note: value })}
-                      />
+                      /></label>
                     </div>
 
-                    <div className="space-y-3 border-t pt-3">
-                      <div className="flex items-center justify-between">
+                    <div className={scheduleEditorStyles.section}>
+                      <div className={scheduleEditorStyles.row}>
                         <h6 className="font-semibold text-slate-700">Clubs</h6>
                         <button
                           type="button"
@@ -2881,15 +2871,15 @@ const scheduleSection = {
                       {(session.clubs || []).map((club) => (
                         <div
                           key={club.id}
-                          className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-4"
+                          className={scheduleEditorStyles.day}
                         >
-                          <BufferedInput
+                          <label>Club name<BufferedInput
                             className={inputClass}
                             placeholder="Club name"
                             value={club.name || ""}
                             onCommit={(value) => updateClub(day.id, session.id, club.id, { name: value })}
-                          />
-                          <BufferedInput
+                          /></label>
+                          <label>Athlete count<BufferedInput
                             className={inputClass}
                             placeholder="Athlete count"
                             value={club.athleteCount == null ? "" : String(club.athleteCount)}
@@ -2898,15 +2888,15 @@ const scheduleSection = {
                                 athleteCount: value.trim() ? Number(value) || null : null,
                               })
                             }
-                          />
-                          <BufferedInput
+                          /></label>
+                          <label>Division label<BufferedInput
                             className={inputClass}
                             placeholder="Division label"
                             value={club.divisionLabel || ""}
                             onCommit={(value) =>
                               updateClub(day.id, session.id, club.id, { divisionLabel: value })
                             }
-                          />
+                          /></label>
                           <select
                             className={inputClass}
                             value={
@@ -2946,38 +2936,59 @@ const scheduleSection = {
               </div>
             </div>
           ))}
-        </div>
+        </div>}
       </div>
     );
-  },
-  renderPreview: ({ state, textClass, accentClass, headingShadow, bodyShadow, titleColor }) => {
-    const schedule: ScheduleInfo = state || {};
-    if (schedule.enabled === false || (schedule.days?.length ?? 0) === 0) return null;
 
-    return (
-      <>
-        <h2
-          className={`text-2xl mb-4 ${accentClass}`}
-          style={{ ...headingShadow, ...(titleColor || {}) }}
-        >
-          Schedule
-        </h2>
-        <div className="space-y-3">
-          {(schedule.days || []).map((day) => (
-            <div key={day.id} className="bg-white/5 border border-white/10 rounded-lg p-4">
-              <div className={`font-semibold ${textClass}`} style={bodyShadow}>
-                {day.shortDate || day.date || "Schedule Day"}
-              </div>
-              <div className={`mt-2 text-sm opacity-80 ${textClass}`} style={bodyShadow}>
-                {(day.sessions || []).length} session
-                {(day.sessions || []).length === 1 ? "" : "s"}
-              </div>
-            </div>
-          ))}
-        </div>
-      </>
-    );
-  },
+}
+
+const scheduleSection = {
+  id: "schedule",
+  menuTitle: "Schedule",
+  menuDesc: "Meet days, sessions, clubs, and award flags.",
+  initialState: {
+    enabled: true,
+    venueLabel: "",
+    supportEmail: "",
+    notes: [],
+    days: [
+      {
+        id: "schedule-day-1",
+        date: "Friday, March 13, 2026",
+        shortDate: "Friday • Mar 13",
+        isoDate: "2026-03-13",
+        sessions: [
+          {
+            id: "schedule-session-1",
+            code: "FR1",
+            label: "Session FR1",
+            group: "Bronze",
+            startTime: "8:00 AM",
+            warmupTime: "8:00 AM",
+            note: "General Stretch & Warmup",
+            clubs: [
+              {
+                id: "schedule-club-1",
+                name: "Browns Gym",
+                teamAwardEligible: true,
+                athleteCount: null,
+                divisionLabel: "",
+              },
+              {
+                id: "schedule-club-2",
+                name: "Twisters Canada",
+                teamAwardEligible: false,
+                athleteCount: null,
+                divisionLabel: "",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  } as ScheduleInfo,
+  renderEditor: (context) => <GymnasticsScheduleEditor {...context} />,
+  renderPreview: ({ state }) => <GymnasticsSchedule schedule={state} />,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════

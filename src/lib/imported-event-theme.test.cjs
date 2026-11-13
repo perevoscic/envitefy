@@ -337,3 +337,55 @@ test("grayscale documents do not invent a colorful source palette", async () => 
   const result = await branding.brandingFromImages([`data:image/png;base64,${bytes.toString("base64")}`], "pdf");
   assert.deepEqual(result.colors, []);
 });
+
+test("six theme color combinations preserve artwork identity and remain readable after saves", () => {
+  const original = { ...themes.createImportedEventTheme(fixture), artworkUrl: "https://assets.test/retained.webp" };
+  const options = themes.importedEventThemeColorCombinations(original);
+  assert.equal(options.length, 6);
+  assert.equal(new Set(options.map(option => JSON.stringify(option.colors))).size, 6);
+  assert.deepEqual(options[0].colors, original.colors);
+  for (const { colors } of options) {
+    const selected = { ...original, colors, enabled: true, preserveTemplateStyle: undefined };
+    const restored = themes.readImportedEventTheme(JSON.parse(JSON.stringify(selected)));
+    assert.ok(restored);
+    assert.equal(restored.id, original.id);
+    assert.equal(restored.revision, original.revision);
+    assert.equal(restored.artworkUrl, original.artworkUrl);
+    assert.equal(restored.font, original.font);
+    assert.equal(restored.shape, original.shape);
+    assert.deepEqual(restored.colors, colors);
+    assert.ok(colorContrast(colors.ink, colors.page) >= 4.5);
+    assert.ok(colorContrast(colors.ink, colors.surface) >= 4.5);
+    assert.ok(colorContrast(colors.accent, colors.onAccent) >= 4.5);
+  }
+});
+
+test("each gymnastics template has six related readable accent combinations without surface changes", () => {
+  const { GYM_MEET_TEMPLATE_LIBRARY } = loadTs("src/components/gym-meet-templates/registry.ts");
+  const paletteSignatures = new Set();
+  for (const template of GYM_MEET_TEMPLATE_LIBRARY) {
+    const choices = themes.templateAccentColorCombinations(template);
+    assert.equal(choices.length, 6, template.id);
+    assert.equal(new Set(choices.map(choice => choice.heading)).size, 6, `${template.id}: six distinct title colors`);
+    for (const choice of choices) assert.ok(colorContrast(choice.inverseHeading, template.foreground) >= 4.5, `${template.id}: inverse heading`);
+    assert.equal(new Set(choices.map(({ button, heading, link }) => `${button}/${heading}/${link}`)).size, 6, template.id);
+    paletteSignatures.add(JSON.stringify(choices));
+    for (const choice of choices) {
+      for (const color of [choice.button, choice.heading, choice.link]) assert.ok(colorContrast(color, template.background) >= 4.5, `${template.id}: ${choice.name}`);
+      assert.ok(colorContrast(choice.button, choice.onButton) >= 4.5);
+      const original = { ...themes.createImportedEventTheme(fixture), artworkUrl: "https://assets.test/retained.webp" };
+      const restored = themes.readImportedEventTheme(JSON.parse(JSON.stringify({ ...original,
+        preserveTemplateStyle: true, templateColorCombination: { templateId: template.id, index: choice.index },
+      })));
+      assert.deepEqual(restored.colors, original.colors, "source colors remain intact");
+      assert.equal(restored.id, original.id);
+      assert.equal(restored.artworkUrl, original.artworkUrl);
+      assert.deepEqual(restored.templateColorCombination, { templateId: template.id, index: choice.index });
+    }
+  }
+  assert.equal(paletteSignatures.size, GYM_MEET_TEMPLATE_LIBRARY.length, "each template has its own combinations");
+  for (const index of [-1, 6, 1.5, "2", null]) {
+    const original = themes.createImportedEventTheme(fixture);
+    assert.equal(themes.readImportedEventTheme({ ...original, templateColorCombination: { templateId: "airborne-atlas", index } }).templateColorCombination, undefined);
+  }
+});

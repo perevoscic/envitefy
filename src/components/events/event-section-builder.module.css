@@ -11,7 +11,7 @@
   color: var(--app-foreground);
   border-color: var(--app-border);
 }
-:global(html.dark) :is(.palette p, .paletteLabel, .layoutHelp, .dialogFooter span, .choices small) { color: var(--app-muted-foreground); }
+:global(html.dark) :is(.palette p, .paletteLabel, .layoutHelp, .choices small) { color: var(--app-muted-foreground); }
 :global(html.dark) :is(.dialogHeader, .sectionList li) { border-color: var(--app-border); }
 :global(html.dark) .choices button { background: var(--app-surface-alt); border-color: var(--app-border); }
 :global(html.dark) .dialogFooter button { background: var(--app-primary); color: var(--app-primary-foreground); }
@@ -62,6 +62,7 @@
   opacity: 0.35;
   cursor: default;
 }
+.sectionList .paletteSelect { justify-content: flex-start; padding: 4px 6px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; overflow-wrap: anywhere; }
 .palette h3 {
   margin: 0 0 6px;
   font-weight: 700;
@@ -368,14 +369,18 @@
   gap: 12px;
   padding: 12px 18px;
   border-bottom: 1px solid #ebe4f0;
+  flex-shrink: 0;
 }
 .dialogHeader h2 {
   font-size: 18px;
   font-weight: 650;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .dialogHeader button {
   min-width: 44px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 .dialogBody {
   flex: 1;
@@ -383,6 +388,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 18px;
+  min-width: 0;
 }
 .dialogBody input,
 .dialogBody textarea,
@@ -395,18 +401,22 @@
   gap: 12px;
   padding: 12px 18px max(12px, env(safe-area-inset-bottom));
   border-top: 1px solid #ebe4f0;
+  flex-shrink: 0;
 }
 .dialogFooter button {
-  padding: 8px 22px;
-  border-radius: 12px;
+  flex: 0 0 auto;
+  width: fit-content;
+  padding: 8px 16px;
+  border-radius: 10px;
   background: #6c3fc1;
   color: white;
+  font-size: 14px;
+  line-height: 20px;
   font-weight: 600;
+  white-space: nowrap;
 }
-.dialogFooter span {
-  font-size: 12px;
-  color: #665573;
-}
+.dialogFooter button[data-destructive="true"],
+:global(html.dark) .dialogFooter button[data-destructive="true"] { background: #b91c1c; color: #fff; }
 .choices {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -530,4 +540,18 @@
   .section {
     transition: none !important;
   }
+}
+.contentHitArea { cursor: pointer; }
+.contentHitArea:hover { outline: 1px solid color-mix(in srgb, currentColor 22%, transparent); outline-offset: -1px; }
+.contentHitArea:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.resetText { display: block; margin-inline-start: auto; min-height: 36px; padding: 4px 0; border: 0; background: transparent; color: inherit; font-size: 0.75rem; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+@media (max-width: 767px), (pointer: coarse) {
+  .sectionList li > .actions { display: none; }
+  .sectionList li[data-selected] > .actions { display: flex; }
+  .section { border-color: transparent; }
+  .section > .toolbar, .section > .layoutControls { display: none; }
+  .section[data-selected] { border-color: currentColor; }
+  .section[data-selected] > .toolbar, .section[data-selected] > .layoutControls { display: flex; }
+  .section:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 }

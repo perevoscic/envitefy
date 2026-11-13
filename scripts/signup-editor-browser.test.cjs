@@ -64,7 +64,10 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
     }
     if (req.method() !== "GET") {
       writes.push({ path: url.pathname, method: req.method(), data: req.postDataJSON() });
-      return route.fulfill({ status: 200, json: { id: "new-copy", data: req.postDataJSON().data } });
+      const updating = req.method() === "PATCH" && /^\/api\/history\/[^/]+$/.test(url.pathname);
+      assert.ok(updating || (req.method() === "POST" && url.pathname === "/api/history"), `Unexpected write: ${req.method()} ${url.pathname}`);
+      const id = updating ? decodeURIComponent(url.pathname.split("/")[3]) : "new-copy";
+      return route.fulfill({ status: 200, json: { id, revision: `${id}-saved-${writes.length}`, data: req.postDataJSON().data } });
     }
     if (url.pathname.startsWith("/templates/") || url.pathname.startsWith("/fonts/")) {
       const file = path.resolve("public", url.pathname.slice(1));
@@ -118,9 +121,9 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
     await openMenu("Sharing");
     assert.equal(await page.getByRole("textbox", { name: "Signup link", exact: true }).inputValue(), `${base}/smart-signup-form/saved-form`);
     await click("Preview");
-    await page.getByRole("button", { name: "Edit", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Close preview", exact: true }).waitFor();
     await page.screenshot({ path: path.join(output, "mobile-preview.png") });
-    await click("Edit");
+    await click("Close preview");
     await click("Back to details");
     await click("← All sign-up designs");
     await page.getByRole("dialog", { name: "Save your progress?" }).waitFor();
@@ -154,6 +157,7 @@ test("signup builder keeps mobile actions in one row, moves dates, protects navi
     await page.getByText("Published.", { exact: true }).waitFor();
     assert.equal(writes.at(-1).method, "PATCH");
     assert.equal(writes.at(-1).path, "/api/history/saved-form");
+    assert.equal(new URL(page.url()).searchParams.get("edit"), "saved-form", "co-host updates retain the original event identity");
     await page.screenshot({ path: path.join(output, "cohost-saved-changes.png") });
     await page.goto(`${base}/previous`);
     await page.goto(`${base}${editorPath}`);
