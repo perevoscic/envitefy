@@ -7,6 +7,23 @@ import { pathToFileURL } from "node:url";
 
 const require = createRequire(import.meta.url);
 
+export function verifyHostBinary(binary, {
+  platform = process.platform, execute = execFileSync, report = console.warn,
+} = {}) {
+  // Freshly copied executables can exceed the first-launch limit on Windows.
+  // Retry only a timed-out version probe, against the same installed file.
+  const timeouts = platform === "win32" ? [15000, 45000] : [15000];
+  for (const [attempt, timeout] of timeouts.entries()) {
+    try {
+      execute(binary, ["-version"], { stdio: "pipe", timeout, windowsHide: true });
+      return;
+    } catch (error) {
+      if (error.code !== "ETIMEDOUT" || attempt === timeouts.length - 1) throw error;
+      report(`Version check timed out after ${timeout / 1000}s: ${binary}. Retrying the same binary once with a ${timeouts[attempt + 1] / 1000}s limit.`);
+    }
+  }
+}
+
 export function installHostTools({
   destination = path.join(os.homedir(), ".local", "bin"),
   githubPath = process.env.GITHUB_PATH,
@@ -18,7 +35,7 @@ export function installHostTools({
     const target = path.join(destination, `${name}${process.platform === "win32" ? ".exe" : ""}`);
     copyFileSync(source, target);
     chmodSync(target, 0o755);
-    execFileSync(target, ["-version"], { stdio: "pipe", timeout: 15000, windowsHide: true });
+    verifyHostBinary(target);
     console.log(`Verified ${name}: ${target}`);
     return target;
   }

@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import { installHostTools } from "./ci-host-tools.mjs";
+import { installHostTools, verifyHostBinary } from "./ci-host-tools.mjs";
 import { CI_INTEGRITY_CHECKS, cleanGitEnvironment, LOCAL_PUSH_CHECKS, parsePushUpdates, readCandidateSnapshot, readValidationPolicy, runValidationCheck, validatePush, validationChromiumPath, versionToolInvocation, workflowRunCommands } from "./lib/push-validation.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -19,6 +19,24 @@ test("version probes support Windows npm shims without exposing shell arguments"
   assert.equal(windows.args.at(-1), "bun --version");
   assert.deepEqual(versionToolInvocation("bun", ["--version"], "linux"), { command: "bun", args: ["--version"] });
   assert.throws(() => versionToolInvocation("bun", ["--version & echo unexpected"], "win32"), /Unsafe/);
+});
+
+test("Windows host binary startup retries only a timeout and requires a successful real probe", () => {
+  const calls = [], reports = [];
+  verifyHostBinary("C:/tools with spaces/ffmpeg.exe", { platform: "win32", report: message => reports.push(message),
+    execute: (binary, args, options) => {
+      calls.push({ binary, args, timeout: options.timeout });
+      if (calls.length === 1) throw Object.assign(new Error("slow startup"), { code: "ETIMEDOUT" });
+    },
+  });
+  assert.deepEqual(calls, [15000, 45000].map(timeout => ({ binary: "C:/tools with spaces/ffmpeg.exe", args: ["-version"], timeout })));
+  assert.equal(reports.length, 1);
+  for (const [platform, code, attempts] of [["win32", "ETIMEDOUT", 2], ["linux", "ETIMEDOUT", 1], ["win32", "ENOENT", 1], ["win32", "EACCES", 1], ["win32", "EXIT_FAILURE", 1]]) {
+    let invoked = 0;
+    const failure = Object.assign(new Error("probe failed"), { code });
+    assert.throws(() => verifyHostBinary("ffmpeg", { platform, report: () => {}, execute: () => { invoked++; throw failure; } }), error => error === failure);
+    assert.equal(invoked, attempts);
+  }
 });
 function git(cwd, ...args) {
   const result = spawnSync("git", args, { cwd, encoding: "utf8", windowsHide: true, env: {
