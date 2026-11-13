@@ -6,15 +6,14 @@ import path from "node:path";
 import { createRequire } from "node:module";
 
 export const LOCAL_PUSH_CHECKS = Object.freeze([
-  "test:git-hooks", "typecheck",
+  "test:git-hooks", "typecheck", "test:create-remediation", "test:create-browser",
 ]);
-export const CI_INTEGRITY_CHECKS = Object.freeze([
-  ...LOCAL_PUSH_CHECKS, "test:create-remediation", "test:create-browser",
-]);
+export const CI_INTEGRITY_CHECKS = LOCAL_PUSH_CHECKS;
 const TIMEOUTS = Object.freeze({
   // Windows Git fixture tests can exceed five minutes on a busy host.
   // Allow the complete suite to finish without skipping any safeguard.
   "test:git-hooks": process.platform === "win32" ? 900000 : 300000, typecheck: 300000,
+  "test:create-remediation": 1800000, "test:create-browser": 1800000,
 });
 const GIT_CONTEXT = ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_PREFIX", "GIT_CONFIG", "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT", "GIT_GRAFT_FILE", "GIT_SHALLOW_FILE", "GIT_NAMESPACE"];
 const digest = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");

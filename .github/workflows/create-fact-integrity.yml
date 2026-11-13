@@ -1,7 +1,7 @@
 name: Create event fact integrity
 
-# Local pre-push runs test:git-hooks and typecheck. This workflow is the run of
-# test:create-remediation and test:create-browser, once per push to main.
+# Local pre-push requires all four checks for the exact committed candidate.
+# This workflow verifies them independently, once per push to main.
 on:
   push:
     branches: [main]
@@ -58,6 +58,8 @@ jobs:
           path: |
             .qa/event-editor-browser/*.png
             .qa/product-urls/*.png
+            .qa/gymnastics-text-controls/*.png
             output/owner-card-preview/*.png
           if-no-files-found: ignore
+          include-hidden-files: true
           retention-days: 7

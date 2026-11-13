@@ -27,6 +27,11 @@
 .view:hover { background: color-mix(in srgb, currentColor 6%, transparent); }
 .view:focus-visible { outline: 2px solid var(--gym-accent, currentColor); outline-offset: 3px; }
 
+/* Keep the active text and its toolbar above adjacent text and hero actions. */
+.editable:hover,
+.editable:focus-within,
+.editable[data-menu-open] { z-index: 61; }
+
 .toolbar {
   position: absolute;
   z-index: 60;

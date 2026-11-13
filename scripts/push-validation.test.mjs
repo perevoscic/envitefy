@@ -93,13 +93,35 @@ test("CI host tools install real locked binaries and probe media without a tempo
   assert.equal(JSON.parse(probed.stdout).streams[0].codec_type, "audio");
 });
 
-test("local push checks stay the fast prefix of the CI npm check list and fail closed when CI drifts", (t) => {
+test("local push checks require the complete CI npm check list and fail closed when CI drifts", (t) => {
   const policy = readValidationPolicy(root);
   assert.deepEqual(policy.checks.map((check) => check.name), LOCAL_PUSH_CHECKS);
+  assert.deepEqual(LOCAL_PUSH_CHECKS, ["test:git-hooks", "typecheck", "test:create-remediation", "test:create-browser"]);
   assert.deepEqual(policy.ciChecks, CI_INTEGRITY_CHECKS);
   const { repository } = fixture(t);
   writeFileSync(path.join(repository, ".github/workflows/create-fact-integrity.yml"), "run: npm run typecheck\n");
   assert.throws(() => readValidationPolicy(repository), /does not match/);
+});
+
+test("browser or remediation failure cannot issue a push receipt after hooks and types pass", async (t) => {
+  for (const failed of ["test:create-remediation", "test:create-browser"]) {
+    const { options, calls, receiptPath } = fixture(t);
+    const execute = options.execute;
+    await assert.rejects(validatePush({ ...options, execute: async (...args) => {
+      const result = await execute(...args);
+      return args[0].name === failed ? { ...result, exitCode: 1 } : result;
+    } }), new RegExp(`${failed} did not pass`));
+    assert.deepEqual(calls, LOCAL_PUSH_CHECKS.slice(0, LOCAL_PUSH_CHECKS.indexOf(failed) + 1));
+    assert.equal(existsSync(receiptPath), false);
+  }
+});
+
+test("an old hooks-and-types receipt cannot authorize the expanded push gate", async (t) => {
+  const { options, calls, receiptPath } = fixture(t);
+  const receipt = await validatePush(options);
+  writeFileSync(receiptPath, JSON.stringify({ ...receipt, checks: receipt.checks.slice(0, 2) }));
+  await validatePush(options);
+  assert.deepEqual(calls, [...LOCAL_PUSH_CHECKS, ...LOCAL_PUSH_CHECKS]);
 });
 
 test("new direct or multiline CI commands cannot evade the required check policy", (t) => {

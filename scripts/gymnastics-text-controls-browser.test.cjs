@@ -43,14 +43,20 @@ async function fixture() {
   return { script: fs.readFileSync(path.join(output, "fixture.js")), css };
 }
 
-test("standalone text uses quiet controls and saves mouse/touch placement in the native editor and guest page", { timeout: 120_000 }, async () => {
-  const { script, css } = await fixture();
-  const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
-  try {
-    for (const mobile of [false, true]) for (const dark of [false, true]) {
-      const context = await browser.newContext({ viewport: { width: mobile ? 390 : 1440, height: 900 },
-        isMobile: mobile, hasTouch: mobile, reducedMotion: dark ? "reduce" : "no-preference" });
-      const page = await context.newPage();
+let assets, browser;
+test.before(async () => {
+  assets = await fixture();
+  browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
+});
+test.after(async () => { await browser?.close(); });
+
+for (const mobile of [false, true]) for (const dark of [false, true]) {
+  test(`standalone text controls and saved placement: ${mobile ? "phone" : "desktop"}, ${dark ? "dark, reduced motion" : "light, animated"}`, { timeout: 60_000 }, async () => {
+    const { script, css } = assets;
+    const context = await browser.newContext({ viewport: { width: mobile ? 390 : 1440, height: 900 },
+      isMobile: mobile, hasTouch: mobile, reducedMotion: dark ? "reduce" : "no-preference" });
+    const page = await context.newPage();
+    try {
       page.setDefaultTimeout(10_000);
       const errors = [], writes = [];
       page.on("pageerror", error => errors.push(error.stack || error.message));
@@ -234,7 +240,20 @@ test("standalone text uses quiet controls and saves mouse/touch placement in the
       const copy = page.locator('[data-text-placement-source="Welcome message copy"]');
       await copy.waitFor();
       if (mobile) await copy.getByRole("button", { name: "Edit welcome message copy text", exact: true }).click();
-      else await copy.hover();
+      else {
+        await copy.hover();
+        const copyActions = copy.getByRole("group", { name: "Welcome message copy actions", exact: true });
+        // Cross from the duplicated text into every real pointer target. The
+        // original toolbar and Share must not cover or dismiss these actions.
+        for (const button of await copyActions.getByRole("button").all()) {
+          await button.hover();
+          await button.click({ trial: true });
+          assert.equal(await button.evaluate(element => {
+            const rect = element.getBoundingClientRect();
+            return element.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));
+          }), true, `${await button.getAttribute("aria-label")} receives pointer events`);
+        }
+      }
       await page.getByRole("button", { name: "Delete welcome message copy", exact: true }).click();
       await copy.waitFor({ state: "hidden" });
       assert.equal(writes.length, 0, "text actions do not save automatically");
@@ -345,7 +364,9 @@ test("standalone text uses quiet controls and saves mouse/touch placement in the
       await page.getByText("Bring your team spirit", { exact: true }).waitFor();
       assert.equal(await floating().count(), 0, "reset placement survives save and guest reload");
       assert.deepEqual(errors, []);
-      await context.close();
-    }
-  } finally { await browser.close(); }
-});
+    } catch (error) {
+      await page.screenshot({ path: path.join(output, `failure-${mobile ? "phone" : "desktop"}-${dark ? "dark" : "light"}.png`), fullPage: true }).catch(() => {});
+      throw error;
+    } finally { await context.close(); }
+  });
+}
