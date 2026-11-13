@@ -18,7 +18,9 @@ export function installHostTools({
     const target = path.join(destination, `${name}${process.platform === "win32" ? ".exe" : ""}`);
     copyFileSync(source, target);
     chmodSync(target, 0o755);
-    execFileSync(target, ["-version"], { stdio: "pipe", timeout: 15000, windowsHide: true });
+    // A freshly copied executable can start slowly on Windows; still require
+    // the real binary to answer successfully before accepting the installation.
+    execFileSync(target, ["-version"], { stdio: "pipe", timeout: process.platform === "win32" ? 60000 : 15000, windowsHide: true });
     console.log(`Verified ${name}: ${target}`);
     return target;
   }

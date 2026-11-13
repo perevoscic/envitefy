@@ -12,7 +12,9 @@ export const CI_INTEGRITY_CHECKS = Object.freeze([
   ...LOCAL_PUSH_CHECKS, "test:create-remediation", "test:create-browser",
 ]);
 const TIMEOUTS = Object.freeze({
-  "test:git-hooks": 300000, typecheck: 300000,
+  // Windows Git fixture creation can exceed five minutes on a busy host.
+  // Keep every safeguard required while giving the complete suite time to finish.
+  "test:git-hooks": process.platform === "win32" ? 900000 : 300000, typecheck: 300000,
 });
 const GIT_CONTEXT = ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_PREFIX", "GIT_CONFIG", "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT", "GIT_GRAFT_FILE", "GIT_SHALLOW_FILE", "GIT_NAMESPACE"];
 const digest = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
