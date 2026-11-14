@@ -1,12 +1,10 @@
 "use client";
 
 import { Pencil } from "lucide-react";
-import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
+import EnvitefyRouteBrand from "@/components/branding/EnvitefyRouteBrand";
 import Link from "next/link";
 import type { MouseEvent, ReactNode, RefObject } from "react";
 import { useSidebar } from "@/app/sidebar-context";
-import wordmark from "../../../public/brand/wordmark-v2/envitefy-wordmark.webp";
-import whiteWordmark from "../../../public/brand/wordmark-v2/envitefy-wordmark-white.webp";
 import appearanceStyles from "./navigation-appearance.module.css";
 
 export default function MobileNavHeader({ visible, onOpenNavigation, onHome, openButtonRef, menuIcon }: {
@@ -33,7 +31,7 @@ export default function MobileNavHeader({ visible, onOpenNavigation, onHome, ope
             <button type="button" onClick={eventEditAction.onClick} aria-label="Edit event" title="Edit event" className={buttonClass}><Pencil size={18} aria-hidden="true" /></button>
           ) : null}
           <Link href="/" onClick={onHome} className="flex h-11 min-w-0 items-center justify-end" aria-label="Envitefy home">
-            <EnvitefyBrandImage src={wordmark} whiteSrc={whiteWordmark} alt="" className="h-auto w-[150px] max-w-full object-contain" priority />
+            <EnvitefyRouteBrand raster className="h-auto w-[150px] max-w-full object-contain" priority />
           </Link>
         </div>
       </div>

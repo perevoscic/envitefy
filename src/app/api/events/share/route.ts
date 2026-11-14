@@ -163,6 +163,7 @@ export async function POST(request: NextRequest) {
         buildEventProductPath({ eventId, title: slugTitle, data: existing.data, publicSlug: existing.public_slug }),
       );
       await sendShareEventEmail({
+        eventCategory: [existing.data?.category, existing.data?.sport, existing.data?.discoverySource?.workflow].filter(value => typeof value === "string").join(" "),
         toEmail: recipientEmail,
         ownerEmail,
         eventTitle: slugTitle,

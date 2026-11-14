@@ -8,12 +8,10 @@ import { type MouseEventHandler, useEffect, useMemo, useRef, useState } from "re
 import { createPortal } from "react-dom";
 import AppearanceSelector from "@/components/AppearanceSelector";
 import LoginForm from "@/components/auth/LoginForm";
-import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
-import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import EnvitefyRouteBrand from "@/components/branding/EnvitefyRouteBrand";
 import type { MarketingTone } from "@/components/marketing/MarketingPage";
 import ArrowFillButton from "@/components/ui/ArrowFillButton";
 import ArrowFillLink from "@/components/ui/ArrowFillLink";
-import { ENVITEFY_BRAND_ASSETS } from "@/lib/brand-assets";
 import editorialStyles from "./editorial-navigation.module.css";
 import appearanceStyles from "./navigation-appearance.module.css";
 import landingHeaderStyles from "./public-landing-header.module.css";
@@ -479,14 +477,7 @@ export default function HeroTopNav({
         {editorialTone ? (
           <>
             <Link href={brandHref} className={landingHeaderStyles.brand} aria-label="Envitefy home">
-              <EnvitefyBrandImage
-                src={ENVITEFY_BRAND_ASSETS.wordmark.color}
-                whiteSrc={ENVITEFY_BRAND_ASSETS.wordmark.white}
-                alt="Envitefy"
-                width={150}
-                height={55}
-                priority
-              />
+              <EnvitefyRouteBrand raster priority />
             </Link>
             <nav className={landingHeaderStyles.nav} aria-label="Hero navigation">
               {navLinks.map((link) => (
@@ -596,7 +587,7 @@ export default function HeroTopNav({
                 className="group flex shrink-0 items-center overflow-hidden justify-self-start"
                 aria-label="Envitefy"
               >
-                <EnvitefyWordmark
+                <EnvitefyRouteBrand
                   scaled={false}
                   tone={mobileLogoOnly || !isDarkGlass ? "gradient" : "light"}
                   className={cx(
@@ -838,7 +829,7 @@ export default function HeroTopNav({
                       aria-label="Envitefy"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <EnvitefyWordmark
+                      <EnvitefyRouteBrand
                         scaled={false}
                         tone={useDarkMobileMenu ? "light" : "gradient"}
                         className={cx(

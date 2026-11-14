@@ -62,6 +62,7 @@ export async function sendPasswordResetEmail(params: {
 }
 
 export async function sendShareEventEmail(params: {
+  eventCategory?: string;
   toEmail: string;
   ownerEmail: string;
   eventTitle: string;
@@ -119,6 +120,7 @@ export async function sendShareEventEmail(params: {
   `;
 
   const html = createEmailTemplate({
+    brandCategory: params.eventCategory,
     preheader,
     title: "Event shared with you",
     body,
@@ -131,12 +133,14 @@ export async function sendShareEventEmail(params: {
 }
 
 export async function sendCoHostInvitationEmail(params: {
+  eventCategory?: string;
   toEmail: string; ownerName: string; eventTitle: string; acceptUrl: string; isSignupForm?: boolean;
 }): Promise<void> {
   const access = params.isSignupForm
     ? "You can edit, save and publish this sign-up form, manage participants, export responses and open or close signups. Access applies only to this form."
     : "You can edit, save and publish this event and Live Card and manage its RSVPs and guest messages. Access applies only to this event.";
   const html = createEmailTemplate({
+    brandCategory: params.eventCategory,
     preheader: `${params.ownerName} invited you to co-host ${params.eventTitle}`,
     title: "You're invited to co-host",
     body: `<p>${escapeHtml(params.ownerName)} invited you to manage <strong>${escapeHtml(params.eventTitle)}</strong>.</p><p>${access}</p><p>Sign in or create an Envitefy account using ${escapeHtml(params.toEmail)} to accept.</p>`,
@@ -206,6 +210,7 @@ export async function sendPasswordChangeConfirmationEmail(params: {
 }
 
 export async function sendRsvpConfirmationEmail(params: {
+  eventCategory?: string;
   toEmail: string;
   guestName?: string | null;
   eventTitle: string;
@@ -284,6 +289,7 @@ export async function sendRsvpConfirmationEmail(params: {
     <a href="${escapeHtml(params.eventUrl)}" target="_blank" style="color:#7F67D3; word-break: break-all;">${escapeHtml(params.eventUrl)}</a>`;
 
   const html = createEmailTemplate({
+    brandCategory: params.eventCategory,
     preheader,
     title: `RSVP ${statusLabel}`,
     body,
@@ -311,6 +317,7 @@ export async function sendRsvpConfirmationEmail(params: {
 }
 
 export async function sendHostRsvpNotificationEmail(params: {
+  eventCategory?: string;
   toEmail: string;
   hostName?: string | null;
   guestName: string;
@@ -342,6 +349,7 @@ export async function sendHostRsvpNotificationEmail(params: {
     ["Guest note", params.message],
   ].filter((row): row is [string, string] => typeof row[1] === "string" && Boolean(row[1]));
   const html = createEmailTemplate({
+    brandCategory: params.eventCategory,
     preheader: summary,
     title: "Guest RSVP",
     body: `<p style="font-size:16px;line-height:1.6;">${params.hostName ? `Hi ${escapeHtml(params.hostName)},` : "Hello,"}</p>
@@ -362,6 +370,7 @@ export async function sendHostRsvpNotificationEmail(params: {
 }
 
 export async function sendEventUpdateEmail(params: {
+  eventCategory?: string;
   toEmail: string;
   subject: string;
   body: string;
@@ -371,6 +380,7 @@ export async function sendEventUpdateEmail(params: {
 }): Promise<void> {
   const { from } = resolveNoReplySender();
   const html = createEmailTemplate({
+    brandCategory: params.eventCategory,
     preheader: `An update about ${params.eventTitle}`,
     title: params.subject,
     body: `<p style="font-size:14px;color:#737373;">${escapeHtml(params.eventTitle)}</p>
@@ -388,6 +398,7 @@ export async function sendEventUpdateEmail(params: {
 }
 
 export async function sendSignupConfirmationEmail(params: {
+  eventCategory?: string;
   toEmail: string;
   userName?: string | null;
   eventTitle: string;
@@ -479,6 +490,7 @@ export async function sendSignupConfirmationEmail(params: {
   `;
 
   const html = createEmailTemplate({
+    brandCategory: params.eventCategory,
     preheader,
     title: `${status} for ${params.eventTitle}`,
     body,
@@ -507,6 +519,7 @@ export async function sendSignupConfirmationEmail(params: {
 }
 
 export async function sendSignupHostAlertEmail(params: {
+  eventCategory?: string;
   toEmail: string;
   eventTitle: string;
   dashboardUrl: string;
@@ -532,6 +545,7 @@ export async function sendSignupHostAlertEmail(params: {
     ...(activity.email && validGuestEmail(activity.email) ? { replyTo: activity.email } : {}),
     text: `${summary}\n\n${details.map(([label, value]) => `${label}: ${value}`).join("\n\n")}\n\nView signups: ${params.dashboardUrl}${signupTextSignature}`,
     html: createEmailTemplate({
+    brandCategory: params.eventCategory,
       title: heading, preheader: summary,
       body: `<p>${escapeHtml(params.eventTitle)}</p>${details.map(([label, value]) => `<p style="font-size:14px;line-height:1.6;"><strong>${escapeHtml(label)}:</strong><br/>${escapeHtml(value).replace(/\r?\n/g, "<br/>")}</p>`).join("")}`,
       buttonText: "View signups", buttonUrl: params.dashboardUrl,
@@ -541,6 +555,7 @@ export async function sendSignupHostAlertEmail(params: {
 }
 
 export async function sendSignupRecoveryEmail(params: {
+  eventCategory?: string;
   toEmail: string;
   eventTitle: string;
   links: { name: string; url: string }[];
@@ -549,6 +564,7 @@ export async function sendSignupRecoveryEmail(params: {
   const explanation =
     "You can update or cancel your signup below. If you didn’t request this email, you can ignore it.";
   const html = createEmailTemplate({
+    brandCategory: params.eventCategory,
     title: `Manage your signup: ${params.eventTitle}`,
     preheader: "Update or cancel your signup",
     body: `<p>${escapeHtml(explanation)}</p>${params.links.length > 1 ? params.links.map((link) => `<p><strong>${escapeHtml(link.name)}</strong><br/><a href="${escapeHtml(link.url)}" style="color:#59439e;text-decoration:underline;">Update or cancel my signup</a></p>`).join("") : ""}`,

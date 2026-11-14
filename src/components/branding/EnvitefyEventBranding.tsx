@@ -1,5 +1,6 @@
 import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import EnvitefyGymnasticsLogo from "./EnvitefyGymnasticsLogo";
 
 const EVENT_CATEGORY_LABELS: Record<string, string> = {
   birthday: "Birthdays",
@@ -62,7 +63,9 @@ export default function EnvitefyEventBranding({
       ? "https://envitefy.com/birthdays"
       : categoryLabel === "Weddings"
         ? "https://envitefy.com/weddings"
-        : "https://envitefy.com";
+        : categoryLabel === "Gymnastics"
+          ? "https://envitefy.com/gymnastics"
+          : "https://envitefy.com";
   return (
     <div
       data-envitefy-event-branding={categoryLabel}
@@ -75,12 +78,12 @@ export default function EnvitefyEventBranding({
         className="mx-auto flex min-h-10 w-fit items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
         aria-label={`Envitefy ${categoryLabel} (opens in a new tab)`}
       >
-        <EnvitefyWordmark
+        {categoryLabel === "Gymnastics" ? <EnvitefyGymnasticsLogo /> : <EnvitefyWordmark
           scaled={false}
           className="text-3xl"
           tone={inverse ? "light" : "gradient"}
           appearance="fixed"
-        />
+        />}
       </a>
       <p className="text-[10px] font-medium tracking-[0.16em]">CREATE | SHARE | ENJOY</p>
       <p className="mt-1 flex flex-wrap items-center justify-center gap-x-1 text-xs">

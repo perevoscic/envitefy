@@ -16,7 +16,7 @@ test("all email families render accessible text and white assets in light/dark i
     await context.route("https://**/*", route => {
       const url = new URL(route.request().url());
       const local = path.resolve("public", `.${url.pathname}`);
-      if (url.hostname === "envitefy.com" && url.pathname.startsWith("/email/") && fs.existsSync(local)) return route.fulfill({ body: fs.readFileSync(local), contentType: local.endsWith(".png") ? "image/png" : local.endsWith(".gif") ? "image/gif" : "image/webp" });
+      if (url.hostname === "envitefy.com" && (url.pathname.startsWith("/email/") || url.pathname.startsWith("/brand/gymnastics-v1/")) && fs.existsSync(local)) return route.fulfill({ body: fs.readFileSync(local), contentType: local.endsWith(".png") ? "image/png" : local.endsWith(".gif") ? "image/gif" : "image/webp" });
       return route.abort();
     });
     const results = [];
@@ -48,8 +48,9 @@ test("all email families render accessible text and white assets in light/dark i
         return failures;
       });
       assert.deepEqual(failures, [], `${fixture.name} (${mode}) text contrast`);
-      const assets = await page.locator('img[src*="/email/white-v1/"],img[src*="/email/wordmark-v2/"]').evaluateAll(images => images.map(image => ({ src: image.src, loaded: image.complete && image.naturalWidth > 0 })));
-      assert.ok(assets.length >= 7, `${fixture.name}: emblem, wordmark and five social icons`);
+      const assets = await page.locator('img[src*="/email/white-v1/"],img[src*="/email/wordmark-v2/"],img[src*="/brand/gymnastics-v1/"]').evaluateAll(images => images.map(image => ({ src: image.src, loaded: image.complete && image.naturalWidth > 0 })));
+      const gymnastics = fixture.html.includes('data-email-brand="gymnastics"');
+      assert.ok(assets.length >= (gymnastics ? 6 : 7), `${fixture.name}: approved brand mark and five social icons`);
       assert.ok(assets.every(asset => asset.loaded), `${fixture.name}: all brand assets load`);
       assert.ok(assets.every(asset => asset.src.endsWith(".webp")), `${fixture.name}: WebP delivery assets`);
       for (const width of [320, 375, 600, 800]) {
@@ -62,8 +63,8 @@ test("all email families render accessible text and white assets in light/dark i
           return Math.abs((box.width / box.height) / (image.naturalWidth / image.naturalHeight) - 1) > .01;
         }).map(image => image.src));
         assert.deepEqual(distorted, [], `${fixture.name} (${mode}, ${width}px) logo proportions`);
-        if (fixture.name === "sendCoHostInvitationEmail" && [375, 800].includes(width)) {
-          const filename = path.join(output, `cohost-${mode}-${width}.webp`);
+        if (["sendCoHostInvitationEmail", "gymnastics-marketing"].includes(fixture.name) && [375, 800].includes(width)) {
+          const filename = path.join(output, `${gymnastics ? "gymnastics" : "cohost"}-${mode}-${width}.webp`);
           const encoded = spawnSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", "-i", "pipe:0", "-c:v", "libwebp", "-q:v", "85", "-compression_level", "6", filename], { input: await page.screenshot({ fullPage: true }) });
           assert.equal(encoded.status, 0, encoded.stderr?.toString());
         }

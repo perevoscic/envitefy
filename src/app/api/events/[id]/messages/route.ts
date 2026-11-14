@@ -50,7 +50,8 @@ async function ownerContext(context: Context) {
   const replyTo = validGuestEmail(host.email) ? host.email : null;
   const eventUrl = `${resolvePublicAssetOrigin()}${buildEventProductPath({ eventId: id, title: event.title, data: event.data, publicSlug: event.public_slug })}`;
   await ensureEventMessages();
-  return { eventId: id, eventTitle: event.title || "Your event", eventUrl, replyTo };
+  return { eventId: id, eventTitle: event.title || "Your event", eventUrl, replyTo,
+    eventCategory: [event.data?.category, event.data?.sport, event.data?.discoverySource?.workflow].filter(value => typeof value === "string").join(" ") };
 }
 
 async function readData(owned: Awaited<ReturnType<typeof ownerContext>>) {

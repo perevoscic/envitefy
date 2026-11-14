@@ -2,6 +2,7 @@ import { ENVITEFY_SOCIAL_LINKS } from "./envitefy-social-links";
 import { resolvePublicAssetOrigin } from "./public-asset-url";
 import { createLegacyEmailTemplate } from "./email-template-legacy";
 import { ADAPTIVE_EMAIL_CSS, adaptiveEmailBody, EMAIL_WHITE_ASSETS, type EmailDesignVersion } from "./email-design";
+import { ENVITEFY_BRAND_ASSETS, isGymnasticsBrand } from "./brand-assets";
 
 export function escapeHtml(s: string): string {
   return s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
@@ -18,18 +19,25 @@ export type EmailTemplateParams = {
   unsubscribeUrl?: string;
   postalAddress?: string;
   emailDesignVersion?: EmailDesignVersion;
+  /** Select the event's brand even when its title and copy omit the sport. */
+  brandCategory?: string;
 };
 
 /** Client-safe: previews and delivery compose the same HTML without a browser theme dependency. */
 export function createEmailTemplate(params: EmailTemplateParams): string {
   if (params.emailDesignVersion === "legacy") return createLegacyEmailTemplate(params);
   const baseUrl = resolvePublicAssetOrigin();
+  const gymnastics = isGymnasticsBrand(params.brandCategory) || isGymnasticsBrand(
+    `${params.title} ${params.preheader || ""} ${params.buttonUrl || ""} ${params.body.replace(/<[^>]*>/g, " ")}`);
+  const brand = gymnastics
+    ? `<span style="display:inline-block;padding:12px 16px;background-color:#FFFFFF;border-radius:12px;"><img src="${baseUrl}${ENVITEFY_BRAND_ASSETS.gymnastics.logo}" width="220" height="92" alt="Envitefy Gymnastics" style="display:block;width:220px;max-width:100%;height:auto;border:0;" /></span>`
+    : `<img src="${baseUrl}${EMAIL_WHITE_ASSETS.symbol}" width="56" height="36" alt="Envitefy logo" style="display:block;width:56px;max-width:100%;height:auto;margin:0 auto 12px;" /><img src="${baseUrl}${EMAIL_WHITE_ASSETS.wordmark}" width="164" height="55" alt="Envitefy" style="display:block;width:164px;max-width:100%;height:auto;" />`;
   const social = ENVITEFY_SOCIAL_LINKS.map(({ name, href }) => `<td class="social-icon-cell" style="padding:0 12px;"><a href="${href}" target="_blank" rel="noopener noreferrer" title="${name}"><img src="${baseUrl}${EMAIL_WHITE_ASSETS.social(name)}" width="36" height="36" alt="${name}" style="display:block;border:0;" /></a></td>`).join("");
   const button = params.buttonText && params.buttonUrl
     ? `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:28px auto 20px;"><tr><td bgcolor="#C5A7FF" style="background-color:#C5A7FF;border-radius:12px;"><a data-email-cta="primary" class="email-cta" href="${escapeHtml(params.buttonUrl)}" target="_blank" style="display:inline-block;border:1px solid #C5A7FF;border-radius:12px;padding:14px 28px;background-color:#C5A7FF;color:#25103E;font-weight:700;text-decoration:none;">${escapeHtml(params.buttonText)}</a></td></tr></table>` : "";
   const footerText = params.footerText ? `<div class="email-muted" style="margin:20px 0 0;font-size:13px;line-height:1.6;color:#655A70;">${adaptiveEmailBody(params.footerText)}</div>` : "";
   return `<!doctype html>
-<html lang="en" data-email-design="adaptive-v1">
+<html lang="en" data-email-design="adaptive-v1"${gymnastics ? ' data-email-brand="gymnastics"' : ""}>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -46,7 +54,7 @@ ${ADAPTIVE_EMAIL_CSS}
 ${params.preheader ? `<div class="preheader">${escapeHtml(params.preheader)}</div>` : ""}
 <table role="presentation" class="email-canvas" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F5F2FF" style="width:100%;background-color:#F5F2FF;"><tr><td class="email-page-cell" align="center" style="padding:32px 16px;">
 <table role="presentation" class="email-shell" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="width:100%;max-width:600px;margin:0 auto;background-color:#FFFFFF;border:1px solid #E8E1FF;border-radius:16px;overflow:hidden;">
-<tr><td class="email-brand email-brand-band" align="center" bgcolor="#251F2D" style="padding:28px;background-color:#251F2D;"><a href="${escapeHtml(baseUrl)}" target="_blank"><img src="${baseUrl}${EMAIL_WHITE_ASSETS.symbol}" width="56" height="36" alt="Envitefy logo" style="display:block;width:56px;max-width:100%;height:auto;margin:0 auto 12px;" /><img src="${baseUrl}${EMAIL_WHITE_ASSETS.wordmark}" width="164" height="55" alt="Envitefy" style="display:block;width:164px;max-width:100%;height:auto;" /></a></td></tr>
+<tr><td class="email-brand email-brand-band" align="center" bgcolor="#251F2D" style="padding:28px;background-color:#251F2D;"><a href="${escapeHtml(baseUrl)}${gymnastics ? "/gymnastics" : ""}" target="_blank">${brand}</a></td></tr>
 <tr><td class="email-content email-surface" bgcolor="#FFFFFF" style="padding:28px;background-color:#FFFFFF;color:#302738;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;">
 ${adaptiveEmailBody(params.body)}${adaptiveEmailBody(button)}${footerText}
 <p class="email-muted" style="margin:24px 0 0;color:#655A70;font-size:14px;font-style:italic;">Sincerely,<br/><strong>Envitefy Team</strong></p>

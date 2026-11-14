@@ -87,6 +87,7 @@ export async function POST(request: Request, context: Context) {
     try {
       await timing.time("smtp", () =>
         sendCoHostInvitationEmail({
+          eventCategory: [invite.event.data?.category, invite.event.data?.sport, invite.event.data?.discoverySource?.workflow].filter(value => typeof value === "string").join(" "),
           toEmail: email,
           ownerName: owned.name,
           eventTitle: invite.event.title,

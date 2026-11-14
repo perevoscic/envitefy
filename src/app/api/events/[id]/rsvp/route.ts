@@ -652,6 +652,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (responseValue !== "no") after(async () => {
       try {
         await sendRsvpConfirmationEmail({
+          eventCategory: [eventRow.data?.category, eventRow.data?.sport, (eventRow.data?.discoverySource as { workflow?: unknown } | undefined)?.workflow].filter(value => typeof value === "string").join(" "),
           toEmail: rsvpEmail,
           guestName: rsvpName,
           eventTitle,
@@ -687,6 +688,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         }
         if (!hostEmail || hostEmail.toLowerCase() === rsvpEmail.trim().toLowerCase()) return;
         await sendHostRsvpNotificationEmail({
+          eventCategory: [eventRow.data?.category, eventRow.data?.sport, (eventRow.data?.discoverySource as { workflow?: unknown } | undefined)?.workflow].filter(value => typeof value === "string").join(" "),
           toEmail: hostEmail,
           hostName: host.hostName,
           guestName: rsvpName,

@@ -3,7 +3,7 @@
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import EnvitefyRouteBrand from "@/components/branding/EnvitefyRouteBrand";
 
 type MobileBrandHeaderProps = {
   onMenuClick?: () => void;
@@ -66,7 +66,7 @@ export default function MobileBrandHeader({ onMenuClick }: MobileBrandHeaderProp
         aria-label="Envitefy home"
         className="flex shrink-0 items-center overflow-hidden"
       >
-        <EnvitefyWordmark
+        <EnvitefyRouteBrand
           scaled={false}
           tone="light"
           className="max-w-full text-[2.5rem] leading-none"

@@ -64,6 +64,8 @@ import whiteSidebarBrandIcon from "../../public/brand/white-v1/e-only.png";
 import whiteSidebarBrandWordmark from "../../public/brand/wordmark-v2/envitefy-wordmark-white.webp";
 import AppearanceSelector from "@/components/AppearanceSelector";
 import EnvitefyBrandImage from "@/components/branding/EnvitefyBrandImage";
+import EnvitefyGymnasticsLogo from "@/components/branding/EnvitefyGymnasticsLogo";
+import { isGymnasticsBrand } from "@/lib/brand-assets";
 import appearanceStyles from "@/components/navigation/navigation-appearance.module.css";
 import { adminNavItems, type AdminNavItemId } from "@/components/admin/nav";
 import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
@@ -1379,7 +1381,8 @@ export default function LeftSidebar() {
                     <EnvitefyBrandImage src={sidebarBrandIcon} whiteSrc={whiteSidebarBrandIcon} alt="" className="h-11 w-11 shrink-0 object-contain" priority />
                   </span>
                   <span data-sidebar-brand="wordmark" hidden={viewModel.isCompact}>
-                    <EnvitefyBrandImage src={sidebarBrandWordmark} whiteSrc={whiteSidebarBrandWordmark} alt="" className="h-auto w-[196px] object-contain" priority />
+                    {isGymnasticsBrand(pathname) ? <EnvitefyGymnasticsLogo displayWidth={196} priority /> :
+                      <EnvitefyBrandImage src={sidebarBrandWordmark} whiteSrc={whiteSidebarBrandWordmark} alt="" className="h-auto w-[196px] object-contain" priority />}
                   </span>
                 </Link>
                 {viewModel.isDesktop ? (

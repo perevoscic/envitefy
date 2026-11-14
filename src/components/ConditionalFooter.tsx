@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
-import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import EnvitefyRouteBrand from "@/components/branding/EnvitefyRouteBrand";
 import marketingFooterStyles from "@/components/marketing/marketing-footer.module.css";
 import { PrivacyChoicesButton } from "@/components/PrivacyControls";
 import { isPublicTemplatePath } from "@/lib/template-categories";
@@ -207,7 +207,8 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
           <div className="relative grid gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(268px,1.05fr)_repeat(5,minmax(0,0.62fr))] lg:px-10">
             <div className="max-lg:col-span-full pr-4">
               <Link href="/" className="inline-flex items-center overflow-visible">
-                <EnvitefyWordmark
+                <EnvitefyRouteBrand
+                  gymnasticsWidth={240}
                   className="text-[4rem] leading-none sm:text-[3.5rem]"
                   scaled={false}
                   tone={isHomepageFooter && !usesSharedCanvas ? "light" : "gradient"}

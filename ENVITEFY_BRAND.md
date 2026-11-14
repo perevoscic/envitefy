@@ -14,6 +14,12 @@ The existing locked lowercase `envitefy` wordmark and approved `envitefy.com` ar
 
 The user's October 24, 2026 revision is the current global wordmark rule: **v–i and f–y join continuously at their serif edges with no visible hairline seam, while their letter bodies remain clear**. A tiny serif overlap prevents antialiasing gaps. Every current app placement, event branding, new email, ad and export uses the canonical `EnvitefyWordmark` component or the assets selected by `src/lib/brand-assets.ts`. Preserve the bundled Josefin Slab font, other letter spacing and approved colors; do not typeset independent approximations. Historical saved or delivered email/ad compositions retain their original assets. Exact source and generation rules are in the AGENTS.md brand lock.
 
+## Gymnastics logo
+
+The user-supplied November 14, 2026 gymnastics logo is the approved mark for gymnastics emails, meet pages, gymnastics navigation/galleries, and future gymnastics marketing or other gymnastics-specific materials. Use `ENVITEFY_BRAND_ASSETS.gymnastics` in `src/lib/brand-assets.ts`, which selects `/brand/gymnastics-v1/envitefy-gymnastics-logo.webp` (1057 × 440). The artwork includes the gymnast silhouette, gradient wordmark and `.com`; retain its complete composition, proportions, colors and transparency. Never redraw, typeset, crop, recolor or generate an approximation. Place the supplied logo separately from generated photography/artwork. It is a category-specific exception to the general wordmark rule above; historical delivered/saved compositions retain their original assets.
+
+Gymnastics event emails carry their known category into the shared email template; gymnastics campaign copy also selects this mark. General account and other event branding retain their existing mark. This visual asset does not change the spelling or approved spoken pronunciation of Envitefy.
+
 ## Creation product name
 
 The event creation feature is **Envitefy Create** (renamed from Concierge on September 15, 2026).

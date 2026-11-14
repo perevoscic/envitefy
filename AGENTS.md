@@ -540,6 +540,8 @@ For a specific Bun test file, use an explicit path such as `bun test ./src/lib/c
 
 ## Envitefy Logo Brand Lock
 
+- Gymnastics logo (November 14, 2026): use the user-supplied gymnast/gradient `envitefy.com` artwork for gymnastics-specific emails, meet pages, navigation, galleries and future gymnastics marketing/materials. Resolve `ENVITEFY_BRAND_ASSETS.gymnastics` in `src/lib/brand-assets.ts`; the approved delivery file is `/brand/gymnastics-v1/envitefy-gymnastics-logo.webp` (1057 × 440). Keep its complete silhouette, wordmark, `.com`, proportions, colors and transparency. Use it as a separate brand image, never redraw/generate it or bake it into generated photography. Known gymnastics event categories must reach the email template even when the meet title omits the sport. Preserve general branding for other contexts and historical saved/delivered compositions. This user-approved category mark is an explicit exception to the general wordmark rule below. See `ENVITEFY_BRAND.md`.
+
 The lowercase `envitefy` wordmark is a locked brand asset. Do not change any of the settings below unless the user explicitly asks to change the logo itself.
 
 - Canonical component: `src/components/branding/EnvitefyWordmark.tsx`

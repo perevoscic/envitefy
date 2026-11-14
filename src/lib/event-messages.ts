@@ -161,6 +161,7 @@ function uncertainSmtpResult(error: unknown): boolean {
 }
 
 export async function processEventMessage(input: {
+  eventCategory?: string;
   eventId: string;
   messageId: string;
   eventTitle: string;
@@ -199,6 +200,7 @@ export async function processEventMessage(input: {
         if (current?.response === "yes" || current?.response === "maybe") {
           mailAttempted = true;
           await sendEventUpdateEmail({
+            eventCategory: input.eventCategory,
             ...message,
             toEmail: guest.email,
             eventTitle: input.eventTitle,

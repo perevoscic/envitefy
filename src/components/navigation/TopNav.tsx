@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSidebar } from "@/app/sidebar-context";
-import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import EnvitefyRouteBrand from "@/components/branding/EnvitefyRouteBrand";
 import AppearanceSelector from "@/components/AppearanceSelector";
 import appearanceStyles from "./navigation-appearance.module.css";
 import { secureSignOut } from "@/utils/secureSignOut";
@@ -602,7 +602,7 @@ export default function TopNav() {
             className="ml-auto inline-flex items-center"
             suppressHydrationWarning
           >
-            <EnvitefyWordmark
+            <EnvitefyRouteBrand
               scaled={false}
               className="text-[1.55rem] leading-none sm:text-[1.65rem]"
             />
@@ -629,7 +629,7 @@ export default function TopNav() {
               className="inline-flex items-center text-[#7f8cff] opacity-100"
               suppressHydrationWarning
             >
-              <EnvitefyWordmark
+              <EnvitefyRouteBrand
                 scaled={false}
                 className="text-[2rem] leading-none"
               />

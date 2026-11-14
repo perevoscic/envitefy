@@ -22,6 +22,7 @@ try {
     "lib/email-template.source.test.mjs",
     "lib/email.rsvp-image.source.test.mjs",
     "lib/email-design.test.cjs",
+    "lib/gymnastics-brand.test.cjs",
     "lib/admin/email-design-version.test.cjs",
   ]) await import(new URL(file, sourceRoot).href);
 } finally {
