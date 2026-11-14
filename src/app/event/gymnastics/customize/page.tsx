@@ -1895,7 +1895,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     ]);
 
     useEventLocationTimezone({ data, setData, enabled: !loadingExisting, saved: editEventId ? eventHistoryClient.read(`/api/history/${encodeURIComponent(editEventId)}`)?.data : undefined });
-    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId }, restoreSnapshot: (snapshot) => { setData(snapshot.data); setAdvancedState(snapshot.advancedState); setThemeId(snapshot.themeId); }, category: config.category, templateId: data.pageTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: discoverBusy, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "gymnastics", onSaved: () => setDidExplicitSave(true) });
+    const editor = useEventPageEditor({ snapshot: { data, advancedState, themeId, discoverySource: loadedDiscoverySource, publicArtifacts: loadedDiscoveryPublicArtifacts }, restoreSnapshot: (snapshot) => { setData(snapshot.data); setAdvancedState(snapshot.advancedState); setThemeId(snapshot.themeId); setLoadedDiscoverySource(snapshot.discoverySource); setLoadedDiscoveryPublicArtifacts(snapshot.publicArtifacts); }, category: config.category, templateId: data.pageTemplateId, eventId: editEventId, historyClient: eventHistoryClient, ready: !loadingExisting, busy: discoverBusy, onBusyChange: setSubmitting, buildPayload: buildEventPayload, templateCategory: "gymnastics", onSaved: () => setDidExplicitSave(true) });
 
     const rsvpCopy = {
       menuTitle: config.rsvpCopy?.menuTitle || "RSVP",

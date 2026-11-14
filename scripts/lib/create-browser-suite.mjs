@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import buildBunFixture from "./build-bun-fixture.cjs";
 
 export const INDEPENDENT_CREATE_BROWSER_TESTS = Object.freeze([
+  "scripts/event-source-updates-browser.test.cjs",
   "scripts/create-guest-preview-offline.test.cjs",
   "scripts/create-guest-rsvp-offline.test.cjs",
   "scripts/event-messages-browser.test.cjs",

@@ -54,6 +54,7 @@ export function buildTemplateDraftPayload(
   return {
     title,
     data: {
+      ...(snapshot.sourceUpdates ? { sourceUpdates: snapshot.sourceUpdates } : {}),
       ...(category === "signup-forms"
         ? {
             signupForm: { ...data, timezone },

@@ -267,7 +267,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
   }
 
   return (
-    <footer className="w-full bg-transparent">
+    <footer className="mt-10 w-full bg-transparent sm:mt-16">
       <div className="mx-auto max-w-7xl px-3 py-6 text-[10px] text-foreground/80 sm:text-xs md:text-sm">
         {hasNoSession ? (
           <div className="mb-5 flex justify-center">

@@ -191,6 +191,7 @@ export async function saveManualEventProgress({
                 ownership: "owned",
                 createdVia: "manual",
                 createdManually: true,
+                ...(saved.sourceUpdates ? { sourceUpdates: saved.sourceUpdates } : {}),
                 eventPageComposition: normalizeEventPageComposition(saved.pageComposition) ?? null,
                 ...holidayFields,
                 ...schoolFields,

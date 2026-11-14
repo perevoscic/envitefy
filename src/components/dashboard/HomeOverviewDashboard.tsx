@@ -172,23 +172,19 @@ function getDashboardThumbnailObjectPosition(
 
 const CARD_TONE_STYLES: Record<
   CardTone,
-  { iconClassName: string; shadowClassName: string }
+  { iconClassName: string }
 > = {
   indigo: {
     iconClassName: "bg-indigo-50 text-indigo-600",
-    shadowClassName: "hover:shadow-indigo-100/70",
   },
   pink: {
     iconClassName: "bg-pink-50 text-pink-500",
-    shadowClassName: "hover:shadow-pink-100/70",
   },
   sky: {
     iconClassName: "bg-sky-50 text-sky-600",
-    shadowClassName: "hover:shadow-sky-100/70",
   },
   amber: {
     iconClassName: "bg-amber-50 text-amber-500",
-    shadowClassName: "hover:shadow-amber-100/70",
   },
 };
 
@@ -238,7 +234,7 @@ function InfoCard({
   review,
 }: InfoCardProps) {
   const toneStyles = CARD_TONE_STYLES[tone];
-  const className = `group flex flex-col rounded-[32px] border border-slate-100 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.06)] transition-all duration-500 hover:-translate-y-1 hover:border-indigo-100 ${toneStyles.shadowClassName}`;
+  const className = "dashboard-raised-panel group flex flex-col rounded-[32px] p-6 motion-safe:transition-transform motion-safe:duration-300 motion-safe:hover:-translate-y-1";
   const content = (
     <>
       <div className="mb-4 flex items-start justify-between">
@@ -360,7 +356,7 @@ function InvitationEventCard({
             : "from-indigo-400 to-purple-500"
         }`}
       />
-      <div className="relative overflow-hidden rounded-[40px] border border-slate-100 bg-white shadow-xl transition-all duration-500 hover:shadow-2xl">
+      <div className="dashboard-event-surface relative overflow-hidden rounded-[40px]">
         <div className="flex min-h-[400px] flex-col md:flex-row">
           <div className="relative min-h-[280px] w-full overflow-hidden md:w-[48%]">
             {item.coverImageUrl ? (
@@ -408,7 +404,7 @@ function InvitationEventCard({
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-6 dark:bg-[var(--surface)] sm:p-8 md:p-12">
+          <div className="dashboard-event-face flex flex-1 flex-col justify-between p-6 sm:p-8 md:p-12">
             <div
               className={`flex flex-col gap-8 ${primary ? "md:flex-row md:justify-between" : ""}`}
             >
@@ -473,7 +469,7 @@ function InvitationEventCard({
                 return (
                   <div
                     key={`${item.id}-${stat.label}`}
-                    className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+                    className="dashboard-planning-tile flex items-center gap-4 rounded-2xl p-4"
                   >
                     <div className="text-indigo-500">
                       <Icon size={18} />
@@ -790,13 +786,13 @@ function LoadingDashboardState() {
         <div className="h-14 w-44 animate-pulse rounded-[24px] bg-slate-200" />
       </div>
       <div className="grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">
-        <div className="min-h-[440px] animate-pulse rounded-[40px] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]" />
+        <div className="dashboard-raised-panel min-h-[440px] animate-pulse rounded-[40px]" />
       </div>
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
-            className="h-[176px] animate-pulse rounded-[32px] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.06)]"
+            className="dashboard-raised-panel h-[176px] animate-pulse rounded-[32px]"
           />
         ))}
       </div>
@@ -915,7 +911,7 @@ export default function HomeOverviewDashboard({
     return (
       <div className="pt-20 md:pt-10">
         {invitationNotice ? <div className="mb-4 flex justify-end">{invitationNotice}</div> : null}
-        <section className="rounded-[32px] border border-slate-100 bg-white p-6 shadow-xl sm:p-10">
+        <section className="dashboard-raised-panel rounded-[32px] p-6 sm:p-10">
           <h1 className="text-2xl font-bold text-slate-900">Your events couldn’t load</h1>
           <p role="alert" className="mt-3 text-base text-slate-600">{error}</p>
           <button
@@ -974,7 +970,7 @@ export default function HomeOverviewDashboard({
               editHref={overview?.editLinks[nextEvent.id]} now={now} />}
           />
         ) : games.length ? (
-          <section className="rounded-[32px] border border-slate-100 bg-white p-6 shadow-sm sm:p-8">
+          <section className="dashboard-raised-panel rounded-[32px] p-6 sm:p-8">
             <h2 className="text-2xl font-bold text-slate-900">Your next games are ready</h2>
             <p className="mt-2 text-sm text-slate-600">{games.length} upcoming {games.length === 1 ? "game" : "games"} from your saved schedules.</p>
             <button type="button" aria-controls="dashboard-agenda" onClick={() => {
@@ -984,7 +980,7 @@ export default function HomeOverviewDashboard({
             }} className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">View games</button>
           </section>
         ) : (
-          <article className="relative overflow-hidden rounded-[40px] border border-slate-100 bg-white shadow-xl">
+          <article className="dashboard-event-surface relative overflow-hidden rounded-[40px]">
             <div className="flex min-h-[400px] flex-col md:flex-row">
               <div className="relative min-h-[280px] w-full overflow-hidden md:w-[48%]">
                 <Image
@@ -1011,7 +1007,7 @@ export default function HomeOverviewDashboard({
                   </p>
                 </div>
               </div>
-              <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-6 dark:bg-[var(--surface)] sm:p-8 md:p-12">
+              <div className="dashboard-event-face flex flex-1 flex-col justify-between p-6 sm:p-8 md:p-12">
                 <div className="space-y-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     Countdown
@@ -1073,7 +1069,7 @@ export default function HomeOverviewDashboard({
           const previewLimit = showingGames ? 4 : 3;
           const invitedCount = upcomingRest.filter((event) => event.ownership === "invited").length;
           const filterOptions = [
-            { value: "all", label: "All", count: upcomingRest.length },
+            { value: "all", label: "All events", count: upcomingRest.length },
             { value: "owned", label: "My events", count: upcomingRest.length - invitedCount },
             { value: "invited", label: "Invited events", count: invitedCount },
             { value: "games", label: "Games", count: games.length },
@@ -1083,20 +1079,27 @@ export default function HomeOverviewDashboard({
           const filteredCount = showingGames ? games.length : filteredUpcoming.length;
           const itemLabel = showingGames ? "games" : "events";
           return (
-            <section className="flex flex-col gap-4" aria-label="Upcoming events">
-                <div role="group" aria-label="Filter upcoming events" className="inline-flex max-w-full flex-wrap self-start rounded-2xl border border-slate-100 bg-white p-1">
+            <section className="dashboard-agenda flex flex-col gap-4" aria-label="Upcoming events">
+                <div role="group" aria-label="Filter upcoming events" className="dashboard-raised-panel dashboard-event-filters">
                   {filterOptions.map((option) => (
                     <button type="button" key={option.value} aria-pressed={upcomingFilter === option.value}
                       aria-label={option.value === "games" && data?.gamesUnavailable ? "Games, unavailable" : `${option.label}, ${option.count} ${option.value === "games" ? option.count === 1 ? "game" : "games" : option.count === 1 ? "event" : "events"}`}
+                      aria-controls="dashboard-agenda-results"
                       onClick={() => { setUpcomingFilter(option.value); setShowAllUpcoming(false); }}
-                      className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-indigo-600 sm:gap-2 sm:px-3 sm:text-sm ${upcomingFilter === option.value ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:bg-indigo-50"}`}>
-                      <span>{option.label}</span>
-                      <span aria-hidden="true" className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums sm:h-[22px] sm:min-w-[22px] sm:text-[11px] ${upcomingFilter === option.value ? "bg-white text-indigo-600" : "bg-slate-100 text-slate-600"}`}>
+                      className="dashboard-event-filter">
+                      <span>{option.value === "invited" ? "Invited" : option.label}</span>
+                      <span aria-hidden="true" className="dashboard-event-filter-count">
                         {option.value === "games" && data?.gamesUnavailable ? "–" : option.count}
                       </span>
                     </button>
                   ))}
                 </div>
+              <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {showingGames && data?.gamesUnavailable
+                  ? "Games are unavailable. Try again to load your schedule."
+                  : `${filterOptions.find((option) => option.value === upcomingFilter)?.label}: ${filteredCount} upcoming ${filteredCount === 1 ? showingGames ? "game" : "event" : itemLabel}.`}
+              </p>
+              <div id="dashboard-agenda-results" className="flex min-w-0 flex-col gap-4">
               {showingGames ? (
                 data?.gamesUnavailable ? <p role="status" className="rounded-2xl bg-amber-50 p-5 text-sm text-amber-900">Your games couldn’t load. <button type="button" onClick={onRetry} className="min-h-11 font-semibold underline underline-offset-4">Try again</button></p>
                   : <DashboardGames games={showAllUpcoming ? games : games.slice(0, previewLimit)} />
@@ -1110,7 +1113,7 @@ export default function HomeOverviewDashboard({
                   );
                 })}
               </div>}
-              {!filteredCount && !(showingGames && data?.gamesUnavailable) ? <p className="rounded-2xl border border-slate-100 bg-white p-5 text-sm text-slate-500">{showingGames ? "No upcoming games in your saved schedules." : `No other upcoming ${upcomingFilter === "invited" ? "invited events" : upcomingFilter === "owned" ? "events you own" : "events"}.`}</p> : null}
+              {!filteredCount && !(showingGames && data?.gamesUnavailable) ? <p className="dashboard-raised-panel rounded-2xl p-5 text-sm text-slate-500">{showingGames ? "No upcoming games in your saved schedules." : `No other upcoming ${upcomingFilter === "invited" ? "invited events" : upcomingFilter === "owned" ? "events you own" : "events"}.`}</p> : null}
               {filteredCount > previewLimit ? (
                 <button type="button" aria-expanded={showAllUpcoming} onClick={() => setShowAllUpcoming((current) => !current)}
                   className="mobile-touch-target mx-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
@@ -1118,6 +1121,7 @@ export default function HomeOverviewDashboard({
                 </button>
               ) : null}
               {!showingGames && data?.eventWindowLimited ? <p className="text-xs text-slate-500">Showing the nearest saved events. Your event list has the rest.</p> : null}
+              </div>
             </section>
           );
         })()}

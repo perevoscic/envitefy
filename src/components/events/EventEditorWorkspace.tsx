@@ -22,6 +22,7 @@ import {
 import { EventUrlEditor } from "./EventUrlEditor";
 import styles from "./event-editor.module.css";
 import type { EventPageEditorSession } from "./useEventPageEditor";
+import EventSourceUpdates from "./EventSourceUpdates";
 
 type Drawer = Pick<
   ReturnType<typeof useMobileDrawer>,
@@ -603,6 +604,7 @@ export default function EventEditorWorkspace({
                   ? controls(null)
                   : controls}
               </EventEditorToolsContext.Provider>
+              <EventSourceUpdates editor={editor} />
             </div>
           </div>
         </aside>

@@ -4,6 +4,7 @@
 @import "./gallery-fonts.css";
 @import "../styles/holiday-palettes.css";
 @import "../styles/app-appearance.css";
+@import "../components/dashboard/dashboard-surfaces.css";
 
 /* PostCSS scans src/; colocated verification files do not ship application classes. */
 /* Retain the existing dynamic Shared Events/birthday gradient safelist. */
@@ -12,6 +13,11 @@
 @source not "../**/{__tests__,__fixtures__,fixtures}/**";
 
 @custom-variant dark (&:where(.dark, .dark *):not(:where([data-appearance-scope="authored"], [data-appearance-scope="authored"] *)));
+
+/* Every event renderer shares this branding, including native and custom pages. */
+footer:has(> [data-envitefy-event-branding]) {
+  margin-block-start: clamp(2.5rem, 5vw, 4rem);
+}
 
 @font-face {
   font-family: "Josefin Sans";

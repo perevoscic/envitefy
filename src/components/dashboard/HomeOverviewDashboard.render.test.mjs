@@ -13,6 +13,7 @@ import * as footballGames from "../../lib/football-games.ts";
 import * as footballDates from "../../lib/football-schedule-dates.ts";
 import * as footballTeams from "../../lib/football-team-name.ts";
 import * as calendarLinks from "../../utils/calendar-links.ts";
+import * as sectionSwipe from "../events/useEventSectionSwipe.ts";
 
 const require = createRequire(import.meta.url);
 function loadComponent(filename, selectedFilter = "all") {
@@ -31,6 +32,7 @@ function loadComponent(filename, selectedFilter = "all") {
     if (name === "@/lib/football-schedule-dates") return footballDates;
     if (name === "@/lib/football-team-name") return footballTeams;
     if (name === "@/utils/calendar-links") return calendarLinks;
+    if (name === "@/components/events/useEventSectionSwipe") return sectionSwipe;
     if (name === "./DashboardGames") return loadComponent("./DashboardGames.tsx");
     if (name === "@/components/football-season-templates/FootballSchedule") return loadComponent("../football-season-templates/FootballSchedule.tsx");
     if (name === "./FootballSectionTabs") return loadComponent("../football-season-templates/FootballSectionTabs.tsx");
@@ -122,20 +124,39 @@ test("Home keeps loaded events visible during a refresh failure and lists the re
   assert.doesNotMatch(html, /Nothing is scheduled yet|Your events couldn’t load/);
 });
 
-test("event filter bubbles count the complete list by ownership, excluding the spotlight", () => {
+test("event filters count the complete list by ownership, excluding the spotlight", () => {
   const event = (id, ownership) => ({ id, title: id, ownership, startAt: "2030-09-25T12:00:00Z" });
   const spotlight = event("spotlight", "invited");
   const remaining = Array.from({ length: 9 }, (_, index) => event(`event-${index}`, index < 4 ? "invited" : index < 8 ? "owned" : undefined));
   const html = render({ data: { ...emptyData, nextEvent: spotlight, upcoming: [spotlight, ...remaining] } });
-  assert.match(html, /aria-pressed="true" aria-label="All, 9 events"/);
+  assert.match(html, /aria-pressed="true" aria-label="All events, 9 events"/);
   assert.match(html, /aria-label="My events, 5 events"/);
   assert.match(html, /aria-label="Invited events, 4 events"/);
   assert.match(html, /Show all 9 events/);
   assert.doesNotMatch(html, /upcoming-events-heading|>Upcoming Events</);
   const ownOnly = render({ data: { ...emptyData, nextEvent: spotlight, upcoming: [spotlight, event("own", "owned")] } });
-  assert.match(ownOnly, /aria-label="All, 1 event"/);
+  assert.match(ownOnly, /aria-label="All events, 1 event"/);
   assert.match(ownOnly, /aria-label="My events, 1 event"/);
   assert.match(ownOnly, /aria-label="Invited events, 0 events"/);
+});
+
+test("event filters expose their results and retain the selected ownership and count", () => {
+  const event = (id, ownership) => ({ id, title: id, ownership, startAt: "2030-09-25T12:00:00Z" });
+  const spotlight = event("spotlight", "owned");
+  const data = { ...emptyData, nextEvent: spotlight, upcoming: [spotlight, event("owner-party", "owned"), event("legacy-party"), event("invited-party", "invited")] };
+  const owned = render({ data }, "owned");
+  const invited = render({ data }, "invited");
+  assert.equal((owned.match(/aria-controls="dashboard-agenda-results"/g) || []).length, 4);
+  assert.match(owned, /aria-pressed="true" aria-label="My events, 2 events"/);
+  assert.match(owned, /role="status" aria-live="polite" aria-atomic="true"[^>]*>My events: 2 upcoming events\./);
+  const ownedResults = owned.split('id="dashboard-agenda-results"')[1];
+  assert.match(ownedResults, /owner-party|legacy-party/);
+  assert.doesNotMatch(ownedResults, /invited-party|spotlight/);
+  assert.match(invited, /aria-pressed="true" aria-label="Invited events, 1 event"/);
+  assert.match(invited, /Invited events: 1 upcoming event\./);
+  const invitedResults = invited.split('id="dashboard-agenda-results"')[1];
+  assert.match(invitedResults, /invited-party/);
+  assert.doesNotMatch(invitedResults, /owner-party|legacy-party|spotlight/);
 });
 
 test("Games counts individual fixtures even when a saved season has no dated event card", () => {
@@ -152,7 +173,7 @@ test("Games counts individual fixtures even when a saved season has no dated eve
   const initial = render({ data });
   assert.match(initial, /Your next games are ready/);
   assert.doesNotMatch(initial, /Nothing is scheduled yet/);
-  assert.match(initial, /aria-label="All, 0 events"/);
+  assert.match(initial, /aria-label="All events, 0 events"/);
   assert.match(initial, /aria-label="Games, 5 games"/);
   const html = render({ data }, "games");
   assert.match(html, /aria-pressed="true" aria-label="Games, 5 games"/);

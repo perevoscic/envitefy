@@ -25,7 +25,7 @@ type AgendaEvent = {
   tz?: string | null;
 };
 const panel =
-  "min-w-0 scroll-mt-24 rounded-[28px] border border-slate-100 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.04)] sm:p-6";
+  "dashboard-raised-panel min-w-0 scroll-mt-24 rounded-[28px] p-5 sm:p-6";
 const action =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-[var(--surface-raised)]";
 
@@ -84,7 +84,7 @@ export function NextEventPlanning({
   const locationPromptId = useId();
   const offerCurrentLocation = metrics?.travelOriginLabel !== "current location";
   const tileClassName =
-    "flex min-w-0 flex-col rounded-[22px] border border-slate-200/70 bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.025)] dark:border-[var(--border)]";
+    "dashboard-planning-tile flex min-w-0 flex-col rounded-[22px] p-4";
   const tileHeadingClassName =
     "text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500";
   return (
@@ -285,7 +285,7 @@ export function DashboardPlanningPanels({ overview }: { overview?: DashboardOver
           </p>
           <ul className="mt-4 space-y-4">
             {overview.signups.map((signup) => (
-              <li key={signup.eventId} className="rounded-2xl border border-slate-100 p-4">
+              <li key={signup.eventId} className="dashboard-planning-tile rounded-2xl p-4">
                 <Link
                   href={`/smart-signup-form/${encodeURIComponent(signup.eventId)}#signup-host-dashboard`}
                   className="flex min-h-11 items-center justify-between gap-3 text-sm font-semibold text-slate-800 hover:text-indigo-600"

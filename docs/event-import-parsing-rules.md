@@ -61,6 +61,15 @@ The multi-page website collector and linked-schedule enrichment described here c
 
 ## Composition and explicit saves
 
+### Manual source update review
+
+- URL-created Event Pages retain the original URL and offer **Check for updates** in their editing menu. Checks are manual only; opening/reopening a page does not crawl or poll the source.
+- When the editable event JSON omits the URL, an authenticated host-only metadata lookup resolves it from the protected discovery source. That lookup performs no external source reads, parsing, generation or event writes, and does not mark the editor dirty.
+- The authenticated host/co-host endpoint reads the saved source URL, reuses the guarded source reader and specialized sports parser, follows current linked schedule PDFs (including changed bytes at the same URL), and returns proposed facts without event writes, publication or artwork generation. Reject other events/editions and retain document-specific failures alongside successfully read changes.
+- Compare the previous imported facts, the latest mounted editor (including unsaved changes), and newly extracted facts. Match dated days and coded sessions by source identity rather than generated IDs, position or changed times. Keep host edits, IDs, manual rows, media, design, response data and section organization. Conflicts are unchecked by default; applying a conflict requires selecting that source value. Missing/removed facts remain in the event and are shown for review. Reject applying a field edited after the review was prepared.
+- Applying selected changes updates editor memory only. Save changes/Save draft/Publish use the existing writer and event ID. Persist only the accepted source baseline so ignored conflicts remain reviewable on later checks. Older events without a reliable baseline treat existing differing values as conflicts.
+- Disable the button and reject source checks after the saved event ends. Use explicit end instants or the end of the inclusive final calendar day in the saved location timezone, accounting for calendar-exclusive all-day end dates. With no end time, use the final day (or start day when no end date exists); unknown dates/location zones do not invent a device-zone cutoff.
+
 - Plan a fresh imported page from available schedule, admission, clubs, lodging and attractions. Preserve a host-selected template, saved section order, authored text and section pairs.
 - Responsive balanced columns are allowed **inside** sections, sized for real item count/name/copy length. Page sections remain stacked until explicitly paired. Stack collections on phones and narrow paired sections; do not split or truncate a long item to force columns. This supersedes the older blanket single-column rule for imported collections only.
 - The combined navigation name is **Venue & parking**; the parking section heading is **Parking**. Keep Hotels and Explore separate; do not collapse them into a generic Visit group. Existing section order, visibility, authored pairs and explicitly added empty sections follow the shared editor rules.

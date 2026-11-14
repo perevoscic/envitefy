@@ -44,7 +44,7 @@ function withoutLocationVerification(value: unknown): unknown {
 
 /** Compare pending edits without dropping verification from saves or undo data. */
 export function eventEditorChangeContent(snapshot: object): object {
-  const content = eventEditorContent(snapshot) as Record<string, unknown>;
+  const { sourceUpdates: _sourceMetadata, ...content } = eventEditorContent(snapshot) as Record<string, unknown>;
   const page = content.page && typeof content.page === "object" && !Array.isArray(content.page)
     ? content.page as Record<string, unknown> : null;
   return {

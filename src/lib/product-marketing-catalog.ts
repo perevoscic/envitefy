@@ -249,6 +249,21 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           ],
         },
         {
+          id: "event-page-source-updates",
+          name: "Review updates from an event's original link",
+          availability: "event-dependent",
+          customerPromise:
+            "Check your original event link for new information and choose which changes to bring into your Event Page.",
+          proofPoints: [
+            "Hosts and co-hosts of URL-created Event Pages can manually Check for updates from the editing menu until the saved event ends. Opening a page does not automatically check its source.",
+            "The review compares source facts with current editor content, including unsaved edits. Conflicts require an explicit choice; removed facts stay available for review. Existing event identity, responses, artwork, design and section organization are retained.",
+            "Applying selected updates changes editor memory only. Save changes, Save draft or Publish controls persistence. Source or document failures are reported without discarding successfully read information or automatically replacing host edits.",
+          ],
+          sellWhen: [
+            "An organizer needs to review revised schedules, venue details or other information from an event's original website before updating a shared page.",
+          ],
+        },
+        {
           id: "event-page-weather",
           name: "Weather on custom Event Pages",
           availability: "event-dependent",

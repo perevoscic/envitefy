@@ -32,6 +32,7 @@ import { UNIFIED_CREATION_ENABLED } from "@/lib/create/release";
 import type { EventUrlUpdate } from "./EventUrlEditor";
 import { applyEventLocationTimezone, validEventTimeZone } from "@/lib/event-location-timezone";
 import { useEventEditorHistory } from "./useEventEditorHistory";
+import { acceptedSourceBaseline, applySourceChanges, eventSourceUrl, informationSourceFacts, readSourceUpdateState, snapshotSourceFacts, snapshotWithSourceFacts, sourceUpdateCutoff, type SourceChange, type SourceUpdateState } from "@/lib/event-source-updates";
 
 export type EventPageEditorSession = {
   eventId?: string;
@@ -45,6 +46,11 @@ export type EventPageEditorSession = {
   authenticated: boolean;
   error: string;
   message: string;
+  sourceUpdates?: {
+    url: string; lastCheckedAt?: string; ended: boolean; reason?: string; isEnded: () => boolean;
+    current: () => Record<string, any>;
+    apply: (changes: SourceChange[], previous: Record<string, any> | undefined, checkedAt: string, incoming: Record<string, any>) => void;
+  };
   saveDraft: () => Promise<void>;
   saveChanges: () => Promise<void>;
   publishWithAccount?: (mode: "signup" | "login") => Promise<void>;
@@ -93,7 +99,7 @@ export function useEventPageEditor<S extends object>({
   onBusyChange?: (busy: boolean) => void;
   buildPayload?: () => Promise<EventEditorPayload>;
   onSaved?: (id: string) => void;
-  savePage?: (publish: boolean) => Promise<{ id: string; href: string; snapshot: object }>;
+  savePage?: (publish: boolean, metadata?: { sourceUpdates?: SourceUpdateState }) => Promise<{ id: string; href: string; snapshot: object }>;
   published?: boolean;
   initialDirty?: boolean;
   initialComposition?: EventPageComposition;
@@ -115,8 +121,36 @@ export function useEventPageEditor<S extends object>({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const loaded = id.current
-    ? historyClient.read(`/api/history/${encodeURIComponent(id.current)}`)
+    ? template?.historyClient?.read(`/api/history/${encodeURIComponent(id.current)}`) || historyClient.read(`/api/history/${encodeURIComponent(id.current)}`)
     : null;
+  const [sourceUpdates, setSourceUpdates] = useState<SourceUpdateState | undefined>(() =>
+    readSourceUpdateState((snapshot as Record<string, any>).sourceUpdates || template?.initial.sourceUpdates || loaded?.data.sourceUpdates));
+  const hydratedSource = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (hydratedSource.current === loaded?.id) return;
+    if (loaded) {
+      const changedEvent = Boolean(hydratedSource.current && hydratedSource.current !== loaded.id);
+      hydratedSource.current = loaded.id;
+      setSourceUpdates(current => (!changedEvent && current) || readSourceUpdateState(loaded.data.sourceUpdates || (loaded.data.manualEditor as Record<string, any>)?.snapshot?.sourceUpdates) || (eventSourceUrl(loaded.data) ? { version: 1, url: eventSourceUrl(loaded.data) } : undefined));
+    }
+  }, [loaded]);
+  useEffect(() => {
+    if (!loaded || sourceUpdates?.url || eventSourceUrl(loaded.data) || readSourceUpdateState((loaded.data.manualEditor as Record<string, any>)?.snapshot?.sourceUpdates)?.url) return;
+    const controller = new AbortController();
+    // Discovery imports can retain their original URL exclusively in the protected
+    // server record. This metadata request does not start an import or source check.
+    void fetch(`/api/events/${encodeURIComponent(loaded.id)}/source-updates`, {
+      credentials: "include", cache: "no-store", signal: controller.signal,
+    }).then(async response => {
+      if (!response.ok) return;
+      const metadata = await response.json();
+      if (!controller.signal.aborted && metadata.eligible) {
+        const restored = readSourceUpdateState({ version: 1, url: metadata.url, lastCheckedAt: metadata.lastCheckedAt });
+        if (restored) setSourceUpdates(current => current || restored);
+      }
+    }).catch(() => {});
+    return () => controller.abort();
+  }, [loaded?.id, sourceUpdates?.url]);
   const canEditUrl = useRef<boolean | null>(null);
   if (loaded?.permissions?.role) canEditUrl.current = loaded.permissions.role === "owner";
   const published =
@@ -127,6 +161,16 @@ export function useEventPageEditor<S extends object>({
   const [compositionReady, setCompositionReady] = useState(!id.current || Boolean(template));
   const hydratedComposition = useRef(Boolean(template) || !id.current);
   const intakeId = search?.get("intake");
+  useEffect(() => {
+    if (!intakeId || id.current) return;
+    let active = true;
+    void getSession().then(async session => {
+      const intake = await readCreationIntake(creationIntakeOwner(session?.user), intakeId);
+      const url = intake?.source.url;
+      if (active && url) setSourceUpdates(current => current || { version: 1, url, ...(intake.source.text ? { hostNotes: intake.source.text } : {}), ...(intake.information ? { facts: informationSourceFacts(intake.information.details) } : {}) });
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [intakeId]);
   const [intakeCompositionReady, setIntakeCompositionReady] = useState(!intakeId || Boolean(id.current) || Boolean(template) || Boolean(savePage));
   useEffect(() => {
     if (!intakeId || id.current || template || intakeCompositionReady) return;
@@ -154,15 +198,19 @@ export function useEventPageEditor<S extends object>({
   }, [loaded, ready]);
   const normalizedComposition = normalizeEventPageComposition(composition);
   const editorReady = ready && intakeCompositionReady && (Boolean(savePage) || compositionReady);
-  const composedSnapshot =
+  const composedSnapshot = {
+    ...(
     !savePage
       ? { ...snapshot, pageComposition: normalizedComposition ?? null }
-      : snapshot;
+      : snapshot),
+    ...(sourceUpdates ? { sourceUpdates } : {}),
+  };
   const content = eventEditorContent(composedSnapshot);
   const history = useEventEditorHistory(content, editorReady);
   const restore = (value: object) => {
     if (!restoreSnapshot) return;
     restoreSnapshot(value as S);
+    setSourceUpdates(readSourceUpdateState((value as Record<string, unknown>).sourceUpdates));
     if (!savePage) setComposition(normalizeEventPageComposition((value as EditorSnapshot).pageComposition));
     setError("");
     setMessage("");
@@ -173,7 +221,8 @@ export function useEventPageEditor<S extends object>({
     content,
     buildPayload: buildPayload
       ? async () => {
-          const payload = applyEventLocationTimezone(creationNativePayload(await buildPayload(), composedSnapshot), (snapshot as { data?: Record<string, any> }).data || {});
+          const originalPayload = await buildPayload();
+          const payload = applyEventLocationTimezone(creationNativePayload({ ...originalPayload, data: { ...originalPayload.data, ...(sourceUpdates ? { sourceUpdates: JSON.parse(JSON.stringify(sourceUpdates)) } : {}) } }, composedSnapshot), (snapshot as { data?: Record<string, any> }).data || {});
           return !savePage
             ? {
                 ...payload,
@@ -203,6 +252,9 @@ export function useEventPageEditor<S extends object>({
         composition ? JSON.parse(JSON.stringify(composition)) : null,
       );
   }, [template, composition, savePage]);
+  useEffect(() => {
+    if (template && sourceUpdates) template.record("sourceUpdates", JSON.parse(JSON.stringify(sourceUpdates)));
+  }, [template, sourceUpdates]);
 
   const perform = async (publish: boolean, navigate: boolean, authMode: "signup" | "login" = "signup") => {
     if (!editorReady || externalBusy || urlBusy || saving.current)
@@ -230,10 +282,10 @@ export function useEventPageEditor<S extends object>({
       let href: string | undefined;
       let savedContent = capturedContent;
       if (savePage) {
-        const saved = await savePage(publish);
+        const saved = await savePage(publish, { sourceUpdates: readSourceUpdateState(capturedSnapshot.sourceUpdates) });
         id.current = saved.id;
         href = saved.href;
-        savedContent = eventEditorContent(saved.snapshot);
+        savedContent = eventEditorContent({ ...saved.snapshot, ...(capturedSnapshot.sourceUpdates ? { sourceUpdates: capturedSnapshot.sourceUpdates } : {}) });
       } else if (templateCategory && !template) {
         const selected =
           (templateId && getPublicTemplate(templateCategory, templateId)) ||
@@ -433,6 +485,23 @@ export function useEventPageEditor<S extends object>({
     authenticated: template?.authenticated ?? true,
     error,
     message,
+    ...(sourceUpdates && restoreSnapshot ? { sourceUpdates: {
+      url: sourceUpdates.url,
+      lastCheckedAt: sourceUpdates.lastCheckedAt,
+      ...sourceUpdateCutoff({ ...loaded?.data, ...((snapshot as Record<string, any>).data || {}), ...((snapshot as Record<string, any>).page ? { customEventPage: (snapshot as Record<string, any>).page } : {}) }),
+      isEnded: () => sourceUpdateCutoff(loaded?.data || {}).ended,
+      current: () => snapshotSourceFacts(latest.current.snapshot),
+      apply: (changes: SourceChange[], previous: Record<string, any> | undefined, checkedAt: string, incoming: Record<string, any>) => {
+        if (saving.current || externalBusy || urlBusy) throw new Error("Wait for the current save to finish.");
+        if (sourceUpdateCutoff(loaded?.data || {}).ended) throw new Error("Updates are available until the event ends.");
+        const current = latest.current.snapshot as Record<string, any>;
+        const facts = applySourceChanges(snapshotSourceFacts(current), changes, incoming);
+        const baseline = acceptedSourceBaseline(previous, changes);
+        restore(snapshotWithSourceFacts(current, facts));
+        setSourceUpdates({ ...sourceUpdates, version: 1, url: sourceUpdates.url, facts: baseline, lastCheckedAt: checkedAt });
+        setMessage("Updates applied to your editor. Save changes to publish them.");
+      },
+    } } : {}),
     saveDraft: () => perform(false, false),
     saveChanges: () => perform(true, !published),
     ...(template ? { publishWithAccount: (mode: "signup" | "login") => perform(true, true, mode) } : {}),

@@ -278,7 +278,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
     return next;
   };
 
-  const persist = async (status: "draft" | "published", navigate = true) => {
+  const persist = async (status: "draft" | "published", navigate = true, metadata?: { sourceUpdates?: import("@/lib/event-source-updates").SourceUpdateState }) => {
     if (!page || saving.current || imageBusy)
       throw new Error("Wait for your event page to finish saving.");
     setValidationMode(status);
@@ -298,7 +298,7 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
         status,
         eventId: savedId.current,
         clientDraftId: clientDraftId.current,
-        existing: existing.current,
+        existing: { ...existing.current, ...(metadata?.sourceUpdates ? { sourceUpdates: metadata.sourceUpdates } : {}) },
       });
       savedId.current = result.id;
       existing.current = result.data;
@@ -348,8 +348,8 @@ export default function EventCustomEditor({ initialPage }: { initialPage?: Custo
           savedPublicSlug,
         )
       : undefined,
-    savePage: async (publish) => {
-      const result = await persist(publish ? "published" : "draft", false);
+    savePage: async (publish, metadata) => {
+      const result = await persist(publish ? "published" : "draft", false, metadata);
       return {
         id: result.id,
         href: buildEventPath(

@@ -10,6 +10,14 @@ const { createEventHistoryClient } = jiti("../src/lib/event-history-client.ts");
 const { saveTemplateDraftToAccount } = jiti("../src/lib/template-draft-handoff.ts");
 const json = (row, status = 200) => new Response(JSON.stringify(row), { status });
 
+test("restoring a protected source URL stays clean while accepted event facts remain pending", () => {
+  const original = { data: { title: "Meet", details: "Original" } };
+  const restored = { ...original, sourceUpdates: { version: 1, url: "https://example.com/meet" } };
+  assert.deepEqual(eventEditorChangeContent(restored), eventEditorChangeContent(original));
+  assert.deepEqual(eventEditorContent(restored), restored, "saving retains the recovered source URL");
+  assert.notDeepEqual(eventEditorChangeContent({ ...restored, data: { ...original.data, details: "New source facts" } }), eventEditorChangeContent(original));
+});
+
 test("location verification stays out of pending edits while saves and undo retain its metadata", () => {
   const details = { title: "Meet", rsvpEnabled: false, address: "Tampa, FL", date: "2027-04-10", time: "14:00", timezone: "America/New_York" };
   for (const wrap of [data => ({ data }), details => ({ page: { artwork: "/retained.webp", details } })]) {
