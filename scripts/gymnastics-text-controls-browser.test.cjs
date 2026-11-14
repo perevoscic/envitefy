@@ -243,6 +243,11 @@ for (const mobile of [false, true]) for (const dark of [false, true]) {
       else {
         await copy.hover();
         const copyActions = copy.getByRole("group", { name: "Welcome message copy actions", exact: true });
+        await page.waitForFunction(() => {
+          const actions = document.querySelector('[data-text-placement-source="Welcome message copy"] [role="group"]');
+          return actions && getComputedStyle(actions).opacity === "1" &&
+            actions.getAnimations().every(animation => animation.playState === "finished");
+        });
         // Cross from the duplicated text into every real pointer target. The
         // original toolbar and Share must not cover or dismiss these actions.
         for (const button of await copyActions.getByRole("button").all()) {

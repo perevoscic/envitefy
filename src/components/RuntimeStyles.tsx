@@ -1,10 +1,11 @@
 import { headers } from "next/headers";
+import type { RuntimeStyleManifest } from "@/types/runtime-styles";
 
 /** React hoists and waits for this stylesheet before committing the page. */
 export default async function RuntimeStyles() {
   if (process.env.NODE_ENV === "production") {
     // Exclude the manifest from the development dependency/watch graph.
-    const styles: typeof import("@/generated/runtime-styles.json") = require("@/generated/runtime-styles.json");
+    const styles: RuntimeStyleManifest = require("@/generated/runtime-styles.json");
     const requestHeaders = await headers();
     const scope = requestHeaders.get("x-envitefy-style-scope") === "landing"
       ? "landing"
