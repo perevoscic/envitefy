@@ -1409,3 +1409,29 @@
 .workspace[data-page-editing="true"] .footer[data-bottom-settings="true"]:has(> .actions:empty) {
   padding: 0;
 }
+
+/* Keep Undo, draft, Publish and Preview together in the mounted settings menu. */
+.workspace .footer .actions[data-published="false"][data-compact-save="true"] {
+  container: event-editor-actions / inline-size;
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+  gap: 6px;
+}
+.workspace .footer .actions[data-published="false"][data-compact-save="true"] > button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding-inline: 6px;
+  gap: 4px;
+  white-space: nowrap;
+}
+.workspace .footer .actions[data-published="false"][data-compact-save="true"] .previewAction {
+  margin-inline-start: 0;
+}
+@container event-editor-actions (max-width: 360px) {
+  .workspace .footer .actions[data-published="false"][data-compact-save="true"] > button {
+    flex-direction: column;
+    font-size: 11px;
+  }
+}

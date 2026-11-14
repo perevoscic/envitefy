@@ -36,10 +36,13 @@ test("generated gymnastics chapters stay single-column until the host pairs sect
   });
   const errors = [];
   const timezoneQueries = [];
+  let paidPhotoLookups = 0;
+  let permissionLookups = 0;
   let releaseSlowTimezone;
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
+    if (url.href === "https://venue.example.test/exterior.jpg") return route.fulfill({ contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a8V8AAAAASUVORK5CYII=", "base64") });
     if (url.origin !== origin) return route.abort();
     if (url.pathname === "/api/events/timezone") {
       const { query } = route.request().postDataJSON();
@@ -49,6 +52,17 @@ test("generated gymnastics chapters stay single-column until the host pairs sect
     }
     if (url.pathname === "/fixture.js")
       return route.fulfill({ contentType: "text/javascript", body: script });
+    if (url.pathname === "/api/maps/venue-photo-permission") {
+      permissionLookups++;
+      const permitted = page.url().includes("permission-research-success");
+      const { verifyVenuePhotoPermission } = require("./lib/event-messages-test-loader.cjs")("src/lib/venue-photo-permission.ts");
+      const sourceUrl = "https://venue.example.test/media", imageUrl = "https://venue.example.test/exterior.jpg";
+      return route.fulfill({ json: { photo: permitted ? { sourceUrl, imageUrl,
+        permission: verifyVenuePhotoPermission("<p>Image use terms: Photos may be used in promotional event materials.</p>", sourceUrl, imageUrl) } : null } });
+    }
+    if (url.pathname === "/api/maps/static") return route.fulfill({ contentType: "image/svg+xml", body: `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="${Number(url.searchParams.get("height")) || 350}"><rect width="100%" height="100%" fill="#e7edf2"/><text x="24" y="40" fill="#142733">Venue map fixture</text></svg>` });
+    if (url.pathname === "/api/maps/venue-photo") { paidPhotoLookups++; return route.fulfill({ json: { photo: null } }); }
+    if (url.pathname === "/venue-photo.png") return route.fulfill({ contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a8V8AAAAASUVORK5CYII=", "base64") });
     return route.fulfill({
       contentType: "text/html",
       body: `<!doctype html><html${url.searchParams.has("dark") ? ' class="dark" style="--app-surface:#251f2e;--app-surface-alt:#302738;--app-field-background:#302738;--app-foreground:#eee7f4;--app-muted-foreground:#bfb2cb;--app-border:#50445d;--app-input:#887596;--app-primary:#c4a5fa;--app-primary-foreground:#251f2e"' : ""}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${url.searchParams.has("route-styles") ? routeCss : css}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:${url.searchParams.has("dark") ? "#111a3a" : "#f6f0e5"}}button{background:transparent;border:0;font-family:inherit}a{color:inherit}</style></head><body><main id="root"></main><script src="/fixture.js"></script></body></html>`,
@@ -79,6 +93,82 @@ test("generated gymnastics chapters stay single-column until the host pairs sect
     });
 
   try {
+    for (const width of [1280, 390, 320]) for (const dark of [false, true]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${origin}/?auto-import&route-styles${dark ? "&dark" : ""}`);
+      assert.equal(await page.getByRole("tab").count(), 6, "eight source sections share six related tabs");
+      await page.getByRole("tab", { name: "Meet details", exact: true }).click();
+      const columnCount = selector => page.locator(`${selector}:visible`).evaluate(el => getComputedStyle(el).gridTemplateColumns.split(" ").length);
+      assert.equal(await columnCount('[data-program-cards="details"]'), width >= 1000 ? 3 : 1);
+      await page.getByRole("tab", { name: "Participating clubs", exact: true }).click();
+      assert.equal(await page.locator("[data-participating-clubs] > li").count(), 45);
+      assert.ok(await columnCount("[data-participating-clubs]") >= (width >= 1000 ? 3 : 1));
+      await page.getByRole("tab", { name: "Hotels", exact: true }).click();
+      assert.ok(await columnCount('[data-program-cards="hotels"]') >= (width >= 1000 ? 2 : 1));
+      await page.getByRole("tab", { name: "Things to do", exact: true }).click();
+      assert.ok(await columnCount('[data-program-cards="attractions"]') >= (width >= 1000 ? 2 : 1));
+      await page.getByRole("tab", { name: "Venue & parking", exact: true }).click();
+      await page.locator("[data-venue-photo]").waitFor();
+      assert.equal(await page.getByRole("link", { name: "Photo source · Georgia International Convention Center", exact: true }).getAttribute("href"), "https://venue.example.test/media");
+      assert.equal(await page.locator('[data-venue-photo] img').getAttribute("src"), "https://venue.example.test/exterior.jpg");
+      assert.equal(await page.getByRole("link", { name: "Image use terms", exact: true }).getAttribute("href"), "https://venue.example.test/media");
+      assert.equal(paidPhotoLookups, 0, "saved official venue photos never trigger paid Places lookups");
+      assert.equal(await page.getByRole("heading", { name: "Venue Details", exact: true }).count(), 1);
+      const venueLayout = await page.locator("[data-venue-row]").evaluate(row => {
+        const box = selector => {
+          const rect = row.parentElement.querySelector(selector).getBoundingClientRect();
+          return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
+        };
+        return { guidance: box("[data-venue-guidance]"), photo: box("[data-venue-media]"), map: box("[data-venue-maps]"),
+          photoImage: box("[data-venue-photo] img"), mapImage: box("[data-arrival-map] img, [data-arrival-map] iframe"),
+          photoCard: box("[data-venue-photo]"), mapCard: box("[data-arrival-map] > div") };
+      });
+      assert.ok(venueLayout.guidance.bottom <= venueLayout.photo.y, "venue guidance precedes the photo/map row");
+      assert.ok(venueLayout.guidance.bottom <= venueLayout.map.y, "venue guidance stays above the map");
+      if (width >= 1000) {
+        assert.ok(venueLayout.photo.right < venueLayout.map.x, "photo is left of the map on desktop");
+        assert.ok(Math.abs(venueLayout.photo.y - venueLayout.map.y) < 2, "photo and map share a row");
+        assert.ok(venueLayout.guidance.width > venueLayout.photo.width + venueLayout.map.width, "guidance spans both columns");
+        assert.ok(Math.abs(venueLayout.photoImage.y - venueLayout.mapImage.y) < 2, "photo and map images align at the top");
+        assert.ok(Math.abs(venueLayout.photoImage.height - venueLayout.mapImage.height) < 2, "photo and map images have equal heights");
+        assert.ok(Math.abs(venueLayout.photoCard.height - venueLayout.mapCard.height) < 2, `photo attribution and directions footers produce equal card heights: ${JSON.stringify(venueLayout)}`);
+      } else {
+        assert.ok(venueLayout.photo.bottom <= venueLayout.map.y, "phone layouts stack photo then map");
+        assert.ok(Math.abs(venueLayout.photo.x - venueLayout.map.x) < 2, "phone columns share their left edge");
+      }
+      assert.equal(await page.getByRole("link", { name: "Directions", exact: true }).getAttribute("href"), "https://www.google.com/maps/search/?api=1&query=Georgia%20International%20Convention%20Center%2C%202000%20Convention%20Center%20Concourse");
+      const parkingCards = await page.locator('[data-section-kind="traffic_parking"] [data-block-type="text"]').evaluateAll(cards => cards.map(card => {
+        const rect = card.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, background: getComputedStyle(card).backgroundColor };
+      }));
+      assert.equal(parkingCards.length, 2);
+      if (width >= 1000) {
+        assert.ok(parkingCards[0].right < parkingCards[1].x, "short parking and traffic cards share two columns");
+        assert.ok(Math.abs(parkingCards[0].y - parkingCards[1].y) < 2);
+      } else assert.ok(parkingCards[0].bottom <= parkingCards[1].y, "phone parking cards stack");
+      assert.ok(parkingCards.every(card => card.background !== "rgba(0, 0, 0, 0)"), "parking guidance has distinct card surfaces");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      await page.screenshot({ path: path.join(output, `adaptive-import-${width}-${dark ? "dark" : "light"}.png`), fullPage: true });
+      await page.goto(`${origin}/?auto-import&no-photo-permission${dark ? "&dark" : ""}`);
+      await page.getByRole("tab", { name: "Venue & parking", exact: true }).click();
+      assert.equal(await page.locator('[data-venue-photo] img').count(), 0, "missing reuse permission never embeds a venue image");
+      assert.equal(await page.locator('[data-venue-photo-link]').count(), 0, "no fallback URL block is rendered");
+      assert.equal(await page.getByRole("link", { name: "Photo source · Georgia International Convention Center", exact: true }).count(), 0);
+    }
+    await page.goto(`${origin}/?auto-import&no-photo-permission&permission-research-success`);
+    await page.getByRole("tab", { name: "Venue & parking", exact: true }).click();
+    await page.locator('[data-venue-photo] img').waitFor();
+    assert.ok(permissionLookups > 0, "unverified existing records search for permitted photos without regenerating their hero");
+    assert.equal(await page.getByRole("link", { name: "Photo source · Georgia International Convention Center", exact: true }).count(), 1);
+    assert.equal(paidPhotoLookups, 0);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${origin}/?auto-import&long-parking&route-styles`);
+    await page.getByRole("tab", { name: "Venue & parking", exact: true }).click();
+    const longParking = page.locator('[data-section-kind="traffic_parking"] [data-block-type="text"]').first();
+    assert.equal(await longParking.evaluate(card => getComputedStyle(card).gridColumn), "1 / -1", "long parking guidance spans a full row");
+    assert.ok(await longParking.evaluate(card => card.getBoundingClientRect().width >= card.parentElement.getBoundingClientRect().width - 1));
+    assert.ok((await longParking.innerText()).includes("Use the convention center parking garage. Keep the entrance accessible for drop-off and allow extra time for parking. ".repeat(8).trim()), "long source copy is retained intact in one card");
+    await page.screenshot({ path: path.join(output, "parking-full-width.png"), fullPage: true });
     // Tab rails scroll horizontally on small canvases, never vertically.
     for (const editing of [false, true]) for (const dark of [false, true]) {
       await page.setViewportSize({ width: 768, height: 900 });
@@ -217,7 +307,7 @@ test("generated gymnastics chapters stay single-column until the host pairs sect
             assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, context);
             if (viewport.width === 1440) {
               const firstRow = cards.filter(card => Math.abs(card.y - cards[0].y) < 1);
-              assert.equal(firstRow.length, 1, `${context}: hotel cards default to one column`);
+              assert.ok(firstRow.length >= 2, `${context}: hotel collections use the available desktop width`);
             }
             if (!editing && content === "long" && [1440, 375].includes(viewport.width))
               await page.screenshot({ path: path.join(output, `hotels-${viewport.width}-${dark ? "dark" : "light"}.png`), fullPage: true });
@@ -319,26 +409,26 @@ test("generated gymnastics chapters stay single-column until the host pairs sect
         await page.getByRole("button", { name: "Close section panel", exact: true }).click();
         await page.getByRole("button", { name: "Page sections", exact: true }).click();
         const settings = page.getByRole("region", { name: "Page sections", exact: true });
-        await settings.getByRole("button", { name: "Travel & parking", exact: true }).click();
+        await settings.getByRole("button", { name: "Parking", exact: true }).click();
         await page.getByRole("button", { name: "Close section panel", exact: true }).click();
-        await settings.getByRole("button", { name: "Select Travel & parking section", exact: true }).click();
-        await settings.getByRole("button", { name: "Move Travel & parking up", exact: true }).click();
+        await settings.getByRole("button", { name: "Select Parking section", exact: true }).click();
+        await settings.getByRole("button", { name: "Move Parking up", exact: true }).click();
         const expected = await settings.getByRole("list", { name: "Page section order", exact: true }).locator("li > button").allTextContents();
         const tabNames = () => page.getByRole("tab").evaluateAll(tabs => tabs.map(tab => tab.getAttribute("aria-label") || tab.textContent));
         assert.deepEqual(await tabNames(), expected);
-        await page.getByRole("tab", { name: "Travel & parking", exact: true }).click();
-        await page.getByRole("tabpanel").getByRole("heading", { name: /^Travel & parking/ }).waitFor();
+        await page.getByRole("tab", { name: "Parking", exact: true }).click();
+        await page.getByRole("tabpanel").getByRole("heading", { name: /^Parking/ }).waitFor();
         await page.getByRole("button", { name: "Preview page", exact: true }).click();
         assert.deepEqual(await tabNames(), expected, "preview keeps every editor tab in order");
-        await page.getByRole("tab", { name: "Travel & parking", exact: true }).click();
-        await page.getByRole("tabpanel").getByRole("heading", { name: "Travel & parking", exact: true }).waitFor();
+        await page.getByRole("tab", { name: "Parking", exact: true }).click();
+        await page.getByRole("tabpanel").getByRole("heading", { name: "Parking", exact: true }).waitFor();
         await page.getByRole("button", { name: "Save fixture", exact: true }).click();
         await page.goto(`${origin}/?design=moonbeam-balance&documents&saved-tabs${dark ? "&dark" : ""}`);
         assert.deepEqual(await tabNames(), expected, "saved guest reload keeps paired and empty added tabs");
         await page.getByRole("tab", { name: "Documents & links", exact: true }).click();
         await page.getByRole("tabpanel").getByRole("heading", { name: "Documents & links", exact: true }).waitFor();
-        await page.getByRole("tab", { name: "Travel & parking", exact: true }).click();
-        await page.getByRole("tabpanel").getByRole("heading", { name: "Travel & parking", exact: true }).waitFor();
+        await page.getByRole("tab", { name: "Parking", exact: true }).click();
+        await page.getByRole("tabpanel").getByRole("heading", { name: "Parking", exact: true }).waitFor();
         await page.screenshot({ path: path.join(output, `saved-tab-sync-${viewport.width}-${dark ? "dark" : "light"}.png`), fullPage: true });
       }
     }

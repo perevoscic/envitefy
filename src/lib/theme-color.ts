@@ -1,14 +1,16 @@
 import { getGymMeetTemplateMeta, isGymMeetTemplateId } from "../components/gym-meet-templates/registry.ts";
+import { readImportedEventTheme } from "./imported-event-theme.ts";
+import { applicationChromeColors } from "../themes/chrome.ts";
 
-// Native browser bars accept a solid color; CSS adds the wordmark's color clouds
-// to the mobile page surface and the safe areas that the browser exposes.
+// Native browser bars accept a solid color. Event paper remains independently owned.
 const BRAND_THEME_COLOR = "#8998ED";
-const DARK_THEME_COLOR = "#181818";
+const LIGHT_THEME_COLOR = applicationChromeColors.light;
+const DARK_THEME_COLOR = applicationChromeColors.dark;
 const BRAND_BACKGROUND_COLOR = "#F3EEFF";
-const BRAND_NAVIGATION_BAR_COLOR = BRAND_THEME_COLOR;
-const IOS_BROWSER_CHROME_COLOR = BRAND_THEME_COLOR;
-const GYMNASTICS_THEME_COLOR = BRAND_THEME_COLOR;
-const EVENT_THEME_COLOR_FALLBACK = BRAND_THEME_COLOR;
+const BRAND_NAVIGATION_BAR_COLOR = LIGHT_THEME_COLOR;
+const IOS_BROWSER_CHROME_COLOR = LIGHT_THEME_COLOR;
+const GYMNASTICS_THEME_COLOR = LIGHT_THEME_COLOR;
+const EVENT_THEME_COLOR_FALLBACK = LIGHT_THEME_COLOR;
 
 export type ThemeColorSource = "route" | "hero" | "event" | "default";
 
@@ -46,7 +48,7 @@ export function getThemeColorForPath(pathname?: string | null): string {
     return EVENT_THEME_COLOR_FALLBACK;
   }
 
-  return BRAND_THEME_COLOR;
+  return LIGHT_THEME_COLOR;
 }
 
 export function getThemeColorDefinitionForPath(
@@ -76,6 +78,8 @@ export function resolveEventPageBackgroundColor(input?: unknown): string {
   const discovery = data.discovery && typeof data.discovery === "object" ? data.discovery as Record<string, unknown> : null;
   const gymDesign = [data.pageTemplateId, discovery?.pageTemplateId, editor?.templateId].find(isGymMeetTemplateId);
   if (gymDesign || /gymnastics/.test(String(data.category || data.templateId || ""))) {
+    const importedTheme = readImportedEventTheme(data.importedTheme);
+    if (importedTheme?.enabled && !importedTheme.preserveTemplateStyle) return importedTheme.colors.page;
     return getGymMeetTemplateMeta(gymDesign).background;
   }
   const theme = typeof data.theme === "object" && data.theme ? (data.theme as Record<string, unknown>) : null;
@@ -229,9 +233,12 @@ export function setColorSchemeMeta(scheme: "light" | "dark") {
   }
 
   for (const meta of metas) {
-    if (meta.content !== scheme) {
-      meta.content = scheme;
-    }
+    if (meta.content !== scheme) meta.content = scheme;
+  }
+  // iOS owns the status icons; request the corresponding supported style.
+  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]')) {
+    const style = scheme === "dark" ? "black-translucent" : "default";
+    if (meta.content !== style) meta.content = style;
   }
 }
 
@@ -243,13 +250,16 @@ export function getHeroThemeColor(): string | null {
 
 export function getPreferredThemeColor(pathname?: string | null): string {
   if (typeof document !== "undefined" && document.documentElement.dataset.theme === "general-dark") return DARK_THEME_COLOR;
-  return getHeroThemeColor() || getThemeColorForPath(pathname);
+  // Route hero accents are branding, not the app's light/dark shell. Registered
+  // event paper is applied first by ThemeColorSync, independent of appearance.
+  return getThemeColorForPath(pathname);
 }
 
 export const themeColorPalette = {
   brand: BRAND_THEME_COLOR,
+  light: LIGHT_THEME_COLOR,
   dark: DARK_THEME_COLOR,
-  background: BRAND_BACKGROUND_COLOR,
+  background: LIGHT_THEME_COLOR,
   navigationBar: BRAND_NAVIGATION_BAR_COLOR,
   iosBrowserChrome: IOS_BROWSER_CHROME_COLOR,
   gymnastics: GYMNASTICS_THEME_COLOR,

@@ -25,6 +25,8 @@ import {
 } from "@/lib/meet-discovery";
 import { getDiscoveryAdapter, getSportActivityProfile } from "@/lib/sports-discovery";
 import { readWebsiteImport, websitePublicSections } from "@/lib/discovery/event-website";
+import { appendImportedSchedule } from "@/lib/gymnastics-schedule-import";
+import type { LinkedScheduleEnrichment } from "./schedule-enrichment";
 
 function mapSectionProvenance(section: Record<string, any>): PublicSectionProvenance {
   const body = safeString(section.body);
@@ -204,6 +206,21 @@ export async function runDiscoveryComposePublicStage(
   }
   const enrichment = (discovery.enrichment || {}) as Record<string, any>;
   const websiteImport = readWebsiteImport(discovery.document?.extractionMeta.websiteImport);
+  const linkedSchedule = enrichment.linkedSchedule as LinkedScheduleEnrichment | undefined;
+  if (websiteImport && linkedSchedule) {
+    if (linkedSchedule.imports.length) {
+      const noTimes = linkedSchedule.imports.every(imported => imported.days.every(day => day.sessions.every(session => !session.startTime && !session.warmupTime)));
+      websiteImport.schedule.notice = [websiteImport.schedule.notice, noTimes ? "Published gym and level assignments are available; session times are not listed." : "", ...linkedSchedule.notes].filter(Boolean).join(" ");
+      if (["unknown", "not_posted"].includes(websiteImport.schedule.status)) websiteImport.schedule.status = noTimes ? "partial" : "available";
+      websiteImport.coverage = websiteImport.coverage.map(entry => entry.section === "schedule"
+        ? { ...entry, status: "collected", reason: websiteImport.schedule.notice,
+            sourceUrls: [...new Set([...entry.sourceUrls, ...linkedSchedule.documents.filter(document => document.status === "parsed" && /^https?:/.test(document.url)).map(document => document.url)])] } : entry);
+    } else if (linkedSchedule.documents.some(document => document.status !== "parsed")) {
+      websiteImport.schedule.notice = "The linked schedule PDF could not be read completely. Open the official document for details.";
+      websiteImport.coverage = websiteImport.coverage.map(entry => entry.section === "schedule"
+        ? { ...entry, status: linkedSchedule.documents.some(document => document.status === "pending") ? "pending" : "failed", reason: websiteImport.schedule.notice } : entry);
+    }
+  }
   const hasTravelAccommodation = Object.hasOwn(enrichment, "travelAccommodation");
   if (websiteImport && hasTravelAccommodation && enrichment.travelAccommodation?.hotels?.length) {
     websiteImport.coverage = websiteImport.coverage.map((entry) => entry.section === "hotels"
@@ -215,6 +232,7 @@ export async function runDiscoveryComposePublicStage(
       ...((currentData.discoverySource || {}) as Record<string, any>),
       ...(hasTravelAccommodation ? { travelAccommodation: enrichment.travelAccommodation ?? null } : {}),
       ...(websiteImport ? { websiteImport } : {}),
+      ...(linkedSchedule ? { linkedSchedule: { documents: linkedSchedule.documents, notes: linkedSchedule.notes } } : {}),
     };
   const travelAccommodationState =
     (hasTravelAccommodation ? enrichment.travelAccommodation : undefined) ||
@@ -233,11 +251,18 @@ export async function runDiscoveryComposePublicStage(
         }
       : currentData;
   const dataWithWebsite = websiteImport ? { ...currentDataWithTravel, discoverySource: discoverySourceWithTravel } : currentDataWithTravel;
-  const mappedData = themeDiscoveryData(discovery, currentData, await mapParseResultToGymData(
+  let mappedData = themeDiscoveryData(discovery, currentData, await mapParseResultToGymData(
     parseResult,
     dataWithWebsite,
     discovery.document?.extractionMeta as any,
   ));
+  if (linkedSchedule?.imports.length) {
+    let schedule = mappedData.advancedSections?.schedule || {};
+    for (const imported of linkedSchedule.imports) schedule = appendImportedSchedule(schedule, imported, () => crypto.randomUUID());
+    schedule = { ...schedule, notes: [...new Set([...(schedule.notes || []), ...linkedSchedule.notes])] };
+    const advancedSections = { ...mappedData.advancedSections, schedule };
+    mappedData = { ...mappedData, advancedSections, customFields: { ...mappedData.customFields, advancedSections } };
+  }
   throwIfDiscoveryCancelled(options?.signal);
   const mappedDataWithTravel =
     travelAccommodationState && typeof travelAccommodationState === "object"
@@ -329,7 +354,7 @@ export async function runDiscoveryComposePublicStage(
     mappedData,
     builderDraft: buildGymBuilderDraft({ mappedData, reviewFlags }),
     publicArtifacts,
-    eventDataPatch: hasTravelAccommodation || websiteImport
+    eventDataPatch: hasTravelAccommodation || websiteImport || linkedSchedule
       ? {
           discoverySource: discoverySourceWithTravel,
         }

@@ -17,7 +17,8 @@
 .tabPanel:focus-visible { outline: 2px solid var(--gym-ink); outline-offset: 4px; }
 .tabs { display: flex; user-select: none; overscroll-behavior-x: contain; gap: 0.4rem; min-width: 0; overflow-x: auto; overflow-y: hidden; padding: 0.4rem; border: 1px solid var(--program-line); border-radius: 1rem; background: var(--gym-paper); }
 .tabs > span { flex: 1; }
-.tabs button { flex: 1; min-height: 48px; padding: 0.65rem 0.8rem; border-radius: 0.65rem; color: var(--gym-ink); font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
+.tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; flex: 1; min-height: 48px; padding: 0.65rem 0.8rem; border-radius: 0.65rem; color: var(--gym-ink); font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
+.tabs button > svg { flex-shrink: 0; }
 .tabs button[aria-selected="true"] { background: var(--gym-ink); color: var(--gym-paper); }
 .tabs button:hover { text-decoration: underline; text-underline-offset: 4px; }
 .tabs button:focus-visible { outline: 2px solid var(--gym-ink); outline-offset: 2px; }
@@ -56,6 +57,24 @@
 .chapterNumber { flex-shrink: 0; font: 500 0.75rem/1.2 ui-monospace, monospace; letter-spacing: 0.06em; }
 .headingRule { flex: 1; min-width: 1rem; height: 1px; background: var(--program-line); }
 .blocks { display: grid; gap: 1.5rem; }
+.venueRow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.venueMedia, .venueMaps { min-width: 0; }
+.venueMedia { max-width: 680px; }
+.venueMaps { display: grid; gap: 1.5rem; }
+.venueMaps:empty { display: none; }
+.venueMediaHeading, .venueMaps .block h4 { margin: 0 0 1rem; font-size: 1.125rem; font-weight: 700; line-height: 1.4; }
+.venueMaps [data-arrival-map] { max-width: none; }
+.venueMaps [data-arrival-map] > div { overflow: hidden; border: 1px solid var(--program-line); border-radius: 16px; }
+.venueMaps [data-arrival-map] :is(img, iframe) { display: block; width: 100%; height: auto !important; aspect-ratio: 12 / 7; object-fit: contain; }
+.venueMedia figcaption, .venueMaps [data-arrival-map] > div > div:last-child { display: flex; align-items: center; justify-content: center; min-height: 56px; padding: 10px 12px; }
+.venueMedia figcaption { justify-content: flex-start; }
+.venueMaps [data-arrival-map] a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; line-height: 1.5; }
+.venueMaps [data-arrival-map] svg { flex: none; width: 16px; height: 20px; }
+.parkingBlocks > .block { grid-column: 1 / -1; }
+.parkingBlocks > .block[data-block-type="text"] { grid-column: auto; padding: 1.25rem; border: 1px solid var(--program-line); border-radius: 16px; background: var(--gym-paper); }
+@container gym (min-width: 760px) {
+  .venueRow[data-has-photo][data-has-map] { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(1.5rem, 3cqi, 2rem); }
+}
 .block { min-width: 0; }
 .block :is(p, li, dd) { overflow-wrap: anywhere; }
 .block p { line-height: 1.6; }
@@ -373,10 +392,21 @@
 .design[data-gym-design][data-layout] :is(.bodyColumns, .program, .chapter, .blocks),
 .design[data-gym-design][data-layout] .chapters:not([data-event-body-layout]),
 .design[data-gym-design][data-layout] .chapter .blocks,
-.design[data-gym-design][data-layout] [data-program-cards],
 .design[data-gym-design][data-layout] [data-program-cards] > .detailCard,
 .design[data-gym-design][data-layout] .attendance > .panel > div:last-child {
   grid-template-columns: minmax(0, 1fr);
+}
+/* Collections adapt within one authored section; page sections remain stacked. */
+.design[data-gym-design][data-layout] [data-program-cards] {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+}
+.design[data-gym-design][data-layout] :is([data-program-cards="hotels"], [data-program-cards="attractions"]) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--place-card-min, 340px)), 1fr));
+}
+.design[data-gym-design] [data-participating-clubs] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
 }
 .design[data-gym-design][data-layout] .chapter,
 .design[data-gym-design][data-layout] .chapter > *,
@@ -387,6 +417,12 @@
 .design[data-gym-design][data-layout] .chapter {
   width: auto;
   margin-inline: 0;
+}
+
+/* Parking tiles are a collection inside one section, like admission cards. */
+.design[data-gym-design][data-layout] .chapter .parkingBlocks > .block[data-block-type="text"] { grid-column: auto; }
+@container gym (min-width: 640px) {
+  .design[data-gym-design][data-layout] .chapter .parkingBlocks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* Dedicated UI roles never replace paper, ink, artwork, panel tints or fonts. */

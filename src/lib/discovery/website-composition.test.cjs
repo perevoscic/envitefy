@@ -37,6 +37,34 @@ const website = {
   },
 };
 
+test("linked preliminary PDFs become saved editable schedule days with their original source", async () => {
+  const sourceUrl = "https://meet.test/s/2027travel.pdf";
+  const imported = { days: [29, 30, 31].map(day => ({ isoDate: `2027-01-${day}`, sessions: ["Gym A", "Gym B", "Gym C"].map(label => ({ label, group: "Level 6-8", code: "", startTime: "", warmupTime: "", note: "", clubs: [] })) })), source: { fileName: "2027travel.pdf", url: sourceUrl, text: "2027 Atlanta Centennial Classic\nFull schedule will be published by 12/1/26" } };
+  const current = { title: "2027 Atlanta Centennial Classic", advancedSections: { schedule: { days: [{ id: "retained-day", isoDate: "2027-01-29", sessions: [{ id: "retained-session", label: "Coach briefing", startTime: "7 AM" }] }], notes: ["Retained host note"] } } };
+  const { buildGymBuilderDraft } = loadTs("src/lib/discovery/map.ts", { "@/lib/db": {}, "@/lib/sports-discovery": {} });
+  const { runDiscoveryComposePublicStage } = loadTs("src/lib/discovery/compose-public.ts", {
+    "@/lib/db": { getEventHistoryById: async () => ({ data: current }) },
+    "@/lib/discovery/cancel": { throwIfDiscoveryCancelled: () => {} },
+    "@/lib/discovery/map": { themeDiscoveryData: (_discovery, _current, mapped) => mapped, buildGymBuilderDraft },
+    "@/lib/football-discovery": {}, "@/lib/sports-discovery": {},
+    "@/lib/meet-discovery": { mapParseResultToGymData: async (_parse, data) => data,
+      buildGymDiscoveryPublicPageArtifacts: () => ({ publicPageSections: {}, publishAssessment: { state: "auto_publish", reasons: [] } }) },
+  });
+  const result = await runDiscoveryComposePublicStage({ eventId: "fixture", workflow: "gymnastics", canonicalParse: { issues: [] },
+    document: { extractionMeta: { websiteImport: { ...website, schedule: { status: "partial", notice: "Boys schedule TBD", links: [{ label: "Girls schedule", url: sourceUrl }] } } } },
+    enrichment: { parseResult: {}, linkedSchedule: { imports: [imported], documents: [{ url: sourceUrl, status: "parsed" }], notes: ["Full schedule will be published by 12/1/26"] } } });
+  const saved = JSON.parse(JSON.stringify(result.builderDraft));
+  const schedule = saved.advancedSections.schedule;
+  assert.equal(schedule.days.length, 3);
+  assert.equal(schedule.days[0].id, "retained-day");
+  assert.equal(schedule.days[0].sessions[0].id, "retained-session");
+  assert.equal(schedule.days.flatMap(day => day.sessions).length, 10);
+  assert.equal(schedule.importSources[0].url, sourceUrl);
+  assert.deepEqual(schedule.notes, ["Retained host note", "Full schedule will be published by 12/1/26"]);
+  assert.match(result.eventDataPatch.discoverySource.websiteImport.schedule.notice, /session times are not listed/);
+  assert.deepEqual(saved.event.advancedSections.schedule, schedule);
+});
+
 test("website mappings and coverage persist with the builder and travel state, rather than stale source data", async () => {
   const source = {
     input: { type: "url", url: "https://meet.test/overview" },

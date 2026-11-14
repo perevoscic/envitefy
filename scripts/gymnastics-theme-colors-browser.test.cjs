@@ -21,8 +21,10 @@ test('all 60 gymnastics templates and all six choices change real titles without
     compiler.run((error, stats) => compiler.close(() => error || stats?.hasErrors() ? reject(error || Error(stats.toString({ all: false, errors: true }))) : resolve()));
   });
   const script = fs.readFileSync(path.join(output, 'fixture.js'));
+  const cssSource = fs.readFileSync('src/app/globals.css', 'utf8').replace('@import "tailwindcss";',
+    '@import "tailwindcss" source(none);\n@source "../components/gym-meet-templates";\n@source "../components/event-create";\n@source "../components/events";\n@source "../../scripts/fixtures/gymnastics-theme-colors.tsx";');
   const appCss = (await require('postcss')([require('@tailwindcss/postcss')()]).process(
-    fs.readFileSync('src/app/globals.css', 'utf8'), { from: path.resolve('src/app/globals.css') },
+    cssSource, { from: path.resolve('src/app/globals.css') },
   )).css;
   const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=', 'base64');
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
@@ -102,6 +104,15 @@ test('all 60 gymnastics templates and all six choices change real titles without
       assert.equal(result.count, 60);
       assert.deepEqual(result.failures, [], JSON.stringify(profile));
       process.stdout.write(`Verified ${result.count} templates × 6 choices at ${profile.width}px, ${profile.dark ? "dark" : "light"}, ${profile.editing ? "editor" : "guest"}.\n`);
+      // The reported failure: a light event with the same dark accent and body ink.
+      await page.evaluate(() => window.themeAudit.open({ id: 'airborne-atlas', variant: 4, editing: true }));
+      const controls = page.getByRole('group', { name: 'Theme color combinations' });
+      await controls.getByRole('button', { name: 'Vivid', exact: true }).click();
+      await page.screenshot({ path: path.join(output, `accent-variety-${profile.width}-${profile.dark ? 'dark' : 'light'}.png`) });
+      const headingSwatches = await controls.locator('button > span[aria-hidden] > span:nth-child(2)').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundColor));
+      assert.equal(new Set(headingSwatches).size, 6, 'dark source accent retains six visible choices');
+      await controls.getByRole('button', { name: 'Original', exact: true }).click();
+      assert.equal(await page.locator('[data-gym-design] h1').evaluate(node => getComputedStyle(node).color), 'rgb(20, 36, 49)');
     }
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }

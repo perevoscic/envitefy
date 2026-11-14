@@ -14,14 +14,20 @@
   align-items: center;
   gap: 0;
   padding: 0;
-  border: 1px solid var(--app-border, var(--border, #d9c5b8));
+  border: 1px solid var(--preview-control-border, var(--app-border, var(--border, #d9c5b8)));
   border-radius: 999px;
-  background-color: var(--app-surface, var(--surface, #fbf7f2));
-  color: var(--app-foreground, var(--foreground, #2b1b16));
+  background-color: var(--preview-control-surface, var(--app-surface, var(--surface, #fbf7f2)));
+  color: var(--preview-control-ink, var(--app-foreground, var(--foreground, #2b1b16)));
   box-shadow: 0 4px 14px rgb(0 0 0 / 10%);
   opacity: 1;
   cursor: pointer;
   transition: inline-size 400ms cubic-bezier(0.22, 1, 0.36, 1), background-color 250ms, box-shadow 250ms;
+}
+
+:global(html):not(:global(.dark)) .control {
+  --preview-control-border: #dcd6f7;
+  --preview-control-surface: #f7f5ff;
+  --preview-control-ink: #6b5fc2;
 }
 
 .control::before,

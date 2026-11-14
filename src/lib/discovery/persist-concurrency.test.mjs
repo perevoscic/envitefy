@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import ts from "typescript";
+import loadTs from "../../../scripts/lib/event-messages-test-loader.cjs";
 
 function loadSnapshotWriter(dependencies, functionName = "persistDiscoveryEventSnapshot") {
   const source = fs.readFileSync(new URL("./persist.ts", import.meta.url), "utf8");
@@ -26,6 +27,7 @@ function fixture() {
     safeString: value => typeof value === "string" ? value.trim() : "",
     resolveGymDiscoveryTemplateSelection: (current, requested) => current || requested || "airborne-atlas",
     resolveFootballDiscoveryTemplateSelection: () => null,
+    planGymMeetImportTemplate: loadTs("src/components/gym-meet-templates/registry.ts").planGymMeetImportTemplate,
     buildDiscoveryPipelineSummary: ({ pipeline }) => ({ processingStage: pipeline.processingStage }),
     prepareEventHistoryData: value => value,
     storePublicEventMedia: async value => { await beforeMedia(); return value; },
@@ -59,6 +61,19 @@ test("new snapshots persist theme metadata and later workers retain the host's t
   state.save({ ...state.read(), data: { ...state.read().data, importedTheme: hostTheme } });
   await state.persist(state.snapshot);
   assert.deepEqual(state.read().data.importedTheme, hostTheme);
+});
+
+test("automatic import composition survives the shell default and uses later gathered club facts", async () => {
+  const state = fixture();
+  state.snapshot.builderDraft.event.importedPageLayout = { version: 1, navigation: "related" };
+  state.snapshot.eventDataPatch.discoverySource = { websiteImport: { participatingClubs: Array(45).fill({ name: "Verified club" }) } };
+  await state.persist(state.snapshot);
+  assert.equal(state.read().data.pageTemplateId, "copper-grip");
+  assert.equal(state.read().data.builderDraft.event.pageTemplateId, "copper-grip");
+  assert.equal(state.read().data.importedPageLayout.navigation, "related");
+  state.save({ ...state.read(), data: { ...state.read().data, pageTemplateSelection: "host", pageTemplateId: "airborne-atlas" } });
+  await state.persist(state.snapshot);
+  assert.equal(state.read().data.pageTemplateId, "airborne-atlas", "an explicit gallery choice wins");
 });
 
 test("a gymnastics template's initial null theme can adopt an artwork-only import without replacing its saved design", async () => {

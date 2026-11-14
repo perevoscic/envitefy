@@ -9,7 +9,7 @@ import GymnasticsScheduleCalendar from "./GymnasticsScheduleCalendar";
 import type { GymMeetScheduleInfo } from "./types";
 import styles from "../event-templates/gymnastics-schedule-editor.module.css";
 
-export default function GymnasticsSchedule({ schedule }: { schedule?: GymMeetScheduleInfo }) {
+export default function GymnasticsSchedule({ schedule, showHeading = true }: { schedule?: GymMeetScheduleInfo; showHeading?: boolean }) {
   const builder = useEventSectionBuilder();
   const readOnly = useEventPageReadOnly();
   const [selectedDayId, setSelectedDayId] = useState<string>();
@@ -37,8 +37,8 @@ export default function GymnasticsSchedule({ schedule }: { schedule?: GymMeetSch
       });
   };
   return (
-    <section className={`${styles.scheduleSection} rounded-2xl border border-current/15 p-5 sm:p-7`} aria-label="Meet schedule">
-      <h2 className="mb-5 text-2xl font-semibold">Schedule</h2>
+    <section className={`${styles.scheduleSection} ${showHeading ? "rounded-2xl border border-current/15 p-5 sm:p-7" : ""}`} aria-label="Meet schedule">
+      {showHeading && <h2 className="mb-5 text-2xl font-semibold">Schedule</h2>}
       <GymnasticsScheduleCalendar
         schedule={schedule}
         selectedDayId={selectedDay?.id}

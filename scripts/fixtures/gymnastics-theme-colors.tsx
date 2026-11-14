@@ -25,6 +25,8 @@ function CaseView({ id, variant, editing }: Case) {
     ...(variant === 1 ? { preserveTemplateStyle: true as const } : {}),
     ...(variant === 2 ? { enabled: false } : {}),
     ...(variant === 3 ? { templateColorCombination: { templateId: id, index: 4 } } : {}),
+    ...(variant === 4 ? { colors: { page: "#f6fbfc", surface: "#edf6f8", ink: "#142431",
+      accent: "#142431", secondary: "#3b6a83", onAccent: "#ffffff" } } : {}),
   }));
   const model = normalizeGymMeetEventData({ eventTitle: "Tampa Bay Turners Invitational 2027", eventData: {
     title: "Tampa Bay Turners Invitational 2027", pageTemplateId: id, importedTheme: theme, date: "2027-01-15", time: "09:00",

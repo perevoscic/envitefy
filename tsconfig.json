@@ -52,6 +52,20 @@
     "src/types/**/*.d.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "output",
+    "qa-artifacts",
+    "artifacts",
+    "video-studio",
+    "tmp",
+    ".qa",
+    ".tools",
+    ".worktrees",
+    ".codex-attachments",
+    ".codex-remote-attachments",
+    "android/**/build/**",
+    "android/.gradle",
+    "ios/Pods",
+    "ios/build"
   ]
 }

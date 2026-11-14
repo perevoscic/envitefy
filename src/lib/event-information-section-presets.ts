@@ -4,7 +4,7 @@ import type { EventSectionExtras } from "./event-section-extras";
 export const EVENT_INFORMATION_SECTION_PRESETS = [
   { title: "Schedule", description: "Times and the order of events", matches: ["schedule", "wedding-schedule", "atelier-schedule"] },
   { title: "Venue & directions", description: "Where to go and how to get there", matches: ["venue", "venue-details", "directions", "location"] },
-  { title: "Parking & arrival", description: "Parking, entrances and drop-off", matches: ["parking", "traffic-parking", "travel & parking", "arrival"] },
+  { title: "Parking & arrival", description: "Parking, entrances and drop-off", matches: ["parking", "traffic-parking", "venue & parking", "travel & parking", "arrival"] },
   { title: "Dress code", description: "What guests should wear", matches: [] },
   { title: "What to bring", description: "Supplies and things to remember", matches: ["equipment", "equipment checklist"] },
   { title: "Food & drinks", description: "Meals and dietary information", matches: ["food", "menu"] },

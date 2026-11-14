@@ -37,7 +37,7 @@ Run offline regression checks:
 
 ```sh
 npm run test:ai-models
-bun test src/lib/create/read-source.test.ts
+bun test ./src/lib/create/read-source.test.ts
 ```
 
 Create a comparison plan with no provider calls:

@@ -437,14 +437,16 @@ export default function MeetPageContent({
 
   return (
     <div className={variant.pageClass}>
-      <div className="mx-auto max-w-[1600px] px-3 py-5 sm:px-6 lg:px-8">
+      <div data-event-page-frame className="mx-auto max-w-[1600px] px-0 py-5">
         {!isReadOnly && !hideOwnerActions && ownerToolbar ? (
           <div className="mb-4">{ownerToolbar}</div>
         ) : null}
 
-        <div className={variant.shellClass}>
+        <div data-event-page-surface className={variant.shellClass}>
           {!suppressActionStrip && (onMobileEdit || onPreview || mobileEditHref) ? (
-            <div className="relative z-20 mb-4 px-3 sm:px-6">
+            <div className={mobileEditHref && !onMobileEdit && !onPreview
+              ? "absolute right-3 top-[max(0.5rem,env(safe-area-inset-top))] z-20"
+              : "relative z-20 mb-4 px-3 sm:px-6"}>
               <FloatingActionStrip
                 onMobileEdit={onMobileEdit}
                 onPreview={onPreview}
@@ -454,11 +456,11 @@ export default function MeetPageContent({
             </div>
           ) : null}
           {hero}
-          <div className="py-5">
+          <div data-event-page-body className="py-5">
             <GymMeetDiscoveryContent model={model} variant={variant} presentation={presentation} onPageTextChange={onPageTextChange}
               additionalSections={[
                 ...(Object.values(model.guestPlanning || {}).some(Boolean) ? [{ id: "meet-details", label: "Meet Details", editorId: "meet", content: <EventGuestPlanningNotes value={model.guestPlanning} fullWidth themed /> }] : []),
-                ...(model.schedule?.enabled !== false && model.schedule?.days?.length ? [{ id: "schedule", label: "Schedule", editorId: "schedule", content: <GymnasticsSchedule schedule={model.schedule} /> }] : []),
+                ...(model.schedule?.enabled !== false && model.schedule?.days?.length ? [{ id: "schedule", label: "Schedule", editorId: "schedule", content: <GymnasticsSchedule schedule={model.schedule} showHeading={!model.discovery?.sections.some(section => section.id === "schedule")} /> }] : []),
                 ...(rosterContent ? [{ id: "roster", label: "Roster", editorId: "roster", content: rosterContent }] : []),
                 ...(practiceContent ? [{ id: "practice", label: "Practice", editorId: "practice", content: practiceContent }] : []),
                 ...(supportContent ? [{ id: "support", label: "Gear & volunteers", editorId: "support", content: supportContent }] : []),

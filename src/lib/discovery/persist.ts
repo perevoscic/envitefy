@@ -2,6 +2,7 @@ import { resolveGymDiscoveryTemplateSelection, resolveFootballDiscoveryTemplateS
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
+  planGymMeetImportTemplate,
 } from "@/components/gym-meet-templates/registry";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { storePublicEventMedia } from "@/lib/public-event-media-storage";
@@ -86,6 +87,7 @@ export function buildDiscoveryShellEventData(params: {
         ? `sport-event-${sportPreset?.key || "football"}`
         : "gymnastics-schedule",
     templateKey: isFootball ? "football" : isSports ? "sport-events" : "gymnastics",
+    ...(params.workflow === "gymnastics" ? { pageTemplateSelection: params.pageTemplateId ? "host" : "automatic" } : {}),
     pageTemplateId: isFootball
       ? resolveFootballDiscoveryTemplateSelection(params.pageTemplateId)
       : isSports
@@ -274,9 +276,13 @@ export async function persistDiscoveryEventSnapshot(params: {
   const current = (row.data || {}) as Record<string, any>;
   const builderEvent = (params.builderDraft.event || {}) as Record<string, any>;
   const builderVenue = (params.builderDraft.venue || {}) as Record<string, any>;
+  const automaticLayout = params.workflow === "gymnastics" && current.pageTemplateSelection !== "host" &&
+    !current.templateEditor && !current.manualEditor && Boolean(builderEvent.importedPageLayout || current.importedPageLayout);
   const nextTitle = safeString(params.title || builderEvent.title || row.title);
   const gymPageTemplateId = params.workflow === "gymnastics"
-    ? resolveGymDiscoveryTemplateSelection(safeString(current.pageTemplateId), safeString(params.pageTemplateId) || safeString(builderEvent.pageTemplateId))
+    ? automaticLayout
+      ? planGymMeetImportTemplate({ ...builderEvent, discoverySource: params.eventDataPatch?.discoverySource || builderEvent.discoverySource || current.discoverySource })
+      : resolveGymDiscoveryTemplateSelection(safeString(current.pageTemplateId), safeString(params.pageTemplateId) || safeString(builderEvent.pageTemplateId))
     : null;
   const snapshotDate = (provided: string | null | undefined, parsed: any, previous: any) =>
     params.workflow === "gymnastics"
@@ -285,6 +291,7 @@ export async function persistDiscoveryEventSnapshot(params: {
   const initialTemplateArtwork = params.workflow === "gymnastics" && current.importedTheme === null && builderEvent.importedTheme?.preserveTemplateStyle;
   const nextData = {
     ...current,
+    ...(automaticLayout ? { importedPageLayout: builderEvent.importedPageLayout || current.importedPageLayout } : {}),
     ...(Object.hasOwn(current, "importedTheme") && !initialTemplateArtwork
       ? { importedTheme: current.importedTheme } : builderEvent.importedTheme ? { importedTheme: builderEvent.importedTheme } : {}),
     title: nextTitle,

@@ -1,6 +1,7 @@
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
+  planGymMeetImportTemplate,
 } from "@/components/gym-meet-templates/registry";
 import { getEventHistoryById } from "@/lib/db";
 import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
@@ -15,6 +16,12 @@ import { getDiscoveryAdapter } from "@/lib/sports-discovery";
 import { attachImportedEventTheme } from "@/lib/imported-event-theme";
 
 export function themeDiscoveryData(discovery: EventDiscoveryRow, currentData: Record<string, any>, mappedData: Record<string, any>) {
+  if (discovery.workflow === "gymnastics" && currentData.pageTemplateSelection !== "host" && !currentData.templateEditor && !currentData.manualEditor && (!currentData.importedTheme || currentData.importedPageLayout) &&
+      (!currentData.pageTemplateId || currentData.pageTemplateId === DEFAULT_NEW_GYM_MEET_TEMPLATE_ID || currentData.importedPageLayout)) {
+    const planningData = { ...mappedData, discoverySource: { ...mappedData.discoverySource, websiteImport: discovery.document?.extractionMeta.websiteImport } };
+    mappedData = { ...mappedData, pageTemplateId: planGymMeetImportTemplate(planningData),
+      importedPageLayout: { version: 1, navigation: "related" } };
+  }
   return attachImportedEventTheme({ currentData, mappedData, workflow: discovery.workflow,
     activityProfile: discovery.canonicalParse?.activityProfile || discovery.source.activityProfile,
     sourceUrl: discovery.source.url, sourceText: discovery.document?.extractionMeta.extractedText as string,

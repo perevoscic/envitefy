@@ -136,7 +136,7 @@ export function orderEventSections<T extends { id: string }>(
 export type EventSectionChange =
   | { type: "add"; id: string; index: number }
   | { type: "move"; id: string; index: number }
-  | { type: "move-tab"; id: string; index: number }
+  | { type: "move-tab"; id: string; index: number; sectionIds?: string[] }
   | { type: "remove"; id: string }
   | { type: "resize"; id: string; width: EventSectionWidth }
   | { type: "pair"; id: string; besideId: string }
@@ -148,6 +148,13 @@ export function changeEventSectionLayout(
   change: EventSectionChange,
 ): EventSectionLayout {
   const base = current ?? { version: 1, order: [...visibleIds], hidden: [], added: [] };
+  if (change.type === "move-tab" && change.sectionIds?.length) {
+    const moving = sectionIds(change.sectionIds).filter(id => visibleIds.includes(id));
+    if (!moving.includes(change.id)) return base;
+    const order = [...new Set(visibleIds)].filter(id => !moving.includes(id));
+    order.splice(Math.max(0, Math.min(change.index, order.length)), 0, ...moving);
+    return { ...base, order: [...order, ...base.order.filter(id => !order.includes(id))] };
+  }
   if (change.type === "resize" || change.type === "pair" || change.type === "unpair") {
     const widths = { ...base.widths };
     let pairs = [...(base.pairs ?? [])];
@@ -210,7 +217,7 @@ export const GYMNASTICS_SECTION_CATALOG = [
   { id: "attractions", label: "Things to do", editorId: "meet" },
   { id: "admission", label: "Admission", editorId: "admission" },
   { id: "venue-details", label: "Venue Details", editorId: "venue" },
-  { id: "traffic-parking", label: "Travel & parking", editorId: "travel" },
+  { id: "traffic-parking", label: "Parking", editorId: "travel" },
   { id: "hotels", label: "Hotels", editorId: "logistics" },
   { id: "coaches", label: "Coaches", editorId: "coaches" },
   { id: "results", label: "Results", editorId: "meet" },

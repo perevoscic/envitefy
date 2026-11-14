@@ -22,15 +22,15 @@ export default function ThemeColorSync() {
     const syncChromeHints = () => {
       frameId = 0;
       const variant = document.documentElement.dataset.theme === "general-dark" ? "dark" : "light";
-      setColorSchemeMeta(variant);
       const eventColor = normalizeEventPageColor(document.documentElement.getAttribute(EVENT_PAGE_COLOR_ATTRIBUTE));
       if (eventColor) {
         const eventTone = document.documentElement.getAttribute(EVENT_PAGE_TONE_ATTRIBUTE);
-        if (eventTone === "light" || eventTone === "dark") setColorSchemeMeta(eventTone);
+        setColorSchemeMeta(eventTone === "light" || eventTone === "dark" ? eventTone : variant);
         clearIosBrowserChromeColors();
         setThemeColor(eventColor);
         return;
       }
+      setColorSchemeMeta(variant);
       if (isIosBrowserChrome()) {
         setIosBrowserChromeColors(variant);
         return;
@@ -45,6 +45,7 @@ export default function ThemeColorSync() {
 
     syncChromeHints();
     window.addEventListener(APPEARANCE_CHANGE_EVENT, scheduleSyncChromeHints);
+    window.addEventListener("pageshow", scheduleSyncChromeHints);
     scheduleSyncChromeHints();
     const observer = new MutationObserver(scheduleSyncChromeHints);
     observer.observe(document.documentElement, {
@@ -53,11 +54,22 @@ export default function ThemeColorSync() {
       childList: true,
       subtree: true,
     });
+    // Next can stream/replace route metadata after the route effect has run.
+    // Watch head changes too; setters only write changed values to avoid loops.
+    const headObserver = new MutationObserver(scheduleSyncChromeHints);
+    headObserver.observe(document.head, {
+      attributes: true,
+      attributeFilter: ["content", "media", "name"],
+      childList: true,
+      subtree: true,
+    });
 
     return () => {
       if (frameId) window.cancelAnimationFrame(frameId);
       observer.disconnect();
+      headObserver.disconnect();
       window.removeEventListener(APPEARANCE_CHANGE_EVENT, scheduleSyncChromeHints);
+      window.removeEventListener("pageshow", scheduleSyncChromeHints);
     };
   }, [pathname]);
 

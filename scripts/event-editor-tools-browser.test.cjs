@@ -229,7 +229,7 @@ async function editorToolsCase({ width = 1440, category, specialized, menuKind, 
         await controls.getByRole("button", { name: "Russo One", exact: true }).click();
         const heading = page.getByRole("region", { name: "Event page preview panel" }).locator("h1").first();
         const fontBeforeAccent = await heading.evaluate(element => getComputedStyle(element).fontFamily);
-        await controls.getByRole("group", { name: "Theme color combinations", exact: true }).getByRole("button", { name: "Accent", exact: true }).click();
+        await controls.getByRole("group", { name: "Theme color combinations", exact: true }).getByRole("button", { name: "Vivid", exact: true }).click();
         assert.equal(await heading.evaluate(element => getComputedStyle(element).fontFamily), fontBeforeAccent, "accent choices preserve the host's font override");
         await page.getByRole("region", { name: "Event page preview panel" }).locator('img[src="https://assets.test/retained-sports.webp"]').waitFor({ state: "attached" });
       }
@@ -498,8 +498,8 @@ async function editorToolsCase({ width = 1440, category, specialized, menuKind, 
         assert.equal(await controls.locator('input[type="color"]').count(), 0, "design colors remain authored");
         const recipes = controls.getByRole("group", { name: "Theme color combinations", exact: true });
         assert.equal(await recipes.getByRole("button").count(), 6);
-        await recipes.getByRole("button", { name: "Accent", exact: true }).click();
-        assert.equal(await recipes.getByRole("button", { name: "Accent", exact: true }).getAttribute("aria-pressed"), "true");
+        await recipes.getByRole("button", { name: "Vivid", exact: true }).click();
+        assert.equal(await recipes.getByRole("button", { name: "Vivid", exact: true }).getAttribute("aria-pressed"), "true");
       }
       const option = controls.getByRole("button", { name: /^Modern:/ });
       await option.click();
@@ -514,7 +514,7 @@ async function editorToolsCase({ width = 1440, category, specialized, menuKind, 
       await openControls();
       if (!(await option.isVisible())) await controls.getByRole("button", { name: /^Design/ }).click();
       assert.equal(await option.getAttribute("aria-pressed"), "true", `${kind}: the saved font pair reloads`);
-      if (kind === "custom" || kind === "general") assert.equal(await controls.getByRole("button", { name: "Accent", exact: true }).getAttribute("aria-pressed"), "true", "saved accent choice reloads");
+      if (kind === "custom" || kind === "general") assert.equal(await controls.getByRole("button", { name: "Vivid", exact: true }).getAttribute("aria-pressed"), "true", "saved accent choice reloads");
     }
     if (fonts) {
     records.set("saved-font", { id: "saved-font", data: { eventPageComposition: { version: 1, sections: [], titleFont: "orbitron" } } });

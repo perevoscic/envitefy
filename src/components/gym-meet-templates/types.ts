@@ -365,9 +365,10 @@ export type GymMeetDiscoveryContent = {
 export type GymMeetTitleSize = "small" | "medium" | "large";
 
 export type GymMeetRenderModel = {
+  importedPageLayout?: { version: 1; navigation: "related" };
   generatedFromDiscovery?: boolean;
   importedTheme?: import("@/lib/imported-event-theme").ImportedEventTheme | null;
-  importedThemeArtwork?: { themeId: string; status: "generating" | "ready" | "failed" } | null;
+  importedThemeArtwork?: { themeId: string; status: "generating" | "ready" | "failed"; venueReference?: import("@/lib/venue-photo-source").VenuePhotoReference } | null;
   schedule?: GymMeetScheduleInfo;
   sectionLayout?: import("@/lib/event-section-layout").EventSectionLayout;
   guestPlanning?: EventGuestPlanning;

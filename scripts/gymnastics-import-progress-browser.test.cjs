@@ -54,6 +54,21 @@ test("gymnastics imports use one responsive progress dialog and open the core dr
       await open(width, dark);
       await startLink();
       await dialog.getByRole("progressbar").waitFor();
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+      const overflow = await dialog.evaluate(async element => {
+        // Sample the entire entrance, including the 3D scale overshoot that
+        // previously exposed a horizontal scrollbar for only a few frames.
+        element.getAnimations({ subtree: true }).forEach(animation => { animation.currentTime = 0; });
+        const start = performance.now();
+        let widest = 0;
+        while (performance.now() - start < 1100) {
+          widest = Math.max(widest, element.scrollWidth - element.clientWidth);
+          await new Promise(requestAnimationFrame);
+        }
+        return widest;
+      });
+      assert.equal(overflow, 0, "animated import labels never create horizontal overflow");
+      await page.emulateMedia({ reducedMotion: "reduce" });
       assert.equal(await page.getByRole("button", { name: "Cancel import", exact: true }).count(), 1);
       const bounds = await dialog.boundingBox();
       assert.ok(bounds.x >= -1 && bounds.y >= -1 && bounds.x + bounds.width <= width + 1 && bounds.y + bounds.height <= 845);

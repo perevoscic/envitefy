@@ -7,9 +7,30 @@ const { changeEventSectionLayout, normalizeEventSectionLayout } = loadTs("src/li
 const sections = [
   { id: "meet-details", label: "Meet Details" },
   { id: "venue-details", label: "Venue Details" },
-  { id: "traffic-parking", label: "Travel & parking" },
+  { id: "traffic-parking", label: "Parking" },
   { id: "guest-planning", label: "Guest information" },
 ];
+
+test("new imported pages combine related information without losing source sections or Hotels", () => {
+  const imported = [...sections.filter(item => item.id !== "guest-planning"),
+    { id: "admission", label: "Admission" }, { id: "results", label: "Results" },
+    { id: "documents", label: "Documents" }, { id: "hotels", label: "Hotels" },
+    { id: "participating-clubs", label: "Participating clubs" }, { id: "attractions", label: "Things to do" }];
+  const tabs = eventInformationTabs(imported, undefined, true);
+  assert.equal(tabs.length, 5);
+  assert.deepEqual(tabs.find(tab => tab.label === "Venue & parking").sectionIds, ["venue-details", "traffic-parking"]);
+  assert.deepEqual(tabs.find(tab => tab.id === "hotels").sectionIds, ["hotels"]);
+  assert.deepEqual([...tabs.flatMap(tab => tab.sectionIds)].sort(), imported.map(item => item.id).sort());
+  const restored = normalizeEventSectionLayout({ version: 1, order: imported.map(item => item.id) });
+  assert.deepEqual(eventInformationTabs(imported, restored, true), tabs, "explicit saves preserve grouped navigation");
+  const first = tabs[0];
+  const reordered = [...tabs.slice(1), first];
+  const order = reordered.flatMap(tab => tab.sectionIds);
+  const moved = changeEventSectionLayout(restored, imported.map(item => item.id), { type: "move-tab", id: first.id,
+    sectionIds: first.sectionIds, index: order.indexOf(first.sectionIds[0]) });
+  assert.deepEqual(eventInformationTabs(imported, moved, true).map(tab => tab.id), reordered.map(tab => tab.id));
+  assert.deepEqual(eventInformationTabs(imported, moved, true).at(-1).sectionIds, first.sectionIds, "group reordering preserves every member");
+});
 
 test("tabs match the page-section names and order without broad navigation groups", () => {
   assert.deepEqual(eventInformationTabs(sections), sections.map(section => ({ ...section, sectionIds: [section.id] })));
@@ -23,9 +44,9 @@ test("section reorder, removal and restoration drive tabs across JSON reload wit
   let layout = changeEventSectionLayout(undefined, sections.map(section => section.id), { type: "move", id: "guest-planning", index: 0 });
   layout = changeEventSectionLayout(layout, layout.order, { type: "remove", id: "venue-details" });
   layout = normalizeEventSectionLayout(JSON.parse(JSON.stringify(layout)));
-  assert.deepEqual(eventInformationTabs(sections, layout).map(tab => tab.label), ["Guest information", "Meet Details", "Travel & parking"]);
+  assert.deepEqual(eventInformationTabs(sections, layout).map(tab => tab.label), ["Guest information", "Meet Details", "Parking"]);
   layout = changeEventSectionLayout(layout, eventInformationTabs(sections, layout).map(tab => tab.id), { type: "add", id: "venue-details", index: 1 });
-  assert.deepEqual(eventInformationTabs(sections, layout).map(tab => tab.label), ["Guest information", "Venue Details", "Meet Details", "Travel & parking"]);
+  assert.deepEqual(eventInformationTabs(sections, layout).map(tab => tab.label), ["Guest information", "Venue Details", "Meet Details", "Parking"]);
   assert.equal(JSON.stringify(sections), original);
 });
 
@@ -35,7 +56,7 @@ test("saved section pairs retain each tab and show the shared row from either ta
     id: "venue-details", label: "Venue Details", sectionIds: ["venue-details", "traffic-parking"],
   });
   assert.deepEqual(eventInformationTabs(sections, layout)[2], {
-    id: "traffic-parking", label: "Travel & parking", sectionIds: ["venue-details", "traffic-parking"],
+    id: "traffic-parking", label: "Parking", sectionIds: ["venue-details", "traffic-parking"],
   });
   assert.deepEqual(eventInformationTabs(sections, layout).map(tab => tab.label), sections.map(section => section.label));
 });
@@ -46,7 +67,7 @@ test("empty added travel and document tabs survive saved guest-page reloads", ()
     added: ["documents", "traffic-parking"], pairs: [["meet-details", "documents"]],
   })));
   const tabs = eventInformationTabs([sections[0]], layout);
-  assert.deepEqual(tabs.map(tab => tab.label), ["Meet Details", "Documents & links", "Travel & parking"]);
+  assert.deepEqual(tabs.map(tab => tab.label), ["Meet Details", "Documents & links", "Parking"]);
   assert.deepEqual(tabs[1].sectionIds, ["meet-details", "documents"]);
   assert.deepEqual(tabs[2].sectionIds, ["traffic-parking"]);
   layout.hidden.push("traffic-parking");

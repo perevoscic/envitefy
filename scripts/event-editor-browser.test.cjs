@@ -71,7 +71,7 @@ const fixture = () => fixtureBuild ??= buildFixture();
 
 // Compile once outside the interaction budgets. Each case gets fresh browser
 // storage, mock records and fault state; no scenario consumes another's time.
-test.before(fixture, { timeout: 30000 });
+test.before(fixture, { timeout: 60000 });
 
 async function createEditorHarness() {
   const { css, script } = await fixture();
@@ -481,7 +481,7 @@ test.describe("Event Page editor saves and navigation", () => {
   });
 
   editorCase("draft and publication progress belongs to the selected action on desktop and phone", async ({ page, state, writes, records, base, workspace, preview, openControls, authorAddress }) => {
-    for (const width of [1440, 390]) for (const route of [
+    for (const width of [1440, 390, 320]) for (const route of [
         "/gymnastics/templates/airborne-atlas/customize",
       "/event/general/customize?mode=create",
     ]) {
@@ -501,6 +501,12 @@ test.describe("Event Page editor saves and navigation", () => {
         await authorAddress(controls.getByRole("textbox", { name: "Address or location", exact: true }));
       }
       const actions = page.getByRole("group", { name: "Save event", exact: true });
+      const actionBoxes = await actions.getByRole("button").evaluateAll(buttons => buttons.filter(button => button.getBoundingClientRect().width > 0).map(button => {
+        const box = button.getBoundingClientRect();
+        return { label: button.innerText, y: box.y, right: box.right };
+      }));
+      assert.equal(actionBoxes.length, 4, "Undo, Save draft, Publish and Preview remain available");
+      assert.ok(actionBoxes.every(box => Math.abs(box.y - actionBoxes[0].y) < 1), JSON.stringify(actionBoxes));
       const runHeldSave = async (action, pending, other, fail = false) => {
         let release;
         state.saveGate = new Promise(resolve => { release = resolve; });
@@ -544,6 +550,89 @@ test.describe("Event Page editor saves and navigation", () => {
       assert.match(new URL(page.url()).pathname, new RegExp(`^/event/(?:[a-z0-9-]+-)?${id}$`), "publication opens the saved event with its public title slug");
     }
   }, 60000);
+
+  editorCase("imported tab groups stay identical in the mounted editor, explicit draft save and guest reload", async ({ page, records, base, preview, openControls }) => {
+    const publicSection = (title, body) => ({ title, body, visibility: "visible", provenance: "pdf_grounded", confidence: 1 });
+    const groups = [["Level 6-8", "Level 6/7 and Xcel Silver", "Level 2-5 and Xcel Silver"],
+      ["Level 9/10 and Xcel Silver and Sapphire", "Level 8/9 and Xcel Silver", "Xcel Bronze"],
+      ["Xcel Gold and Platinum", "Xcel Gold, Platinum, Diamond and HUGS", "Boys Competition"]];
+    for (const width of [1440, 390]) {
+      const id = `grouped-import-${width}`;
+      records.set(id, { id, revision: "grouped-initial", title: "Atlanta Centennial Classic", data: {
+        title: "Atlanta Centennial Classic", status: "draft", draftStatus: "draft", createdVia: "meet-discovery", category: "gymnastics",
+        date: "2027-01-29", time: "", timezone: "America/New_York", pageTemplateId: "copper-grip", rsvpEnabled: false,
+        venue: "Georgia International Convention Center", address: "2000 Convention Center Concourse",
+        importedPageLayout: { version: 1, navigation: "related" }, sectionLayout: { version: 1, order: [], hidden: [], added: [] },
+        advancedSections: { schedule: { enabled: true, notes: ["Full schedule will be published by 12/1/26"], days: groups.map((levels, index) => ({
+          id: `day-${index}`, isoDate: `2027-01-${29 + index}`, sessions: levels.map((group, gym) => ({ id: `session-${index}-${gym}`, label: `Gym ${String.fromCharCode(65 + gym)}`, group, startTime: "", warmupTime: "", clubs: [] })),
+        })) } },
+        discoverySource: { workflow: "gymnastics", pipelineVersion: "gym-public-v3", input: { type: "url" },
+          websiteImport: { version: 1, eventYear: 2027, coverage: [], sources: [], participatingClubs: [], attractions: [], schedule: { status: "partial", notice: "Published gym and level assignments; session times are not listed.", links: [{ label: "Girls travel schedule PDF", url: "https://meet.test/s/2027travel.pdf" }] } },
+          publicPageSections: { meetDetails: publicSection("Meet Details", "The meet runs January 29–31, 2027."),
+            spectatorInfo: publicSection("Admission", "Adults pay $20 cash at the door."), venue: publicSection("Venue Details", "Use the main convention center entrance.") },
+          parseResult: { admission: [{ label: "Adults", price: "$20", note: "Cash only" }] } },
+      } });
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics&edit=${id}`);
+      await preview.getByRole("tab", { name: "Meet details", exact: true }).waitFor();
+      assert.equal(await preview.getByRole("tab", { name: "Admission", exact: true }).count(), 0);
+      await preview.getByRole("heading", { name: "Admission", exact: true }).waitFor();
+      const labels = await preview.getByRole("tab").allTextContents();
+      await openControls();
+      await page.getByRole("button", { name: "Save draft", exact: true }).click();
+      await page.getByText("Draft saved.", { exact: true }).waitFor();
+      assert.equal(records.get(id).data.templateEditor.snapshot.data.importedPageLayout.navigation, "related");
+      assert.equal(records.get(id).data.advancedSections.schedule.days.length, 3);
+      await page.reload();
+      await preview.getByRole("tab", { name: "Meet details", exact: true }).waitFor();
+      assert.deepEqual(await preview.getByRole("tab").allTextContents(), labels);
+      await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics-guest&edit=${id}`);
+      await page.getByRole("tab", { name: "Meet details", exact: true }).waitFor();
+      assert.deepEqual(await page.getByRole("tab").allTextContents(), labels);
+      assert.equal(await page.getByRole("tab", { name: "Schedule", exact: true }).count(), 1, "parsed rows and source link share one Schedule tab");
+      await page.getByRole("tab", { name: "Schedule", exact: true }).click();
+      for (const [index, date] of ["Fri, Jan 29, 2027", "Sat, Jan 30, 2027", "Sun, Jan 31, 2027"].entries()) {
+        await page.getByRole("button", { name: date, exact: true }).click();
+        for (const group of groups[index]) await page.getByText(group, { exact: true }).waitFor();
+        assert.equal(await page.getByRole("heading", { name: /^Gym [ABC]$/, exact: true }).count(), 3);
+      }
+      assert.equal(await page.getByRole("link", { name: "Girls travel schedule PDF", exact: true }).count(), 1);
+    }
+  }, 45000);
+
+  editorCase("failed imported artwork retries from image settings and waits for explicit save", async ({ page, records, writes, base, preview, openControls, galleryPixel }) => {
+    const { createImportedEventTheme } = require("./lib/event-messages-test-loader.cjs")("src/lib/imported-event-theme.ts");
+    const theme = createImportedEventTheme({ title: "Atlanta Centennial Classic", sport: "gymnastics", city: "College Park, GA", seed: "retry-fixture" });
+    const id = "retry-image";
+    const artworkUrl = `/media/event-media/${id}/retry.webp`;
+    await page.route(`**${artworkUrl}`, route => route.fulfill({ contentType: "image/png", body: galleryPixel }));
+    records.set(id, { id, revision: "retry-original", title: "Atlanta Centennial Classic", data: { title: "Atlanta Centennial Classic", status: "draft", draftStatus: "draft", createdVia: "meet-discovery", category: "gymnastics", importedTheme: theme, numberOfGuests: 4, date: "2027-01-29", time: "", timezone: "America/New_York", pageTemplateId: "airborne-atlas" } });
+    let artwork = { themeId: theme.id, status: "failed", error: "The venue reference did not show the building." };
+    const requests = [];
+    await page.route(`**/api/events/${id}/theme-artwork`, async route => {
+      if (route.request().method() === "POST") {
+        requests.push(route.request().postDataJSON());
+        artwork = { themeId: theme.id, status: "ready", imageUrl: artworkUrl };
+        return route.fulfill({ status: 202, json: { artwork: { themeId: theme.id, status: "generating" } } });
+      }
+      return route.fulfill({ json: { artwork } });
+    });
+    await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics&edit=${id}`);
+    await openControls();
+    const controls = page.getByRole("complementary", { name: "Event editing controls", exact: true });
+    await controls.getByRole("button", { name: /^Event image settings/ }).click();
+    await controls.getByRole("button", { name: "Retry event image", exact: true }).click();
+    await preview.locator(`img[src="${artworkUrl}"]`).waitFor();
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].retry, true);
+    assert.equal(writes.length, 0, "image generation never publishes or saves event changes");
+    assert.equal(records.get(id).data.importedTheme.artworkUrl, undefined);
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await page.getByText("Draft saved.", { exact: true }).waitFor();
+    assert.equal(records.get(id).data.importedTheme.artworkUrl, artworkUrl);
+    assert.equal(records.get(id).data.numberOfGuests, 4);
+    assert.equal(writes.at(-1).path, `/api/history/${id}`);
+  }, 45000);
 
   editorCase("first publication and published updates report distinct success feedback", async ({ page, state, records, base, saved }) => {
     const id = "publication-feedback";
@@ -1458,7 +1547,7 @@ test.describe("Event Page editor saves and navigation", () => {
       await openControls();
       if (!(await group.isVisible())) await controls.getByRole("button", { name: "Design", exact: true }).click();
       assert.equal(await choices.count(), 6);
-      assert.equal(await group.getByRole("button", { name: "Tonal", exact: true }).getAttribute("aria-pressed"), "true");
+      assert.equal(await group.getByRole("button", { name: "Split tone", exact: true }).getAttribute("aria-pressed"), "true");
       assert.deepEqual(await backgrounds(), before, 'saved guest styling retains the effective saved background');
       assert.equal(writes.length, count + 1, "reopening never saves automatically");
       const oldSwatches = await group.locator('[style]').evaluateAll(els => els.map(el => el.style.backgroundColor));
@@ -1468,7 +1557,7 @@ test.describe("Event Page editor saves and navigation", () => {
       assert.notDeepEqual(await group.locator('[style]').evaluateAll(els => els.map(el => el.style.backgroundColor)), oldSwatches, 'swapping templates offers its own six palettes');
       assert.equal(await group.getByRole('button', { name: 'Original', exact: true }).getAttribute('aria-pressed'), 'true');
       assert.equal((await backgrounds()).paper.trim(), getGymMeetTemplateMeta(nextId).background);
-      await group.getByRole('button', { name: 'Deep', exact: true }).click();
+      await group.getByRole('button', { name: 'Complement', exact: true }).click();
       await group.getByRole('button', { name: 'Original', exact: true }).click();
       await page.waitForFunction(() => !document.querySelector('[data-gym-design]')?.hasAttribute('data-gym-color-combination'));
       assert.equal(await root.getAttribute('data-gym-color-combination'), null, 'Original restores native controls');

@@ -24,6 +24,14 @@ test("only a production build generates runtime CSS; dev and typegen never rewri
   }
   const development = await module.exports.default(phases.PHASE_DEVELOPMENT_SERVER);
   assert.match(development.distDir, /^\.next-dev/);
+  const originalArgv = process.argv;
+  try {
+    process.argv = [process.execPath, "next", "typegen"];
+    await module.exports.default(phases.PHASE_PRODUCTION_BUILD);
+    assert.equal(generated, 0, "Next 15 typegen uses the production phase but must not compile or write runtime CSS");
+  } finally {
+    process.argv = originalArgv;
+  }
   await module.exports.default(phases.PHASE_PRODUCTION_BUILD);
   assert.equal(generated, 1, "production still generates canonical and landing styles before compilation");
 });

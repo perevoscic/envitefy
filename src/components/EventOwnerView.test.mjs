@@ -73,6 +73,7 @@ function load(relative, cache = new Map()) {
     if (name.endsWith(".module.css")) {
       return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
     }
+    if (name.endsWith(".css")) return {};
     if (name === "./OwnerPreviewMobileTopbarSuppressor") {
       return mocks["@/components/OwnerPreviewMobileTopbarSuppressor"];
     }
@@ -89,6 +90,7 @@ function load(relative, cache = new Map()) {
 const OwnerTools = load("src/components/EventOwnerTools.tsx").default;
 const ProductViewer = load("src/components/EventOwnerTools.tsx").TestProductViewer;
 const PreviewViewport = load("src/components/EventPreviewViewport.tsx").default;
+const OwnerEventView = load("src/components/EventOwnerView.tsx").default;
 const { withDirectRsvpInvitationData } = load("src/lib/studio/live-card-rsvp.ts");
 const { useMobileDrawer } = load("src/hooks/useMobileDrawer.ts");
 const MobileNavHeader = load("src/components/navigation/MobileNavHeader.tsx").default;
@@ -105,6 +107,19 @@ const render = (data, initialTab = "design", permissions = {}) =>
       ...permissions,
     }),
   );
+
+test("saved Event Page actions omit redundant Preview and start on Desktop", () => {
+  const html = renderToStaticMarkup(React.createElement(OwnerEventView, {
+    eventId: "meet", title: "Coastal Invitational", publicHref: "/event/meet",
+    editHref: "/event/meet?edit=meet", backgroundColor: "#111b3a",
+  }));
+  assert.doesNotMatch(html, /aria-label="Preview event"/);
+  assert.match(html, /aria-label="Desktop view" aria-pressed="true"/);
+  for (const action of ["Edit event", "Share event", "Delete event"]) {
+    assert.ok(html.includes(`aria-label="${action}"`));
+  }
+  assert.match(html, /preview=owner&amp;embed=dashboard-preview/);
+});
 
 test("guided cards without RSVP open Dashboard with URL editing and keep Design available", () => {
   for (const product of ["live_card", "digital_flyer"]) {
@@ -145,8 +160,8 @@ test("event pages open directly with owner actions and responsive device control
   ]) {
     const html = render(data);
     assert.match(html, /aria-label="Event actions"/);
-    assert.match(html, /aria-label="Preview event"/);
-    assert.match(html, /href="\/event\/meet\?preview=owner&amp;returnTo=%2Fevent%2Fmeet%3Ftab%3Devent"/);
+    assert.doesNotMatch(html, /aria-label="Preview event"/);
+
     assert.match(html, /aria-label="Edit event"/);
     assert.match(html, /aria-label="Share event"/);
     assert.match(html, /aria-label="Delete event"/);

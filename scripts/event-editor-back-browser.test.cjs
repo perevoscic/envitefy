@@ -135,12 +135,12 @@ test("Current Event Pages retain blank drafts, recover edits and protect navigat
       assert.equal(await accents.getByRole("button", { name: "Original", exact: true }).getAttribute("aria-pressed"), "true");
       const canvas = page.locator('[data-layout][data-appearance-scope="authored"]');
       const originalBackground = await canvas.evaluate(element => getComputedStyle(element).backgroundColor);
-      await accents.getByRole("button", { name: "Accent", exact: true }).click();
-      await accents.getByRole("button", { name: "Deep", exact: true }).click();
+      await accents.getByRole("button", { name: "Vivid", exact: true }).click();
+      await accents.getByRole("button", { name: "Complement", exact: true }).click();
       assert.equal(await canvas.evaluate(element => getComputedStyle(element).backgroundColor), originalBackground, "accent edits retain the authored background");
       await undo.click();
       await page.getByRole("button", { name: "Undo last change", exact: true }).click();
-      assert.equal(await accents.getByRole("button", { name: "Accent", exact: true }).getAttribute("aria-pressed"), "true", "single undo keeps the earlier accent edit");
+      assert.equal(await accents.getByRole("button", { name: "Vivid", exact: true }).getAttribute("aria-pressed"), "true", "single undo keeps the earlier accent edit");
       await undo.click();
       await page.getByRole("button", { name: "Undo all unsaved changes", exact: true }).click();
       assert.equal(await accents.getByRole("button", { name: "Original", exact: true }).getAttribute("aria-pressed"), "true");

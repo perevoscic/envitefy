@@ -1,6 +1,6 @@
 "use client";
 
-import ResponsiveEventNavigation from "@/components/events/ResponsiveEventNavigation";
+import ResponsiveEventNavigation, { sectionIcon } from "@/components/events/ResponsiveEventNavigation";
 import { useEventSectionSwipe } from "@/components/events/useEventSectionSwipe";
 import { useEventNavigationScroll } from "@/components/events/useEventNavigationScroll";
 import { useEffect, useId, useRef, useState, type ReactNode, type TouchEventHandler } from "react";
@@ -22,6 +22,9 @@ import {
 } from "@/lib/event-section-layout";
 import { useEventPageComposition } from "@/components/events/EventPageCompositionContext";
 import { eventInformationSections, eventInformationTabs } from "@/lib/event-information-tabs";
+import VenuePhoto from "@/components/events/VenuePhoto";
+import type { VenueWebsitePhoto } from "@/lib/venue-photo-source";
+import { contentCardNeedsFullWidth } from "@/components/event-create/EventPlaceCard";
 
 function ProgramPanel({
   tabbed,
@@ -67,14 +70,22 @@ export default function GymnasticsProgram({
   onPageTextChange,
   sectionLayout,
   additionalSections = [],
+  venue,
+  address,
+  venuePhoto,
+  groupRelatedTabs = false,
 }: {
   sections: GymMeetDiscoverySection[];
   presentation: GymnasticsPresentation;
-  renderBlock: (block: GymMeetDiscoveryBlock) => ReactNode;
+  renderBlock: (block: GymMeetDiscoveryBlock, options?: { venueLayout?: boolean }) => ReactNode;
   pageTextOverrides?: GymnasticsPageText;
   onPageTextChange?: GymnasticsPageTextChange;
   sectionLayout?: EventSectionLayout;
   additionalSections?: EventSectionEntry[];
+  venue?: string;
+  address?: string;
+  venuePhoto?: VenueWebsitePhoto;
+  groupRelatedTabs?: boolean;
 }) {
   const pageText = useGymnasticsPageText(pageTextOverrides, onPageTextChange);
   const instanceId = useId();
@@ -97,7 +108,7 @@ export default function GymnasticsProgram({
     ],
     currentLayout,
   );
-  const availableTabs = eventInformationTabs(navigation, currentLayout);
+  const availableTabs = eventInformationTabs(navigation, currentLayout, groupRelatedTabs);
   const tabbed = availableTabs.length > 0;
   const activeTab = availableTabs.find((tab) => tab.id === selectedTab) || availableTabs[0];
   const previousTabs = useRef(availableTabs.map(tab => tab.id));
@@ -118,9 +129,25 @@ export default function GymnasticsProgram({
   const sectionId = (id: string) => `${instanceId}-program-${id}`;
   const activeIndex = availableTabs.findIndex(tab => tab.id === activeTab?.id);
   const moveTab = (id: string, index: number) => {
-    builder?.change({ type: "move-tab", id, index });
+    if (groupRelatedTabs && !currentLayout?.pairs?.length) {
+      const moved = availableTabs.find(tab => tab.id === id);
+      if (!moved) return;
+      const order = availableTabs.filter(tab => tab.id !== id);
+      order.splice(index, 0, moved);
+      builder?.change({ type: "move-tab", id, sectionIds: moved.sectionIds,
+        index: order.flatMap(tab => tab.sectionIds).indexOf(moved.sectionIds[0]) });
+    } else builder?.change({ type: "move-tab", id, index });
     setSelectedTab(id);
   };
+  const renderBlocks = (blocks: GymMeetDiscoveryBlock[], venueLayout = false) => blocks.map((block) => (
+    <div key={block.id} className={styles.block} data-block-type={block.type}
+      style={block.type === "text" && contentCardNeedsFullWidth({
+        body: pageTextOverrides?.[`block:${encodeURIComponent(block.id)}:text`] ?? block.text,
+        label: pageTextOverrides?.[`block:${encodeURIComponent(block.id)}:title`] ?? block.title,
+      }) ? { gridColumn: "1 / -1" } : undefined}>
+      {renderBlock(block, { venueLayout })}
+    </div>
+  ));
   if (!navigation.length && !builder) return null;
 
   return (
@@ -146,6 +173,7 @@ export default function GymnasticsProgram({
           <GymnasticsTabOrder enabled={Boolean(builder)} ids={availableTabs.map(tab => tab.id)} onMove={moveTab}>
           <div className={styles.tabs} role="tablist" aria-label="Event information" {...railScroll}>
             {availableTabs.map((tab, index) => {
+              const Icon = sectionIcon(tab.id);
               const control = pageText(
               `section:${encodeURIComponent(tabSource(tab.id)?.id || tab.id)}:label`,
               tab.label,
@@ -185,7 +213,8 @@ export default function GymnasticsProgram({
                   });
                 }}
               >
-                {label}
+                <Icon size={18} aria-hidden="true" focusable="false" />
+                <span>{label}</span>
               </button>
               ),
               );
@@ -255,12 +284,25 @@ export default function GymnasticsProgram({
                     </h2>
                     <span className={styles.headingRule} aria-hidden="true" />
                   </header>
-                  <div className={styles.blocks}>
-                    {section.blocks.map((block) => (
-                      <div key={block.id} className={styles.block} data-block-type={block.type}>
-                        {renderBlock(block)}
-                      </div>
-                    ))}
+                  <div className={`${styles.blocks} ${section.id === "traffic-parking" ? styles.parkingBlocks : ""}`}>
+                    {section.id === "venue-details" && venue && address ? (
+                      <>
+                        <div className={styles.blocks} data-venue-guidance>
+                          {renderBlocks(section.blocks.filter(block => block.type !== "map"))}
+                        </div>
+                        <div className={styles.venueRow} data-venue-row
+                          data-has-photo={Boolean(venuePhoto) || undefined}
+                          data-has-map={section.blocks.some(block => block.type === "map") || undefined}>
+                          <div className={styles.venueMedia} data-venue-media>
+                            {venuePhoto && section.blocks.some(block => block.type === "map") ? <h3 className={styles.venueMediaHeading}>Venue photo</h3> : null}
+                            <VenuePhoto venue={venue} address={address} photo={venuePhoto} />
+                          </div>
+                          <div className={styles.venueMaps} data-venue-maps>
+                            {renderBlocks(section.blocks.filter(block => block.type === "map"), true)}
+                          </div>
+                        </div>
+                      </>
+                    ) : renderBlocks(section.blocks)}
                   </div>
                   {builder && !section.blocks.length && !additionalSections.find(entry => entry.id === section.id)?.content ? (
                     <div className={styles.emptySection}>

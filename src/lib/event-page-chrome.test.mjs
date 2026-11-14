@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { EVENT_PAGE_COLOR_ATTRIBUTE, EVENT_PAGE_COLOR_PROPERTY, EVENT_PAGE_TONE_ATTRIBUTE, isDarkEventPageColor, normalizeEventPageColor, registerEventPageColor } from "./event-page-chrome.ts";
 import { resolveEventPageBackgroundColor } from "./theme-color.ts";
+import { createImportedEventTheme } from "./imported-event-theme.ts";
 
 function rootFixture() {
   const attributes = new Map();
@@ -91,4 +92,16 @@ test("saved gymnastics designs supply the event paper color before the preview l
   assert.equal(resolveEventPageBackgroundColor({ templateEditor: { category: "gymnastics", templateId: "neon-runway" } }), "#101321");
   assert.equal(resolveEventPageBackgroundColor({ category: "sport_gymnastics", pageTemplateId: "retired-design" }), "#f6f1e7");
   assert.equal(resolveEventPageBackgroundColor({ category: "wedding", pageBackgroundColor: "#fff6ed" }), "#fff6ed");
+});
+
+test("generated meet startup colors match the renderer's effective saved palette", () => {
+  const importedTheme = createImportedEventTheme({ title: "Coastal Invitational", sport: "gymnastics", seed: "cold-load",
+    branding: { version: 1, origin: "pdf", tone: "dark", colors: ["#111b3a", "#ff78b7", "#b787ff"] },
+  });
+  const event = { category: "sport_gymnastics", pageTemplateId: "airborne-atlas", importedTheme };
+  assert.equal(resolveEventPageBackgroundColor(event), importedTheme.colors.page);
+  assert.notEqual(resolveEventPageBackgroundColor(event), "#f6f1e7");
+  assert.equal(resolveEventPageBackgroundColor({ ...event, importedTheme: { ...importedTheme, enabled: false } }), "#f6f1e7");
+  assert.equal(resolveEventPageBackgroundColor({ ...event, importedTheme: { ...importedTheme, preserveTemplateStyle: true } }), "#f6f1e7");
+  assert.equal(resolveEventPageBackgroundColor({ ...event, importedTheme: { ...importedTheme, colors: { ...importedTheme.colors, page: "invalid" } } }), "#f6f1e7");
 });

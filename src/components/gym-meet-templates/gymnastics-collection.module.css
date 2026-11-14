@@ -1,4 +1,5 @@
 .page {
+  --event-content-gutter: 12px;
   min-height: 100%;
   color: var(--gym-ink);
   background: var(--gym-paper);
@@ -6,10 +7,24 @@
   container-name: gym;
 }
 
+@media (min-width: 640px) {
+  .page { --event-content-gutter: 24px; }
+}
+@media (min-width: 1024px) {
+  .page { --event-content-gutter: 32px; }
+}
+
+.page [data-event-page-body] { padding-inline: var(--event-content-gutter); }
+
 .shell {
+  position: relative;
   overflow: hidden;
   color: var(--gym-ink);
   background: var(--gym-paper);
+}
+
+@container gym (max-width: 1366px) {
+  .page [data-event-page-frame]:has([data-event-hero][data-image-position="top"][data-title-position="below"]) { padding-top: 0; }
 }
 
 .title {
@@ -1073,7 +1088,8 @@
 .scene[data-design="skyline-sendoff"] .facts { grid-template-columns: repeat(2,minmax(0,1fr)); }
 
 @container gym (max-width: 680px) {
-  .scene[data-design] { grid-template-columns: minmax(0,1fr); min-height: 0; gap: 1.5rem; padding: 1.2rem 0.5rem; }
+  .scene[data-design] { grid-template-columns: minmax(0,1fr); min-height: 0; gap: 1.5rem; padding: 1.2rem 0; }
+  .scene[data-design] > :is(.masthead, .headline, .facts, .invitation, .signoff) { margin-inline: calc(var(--event-content-gutter, 0px) + 0.5rem); }
   .scene[data-design] > :is(.masthead, .headline, .artwork, .facts, .invitation, .signoff) { grid-column: 1; grid-row: auto; }
   .scene[data-design] .headline { text-align: left; }
   .scene[data-design] .headline h1 { font-size: clamp(2.2rem, 10cqi, 3.8rem); }

@@ -3,10 +3,18 @@ import { spawnSync } from "node:child_process";
 
 const scripts = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).scripts;
 const files = [
+  "scripts/typecheck-discovery.test.mjs",
+  "scripts/next-config-phases.test.mjs",
   "src/lib/openai-chat-params.test.ts",
   "src/lib/creation/openai-workloads.test.mjs",
   "src/lib/ocr/openai-schedules.test.mjs",
   "src/lib/gymnastics-schedule-import.test.cjs",
+  "src/lib/gymnastics-import-layout.test.cjs",
+  "src/lib/gymnastics-venue-artwork.test.cjs",
+  "src/lib/discovery/persist-concurrency.test.mjs",
+  "src/lib/discovery/schedule-enrichment.test.cjs",
+  "src/lib/discovery/linked-documents.test.cjs",
+  "src/lib/venue-photo.test.cjs",
   "src/lib/gymnastics-schedule-reader.test.cjs",
   "src/app/api/gymnastics/schedule/route.test.cjs",
   "scripts/lib/creation-evaluation.test.mjs",

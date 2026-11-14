@@ -1,10 +1,10 @@
 "use client";
 
-import { Eye, Pencil, Share2 } from "lucide-react";
+import { Pencil, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import type { EventPreviewBackground } from "@/lib/event-preview-background";
-import { buildEmbeddedEventPreviewHref, buildOwnerEventEditHref, buildOwnerEventPreviewHref } from "@/lib/event-preview-viewport";
+import { buildEmbeddedEventPreviewHref, buildOwnerEventEditHref } from "@/lib/event-preview-viewport";
 import type { EventPreviewEntryContext } from "@/lib/event-preview-viewport";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import EventDeleteModal from "@/components/EventDeleteModal";
@@ -74,10 +74,6 @@ export default function EventOwnerView({
 
   const actions = (
     <div role="group" aria-label="Event actions" className="flex min-w-0 flex-col items-stretch gap-1 lg:flex-row lg:flex-wrap lg:items-center lg:justify-center lg:gap-2">
-      <Link href={buildOwnerEventPreviewHref(publicHref)} aria-label="Preview event" title="Preview event" className={`inline-flex ${actionClassName}`}>
-        <Eye size={19} aria-hidden="true" />
-        <span>Preview</span>
-      </Link>
       {editLocked ? <button type="button" disabled aria-label="Edit event" title="Past event" className={`inline-flex ${actionClassName} cursor-not-allowed opacity-40`}>
         <Pencil size={19} aria-hidden="true" /><span>Edit</span>
       </button> : <Link href={editUrl} aria-label="Edit event" title="Edit event" className={`${mobileEditInEvent ? "hidden lg:inline-flex" : "inline-flex"} ${actionClassName}`}>

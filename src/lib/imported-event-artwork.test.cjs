@@ -53,6 +53,7 @@ async function fixture() {
     },
     "./gymnastics-venue-artwork": {
       prepareGymnasticsVenueReference: async () => { referenceCalls++; return reference; },
+      resolveGymnasticsVenueTown: async () => "",
     },
     "@/lib/studio/openai": {
       generateInvitationImageWithOpenAi: async (_prompt, _references, _product, options) => {
@@ -148,7 +149,18 @@ test("gymnastics passes the verified venue reference to its single image request
   assert.equal(state.calls(), 1);
   assert.equal(state.read().status, "ready");
   assert.equal(state.read().venueReference.sourceUrl, state.reference.sourceUrl);
+  assert.equal(state.importedArtworkState(state.read()).venueReference.imageUrl, state.reference.imageUrl, "status synchronization retains the verified venue photo for editor previews");
   assert.equal(JSON.stringify(state.read()).includes(state.reference.image.data), false, "reference bytes are not stored in history");
+});
+
+test("a verified venue-site exterior generates without a Places town lookup", async () => {
+  const state = await fixture();
+  state.importedArtworkDeps.venueTown = async () => { throw Error("Places must not be required for a verified venue exterior"); };
+  const gym = { ...theme, context: { ...theme.context, sport: "gymnastics", city: "", venue: state.reference.venue, address: "One Haben Blvd." } };
+  await state.generateImportedEventArtwork("event", gym);
+  assert.equal(state.calls(), 1);
+  assert.equal(state.read().status, "ready");
+  assert.equal(state.read().composition, "venue");
 });
 
 test("missing venue reference and town stop before image generation and need explicit retry", async () => {
@@ -250,6 +262,7 @@ test("people and venue defects are rejected without an automatic second image re
     assert.equal(state.calls(), 1);
     assert.equal(state.uploads(), 0);
     assert.match(state.read().error, /venue illustration brief/);
+    assert.equal(state.importedArtworkState(state.read()).venueReference.sourceUrl, state.reference.sourceUrl, "a failed generated hero does not discard the independently verified venue photo source");
   }
 });
 test("image failures stay separate from event facts and require an explicit retry", async () => {

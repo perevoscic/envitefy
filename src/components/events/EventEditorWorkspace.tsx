@@ -121,7 +121,7 @@ export function EventEditorActions({
   const actions = eventEditorActions(editor.published, editor.dirty);
   const disabled = editor.busy || !editor.ready;
   return (
-    <div className={styles.actions} role="group" aria-label="Save event" data-published={editor.published} data-compact-save={editor.published && Boolean(editor.undo)}>
+    <div className={styles.actions} role="group" aria-label="Save event" data-published={editor.published} data-compact-save={Boolean(editor.undo)}>
       {showBack && <button type="button" className={styles.mobileBack} disabled={disabled} onClick={onBack || editor.cancel}>
         <ArrowLeft size={17} aria-hidden="true" />
         Back

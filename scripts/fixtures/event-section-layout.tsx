@@ -7,6 +7,7 @@ import {
 } from "../../src/components/events/EventSectionBuilder";
 import { EventPageCompositionProvider } from "../../src/components/events/EventPageCompositionContext";
 import GymnasticsProgram from "../../src/components/gym-meet-templates/GymnasticsProgram";
+import GymMeetDiscoveryContent from "../../src/components/gym-meet-templates/GymMeetDiscoveryContent";
 import { GYMNASTICS_PRESENTATIONS } from "../../src/components/gym-meet-templates/gymnasticsPresentations";
 import type { GymMeetDiscoverySection } from "../../src/components/gym-meet-templates/types";
 import type { EventPageComposition } from "../../src/lib/event-page-composition";
@@ -20,6 +21,7 @@ import { scheduleSection, type ScheduleInfo } from "../../src/components/event-t
 import GymnasticsSchedule from "../../src/components/gym-meet-templates/GymnasticsSchedule";
 import { useEventLocationTimezone } from "../../src/components/events/useEventLocationTimezone";
 import { EventEditorSection } from "../../src/components/events/EventEditorFields";
+import { verifyVenuePhotoPermission } from "../../src/lib/venue-photo-permission";
 
 function TimezoneFixture() {
   const [data, setData] = useState(() => JSON.parse(localStorage.getItem("location-timezone-fixture") || "null") || { date: "2027-01-15", time: "08:00", address: "One Haben Blvd., Palmetto, FL 34221", timezone: "America/Chicago" });
@@ -44,6 +46,31 @@ const sourceSections: GymMeetDiscoverySection[] = [
 
 function App() {
   const search = new URLSearchParams(location.search);
+  if (search.has("auto-import")) return <article className={programStyles.design} data-gym-design="moonbeam-balance" data-layout="orbit" style={{ maxWidth: 1200, margin: "auto", padding: 16,
+    "--gym-paper": search.has("dark") ? "#111b3a" : "#f6fbfd", "--gym-ink": search.has("dark") ? "#eef5ff" : "#142733", "--gym-accent": "#149bc0", "--gym-font": "Arial, sans-serif",
+  } as CSSProperties}>
+    <GymMeetDiscoveryContent presentation={GYMNASTICS_PRESENTATIONS["moonbeam-balance"]}
+      variant={{ sectionClass: "", summaryCardClass: "", secondaryButtonClass: "" }}
+      model={{ importedPageLayout: { version: 1, navigation: "related" }, venue: "Georgia International Convention Center", address: "2000 Convention Center Concourse",
+        importedTheme: { context: { venue: "Georgia International Convention Center", address: "2000 Convention Center Concourse" } },
+        importedThemeArtwork: { themeId: "venue-fixture", status: "ready", venueReference: { venue: "Georgia International Convention Center", sourceUrl: "https://venue.example.test/media", imageUrl: "https://venue.example.test/exterior.jpg",
+          permission: search.has("no-photo-permission") ? undefined : verifyVenuePhotoPermission("<p>Image use terms: Photos may be used in promotional event materials.</p>", "https://venue.example.test/media", "https://venue.example.test/exterior.jpg") } }, discovery: { sections: [
+        { id: "meet-details", label: "Meet details", kind: "meet_overview", priority: 1, hasContent: true, blocks: [{ id: "overview", type: "text", text: "Verified meet details" }] },
+        { id: "schedule", label: "Schedule", kind: "schedule", priority: 2, hasContent: true, blocks: [{ id: "schedule-status", type: "text", text: "Sessions to be announced" }] },
+        { id: "admission", label: "Admission", kind: "admission", priority: 3, hasContent: true, blocks: [{ id: "admission-cards", type: "card-grid", cards: Array.from({ length: 6 }, (_, index) => ({ key: String(index), label: `Admission group ${index + 1}`, value: "$20", body: "Cash only" })) }] },
+        { id: "venue-details", label: "Venue Details", kind: "venue", priority: 4, hasContent: true, blocks: [
+          { id: "venue-guidance-cards", type: "card-grid", cards: [{ key: "venue-guidance", presentation: "guidance", icon: "info", label: "Venue guidance", meta: "Getting oriented", body: "Georgia International Convention Center, 2000 Convention Center Concourse. Use the main convention center entrance." }] },
+          { id: "venue-map", type: "map", title: "Arrival Map", address: "Georgia International Convention Center, 2000 Convention Center Concourse" },
+        ] },
+        { id: "traffic-parking", label: "Parking", kind: "traffic_parking", priority: 5, hasContent: true, blocks: [
+          { id: "authored-parking", type: "text", title: "Parking & arrival", text: search.has("long-parking") ? "Use the convention center parking garage. Keep the entrance accessible for drop-off and allow extra time for parking. ".repeat(8) : "On-site parking costs $15.00." },
+          { id: "authored-traffic", type: "text", title: "Traffic & travel", text: "Allow extra arrival time near the venue and use posted traffic directions on arrival." },
+        ] },
+        { id: "participating-clubs", label: "Participating clubs", kind: "participating_clubs", priority: 6, hasContent: true, blocks: [{ id: "clubs", type: "club-list", year: 2027, clubs: Array.from({ length: 45 }, (_, index) => ({ name: `Gymnastics club ${index + 1}`, location: "Atlanta, GA", sourceUrl: "https://meet.test/teams" })) }] },
+        { id: "hotels", label: "Hotels", kind: "hotels", priority: 7, hasContent: true, blocks: [{ id: "hotel-cards", type: "card-grid", cards: Array.from({ length: 4 }, (_, index) => ({ key: String(index), presentation: "hotel", label: `Host hotel ${index + 1}`, body: "Group rooms available", highlights: [{ label: "Nightly rate", value: "$190 + tax" }] })) }] },
+        { id: "attractions", label: "Things to do", kind: "attractions", priority: 8, hasContent: true, blocks: [{ id: "attraction-cards", type: "card-grid", cards: Array.from({ length: 4 }, (_, index) => ({ key: String(index), label: `Attraction ${index + 1}`, body: "Local activities" })) }] },
+      ] } }} />
+  </article>;
   const selected = search.get("layout") || "template";
   const editing = search.has("editing");
   const [previewing, setPreviewing] = useState(false);
@@ -161,7 +188,7 @@ function App() {
               catalog={[
                 ...sections.map(({ id, label }) => ({ id, label })),
                 ...(search.has("schedule-editor") ? [{ id: "schedule", label: "Schedule", editorId: "schedule" }] : []),
-                ...(search.has("documents") ? [{ id: "documents", label: "Documents & links", editorId: "logistics" }, { id: "traffic-parking", label: "Travel & parking", editorId: "travel" }] : []),
+                ...(search.has("documents") ? [{ id: "documents", label: "Documents & links", editorId: "logistics" }, { id: "traffic-parking", label: "Parking", editorId: "travel" }] : []),
               ]}
               customSectionLabel={search.has("schedule-editor") ? "Custom" : undefined}
               renderEditor={id => {

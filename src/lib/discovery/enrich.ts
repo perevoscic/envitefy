@@ -3,6 +3,7 @@ import { getEventHistoryById } from "@/lib/db";
 import { enrichDiscoveryFileDocument, runDiscoveryExtractStageWithMode } from "@/lib/discovery/extract";
 import { safeString } from "@/lib/discovery/shared";
 import type { EventDiscoveryRow } from "@/lib/discovery/types";
+import { enrichLinkedMeetSchedules } from "./schedule-enrichment";
 import {
   createDiscoveryPerformance,
   finalizeMeetParseResult,
@@ -20,6 +21,7 @@ export const discoveryEnrichmentDeps = {
   finalizeMeetParseResult,
   enrichTravelAccommodation,
   getEventHistoryById,
+  enrichLinkedMeetSchedules,
 };
 
 export async function runDiscoveryEnrichStage(
@@ -74,7 +76,7 @@ export async function runDiscoveryEnrichStage(
   );
   throwIfDiscoveryCancelled(options?.signal);
 
-  const travelAccommodation = await discoveryEnrichmentDeps.enrichTravelAccommodation({
+  const [travelAccommodation, linkedSchedule] = await Promise.all([discoveryEnrichmentDeps.enrichTravelAccommodation({
     sourceType: discovery.source.type,
     sourceUrl: discovery.source.url,
     sourceId: discovery.id,
@@ -84,15 +86,26 @@ export async function runDiscoveryEnrichStage(
     budgetMs: Math.min(25000, enrichBudgetMs),
     extractedText,
     extractionMeta: refreshedDocument.extractionMeta as any,
-  });
+  }), discoveryEnrichmentDeps.enrichLinkedMeetSchedules({
+    websiteImport: refreshedDocument.extractionMeta.websiteImport,
+    ...(discovery.source.type === "file" && /pdf/i.test(discovery.source.mimeType || "") &&
+      /\b(?:travel|competition|session|meet)?\s*schedule\b/i.test(extractedText) && /\b(?:gym\s+[A-Z]|session\s+[A-Z0-9]+|warm[-\s]?up)\b/i.test(extractedText)
+      ? { sourceDocument: { fileName: discovery.source.fileName || "meet-packet.pdf", text: extractedText,
+          images: refreshedDocument.pages.flatMap(page => page.imageUrl ? [page.imageUrl] : []) } } : {}),
+    sourceUrl: discovery.source.url,
+    title: safeString(enrichedParseResult.title || baseParseResult.title),
+    year: Number(safeString(enrichedParseResult.startAt).slice(0, 4)) || null,
+    signal: options?.signal,
+    budgetMs: Math.min(45000, enrichBudgetMs),
+  })]);
   throwIfDiscoveryCancelled(options?.signal);
-
   const previousEvent = await discoveryEnrichmentDeps.getEventHistoryById(discovery.eventId);
 
   return {
     document: refreshedDocument,
     enrichment: {
       parseResult: enrichedParseResult,
+      linkedSchedule,
       travelAccommodation: buildTravelAccommodationState(travelAccommodation, previousEvent?.data?.discoverySource?.travelAccommodation),
       finalizedAt: new Date().toISOString(),
       performance,

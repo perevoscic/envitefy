@@ -3,6 +3,23 @@ import type { GymMeetPageTemplateMeta, GymMeetTemplateId } from "./types";
 export const DEFAULT_GYM_MEET_TEMPLATE_ID: GymMeetTemplateId = "airborne-atlas";
 export const DEFAULT_NEW_GYM_MEET_TEMPLATE_ID: GymMeetTemplateId = "airborne-atlas";
 
+/** Select a supported composition from source density, without inventing facts. */
+export function planGymMeetImportTemplate(data: Record<string, any>): GymMeetTemplateId {
+  const source = data.discoverySource || {};
+  const website = source.websiteImport || {};
+  const sections = data.advancedSections || data.customFields?.advancedSections || {};
+  const schedule = sections.schedule || {};
+  const sessions = (Array.isArray(schedule.days) ? schedule.days : []).flatMap((day: any) => day.sessions || []).length;
+  if (sessions >= 8) return "neon-runway";
+  const hotels = sections.logistics || {};
+  if ((hotels.hotelInfo || "").length > 300 || (hotels.hotels || []).length >= 2 || (website.hotels || []).length >= 2)
+    return "tidal-tumble";
+  if ((website.participatingClubs || []).length >= 12) return "copper-grip";
+  const admission = String(data.customFields?.admission || hotels.admission || "");
+  if ((admission.match(/\$\s*\d/g) || []).length >= 3) return "crimson-collegiate";
+  return "moonbeam-balance";
+}
+
 export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
   {
     "id": "airborne-atlas",

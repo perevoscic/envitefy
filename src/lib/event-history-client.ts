@@ -56,20 +56,20 @@ function sameValue(left: unknown, right: unknown): boolean {
 }
 
 /** Retain newer unchanged fields and this editor's changes; overlapping edits stay a conflict. */
-function reconcileValue(base: unknown, mine: unknown, theirs: unknown): unknown {
+function reconcileValue(base: unknown, mine: unknown, theirs: unknown, explicitSinceSave = false): unknown {
   if (sameValue(mine, theirs) || sameValue(theirs, base)) return mine;
   if (sameValue(mine, base)) return theirs;
   if (isPlainObject(mine) && isPlainObject(theirs) && (base === undefined || isPlainObject(base))) {
     const baseRecord = isPlainObject(base) ? base : {};
     const merged: Record<string, unknown> = {};
     for (const key of new Set([...Object.keys(baseRecord), ...Object.keys(mine), ...Object.keys(theirs)])) {
-      const value = reconcileValue(baseRecord[key], mine[key], theirs[key]);
+      const value = reconcileValue(baseRecord[key], mine[key], theirs[key], explicitSinceSave);
       if (value === importConflict) return importConflict;
       if (value !== undefined || Object.hasOwn(mine, key) || Object.hasOwn(theirs, key)) merged[key] = value;
     }
     return merged;
   }
-  return importConflict;
+  return explicitSinceSave ? mine : importConflict;
 }
 
 function mismatchedArtwork(row: EventEditorRecord): boolean {
@@ -78,7 +78,7 @@ function mismatchedArtwork(row: EventEditorRecord): boolean {
   return job?.status === "ready" && Boolean(job.imageUrl) && Boolean(theme?.artworkUrl) && job.themeId === theme?.id && job.imageUrl !== theme?.artworkUrl;
 }
 
-function reconcileEventSave(payload: Record<string, any>, baseline: EventEditorRecord, latest: EventEditorRecord): boolean {
+function reconcileEventSave(payload: Record<string, any>, baseline: EventEditorRecord, latest: EventEditorRecord, explicitSinceSave = false): boolean {
   if (baseline.id !== latest.id || !supportsEventCollaboration(baseline.data) ||
     !supportsEventCollaboration(latest.data) || baseline.data.signupForm || latest.data.signupForm ||
     mismatchedArtwork(latest) || !isPlainObject(payload.data)) return false;
@@ -88,12 +88,12 @@ function reconcileEventSave(payload: Record<string, any>, baseline: EventEditorR
   for (const [key, mine] of Object.entries(payload.data)) {
     if (key === "importedThemeArtwork" || (key === "pipelineSummary" && sameMeetImport(baseline, latest))) continue;
     // History PATCH is shallow: omitted top-level fields retain their latest values.
-    const value = reconcileValue(baseline.data[key], mine, latest.data[key]);
+    const value = reconcileValue(baseline.data[key], mine, latest.data[key], explicitSinceSave);
     if (value === importConflict) return false;
     data[key] = value;
   }
   if ("title" in payload) {
-    const title = reconcileValue(baseline.title, payload.title, latest.title);
+    const title = reconcileValue(baseline.title, payload.title, latest.title, explicitSinceSave);
     if (title === importConflict) return false;
     payload.title = title;
   }
@@ -149,7 +149,10 @@ export function createEventHistoryClient() {
       let merged = editorViews.has(key);
       if (merged && baseline?.revision && editorView && submitted?.expectedRevision === baseline.revision && isPlainObject(submitted.data)) {
         const payload = structuredClone(submitted);
-        if (!reconcileEventSave(payload, editorView, baseline))
+        // The previous save already committed the retained remote fields. A new
+        // explicit edit can replace them; unchanged mounted fields retain them.
+        // The server revision still protects against subsequent host edits.
+        if (!reconcileEventSave(payload, editorView, baseline, true))
           return Response.json({ code: "event_changed", error: "This event changed in another editor. Your edits are still here; reopen the latest event before saving." }, { status: 409 });
         body = JSON.stringify(payload);
       }

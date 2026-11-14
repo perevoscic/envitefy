@@ -338,6 +338,39 @@ test("concurrent saves accept one revision and reject the stale writer without o
   await assert.rejects(api.saveCollaborativeEvent({ eventId: "event", userId: "owner", expectedRevision: null, patch: {} }), e => e.status === 428);
 });
 
+test("Publish saves fresh explicit edits after a background merge without a preliminary draft save", async () => {
+  const { createEventHistoryClient } = compile("src/lib/event-history-client.ts", { react: { useMemo: fn => fn() } });
+  const originalFetch = global.fetch;
+  const before = { id: "event", revision: "initial", title: "Meet", data: { createdVia: "meet-discovery", status: "draft", venue: "Original venue", details: "Original details" } };
+  let record = structuredClone(before);
+  const writes = [];
+  global.fetch = async (_url, options = {}) => {
+    if (options.method !== "PATCH") return Response.json(record);
+    const body = JSON.parse(options.body);
+    writes.push(body);
+    if (body.expectedRevision !== record.revision) return Response.json({ code: "event_changed" }, { status: 409 });
+    record = { ...record, revision: `saved-${writes.length}`, data: { ...record.data, ...body.data } };
+    return Response.json(record);
+  };
+  try {
+    const client = createEventHistoryClient();
+    await client.fetch("/api/history/event");
+    record.data.venue = "Retained newer venue";
+    record.revision = "background";
+    const mine = { ...before.data, details: "My details" };
+    assert.equal((await client.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: mine }) })).status, 200);
+    assert.equal(record.data.venue, "Retained newer venue");
+    assert.equal((await client.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: { ...mine, venue: "My explicit venue", status: "published" } }) })).status, 200);
+    assert.equal(record.data.venue, "My explicit venue");
+    assert.equal(record.data.status, "published");
+    assert.equal(record.data.details, "My details");
+    assert.equal(writes.length, 3, "one merged save retry, then one atomic publish");
+    record.data.venue = "Later concurrent edit";
+    record.revision = "later-host";
+    assert.equal((await client.fetch("/api/history/event", { method: "PATCH", body: JSON.stringify({ data: { ...mine, venue: "Overlapping edit", status: "published" } }) })).status, 409);
+  } finally { global.fetch = originalFetch; }
+});
+
 test("a co-host leaves only their own event access, preserving its owner, other co-hosts, artwork and responses", async () => {
   const { api, state, event } = fixture();
   event.data.responses = [{ name: "Guest", attending: true }];

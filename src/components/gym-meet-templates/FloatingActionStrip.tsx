@@ -57,7 +57,7 @@ export default function FloatingActionStrip({
           </button>
         </span>
       ) : mobileEditHref ? (
-        <span data-event-mobile-edit className="lg:hidden">
+        <span data-event-mobile-edit className="lg:hidden" style={{ display: "none" }}>
           <a
             href={mobileEditHref}
             target="_top"

@@ -122,10 +122,15 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
         assert.equal(await locator.locator('[class*="shell"]').first().evaluate(el => getComputedStyle(el).backgroundColor), "rgb(17, 27, 58)");
       };
       await assertNavy(canvas);
+      if (width === 390) {
+        const surface = canvas.locator('[data-event-page-surface]');
+        const [eventBounds, canvasBounds] = await Promise.all([surface.boundingBox(), canvas.boundingBox()]);
+        assert.ok(Math.abs(eventBounds.x - canvasBounds.x) < 1 && Math.abs(eventBounds.width - canvasBounds.width) < 1, "the mobile meet page fills its canvas without outside gutters");
+      }
       if (width === 390) await views.getByRole("button", { name: "Continue editing", exact: true }).click();
       await openImageSettings();
       const choices = imageSettings.getByRole("group", { name: "Theme color combinations", exact: true });
-      await choices.getByRole("button", { name: "Accent", exact: true }).click();
+      await choices.getByRole("button", { name: "Vivid", exact: true }).click();
       await assertNavy(canvas);
       await imageSettings.getByRole("button", { name: "Back to details", exact: true }).click();
       await page.getByRole("button", { name: "Save draft", exact: true }).click();
@@ -279,7 +284,7 @@ test("imported gymnastics venue guidance and curated sections survive explicit s
       }
 
       await openImageSettings();
-      await imageSettings.getByRole("button", { name: "Tonal", exact: true }).click();
+      await imageSettings.getByRole("button", { name: "Split tone", exact: true }).click();
       await imageSettings.getByRole("button", { name: "Back to details", exact: true }).click();
       // A subsequent wrapper save must retain explicit clears and native fields.
       await preview.getByRole("button", { name: "Edit welcome message text", exact: true }).click();

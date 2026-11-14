@@ -40,6 +40,7 @@ import "@/components/events/inline-editable-text.module.css";
 import "@/components/events/responsive-event-navigation.module.css";
 import "@/components/events/template-artwork-thumbnail.module.css";
 import "@/components/events/template-masonry-gallery.module.css";
+import "@/components/events/venue-photo.module.css";
 import "@/components/gender-reveal/gender-reveal-scenes.module.css";
 import "@/components/gym-meet-templates/collection-fonts.css";
 import "@/components/gym-meet-templates/gymnastics-collection.module.css";

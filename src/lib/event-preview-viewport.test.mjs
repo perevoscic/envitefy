@@ -19,11 +19,11 @@ test("device previews use distinct real CSS viewport breakpoints", () => {
   assert.ok(EVENT_PREVIEW_DEVICES.desktop.width >= 1280);
   assert.ok(EVENT_PREVIEW_DEVICES.tablet.width >= 768 && EVENT_PREVIEW_DEVICES.tablet.width < 1024);
   assert.ok(EVENT_PREVIEW_DEVICES.mobile.width < 640);
-  assert.equal(initialEventPreviewDevice(360), "mobile");
-  assert.equal(initialEventPreviewDevice(800), "tablet");
-  assert.equal(initialEventPreviewDevice(1500), "mobile");
-  assert.equal(initialEventPreviewDevice(1024), "mobile");
-  assert.equal(initialEventPreviewDevice(767), "mobile");
+  assert.equal(initialEventPreviewDevice(360), "desktop");
+  assert.equal(initialEventPreviewDevice(800), "desktop");
+  assert.equal(initialEventPreviewDevice(1500), "desktop");
+  assert.equal(initialEventPreviewDevice(1024), "desktop");
+  assert.equal(initialEventPreviewDevice(767), "desktop");
 });
 
 test("sidebar event links enter the owner view without stale editor or preview flags", () => {

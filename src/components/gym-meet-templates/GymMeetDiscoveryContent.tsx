@@ -14,7 +14,8 @@ import {
 import Image from "next/image";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import StaticMap from "@/components/StaticMap";
-import EventPlaceCard, { placeCardGridStyle } from "@/components/event-create/EventPlaceCard";
+import EventPlaceCard, { contentCardGridStyle, contentCardNeedsFullWidth, placeCardGridStyle } from "@/components/event-create/EventPlaceCard";
+import { venueWebsitePhoto } from "@/lib/venue-photo-source";
 import placeStyles from "@/components/event-create/event-place-card.module.css";
 import { splitGuidanceSentences } from "./displayText";
 import GymnasticsProgram from "./GymnasticsProgram";
@@ -265,7 +266,7 @@ export default function GymMeetDiscoveryContent({
   const activeSection =
     sections.find((section: any) => section.id === activeSectionId) || sections[0];
 
-  const renderBlock = (block: any) => {
+  const renderBlock = (block: any, options?: { venueLayout?: boolean }) => {
     const blockKey = encodeURIComponent(block.id);
     const blockTitle = () =>
       pageText(`block:${blockKey}:title`, block.title, `${block.title} heading`);
@@ -326,12 +327,16 @@ export default function GymMeetDiscoveryContent({
             ) : null}
             <div
               data-program-cards={block.id === "hotel-cards" ? "hotels" : block.id === "attraction-cards" ? "attractions" : "details"}
+              data-content-density={(block.cards || []).length > 1 ? "collection" : "single"}
               style={block.id === "hotel-cards" ? placeCardGridStyle((block.cards || []).map((card, index) => ({
                 name: model.gymnasticsPageText?.[`card:${encodeURIComponent(getCollectionItemKey(block.id, card?.key, index))}:label`] ?? card.label ?? "",
                 values: (card.highlights || []).map(highlight => String(highlight.value || "")),
-              }))) : undefined}
+              }))) : contentCardGridStyle((block.cards || []).map((card, index) => ({
+                ...card, label: model.gymnasticsPageText?.[`card:${encodeURIComponent(getCollectionItemKey(block.id, card?.key, index))}:label`] ?? card.label,
+                body: model.gymnasticsPageText?.[`card:${encodeURIComponent(getCollectionItemKey(block.id, card?.key, index))}:body`] ?? card.body,
+              })), block.id === "attraction-cards" ? "attractions" : "details")}
               className={
-                (block.id === "hotel-cards" || block.id === "attraction-cards") ? placeStyles.grid : "grid grid-cols-1 gap-4"
+                (block.id === "hotel-cards" || block.id === "attraction-cards") ? placeStyles.grid : "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))]"
               }
             >
               {(block.cards || []).map((card: any, index: number) => {
@@ -409,6 +414,8 @@ export default function GymMeetDiscoveryContent({
                   return (
                     <article
                       key={cardReactKey}
+                      style={contentCardNeedsFullWidth({ label: card.label, items: guidanceItems.map((item, itemIndex) => model.gymnasticsPageText?.[`line:${cardTextKey}-item-${itemIndex}:text`] ?? item) }) ? { gridColumn: "1 / -1" } : undefined}
+                      data-guidance-card
                       className={`${cardClass} relative overflow-hidden border-l-[3px] ${
                         warningTone ? "border-l-amber-400" : "border-l-sky-500"
                       }`}
@@ -613,7 +620,7 @@ export default function GymMeetDiscoveryContent({
               <p className="mb-4 text-sm leading-relaxed opacity-85">{blockText()}</p>
             ) : null}
             <div className={placeStyles.map} data-arrival-map>
-              <StaticMap address={block.address} width={600} height={260} />
+              <StaticMap address={block.address} width={600} height={options?.venueLayout ? 350 : 260} />
             </div>
           </div>
         );
@@ -627,6 +634,10 @@ export default function GymMeetDiscoveryContent({
       <GymnasticsProgram
         sections={sections}
         sectionLayout={model.sectionLayout}
+        venue={model.venue}
+        address={model.address}
+        venuePhoto={venueWebsitePhoto(model.venue || "", model.address || "", model.importedTheme?.context, model.importedThemeArtwork?.venueReference)}
+        groupRelatedTabs={model.importedPageLayout?.navigation === "related" || Boolean(model.generatedFromDiscovery && !model.sectionLayout?.order?.length && !model.sectionLayout?.added?.length)}
         additionalSections={additionalSections}
         presentation={presentation}
         renderBlock={renderBlock}

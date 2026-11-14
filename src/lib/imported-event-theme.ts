@@ -1,4 +1,4 @@
-import { colorContrast } from "./color-contrast";
+import { colorContrast } from "./color-contrast.ts";
 
 export type SourceBranding = {
   version: 1;
@@ -295,11 +295,45 @@ export function importedEventAccentPalette(palette: TemplateAccentPalette, value
   const theme = readImportedEventTheme(value);
   if (!theme?.enabled || theme.preserveTemplateStyle) return palette;
   const { page, ink, accent } = theme.colors;
-  return { ...palette, name: "Custom", background: page, foreground: ink,
-    accent: colorContrast(accent, page) >= 4.5 ? accent : ink };
+  // Keep the source hue even when it needs contrast correction for text. Replacing
+  // it with body ink here makes every generated alternative inherit the same ink.
+  return { ...palette, name: "Custom", background: page, foreground: ink, accent };
 }
 
-/** Six related accent recipes from this template, never new page backgrounds. */
+function accentLch(color: string) {
+  const [r, g, b] = [1, 3, 5].map(offset => {
+    const channel = parseInt(color.slice(offset, offset + 2), 16) / 255;
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const axisB = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  return { hue: Math.atan2(axisB, a) * 180 / Math.PI, chroma: Math.hypot(a, axisB) };
+}
+
+/** OKLCH keeps hue spacing perceptually useful; reduce chroma to fit sRGB without clipping hues. */
+function accentHex(hue: number, chroma: number, lightness: number) {
+  let channels: number[] = [];
+  for (let step = 0; step <= 24; step++) {
+    const a = chroma * Math.cos(hue * Math.PI / 180), b = chroma * Math.sin(hue * Math.PI / 180);
+    const l = (lightness + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+    const m = (lightness - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+    const s = (lightness - 0.0894841775 * a - 1.291485548 * b) ** 3;
+    channels = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+      -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
+    if (channels.every(channel => channel >= 0 && channel <= 1)) break;
+    chroma *= 0.85;
+  }
+  return `#${channels.map(channel => {
+    const value = channel <= 0.0031308 ? channel * 12.92 : 1.055 * channel ** (1 / 2.4) - 0.055;
+    return Math.round(Math.max(0, Math.min(1, value)) * 255).toString(16).padStart(2, "0");
+  }).join("")}`;
+}
+
+/** Six hue-related accent recipes; the saved surfaces, body ink and artwork stay intact. */
 export function templateAccentColorCombinations(palette: TemplateAccentPalette) {
   const { background, foreground, accent } = palette;
   // Links and titles also sit on the template's lightly tinted information panels.
@@ -312,16 +346,33 @@ export function templateAccentColorCombinations(palette: TemplateAccentPalette) 
     return foreground;
   };
   const base = readable(accent);
-  const headingTarget = colorContrast("#000000", background) > colorContrast("#ffffff", background) ? "#000000" : "#ffffff";
+  const source = accentLch(accent);
+  // Neutral themes get restrained tinted alternatives, rather than unrelated bright colors.
+  const neutral = source.chroma < 0.015;
+  const chroma = neutral ? 0.035 : Math.min(0.18, Math.max(0.12, source.chroma));
+  const hue = neutral ? accentLch(foreground).hue : source.hue;
+  const dark = relativeLuminance(background) < 0.18;
+  const tone = (offset: number, strength = 1, lightnessOffset = 0) => {
+    const initial = Math.max(0, Math.min(1, (dark ? 0.78 : 0.48) + lightnessOffset));
+    // Correct lightness along the same hue instead of mixing every choice into body ink.
+    for (let step = 0; step <= 100; step++) {
+      const lightness = initial + ((dark ? 1 : 0) - initial) * step / 100;
+      const candidate = accentHex(hue + offset, chroma * strength, lightness);
+      if (surfaces.every(surface => colorContrast(candidate, surface) >= 4.5)) return candidate;
+    }
+    return foreground;
+  };
+  const vivid = tone(0), adjacent = tone(-36), soft = tone(36, 0.6, dark ? 0.08 : 0.06);
+  const complement = tone(160), split = tone(208);
   return [
     { name: "Original", button: foreground, heading: foreground, link: base },
-    { name: "Accent", button: base, heading: base, link: readable(mix(base, foreground, 0.25)) },
-    { name: "Balanced", button: foreground, heading: readable(mix(base, headingTarget, 0.18)), link: readable(mix(base, foreground, 0.3)) },
-    { name: "Soft", button: readable(mix(base, background, 0.1)), heading: readable(mix(base, headingTarget, 0.35)), link: base },
-    { name: "Deep", button: readable(mix(base, foreground, 0.35)), heading: readable(mix(base, headingTarget, 0.55)), link: readable(mix(base, foreground, 0.55)) },
-    { name: "Tonal", button: readable(mix(base, foreground, 0.7)), heading: readable(mix(base, headingTarget, 0.75)), link: readable(mix(base, foreground, 0.4)) },
+    { name: "Vivid", button: vivid, heading: vivid, link: tone(-12) },
+    { name: "Analogous", button: adjacent, heading: adjacent, link: vivid },
+    { name: "Soft", button: soft, heading: soft, link: tone(22, 0.75) },
+    { name: "Complement", button: vivid, heading: complement, link: complement },
+    { name: "Split tone", button: split, heading: split, link: vivid },
   ].map((colors, index) => {
-    let inverseHeading = mix(background, accent, [0, 0.25, 0.15, 0.12, 0.3, 0.4][index]);
+    let inverseHeading = mix(background, colors.heading, index ? 0.25 : 0);
     for (let step = 0; colorContrast(inverseHeading, foreground) < 4.5 && step <= 20; step++) {
       inverseHeading = mix(inverseHeading, background, step / 20);
     }

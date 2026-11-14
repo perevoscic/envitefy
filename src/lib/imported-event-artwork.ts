@@ -9,7 +9,8 @@ import { importedArtworkCity, importedArtworkUrl, readImportedEventTheme, themeH
 import { reviewImportedSportsArtwork, type SportsArtworkReview } from "./imported-event-artwork-review";
 import { SPORTS_REPRESENTATION_RULE, sportsArtworkScene, sportsArtworkSetting } from "./sports-artwork-contract";
 import { SOURCE_INSPIRED_EVENT_PAGE_INSTRUCTION } from "./source-inspired-event-page";
-import { prepareGymnasticsVenueReference, type GymnasticsVenueReference } from "./gymnastics-venue-artwork";
+import { prepareGymnasticsVenueReference, resolveGymnasticsVenueTown, type GymnasticsVenueReference } from "./gymnastics-venue-artwork";
+import { readVenuePhotoReference } from "./venue-photo-source";
 
 export type ImportedArtworkState = {
   themeId: string;
@@ -19,7 +20,7 @@ export type ImportedArtworkState = {
   error?: string;
   review?: SportsArtworkReview;
   composition?: "venue" | "town";
-  venueReference?: { venue: string; sourceUrl: string; imageUrl: string; addressSourceUrl?: string };
+  venueReference?: import("./venue-photo-source").VenuePhotoReference;
 };
 export function importedArtworkState(value: unknown): ImportedArtworkState | null {
   if (!value || typeof value !== "object") return null;
@@ -39,6 +40,7 @@ export function importedArtworkState(value: unknown): ImportedArtworkState | nul
       : {}),
     ...(typeof raw.error === "string" ? { error: raw.error.slice(0, 300) } : {}),
     ...(raw.composition === "venue" || raw.composition === "town" ? { composition: raw.composition } : {}),
+    ...(readVenuePhotoReference(raw.venueReference) ? { venueReference: readVenuePhotoReference(raw.venueReference) } : {}),
   };
 }
 export function importedArtworkPrompt(theme: ImportedEventTheme, reference?: GymnasticsVenueReference) {
@@ -77,6 +79,7 @@ export const importedArtworkDeps = {
   review: reviewImportedSportsArtwork,
   upload: uploadPublicBinaryAsset,
   venueReference: prepareGymnasticsVenueReference,
+  venueTown: resolveGymnasticsVenueTown,
 };
 
 /** A durable claim prevents refreshes and worker retries from repeating a paid image request. */
@@ -109,12 +112,16 @@ export async function generateImportedEventArtwork(
   let review: SportsArtworkReview | undefined;
   let reference: GymnasticsVenueReference | undefined;
   let composition: "venue" | "town" | undefined;
-  const city = importedArtworkCity(theme.context.city, theme.context.address);
+  let city = importedArtworkCity(theme.context.city, theme.context.address);
   const artworkTheme = { ...theme, context: { ...theme.context, city } };
   try {
     if (/gymnastics|balance beam/i.test(theme.context.sport)) {
       stage = "venue_reference";
       reference = await importedArtworkDeps.venueReference(artworkTheme.context, owner).catch(() => null) || undefined;
+      if (!reference && !city) {
+        city = await importedArtworkDeps.venueTown(theme.context);
+        artworkTheme.context.city = city;
+      }
       composition = reference ? "venue" : "town";
       if (!reference && !city) throw new Error("venue_reference");
     }
@@ -155,13 +162,16 @@ export async function generateImportedEventArtwork(
       updatedAt: new Date().toISOString(),
       review,
       ...(composition ? { composition } : {}),
-      ...(reference ? { venueReference: { venue: reference.venue, sourceUrl: reference.sourceUrl, imageUrl: reference.imageUrl, ...(reference.addressSourceUrl ? { addressSourceUrl: reference.addressSourceUrl } : {}) } } : {}),
+      ...(reference ? { venueReference: { venue: reference.venue, sourceUrl: reference.sourceUrl, imageUrl: reference.imageUrl,
+        ...(reference.permission ? { permission: reference.permission } : {}), ...(reference.permittedPhoto ? { permittedPhoto: reference.permittedPhoto } : {}), ...(reference.addressSourceUrl ? { addressSourceUrl: reference.addressSourceUrl } : {}) } } : {}),
     };
   } catch {
     state = {
       themeId: theme.id,
       status: "failed",
       updatedAt: new Date().toISOString(),
+      ...(reference ? { venueReference: { venue: reference.venue, sourceUrl: reference.sourceUrl, imageUrl: reference.imageUrl,
+        ...(reference.permission ? { permission: reference.permission } : {}), ...(reference.permittedPhoto ? { permittedPhoto: reference.permittedPhoto } : {}), ...(reference.addressSourceUrl ? { addressSourceUrl: reference.addressSourceUrl } : {}) } } : {}),
       ...(review ? { review } : {}),
       ...(composition ? { composition } : {}),
       error:

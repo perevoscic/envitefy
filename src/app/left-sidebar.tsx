@@ -1354,7 +1354,9 @@ export default function LeftSidebar() {
           height: viewModel.isDesktop ? "100%" : "100dvh",
           transform: viewModel.sidebarTransform,
           opacity: viewModel.isDesktop ? 1 : viewModel.isOpen ? 1 : 0,
-          boxShadow: viewModel.isCompact ? "none" : "8px 0 40px rgba(88, 71, 171, 0.06)",
+          boxShadow: viewModel.isCompact
+            ? "var(--nav-sidebar-edge-glow, none)"
+            : "var(--nav-sidebar-edge-glow, 8px 0 40px rgba(88, 71, 171, 0.06))",
         }}
         aria-label="Sidebar"
       >

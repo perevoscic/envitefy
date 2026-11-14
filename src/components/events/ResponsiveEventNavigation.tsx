@@ -13,14 +13,17 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   Baby,
   Bell,
+  Building2,
   CalendarDays,
   Camera,
   ClipboardList,
   Clock,
+  Compass,
   Gift,
   Heart,
   Home,
   Hotel,
+  Info,
   LayoutGrid,
   MapPin,
   Megaphone,
@@ -48,15 +51,18 @@ export type EventNavigationItem = {
 
 const LABEL_HINT_INTERVAL_MS = 1100;
 
-function sectionIcon(id: string): LucideIcon {
+export function sectionIcon(id: string): LucideIcon {
+  if (id === "meet-details") return Info;
   if (/rsvp|attend|response|confirm/.test(id)) return Ticket;
   if (/registry|gift/.test(id)) return Gift;
   if (/photo|gallery|cast/.test(id)) return Camera;
   if (/parent|baby/.test(id)) return Baby;
   if (/story|couple|manifesto|vibe/.test(id)) return Heart;
   if (/hotel|stay|accommodation|digs/.test(id)) return Hotel;
+  if (/attraction|explore|things-to-do/.test(id)) return Compass;
   if (/travel/.test(id)) return Plane;
-  if (/venue|location|parking|traffic|logistic|visit|direction|set$/.test(id)) return MapPin;
+  if (/venue/.test(id)) return Building2;
+  if (/location|parking|traffic|logistic|visit|direction|set$/.test(id)) return MapPin;
   if (/schedule|event|match|game|session|day|weekend|scoop/.test(id)) return CalendarDays;
   if (/practice|warmup|rotation/.test(id)) return Clock;
   if (/team|club|roster|lineup|coach|host|volunteer|support/.test(id)) return Users;

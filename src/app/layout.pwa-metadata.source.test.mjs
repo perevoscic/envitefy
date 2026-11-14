@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { applicationChromeColors } from "../themes/chrome.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..", "..");
@@ -44,15 +45,15 @@ test("root layout leaves head metadata to Next", () => {
 
 test("root metadata declares Envitefy as the install app name", () => {
   assert.match(layoutSource, /applicationName:\s*"Envitefy"/);
-  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v14"/);
+  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v15"/);
   assert.match(layoutSource, /"apple-mobile-web-app-capable":\s*"yes"/);
   assert.match(
     layoutSource,
-    /"apple-mobile-web-app-status-bar-style":\s*"black-translucent"/,
+    /"apple-mobile-web-app-status-bar-style":\s*"default"/,
   );
   assert.match(
     layoutSource,
-    /appleWebApp:\s*\{[\s\S]*?statusBarStyle:\s*"black-translucent"[\s\S]*?title:\s*"Envitefy"[\s\S]*?\}/,
+    /appleWebApp:\s*\{[\s\S]*?statusBarStyle:\s*"default"[\s\S]*?title:\s*"Envitefy"[\s\S]*?\}/,
   );
 });
 
@@ -61,23 +62,23 @@ test("web app manifest names the installed app Envitefy", () => {
   assert.equal(manifest.short_name, "Envitefy");
 });
 
-test("mobile chrome preserves light clouds and supports resolved dark appearance", () => {
-  assert.equal(manifest.theme_color, "#8998ED");
-  assert.equal(manifest.background_color, "#F3EEFF");
+test("mobile chrome follows the resolved light and dark application surfaces", () => {
+  assert.equal(manifest.theme_color, applicationChromeColors.light);
+  assert.equal(manifest.background_color, applicationChromeColors.light);
   assert.match(layoutSource, /colorScheme:\s*"light dark"/);
   assert.match(
     layoutSource,
-    /\{\s*media:\s*"\(prefers-color-scheme:\s*light\)",\s*color:\s*themeColorPalette\.brand\s*\}/,
+    /\{\s*media:\s*"\(prefers-color-scheme:\s*light\)",\s*color:\s*themeColorPalette\.light\s*\}/,
   );
   assert.match(
     layoutSource,
     /\{\s*media:\s*"\(prefers-color-scheme:\s*dark\)",\s*color:\s*themeColorPalette\.dark\s*\}/,
   );
-  assert.match(layoutSource, /\{\s*color:\s*themeColorPalette\.brand\s*\}/);
+  assert.match(layoutSource, /\{\s*color:\s*themeColorPalette\.light\s*\}/);
   assert.doesNotMatch(globalsSource, /color-scheme:\s*only light/);
   assert.match(layoutSource, /buildAppearanceBootstrap/);
   assert.match(themeColorSyncSource, /setColorSchemeMeta\(variant\)/);
-  assert.match(themeColorSource, /const DARK_THEME_COLOR = "#181818"/);
+  assert.match(themeColorSource, /const DARK_THEME_COLOR = applicationChromeColors.dark/);
   assert.match(
     layoutSource,
     /backgroundColor:\s*themeColorPalette\.background/,
@@ -88,20 +89,20 @@ test("mobile chrome preserves light clouds and supports resolved dark appearance
   );
   assert.match(
     layoutSource,
-    /themeColor:\s*\[[\s\S]*?color:\s*themeColorPalette\.brand[\s\S]*?\]/,
+    /themeColor:\s*\[[\s\S]*?color:\s*themeColorPalette\.light[\s\S]*?\]/,
   );
   assert.match(
     globalsSource,
-    /--mobile-chrome-top:\s*#8998ed/,
+    /--mobile-chrome-top:\s*var\(--background\)/,
   );
   assert.match(
     globalsSource,
-    /--mobile-chrome-bottom:\s*#8998ed/,
+    /--mobile-chrome-bottom:\s*var\(--background\)/,
   );
   assert.match(globalsSource, /body::after\s*\{[\s\S]*?background:\s*var\(--mobile-chrome-bottom\)/);
   assert.match(
     globalsSource,
-    /--ios-browser-chrome-background:\s*#8998ed/,
+    /--ios-browser-chrome-background:\s*var\(--background\)/,
   );
   const iosBrowserBodyBlock =
     globalsSource.match(/html\[data-ios-browser-chrome="true"\]\s+body\s*\{([^}]*)\}/)?.[1] ||
@@ -125,7 +126,7 @@ test("mobile chrome preserves light clouds and supports resolved dark appearance
   );
   assert.match(
     themeColorSource,
-    /const BRAND_NAVIGATION_BAR_COLOR = BRAND_THEME_COLOR/,
+    /const BRAND_NAVIGATION_BAR_COLOR = LIGHT_THEME_COLOR/,
   );
   assert.match(
     themeColorSource,
@@ -142,11 +143,10 @@ test("mobile chrome preserves light clouds and supports resolved dark appearance
   assert.match(themeColorSyncSource, /MutationObserver/);
   assert.match(themeColorSource, /COLOR_SCHEME_SELECTOR/);
   assert.match(themeColorSource, /setLightColorSchemeMeta/);
-  assert.match(themeColorSource, /const IOS_BROWSER_CHROME_COLOR = BRAND_THEME_COLOR/);
+  assert.match(themeColorSource, /const IOS_BROWSER_CHROME_COLOR = LIGHT_THEME_COLOR/);
   for (const edge of ["top", "bottom"]) {
     const clouds = globalsSource.match(new RegExp(`--mobile-chrome-${edge}-clouds:([^;]+);`))?.[1] || "";
-    assert.equal((clouds.match(/radial-gradient/g) || []).length, 3);
-    assert.doesNotMatch(clouds, /linear-gradient/);
+    assert.equal(clouds.trim(), "none");
     assert.match(globalsSource, new RegExp(`background: var\\(--mobile-chrome-${edge}-clouds\\), var\\(--mobile-chrome-${edge}\\)`));
   }
   assert.doesNotMatch(themeColorSource, /IOS_BROWSER_THEME_COLOR/);

@@ -60,10 +60,10 @@ export const metadata: Metadata = {
     "OCR event capture",
     "Envitefy",
   ],
-  manifest: "/manifest.webmanifest?v=v14",
+  manifest: "/manifest.webmanifest?v=v15",
   other: {
     "apple-mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "apple-mobile-web-app-status-bar-style": "default",
     "google-adsense-account": "ca-pub-8853590530457369",
     "impact-site-verification": "4423e484-94c7-440d-9dba-4fd92408244a",
   },
@@ -97,7 +97,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Envitefy",
   },
   openGraph: {
@@ -126,9 +126,9 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   colorScheme: "light dark",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: themeColorPalette.brand },
+    { media: "(prefers-color-scheme: light)", color: themeColorPalette.light },
     { media: "(prefers-color-scheme: dark)", color: themeColorPalette.dark },
-    { color: themeColorPalette.brand },
+    { color: themeColorPalette.light },
   ],
 };
 

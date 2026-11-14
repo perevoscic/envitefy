@@ -149,7 +149,7 @@ export default function EventPreviewViewport({
   const stageRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const initializedDevice = useRef(false);
-  const [device, setDevice] = useState<EventPreviewDevice>(initialDevice || "mobile");
+  const [device, setDevice] = useState<EventPreviewDevice>(initialDevice || "desktop");
   const [orientation, setOrientation] = useState<EventPreviewOrientation>("portrait");
   const [rotationInProgress, setRotationInProgress] = useState(false);
   const cancelRotation = useRef<(() => void) | null>(null);
@@ -169,22 +169,19 @@ export default function EventPreviewViewport({
   const pairedDevices = desktopControls && device !== "desktop"
     ? getEventPreviewPairLayout(available.width, available.height, effectiveOrientation)
     : null;
-  const renderedDevice = pairedDevices ? "mobile" : device;
-  const nativeMobile = device === "mobile" && available.browserWidth > 0 && available.browserWidth < 768;
+  const nativeMobile = !deviceOnly && available.browserWidth > 0 && available.browserWidth < 768;
+  const renderedDevice = pairedDevices || nativeMobile ? "mobile" : device;
   const floatingToolbar = preserveNavigation || nativeMobile;
   const deviceFrame = frameLayout || pairedDevices?.mobile || (renderedDevice !== "desktop" && !nativeMobile
     ? getEventPreviewFrameLayout(renderedDevice, available.width, available.height, effectiveOrientation)
     : null);
   const { viewport, fit } = deviceFrame || getEventPreviewLayout(
-    device,
+    renderedDevice,
     available.width,
     available.height,
     nativeMobile,
   );
   const controlScale = fit.scale > 0 ? fit.scale : 1;
-  const tabletControlsHeight = renderedDevice === "tablet" && deviceFrame
-    ? Math.min(viewport.height, 56 / controlScale)
-    : 0;
   const closePreview = useCallback(() => {
     if (onClose) onClose();
     else if (returnHref) window.location.assign(returnHref);
@@ -259,7 +256,7 @@ export default function EventPreviewViewport({
       [data-app-main-content]::-webkit-scrollbar {
         display: none;
       }
-      ${desktop.matches ? "[data-event-mobile-edit] { display: none !important; }" : ""}
+      [data-event-mobile-edit] { display: ${desktop.matches ? "none" : "inline-flex"} !important; }
       `;
     };
     syncStyle();
@@ -574,20 +571,15 @@ export default function EventPreviewViewport({
                   borderRadius: deviceFrame?.screen.radius || 0,
                 }}
               >
-                {tabletControlsHeight > 0 ? (
-                  <div data-tablet-orientation-bar className="absolute left-0 top-0 z-20 flex w-full items-center justify-center" style={{ height: tabletControlsHeight }}>
+                {renderedDevice === "tablet" && deviceFrame ? (
+                  <div data-tablet-orientation-control className="pointer-events-none absolute left-0 z-20 flex w-full justify-center" style={{ top: 6 / controlScale }}>
                     <button
                       type="button"
                       aria-label={effectiveOrientation === "portrait" ? "View in landscape" : "View in portrait"}
                       aria-disabled={deviceOnly ? tabletRotationInProgress : rotationInProgress}
                       onClick={rotateTablet}
-                      className={`${toolbarStyles.control} ${toolbarStyles.rotationControl} inline-flex shrink-0 items-center justify-center rounded-full border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current`}
-                      style={{
-                        "--preview-control-size": `${44 / controlScale}px`,
-                        "--preview-expanded-size": `${190 / controlScale}px`,
-                        "--preview-icon-size": `${24 / controlScale}px`,
-                        "--preview-label-size": `${12 / controlScale}px`,
-                      } as CSSProperties}
+                      className={`${toolbarStyles.control} ${toolbarStyles.rotationControl} pointer-events-auto inline-flex shrink-0 items-center justify-center rounded-full border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current`}
+                      style={{ "--preview-control-size": `${44 / controlScale}px`, "--preview-expanded-size": `${190 / controlScale}px`, "--preview-icon-size": `${24 / controlScale}px`, "--preview-label-size": `${12 / controlScale}px` } as CSSProperties}
                     >
                       <svg data-device-orientation-icon={effectiveOrientation === "portrait" ? "landscape" : "portrait"} width={24 / controlScale} height={24 / controlScale} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <rect data-orientation-device x={effectiveOrientation === "portrait" ? 2 : 4} y={effectiveOrientation === "portrait" ? 4 : 2} width={effectiveOrientation === "portrait" ? 20 : 16} height={effectiveOrientation === "portrait" ? 16 : 20} rx="2.5" />
@@ -605,7 +597,7 @@ export default function EventPreviewViewport({
                   data-preview-device={renderedDevice}
                   className="absolute left-0 top-0 origin-top-left border-0 bg-transparent"
                   // Keep transparent event canvases visible across app/event color schemes.
-                  style={{ width: viewport.width, height: Math.max(1, viewport.height - tabletControlsHeight), top: tabletControlsHeight, colorScheme: "normal", visibility: deviceFrame && artworkStatus !== "ready" ? "hidden" : undefined }}
+                  style={{ width: viewport.width, height: viewport.height, colorScheme: "normal", visibility: deviceFrame && artworkStatus !== "ready" ? "hidden" : undefined }}
                   onLoad={(event) => {
                     try {
                       const doc = event.currentTarget.contentDocument;

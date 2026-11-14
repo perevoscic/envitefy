@@ -256,7 +256,8 @@ test("co-host entry matches the owner event canvas; access and signup/login reta
         assert.equal(await page.getByText("Co-host", { exact: true }).count(), role === "cohost" ? 1 : 0);
         await openEventActions();
         assert.equal(await page.getByRole("link", { name: "Edit event", exact: true }).isVisible(), true);
-        assert.equal(await page.getByRole("link", { name: "Preview event", exact: true }).isVisible(), true);
+        assert.equal(await page.getByRole("link", { name: "Preview event", exact: true }).count(), 0, "the event canvas is already the preview");
+        assert.ok(await page.locator('[data-owner-event-view] iframe:visible').count() > 0, "owners and co-hosts retain the embedded event preview");
         assert.equal(await page.getByRole("button", { name: "Share event", exact: true }).isVisible(), true);
         assert.equal(await page.getByRole("button", { name: "Delete event", exact: true }).count(), role === "owner" ? 1 : 0);
         assert.equal(await page.getByRole("button", { name: /^(Invite co-host|Manage access)$/ }).count(), role === "owner" ? 1 : 0);

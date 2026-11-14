@@ -9,9 +9,9 @@ export const EVENT_PREVIEW_DEVICES = {
 export type EventPreviewDevice = keyof typeof EVENT_PREVIEW_DEVICES;
 export type EventPreviewOrientation = "portrait" | "landscape";
 
-/** Desktop opens both framed devices; the unframed Desktop view stays explicit. */
-export function initialEventPreviewDevice(width: number): EventPreviewDevice {
-  return width >= 768 && width < 1024 ? "tablet" : "mobile";
+/** Every new viewer starts in Desktop; phones still render at their native width. */
+export function initialEventPreviewDevice(_width: number): EventPreviewDevice {
+  return "desktop";
 }
 
 /** Cards open in Design; event pages open in the event viewer. */

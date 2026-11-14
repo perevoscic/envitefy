@@ -885,12 +885,7 @@ const isLowSignalTravelSummaryText = (value: unknown) => {
   const normalizedValue = normalizeRedundantLinkSummaryText(value);
   if (!normalizedValue) return false;
   if (LOW_SIGNAL_TRAVEL_SUMMARY_TEXT.has(normalizedValue)) return true;
-  return (
-    normalizedValue.split(" ").length <= 3 &&
-    /\b(host|group|hotel|hotels|travel|lodging|accommodation|accommodations|housing|reservation|reservations|booking|stay)\b/i.test(
-      normalizedValue,
-    )
-  );
+  return /^(?:(?:host|group|hotel|hotels|travel|lodging|accommodation|accommodations|housing|reservation|reservations|booking|stay|plan|your|and|information|info|details|options|available|room|rooms)\s*)+$/.test(normalizedValue);
 };
 
 const isRedundantLinkSummaryText = (value: unknown, links: Array<{ label?: unknown }>) => {
@@ -1381,7 +1376,7 @@ const mergeSparseDiscoverySections = (sections: GymMeetDiscoverySection[]) => {
           ? (() => {
               const synthetic = createSyntheticSection({
                 id: "traffic-parking",
-                label: "Traffic & Parking",
+                label: "Parking",
                 kind: "traffic_parking",
                 priority: 60,
               });
@@ -1679,7 +1674,7 @@ export function buildGymMeetDiscoveryContent({
     }
     if (safeString(sourceLogistics.parking) || safeString(sourceLogistics.trafficAlerts)) {
       const travel = composed.find((section) => section.id === "traffic-parking");
-      put("traffic-parking", "Travel & parking", [
+      put("traffic-parking", "Parking", [
         ...(safeString(sourceLogistics.parking) ? [{ id: "authored-parking", type: "text" as const, title: "Parking & arrival", text: safeString(sourceLogistics.parking) }] : []),
         ...(safeString(sourceLogistics.trafficAlerts) ? [{ id: "authored-traffic", type: "text" as const, title: "Traffic & travel", text: safeString(sourceLogistics.trafficAlerts) }] : []),
         ...(travel?.blocks.filter((block) => block.type === "map" || block.type === "link-list") || []),
@@ -1868,30 +1863,37 @@ export function buildGymMeetDiscoveryContent({
       publicTravelCards.map((card) => safeString(card.action?.url)).filter(Boolean),
     );
     const remainingPublicTravelLinks = publicTravelFallbackLinks.filter(
-      (link) => !hotelCardActionUrls.has(link.url),
+      (link) => !hotelCardActionUrls.has(link.url) &&
+        !(publicTravelCards.length > 0 && isLowSignalTravelSummaryText(link.label)),
     );
     const publicTravelBody = sanitizeLinkedCopy(
       effectivePublicSections?.travel?.body,
       publicTravelFallbackLinks,
     );
+    const travelLines = publicTravelBody.split(/\n+|(?<=[.!?])\s+(?=[A-Z])/).filter(Boolean);
+    const isHotelLine = (line: string) => /\b(?:hotel|lodging|accommodation|room|nightly|reservation|booking|stay|suite|shuttle)\b/i.test(line);
+    const arrivalTravelLines = travelLines.filter(line => !isHotelLine(line));
+    const lodgingLines = travelLines.filter(isHotelLine);
     const publicTravelGuidanceCard = buildPublicGuidanceCard(
       {
         ...effectivePublicSections?.travel,
+        bullets: (Array.isArray(effectivePublicSections?.travel?.bullets) ? effectivePublicSections.travel.bullets : [])
+          .filter((line: unknown) => !isLowSignalTravelSummaryText(line) && !isRedundantLinkSummaryText(line, publicTravelFallbackLinks)),
         body:
-          isLowSignalTravelSummaryText(publicTravelBody) ||
+          isLowSignalTravelSummaryText(lodgingLines.join("\n")) ||
           isRedundantLinkSummaryText(publicTravelBody, publicTravelFallbackLinks)
             ? ""
-            : publicTravelBody,
+            : lodgingLines.join("\n"),
       },
       {
         key: "travel-guidance",
-        label: "Travel guidance",
+        label: "Hotel information",
         icon: "info",
         meta: "Plan your stay",
       },
     );
     const publicTravelBlocks =
-      publicTravelGuidanceCard && publicTravelCards.length === 0
+      publicTravelGuidanceCard
         ? [
             {
               id: "travel-guidance-cards",
@@ -2027,11 +2029,12 @@ export function buildGymMeetDiscoveryContent({
       },
       {
         id: "traffic-parking",
-        label: "Traffic & Parking",
+        label: "Parking",
         kind: "traffic_parking",
         priority: 40,
-        hasContent: trafficGuidanceCards.length > 0 || parkingLinks.length > 0,
+        hasContent: trafficGuidanceCards.length > 0 || parkingLinks.length > 0 || arrivalTravelLines.length > 0,
         blocks: [
+          ...(arrivalTravelLines.length ? [{ id: "travel-arrival-guidance", type: "text" as const, title: "Getting there", text: arrivalTravelLines.join("\n") }] : []),
           ...(trafficGuidanceCards.length > 0
             ? [
                 {
@@ -2056,12 +2059,12 @@ export function buildGymMeetDiscoveryContent({
       },
       {
         id: "hotels",
-        label: "Hotels & Travel",
+        label: "Hotels",
         kind: "hotels",
         priority: 50,
         hasContent:
           (safeString(effectivePublicSections?.travel?.visibility) === "visible" &&
-            (Boolean(safeString(effectivePublicSections?.travel?.body)) ||
+            (Boolean(publicTravelGuidanceCard) ||
               publicTravelCards.length > 0)) ||
           remainingPublicTravelLinks.length > 0,
         blocks: [
@@ -2081,7 +2084,6 @@ export function buildGymMeetDiscoveryContent({
                 {
                   id: "hotel-links",
                   type: "link-list" as const,
-                  title: "Hotel & Travel Links",
                   links: remainingPublicTravelLinks,
                 },
               ]
@@ -2157,7 +2159,7 @@ export function buildGymMeetDiscoveryContent({
 
     const website = readWebsiteImport(eventData?.discoverySource?.websiteImport);
     if (website?.schedule.links.length) sections.push({
-      id: "schedule-availability", label: "Schedule", kind: "schedule", priority: 15, hasContent: true,
+      id: advancedSections?.schedule?.days?.length ? "schedule" : "schedule-availability", label: "Schedule", kind: "schedule", priority: 15, hasContent: true,
       blocks: [
         { id: "official-schedule-status", type: "text", text: website.schedule.notice },
         { id: "official-schedule-links", type: "link-list", links: website.schedule.links },
@@ -3975,7 +3977,7 @@ export function buildGymMeetDiscoveryContent({
     },
     {
       id: "traffic-parking",
-      label: "Traffic & Parking",
+      label: "Parking",
       kind: "traffic_parking",
       priority: 60,
       hasContent:
@@ -4036,7 +4038,7 @@ export function buildGymMeetDiscoveryContent({
     },
     {
       id: "hotels",
-      label: "Hotels & Travel",
+      label: "Hotels",
       kind: "hotels",
       priority: 70,
       preserveStandalone:
@@ -4071,7 +4073,6 @@ export function buildGymMeetDiscoveryContent({
               {
                 id: "hotel-links",
                 type: "link-list" as const,
-                title: "Hotel & Travel Links",
                 links: hotelLinks,
               },
             ]

@@ -10,6 +10,7 @@ export type ImportedArtworkStatus = {
   status: "generating" | "ready" | "failed";
   imageUrl?: string;
   error?: string;
+  venueReference?: import("@/lib/venue-photo-source").VenuePhotoReference;
 };
 
 export default function ImportedThemeArtwork({

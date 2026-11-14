@@ -15,8 +15,7 @@ export function resolveAppearance(preference: ThemePreference, deviceDark: boole
 export function applyAppearance(preference: ThemePreference, deviceDark: boolean): ThemeVariant {
   const variant = resolveAppearance(preference, deviceDark);
   const root = document.documentElement;
-  // Clear every variant's properties first: returning to light must restore CSS
-  // defaults for properties (such as safe-area clouds) only defined by dark.
+  // Clear the previous variant's properties before applying the current palette.
   for (const mode of ["light", "dark"] as const) {
     for (const property of Object.keys(resolveThemeCssVariables("general", mode))) {
       root.style.removeProperty(property);
@@ -41,5 +40,5 @@ export function buildAppearanceBootstrap(): string {
     light: resolveThemeCssVariables("general", "light"),
     dark: resolveThemeCssVariables("general", "dark"),
   }).replaceAll("<", "\\u003c");
-  return `(function(){var p='system';try{var s=localStorage.getItem('${APPEARANCE_STORAGE_KEY}');if(s==='light'||s==='dark')p=s;}catch(e){}var v=p==='system'?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;var r=document.documentElement,t=${palettes};Object.keys(t.light).concat(Object.keys(t.dark)).forEach(function(k){r.style.removeProperty(k)});Object.keys(t[v]).forEach(function(k){r.style.setProperty(k,t[v][k])});r.dataset.theme='general-'+v;r.dataset.themeKey='general';r.dataset.appearancePreference=p;r.classList.toggle('dark',v==='dark');r.style.colorScheme=v;r.style.backgroundColor='var(--background)';document.querySelectorAll('meta[name="color-scheme"]').forEach(function(m){m.content=v});if(v==='dark')document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.content='#181818'});})();`;
+  return `(function(){var p='system';try{var s=localStorage.getItem('${APPEARANCE_STORAGE_KEY}');if(s==='light'||s==='dark')p=s;}catch(e){}var v=p==='system'?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;var r=document.documentElement,t=${palettes};Object.keys(t.light).concat(Object.keys(t.dark)).forEach(function(k){r.style.removeProperty(k)});Object.keys(t[v]).forEach(function(k){r.style.setProperty(k,t[v][k])});r.dataset.theme='general-'+v;r.dataset.themeKey='general';r.dataset.appearancePreference=p;r.classList.toggle('dark',v==='dark');r.style.colorScheme=v;r.style.backgroundColor='var(--background)';document.querySelectorAll('meta[name="color-scheme"]').forEach(function(m){m.content=v});document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.content=t[v]['--mobile-chrome-top']});document.querySelectorAll('meta[name="apple-mobile-web-app-status-bar-style"]').forEach(function(m){m.content=v==='dark'?'black-translucent':'default'});})();`;
 }

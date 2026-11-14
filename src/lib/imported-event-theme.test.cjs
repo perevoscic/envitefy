@@ -195,10 +195,7 @@ test("gymnastics template imports prepare original artwork without replacing the
 });
 test("the shared map stage carries URL/PDF branding into every sports builder", async () => {
   const { runDiscoveryMapStage } = loadTs("src/lib/discovery/map.ts", {
-    "@/components/gym-meet-templates/registry": {
-      DEFAULT_GYM_MEET_TEMPLATE_ID: "classic",
-      DEFAULT_NEW_GYM_MEET_TEMPLATE_ID: "airborne-atlas",
-    },
+    "@/components/gym-meet-templates/registry": loadTs("src/components/gym-meet-templates/registry.ts"),
     "@/lib/db": { getEventHistoryById: async () => ({ data: {} }) },
     "@/lib/discovery/cancel": { throwIfDiscoveryCancelled: () => {} },
     "@/lib/sport-event-presets": {
@@ -426,4 +423,65 @@ test("each gymnastics template has six related readable accent combinations with
     const original = themes.createImportedEventTheme(fixture);
     assert.equal(themes.readImportedEventTheme({ ...original, templateColorCombination: { templateId: "airborne-atlas", index } }).templateColorCombination, undefined);
   }
+});
+
+// Measure visible separation in OKLab, rather than accepting six nearly identical hex strings.
+function perceptualColor(hex) {
+  const [r, g, b] = [1, 3, 5].map(offset => {
+    const channel = parseInt(hex.slice(offset, offset + 2), 16) / 255;
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+}
+
+test("accent alternatives have visible separation on light, dark and neutral event palettes", () => {
+  const { GYM_MEET_TEMPLATE_LIBRARY } = loadTs("src/components/gym-meet-templates/registry.ts");
+  const palettes = [
+    { id: "dark-ink-accent", background: "#f6fbfc", foreground: "#142431", accent: "#142431" },
+    { id: "rose-navy", background: "#111b3a", foreground: "#fff8fc", accent: "#ff78b7" },
+    { id: "light-neutral", background: "#ffffff", foreground: "#222222", accent: "#777777" },
+    { id: "dark-neutral", background: "#181818", foreground: "#eeeeee", accent: "#999999" },
+    ...GYM_MEET_TEMPLATE_LIBRARY,
+  ];
+  for (const palette of palettes) {
+    const before = JSON.stringify(palette);
+    const choices = themes.templateAccentColorCombinations(palette);
+    assert.deepEqual(choices, themes.templateAccentColorCombinations(palette), "reopening does not shuffle choices");
+    assert.equal(JSON.stringify(palette), before, "the authored palette is unchanged");
+    assert.equal(choices[0].heading, palette.foreground, "Original keeps native title color");
+    const labs = choices.map(choice => perceptualColor(choice.heading));
+    const accentLab = perceptualColor(palette.accent);
+    const neutral = Math.hypot(accentLab[1], accentLab[2]) < 0.015;
+    for (let first = 0; first < labs.length; first++) {
+      for (let second = first + 1; second < labs.length; second++) {
+        const distance = Math.hypot(...labs[first].map((value, index) => value - labs[second][index]));
+        const minimum = neutral ? 0.018 : palette.id === "dark-ink-accent" ? 0.055 : 0.04;
+        assert.ok(distance >= minimum, `${palette.id}: ${choices[first].name}/${choices[second].name} distance ${distance}`);
+      }
+      for (const role of ["button", "heading", "link"]) {
+        assert.ok(colorContrast(choices[first][role], palette.background) >= 4.5, `${palette.id}/${first}/${role}`);
+      }
+      assert.ok(colorContrast(choices[first].button, choices[first].onButton) >= 4.5);
+      if (neutral && first) assert.ok(Math.hypot(labs[first][1], labs[first][2]) < 0.04, "neutral themes stay restrained");
+    }
+  }
+});
+
+test("contrast correction keeps a dark source accent's hue instead of replacing it with body ink", () => {
+  const theme = { ...themes.createImportedEventTheme(fixture), colors: {
+    page: "#111b3a", surface: "#202b49", ink: "#fff8fc", accent: "#090a27", secondary: "#b787ff", onAccent: "#ffffff",
+  } };
+  const palette = themes.importedEventAccentPalette({ id: "template", name: "Template", background: "#ffffff", foreground: "#142431", accent: "#127c94" }, theme);
+  assert.equal(palette.accent, theme.colors.accent);
+  const choices = themes.templateAccentColorCombinations(palette);
+  const source = perceptualColor(theme.colors.accent), vivid = perceptualColor(choices[1].heading);
+  const sourceHue = Math.atan2(source[2], source[1]), vividHue = Math.atan2(vivid[2], vivid[1]);
+  assert.ok(Math.cos(sourceHue - vividHue) > 0.998, "lightness correction retains the source hue");
+  assert.ok(colorContrast(choices[1].heading, palette.background) >= 4.5);
+  assert.deepEqual(themes.importedEventAccentPalette(palette, { ...theme, preserveTemplateStyle: true }), palette);
 });

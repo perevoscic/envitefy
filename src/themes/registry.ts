@@ -5,6 +5,7 @@ import type {
   ThemeVariantDefinition,
 } from "./types";
 import { THEME_KEYS } from "./types";
+import { applicationChromeColors } from "./chrome.ts";
 
 const DEFAULT_THEME_KEY: ThemeKey = "general";
 
@@ -20,7 +21,13 @@ const generalLight: ThemeVariantDefinition = {
   label: "General Light",
   cssVariables: {
     ...vars({
-      background: "#F6ECE1",
+      background: applicationChromeColors.light,
+      "mobile-chrome-top": applicationChromeColors.light,
+      "mobile-chrome-bottom": applicationChromeColors.light,
+      "ios-browser-chrome-background": applicationChromeColors.light,
+      "mobile-chrome-top-clouds": "none",
+      "mobile-chrome-bottom-clouds": "none",
+      "mobile-browser-surface-gradient": "none",
       surface: "#FBF7F2",
       "surface-alt": "#F0E2D7",
       foreground: "#2B1B16",
@@ -72,7 +79,7 @@ const generalDark: ThemeVariantDefinition = {
   label: "General Dark",
   cssVariables: {
     ...vars({
-      background: "#181818",
+      background: applicationChromeColors.dark,
       surface: "#251F2D",
       "surface-alt": "#302738",
       "surface-raised": "#382D42",
@@ -113,9 +120,9 @@ const generalDark: ThemeVariantDefinition = {
       "on-primary": "#25103E",
       "on-secondary": "#F2EAFA",
       "on-accent": "#F2EAFA",
-      "mobile-chrome-top": "#181818",
-      "mobile-chrome-bottom": "#181818",
-      "ios-browser-chrome-background": "#181818",
+      "mobile-chrome-top": applicationChromeColors.dark,
+      "mobile-chrome-bottom": applicationChromeColors.dark,
+      "ios-browser-chrome-background": applicationChromeColors.dark,
       "mobile-chrome-top-clouds": "none",
       "mobile-chrome-bottom-clouds": "none",
       "mobile-browser-surface-gradient": "none",

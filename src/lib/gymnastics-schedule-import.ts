@@ -5,7 +5,7 @@ export type ImportedScheduleSession = {
   note: string; clubs: string[];
 };
 export type ImportedScheduleDay = { isoDate: string; sessions: ImportedScheduleSession[] };
-export type ScheduleImport = { days: ImportedScheduleDay[]; source: { fileName: string; text: string } };
+export type ScheduleImport = { days: ImportedScheduleDay[]; source: { fileName: string; text: string; url?: string } };
 
 const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
 export function normalizeScheduleImport(value: unknown): ImportedScheduleDay[] {

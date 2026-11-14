@@ -144,9 +144,10 @@ const nextConfig = (phase: string): NextConfig => ({
 });
 
 export default async function config(phase: string): Promise<NextConfig> {
-  // Only production consumes these assets. Dev uses globals.css with HMR;
-  // rebuilding the manifest during dev/typegen invalidates the running app.
-  if (phase === PHASE_PRODUCTION_BUILD) {
+  // Next 15 typegen also loads this config with PHASE_PRODUCTION_BUILD.
+  // Only a real build needs CSS compilation or writes to the runtime manifest.
+  // Dev uses globals.css with HMR; type generation must leave those assets alone.
+  if (phase === PHASE_PRODUCTION_BUILD && process.argv[2] !== "typegen") {
     const { generateRuntimeStyles } = await import("./scripts/lib/runtime-styles.mjs");
     await generateRuntimeStyles();
   }

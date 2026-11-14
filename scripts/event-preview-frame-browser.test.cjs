@@ -49,7 +49,7 @@ async function assertToolbarIconSpacing(page) {
     const rect = element.getBoundingClientRect();
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
   }));
-  assert.equal(bounds.length, 8, "the toolbar contains two view controls and six event actions");
+  assert.equal(bounds.length, 7, "the toolbar contains two view controls and five event actions");
   for (let index = 0; index < bounds.length; index++) {
     assert.ok(Math.abs(bounds[index].width - 44) < 1 && Math.abs(bounds[index].height - 44) < 1, "all collapsed toolbar actions use equal 44px circles");
     if (index) assert.ok(Math.abs(bounds[index].x - bounds[index - 1].x - bounds[index - 1].width - 12) < 1, "every adjacent icon has the same 12px gap, including across groups");
@@ -62,11 +62,24 @@ async function assertTabletControlPlacement(page, label) {
   const [button, screen, content] = await Promise.all([
     control.boundingBox(), tablet.locator("[data-event-preview-screen]").boundingBox(), tablet.locator("iframe").boundingBox(),
   ]);
-  assert.ok(Math.abs(button.x + button.width / 2 - screen.x - screen.width / 2) < 1, "orientation control stays centered inside the iPad screen");
-  assert.ok(button.y >= screen.y && button.y <= screen.y + 12, "orientation control stays at the top of the iPad screen");
+  assert.ok(Math.abs(button.x + button.width / 2 - screen.x - screen.width / 2) < 1, "rotation stays centered inside the iPad screen");
+  assert.ok(button.y >= screen.y && button.y <= screen.y + 12, "rotation stays at its original position at the top of the iPad screen");
+  assert.ok(Math.abs(content.y - screen.y) < 1 && Math.abs(content.height - screen.height) < 1, "the event fills the iPad screen without a reserved control strip");
   assert.ok(button.width >= 43.5 && button.height >= 43.5, "the control retains a 44px target when the device is scaled");
-  assert.ok(content.y >= button.y + button.height, "the event starts below the orientation control");
-  assert.equal(await control.evaluate(element => Boolean(element.closest("header"))), false, "the control no longer occupies the page toolbar");
+  assert.equal(await control.evaluate(element => Boolean(element.closest("header"))), false, "rotation stays inside the device rather than the toolbar");
+  assert.equal(await control.locator("..").evaluate(element => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)", "the rotation control has no full-width background strip");
+}
+
+async function assertInsetEventContent(image) {
+  const layout = await image.evaluate(element => {
+    const doc = element.ownerDocument;
+    const body = doc.querySelector("[data-event-page-body]");
+    const bounds = body.firstElementChild.getBoundingClientRect();
+    const heading = doc.querySelector("h1").getBoundingClientRect();
+    return { width: doc.defaultView.innerWidth, left: bounds.left, right: bounds.right, headingLeft: heading.left, headingRight: heading.right };
+  });
+  assert.ok(layout.left >= 12 && layout.right <= layout.width - 12, `event sections keep their side gutters: ${JSON.stringify(layout)}`);
+  assert.ok(layout.headingLeft >= 12 && layout.headingRight <= layout.width - 12, `event wording stays inset while only the image fills the width: ${JSON.stringify(layout)}`);
 }
 
 test("device frames fit the stage, scroll event content and preserve responsive preview interactions", { timeout: 120000 }, async () => {
@@ -85,12 +98,13 @@ test("device frames fit the stage, scroll event content and preserve responsive 
       module: { rules: [
         { test: /\.[jt]sx?$/, exclude: /node_modules/, use: path.resolve("scripts/lib/create-guest-ts-loader.cjs") },
         { test: /\.css$/, use: path.resolve("scripts/lib/event-editor-css-loader.cjs") },
+        { test: /\.(png|jpe?g|webp|svg)$/, type: "asset/inline" },
       ] },
     });
     compiler.run((error, stats) => compiler.close(() => error || stats?.hasErrors()
       ? reject(error || new Error(stats.toString({ all: false, errors: true }))) : resolve()));
   });
-  const source = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none); @source "../components/EventPreviewViewport.tsx"; @source "../components/EventPreviewActions.tsx"; @source "../../scripts/fixtures/event-preview-frame.tsx";');
+  const source = fs.readFileSync("src/app/globals.css", "utf8").replace('@import "tailwindcss";', '@import "tailwindcss" source(none); @source "../components/EventPreviewViewport.tsx"; @source "../components/EventPreviewActions.tsx"; @source "../components/gym-meet-templates"; @source "../../scripts/fixtures/event-preview-frame.tsx";');
   const css = (await require("postcss")([require("@tailwindcss/postcss")()]).process(source, { from: path.resolve("src/app/globals.css") })).css;
   const chrome = path.join(process.env.PROGRAMFILES || "C:\\Program Files", "Google/Chrome/Application/chrome.exe");
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ||
@@ -106,11 +120,50 @@ test("device frames fit the stage, scroll event content and preserve responsive 
     await firstPaint.goto("http://preview-first-paint.test/?serverMarkup&owner&dark");
     const initialControls = firstPaint.getByRole("group", { name: "Preview device", exact: true });
     assert.deepEqual(await initialControls.getByRole("button").evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label"))), ["Desktop view", "Tablet and mobile view"], "server HTML shows the current desktop controls before hydration");
-    assert.equal(await initialControls.getByRole("button", { name: "Tablet and mobile view", exact: true }).getAttribute("aria-pressed"), "true");
+    assert.equal(await initialControls.getByRole("button", { name: "Desktop view", exact: true }).getAttribute("aria-pressed"), "true");
     await initialControls.screenshot({ path: path.join(output, "loading-toolbar.png") });
     await firstPaint.setViewportSize({ width: 820, height: 1180 });
     assert.deepEqual(await initialControls.getByRole("button").evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label"))), ["Desktop view", "iPad / tablet view", "Mobile view"], "tablet controls also work before hydration");
     await firstPaint.close();
+    for (const dark of [false, true]) {
+      const coldPage = await browser.newPage({ viewport: { width: 1660, height: 900 }, reducedMotion: "reduce" });
+      let releaseEvent = false;
+      const pendingEventLoads = [];
+      await coldPage.route("http://preview-color.test/**", async route => {
+        const pathname = new URL(route.request().url()).pathname;
+        if (pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript; charset=utf-8", body: fs.readFileSync(path.join(output, "fixture.js")) });
+        if (pathname.startsWith("/images/event-preview/")) return route.fulfill({ contentType: "image/webp", body: fs.readFileSync(path.join("public", pathname)) });
+        if (pathname === "/event-fixture") {
+          if (!releaseEvent) await new Promise(resolve => pendingEventLoads.push(resolve));
+          return route.fulfill({ contentType: "text/html; charset=utf-8", body: '<!doctype html><html data-owner-preview-open="true"><body style="margin:0"><main data-app-main-content style="min-height:1800px;background:#111b3a;color:white"><h1>Saved navy event</h1></main></body></html>' });
+        }
+        return route.fulfill({ contentType: "text/html; charset=utf-8", body: `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body style="margin:0"><div id="root"></div><script src="/fixture.js"></script></body></html>` });
+      });
+      const query = `?owner&generated&remote${dark ? "&dark" : ""}`;
+      const color = () => coldPage.locator('section[aria-label="Harbor Invitational preview"]').first().evaluate(element => getComputedStyle(element).backgroundColor);
+      await coldPage.goto(`http://preview-color.test/${query}&serverMarkup`, { waitUntil: "domcontentloaded" });
+      assert.equal(await color(), "rgb(17, 27, 58)", "server HTML already uses the saved navy palette before hydration");
+      for (const refresh of [false, true]) {
+        releaseEvent = false;
+        if (refresh) await coldPage.reload({ waitUntil: "domcontentloaded" });
+        else await coldPage.goto(`http://preview-color.test/${query}`, { waitUntil: "domcontentloaded" });
+        assert.equal(await color(), "rgb(17, 27, 58)", "cold loading and refresh retain the saved gutter color while event responses are pending");
+        releaseEvent = true;
+        pendingEventLoads.splice(0).forEach(resolve => resolve());
+        await coldPage.frameLocator('iframe[title="Harbor Invitational — event content"]').getByRole("heading", { name: "Saved navy event", exact: true }).waitFor();
+        const colors = await coldPage.locator('section[aria-label="Harbor Invitational preview"]').first().evaluate(async element => {
+          const samples = [];
+          for (let frame = 0; frame < 24; frame++) {
+            samples.push(getComputedStyle(element).backgroundColor);
+            await new Promise(requestAnimationFrame);
+          }
+          return [...new Set(samples)];
+        });
+        assert.deepEqual(colors, ["rgb(17, 27, 58)"], "connecting the event document never flashes the catalog paper color");
+        await coldPage.screenshot({ path: path.join(output, `saved-palette-${dark ? "dark" : "light"}-${refresh ? "refresh" : "cold"}.png`) });
+      }
+      await coldPage.close();
+    }
     for (const owner of [false, true]) {
       const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
       const errors = [];
@@ -127,7 +180,7 @@ test("device frames fit the stage, scroll event content and preserve responsive 
       const iframe = page.locator(primarySelector);
       const content = page.frameLocator(primarySelector);
       await content.getByRole("heading", { name: owner ? "Saved event" : "Harbor Invitational", exact: true }).waitFor();
-      assert.equal(await page.getByRole("button", { name: "Desktop view", exact: true }).evaluate(element => getComputedStyle(element).backgroundColor), owner ? "rgb(37, 31, 45)" : "rgb(251, 247, 242)", "the preview toolbar follows the application theme");
+      assert.equal(await page.getByRole("button", { name: "Desktop view", exact: true }).evaluate(element => getComputedStyle(element).backgroundColor), "rgb(107, 70, 206)", "the preview toolbar follows the application theme");
       if (owner) {
         await assertToolbarIconSpacing(page);
         const share = page.getByRole("button", { name: "Share event", exact: true });
@@ -154,6 +207,10 @@ test("device frames fit the stage, scroll event content and preserve responsive 
         await page.waitForFunction(({ selector, expected }) => document.querySelector(selector).dataset.previewDevice === expected, { selector: primarySelector, expected: device });
         await page.waitForFunction(({ selector, expected }) => document.querySelector(selector).contentWindow.innerWidth === expected, { selector: primarySelector, expected: width });
         assert.equal(await page.getByRole("button", { name: label, exact: true }).getAttribute("aria-pressed"), "true");
+        await page.mouse.move(0, 0);
+        await page.locator("header").evaluate(element => {
+          if (element.contains(document.activeElement)) document.activeElement.blur();
+        });
         await page.getByRole("group", { name: "Preview device", exact: true }).evaluate(async element => {
           await Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {})));
         });
@@ -219,12 +276,14 @@ test("device frames fit the stage, scroll event content and preserve responsive 
         });
       }
       await page.setViewportSize({ width: 820, height: 1180 });
-      await page.getByRole("button", { name: "Mobile view", exact: true }).click();
+      await page.getByRole("button", { name: "Desktop view", exact: true }).click();
       for (const [width, height] of [[390, 844], [320, 640], [667, 375]]) {
         await page.setViewportSize({ width, height });
         await page.waitForFunction(({ selector, expected }) => document.querySelector(selector).contentWindow.innerWidth === expected, { selector: primarySelector, expected: width });
         await page.waitForFunction(() => !document.querySelector("[data-event-preview-frame]"));
         assert.equal(await page.locator("[data-event-preview-frame]").count(), 0, "a real phone retains its full-width native preview");
+        const phoneContent = await iframe.boundingBox();
+        assert.ok(Math.abs(phoneContent.x) < 1 && Math.abs(phoneContent.width - width) < 1, "the event reaches both viewport edges even with Desktop selected");
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       }
       if (!owner) {
@@ -233,6 +292,76 @@ test("device frames fit the stage, scroll event content and preserve responsive 
       }
       assert.deepEqual(errors, []);
       await page.close();
+    }
+
+    // Exercise the actual meet hero in the framed phone, not just the iframe
+    // shell: its own padding was the remaining gutter in saved device views.
+    for (const original of [false, true]) for (const dark of [false, true]) {
+      const meetPage = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
+      await meetPage.route("http://meet-width.test/**", route => {
+        const pathname = new URL(route.request().url()).pathname;
+        if (pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: fs.readFileSync(path.join(output, "fixture.js")) });
+        if (pathname.startsWith("/images/event-preview/")) return route.fulfill({ contentType: "image/webp", body: fs.readFileSync(path.join("public", pathname)) });
+        return route.fulfill({ contentType: "text/html; charset=utf-8", body: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body style="margin:0"><div id="root"></div><script src="/fixture.js"></script></body></html>` });
+      });
+      await meetPage.goto(`http://meet-width.test/?serverMarkup&serverMeet${dark ? "&dark" : ""}`);
+      const initialEdit = meetPage.locator("[data-event-mobile-edit]");
+      assert.equal(await initialEdit.count(), 1, "server-rendered owner controls are included in this regression fixture");
+      assert.equal(await initialEdit.isVisible(), false, "embedded Edit is hidden before hydration or parent preview effects");
+      await meetPage.goto(`http://meet-width.test/?gymnastics&owner${original ? "&original" : ""}${dark ? "&dark" : ""}`);
+      await meetPage.getByRole("button", { name: "Tablet and mobile view", exact: true }).click();
+      const image = meetPage.frameLocator('iframe[title="Harbor Invitational — event content"]').locator(".template-hero-image");
+      await image.waitFor();
+      for (const width of [1440, 390, 320, 667]) {
+        await meetPage.setViewportSize({ width, height: 900 });
+        const expected = width === 1440 ? 390 : width;
+        await image.evaluate(element => element.decode());
+        await meetPage.evaluate(() => { window.meetWidthSamples = 0; });
+        const measurement = await meetPage.waitForFunction(({ expected }) => {
+          // Switching from the framed stage to a physical phone removes the
+          // stage gutters in a second ResizeObserver pass. Require a settled
+          // viewport rather than sampling the intermediate frame width.
+          const frame = document.querySelector('iframe[title="Harbor Invitational — event content"]');
+          const picture = frame.contentDocument.querySelector(".template-hero-image");
+          if (!picture || frame.contentWindow.innerWidth !== expected) {
+            window.meetWidthSamples = 0;
+            return false;
+          }
+          const bounds = picture.getBoundingClientRect();
+          const geometry = { left: bounds.left, top: bounds.top, right: bounds.right, width: bounds.width, viewport: frame.contentWindow.innerWidth, overflow: frame.contentDocument.documentElement.scrollWidth - frame.contentWindow.innerWidth };
+          if (Math.abs(geometry.left) >= 1 || Math.abs(geometry.right - expected) >= 1) {
+            window.meetWidthSamples = 0;
+            return false;
+          }
+          return ++window.meetWidthSamples >= 4 ? geometry : false;
+        }, { expected });
+        const geometry = await measurement.jsonValue();
+        await measurement.dispose();
+        assert.ok(Math.abs(geometry.left) < 1 && Math.abs(geometry.right - expected) < 1, JSON.stringify({ original, dark, width, geometry }));
+        assert.equal(geometry.overflow, 0, "full-width meet artwork creates no horizontal overflow");
+        await assertInsetEventContent(image);
+        const embeddedEdit = meetPage.frameLocator('iframe[title="Harbor Invitational — event content"]').getByRole("link", { name: "Edit event", exact: true });
+        if (width === 1440) assert.equal(await embeddedEdit.isVisible(), false, "desktop device previews never duplicate the toolbar Edit action");
+        else await embeddedEdit.waitFor({ state: "visible" });
+        if (!original) assert.ok(Math.abs(geometry.top) < 1, "artwork-first layouts reach the top of the event viewport");
+        if (width === 1440 && !original) {
+          const tabletImage = meetPage.frameLocator('iframe[data-preview-device="tablet"]').locator(".template-hero-image");
+          for (const orientation of ["portrait", "landscape"]) {
+            await tabletImage.waitFor();
+            await assertInsetEventContent(tabletImage);
+            assert.equal(await meetPage.frameLocator('iframe[data-preview-device="tablet"]').getByRole("link", { name: "Edit event", exact: true }).isVisible(), false, "the iPad has no duplicate Edit action");
+            const tabletGeometry = await tabletImage.evaluate(element => {
+              const rect = element.getBoundingClientRect();
+              return { left: rect.left, top: rect.top, right: rect.right, viewport: element.ownerDocument.defaultView.innerWidth };
+            });
+            assert.ok(Math.abs(tabletGeometry.left) < 1 && Math.abs(tabletGeometry.right - tabletGeometry.viewport) < 1 && Math.abs(tabletGeometry.top) < 1, JSON.stringify({ orientation, tabletGeometry }));
+            await meetPage.screenshot({ path: path.join(output, `ipad-full-width-${orientation}-${dark ? "dark" : "light"}.png`) });
+            await meetPage.getByRole("button", { name: orientation === "portrait" ? "View in landscape" : "View in portrait", exact: true }).click();
+          }
+        }
+        if (width === 1440 || width === 390) await meetPage.screenshot({ path: path.join(output, `meet-full-width-${original ? "original" : "layout"}-${dark ? "dark" : "light"}-${width}.png`) });
+      }
+      await meetPage.close();
     }
 
     // Reproduce a fast phone document, a slow tablet document and cold frame
@@ -264,6 +393,7 @@ test("device frames fit the stage, scroll event content and preserve responsive 
       return route.fulfill({ contentType: "text/html; charset=utf-8", body: `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body style="margin:0"><div id="root"></div><script src="/fixture.js"></script></body></html>` });
     });
     await page.goto("http://preview-loading.test/?owner&remote&dark", { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: "Tablet and mobile view", exact: true }).click();
     let requestTimeout;
     try {
       await Promise.race([
@@ -272,7 +402,7 @@ test("device frames fit the stage, scroll event content and preserve responsive 
       ]);
     } finally { clearTimeout(requestTimeout); }
     assert.equal(documents.length, 2, "both event documents start concurrently without clicking a device control");
-    assert.equal(await page.getByRole("button", { name: "Tablet and mobile view", exact: true }).getAttribute("aria-pressed"), "true", "desktop opens in the framed device view");
+    assert.equal(await page.getByRole("button", { name: "Tablet and mobile view", exact: true }).getAttribute("aria-pressed"), "true", "framed devices open after explicit selection");
     const phoneDocument = documents.find(entry => entry.title === "Harbor Invitational — event content");
     const tabletDocument = documents.find(entry => entry.title === "Harbor Invitational — tablet — event content");
     assert.ok(phoneDocument && tabletDocument);
@@ -297,7 +427,7 @@ test("device frames fit the stage, scroll event content and preserve responsive 
     assert.ok(landscapeIcon.width > landscapeIcon.height, "portrait preview offers a landscape device icon");
     await rotate.hover();
     await assertExpandedControl(rotate, "View in landscape");
-    await page.locator('[data-event-preview-frame="tablet"] [data-tablet-orientation-bar]').screenshot({ path: path.join(output, "ipad-landscape-action-hover.png") });
+    await page.locator('[data-tablet-orientation-control]').screenshot({ path: path.join(output, "ipad-landscape-action-hover.png") });
     await page.mouse.move(0, 0);
     await settleControl(rotate);
     await rotate.focus();
@@ -329,7 +459,7 @@ test("device frames fit the stage, scroll event content and preserve responsive 
     await page.evaluate(() => {
       for (const animation of document.getAnimations()) if (animation.effect?.pseudoElement?.includes("envitefy-ipad-")) animation.play();
     });
-    await page.waitForFunction(() => document.querySelector('[data-tablet-orientation-bar] button').getAttribute("aria-disabled") === "false");
+    await page.waitForFunction(() => document.querySelector('[data-tablet-orientation-control] button').getAttribute("aria-disabled") === "false");
     const landscapeBounds = await page.locator('[data-event-preview-frame="tablet"]').boundingBox();
     assert.ok(landscapeBounds.width > landscapeBounds.height);
     await assertTabletControlPlacement(page, "View in portrait");
@@ -348,7 +478,7 @@ test("device frames fit the stage, scroll event content and preserve responsive 
     assert.ok(portraitIcon.height > portraitIcon.width, "landscape preview offers a portrait iPad icon");
     assert.equal(await page.getByRole("button", { name: "View in portrait", exact: true }).locator("[data-orientation-device]").count(), 1, "the orientation action uses a single iPad icon");
     const landscapeControl = await page.getByRole("button", { name: "View in portrait", exact: true }).boundingBox();
-    assert.ok(landscapeControl.y > camera.y, "the landscape orientation control sits below the top camera");
+    assert.ok(landscapeControl.y > camera.y, "the rotation control stays inside the screen below the device camera");
     assert.equal(await tabletInput.inputValue(), "Retained through rotation");
     assert.equal(documents.length, 2, "rotation resizes the existing event document without reloading it");
     await assertExpandedControl(page.getByRole("button", { name: "View in portrait", exact: true }), "View in portrait");
@@ -362,7 +492,7 @@ test("device frames fit the stage, scroll event content and preserve responsive 
     await page.getByRole("button", { name: "View in landscape", exact: true }).click();
     const fallback = await page.locator('[data-event-preview-frame="tablet"]').evaluate(element => element.getAnimations().map(animation => ({ duration: animation.effect.getTiming().duration, includesContent: animation.effect.target === element && Boolean(element.querySelector("iframe")) })));
     assert.deepEqual(fallback, [{ duration: 500, includesContent: true }], "browsers without snapshot transitions also rotate the complete frame and content together");
-    await page.waitForFunction(() => document.querySelector('[data-tablet-orientation-bar] button').getAttribute("aria-disabled") === "false");
+    await page.waitForFunction(() => document.querySelector('[data-tablet-orientation-control] button').getAttribute("aria-disabled") === "false");
     await page.getByRole("button", { name: "Desktop view", exact: true }).click();
     await page.getByRole("button", { name: "Tablet and mobile view", exact: true }).click();
     await tabletInput.waitFor();

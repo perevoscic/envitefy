@@ -39,23 +39,13 @@
 
 :root {
   --radius: 1rem;
-  --mobile-chrome-top: #8998ed;
-  --mobile-chrome-bottom: #8998ed;
-  --ios-browser-chrome-background: #8998ed;
-  /* Soft, overlapping clouds from the locked wordmark's violet/blue/cyan palette. */
-  --mobile-chrome-top-clouds:
-    radial-gradient(ellipse at 92% 12%, rgba(55, 168, 255, 0.86), transparent 64%),
-    radial-gradient(ellipse at 8% 0%, rgba(107, 60, 255, 0.66), transparent 62%),
-    radial-gradient(ellipse at 48% 110%, rgba(90, 125, 255, 0.56), transparent 68%);
-  --mobile-chrome-bottom-clouds:
-    radial-gradient(ellipse at 5% 92%, rgba(55, 168, 255, 0.82), transparent 66%),
-    radial-gradient(ellipse at 94% 110%, rgba(107, 60, 255, 0.62), transparent 64%),
-    radial-gradient(ellipse at 55% -20%, rgba(103, 87, 255, 0.46), transparent 68%);
-  --mobile-browser-surface-gradient:
-    radial-gradient(ellipse 85vw 220px at 95% 0%, rgba(55, 168, 255, 0.55), transparent 72%),
-    radial-gradient(ellipse 75vw 200px at 0% 0%, rgba(107, 60, 255, 0.38), transparent 72%),
-    radial-gradient(ellipse 85vw 240px at 0% 100%, rgba(55, 168, 255, 0.5), transparent 72%),
-    radial-gradient(ellipse 75vw 210px at 100% 100%, rgba(103, 87, 255, 0.4), transparent 72%);
+  --mobile-chrome-top: var(--background);
+  --mobile-chrome-bottom: var(--background);
+  --ios-browser-chrome-background: var(--background);
+  /* System-area surfaces follow appearance; GradientBackgroundLayer owns aurora. */
+  --mobile-chrome-top-clouds: none;
+  --mobile-chrome-bottom-clouds: none;
+  --mobile-browser-surface-gradient: none;
   --brand: #c65de9;
   --brand-glow: #08aeea;
   --envitefy-project-background: var(--background);
@@ -515,6 +505,14 @@ html.dark .flip-clock-perspective {
     linear-gradient(180deg, var(--nav-sidebar-frost-start, rgba(247, 245, 255, 0.5)) 0%, var(--nav-sidebar-frost-end, rgba(241, 239, 253, 0.46)) 100%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+
+html:not(.dark) [data-app-navigation="sidebar"] {
+  --nav-sidebar-edge-glow: 8px 0 28px rgba(107, 95, 194, 0.14), 1px 0 10px rgba(151, 137, 219, 0.1);
+}
+
+html.dark [data-app-navigation="sidebar"] {
+  --nav-sidebar-edge-glow: 8px 0 32px rgba(167, 139, 250, 0.16), 1px 0 12px rgba(197, 167, 255, 0.12);
 }
 
 /* The existing event-color registration switches frost only over dark event paper. */
@@ -1320,8 +1318,7 @@ html[data-ios-browser-chrome="true"] body {
     background-repeat: no-repeat;
   }
 
-  /* These layers paint only the OS safe areas, leaving page controls unobscured.
-     iOS browser tabs and installed iOS/Android apps share the same cloud palette. */
+  /* Paint only exposed safe areas. Native/browser-owned system bars use metadata. */
   body::before,
   body::after {
     opacity: 1;

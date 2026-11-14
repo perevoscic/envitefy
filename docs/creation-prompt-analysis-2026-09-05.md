@@ -1,5 +1,7 @@
 # Envitefy creation and prompt analysis
 
+Historical review. For the current site/page/PDF import rules and targeted/full-document/schedule/hotel prompt audit, use [Site, page and PDF import rules](event-import-parsing-rules.md) (November 14, 2026).
+
 Reviewed September 5, 2026 against the current working tree, including its existing uncommitted changes.
 
 The largest opportunity is to improve the information passed between extraction, conversation, design, and rendering. Astra is already the default for important parts of this pipeline. Changing every model to Astra would leave the main product and prompt problems in place.

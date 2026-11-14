@@ -63,6 +63,15 @@
 .copy > * { text-align: inherit; }
 .hero[data-image-position="top"][data-title-position="above"] .copy { order: -1; }
 .hero[data-image-position="right"] .copy { order: -1; }
+@container (max-width: 1366px) {
+  .hero { max-width: none; padding-inline: 0; }
+  .copy {
+    padding-left: max(calc(var(--event-content-gutter, 0px) + clamp(16px, 4cqi, 40px)), env(safe-area-inset-left, 0px));
+    padding-right: max(calc(var(--event-content-gutter, 0px) + clamp(16px, 4cqi, 40px)), env(safe-area-inset-right, 0px));
+  }
+  .hero[data-image-position="top"][data-title-position="below"] { padding-top: 0; }
+  .hero[data-image-position="top"][data-title-position="above"] .copy { padding-top: env(safe-area-inset-top, 0px); }
+}
 @container (min-width: 650px) {
   .hero[data-image-position="left"], .hero[data-image-position="right"] {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

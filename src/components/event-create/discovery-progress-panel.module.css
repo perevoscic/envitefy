@@ -16,6 +16,8 @@
   min-height: 52px;
   align-items: center;
   perspective: 1000px;
+  /* The entrance overshoots horizontally; contain its animated ink locally. */
+  overflow: clip;
 }
 
 .label {

@@ -1,5 +1,7 @@
 # Hotel discovery implementation — September 5, 2026
 
+Historical implementation report. The current target-event source-chain, hotel content, linked-PDF and LLM prompt requirements are consolidated in [Site, page and PDF import rules](event-import-parsing-rules.md), reviewed November 14, 2026. The validation results below describe the September snapshot.
+
 Event URL and PDF inputs now share hotel extraction and source evidence. This change is wired into the existing gymnastics discovery paths: discovery v2, inline enrichment, and the explicit enrichment API.
 
 ## Collection and storage

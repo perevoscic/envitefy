@@ -22,6 +22,7 @@ async function fixture() {
     { type: "message", content: [{ type: "output_text", text: JSON.stringify(candidate) }] },
   ] };
   mod.gymnasticsVenueArtworkDeps.research = async () => { researchCalls++; result.output[1].content[0].text = JSON.stringify(candidate); return result; };
+  mod.gymnasticsVenueArtworkDeps.inspect = async () => true;
   mod.gymnasticsVenueArtworkDeps.read = async (url, signal) => {
     reads.push(url); assert.ok(signal instanceof AbortSignal);
     return url === sourceUrl ? { bytes: Buffer.from(html), mimeType: "text/html", url } : { bytes, mimeType: imageMime, url };
@@ -38,6 +39,26 @@ test("venue reference must be cited, identify the exact venue/city/address, and 
   assert.deepEqual(state.reads, [state.sourceUrl, state.imageUrl]);
   assert.equal(reference.image.mimeType, "image/jpeg");
   assert.equal((await require("sharp")(Buffer.from(reference.image.data, "base64")).metadata()).width, 600);
+});
+
+test("roadside sculptures and unavailable visual checks cannot become paid image references", async () => {
+  for (const inspect of [async () => false, async () => { throw Error("check unavailable"); }]) {
+    const state = await fixture();
+    state.gymnasticsVenueArtworkDeps.inspect = inspect;
+    assert.equal(await state.prepareGymnasticsVenueReference(context), null);
+  }
+});
+
+test("venue reuse permission is read from the existing source fetch without extra research or requests", async () => {
+  const state = await fixture();
+  const grant = "Photos may be used in promotional event materials.";
+  state.setHtml(`<h1>${context.venue}</h1><p>1 Haben Blvd, Palmetto, FL 34221</p><p>Image use terms: ${grant}</p><img src="${state.imageUrl}">`);
+  const result = await state.prepareGymnasticsVenueReference(context);
+  assert.equal(result.permission.statement, grant);
+  assert.equal(result.permission.imageUrl, state.imageUrl);
+  assert.equal(result.permission.termsUrl, state.sourceUrl);
+  assert.deepEqual(state.reads, [state.sourceUrl, state.imageUrl], "the permission gate adds no network request");
+  assert.equal(state.researchCalls(), 1);
 });
 
 test("ambiguous, uncited or non-HTTPS references never reach a source read", async () => {
@@ -87,7 +108,41 @@ test("unsupported files and source outages never become venue references", async
   state.gymnasticsVenueArtworkDeps.read = async () => { throw Error("private network or source unavailable"); };
   assert.equal(await state.prepareGymnasticsVenueReference(context), null);
   assert.equal(await state.prepareGymnasticsVenueReference({ ...context, venue: "", address: "" }), null);
-  assert.equal(state.researchCalls(), 2, "missing location evidence does not start research");
+  assert.equal(state.researchCalls(), 3, "an invalid image gets one new search; missing location evidence does not start research");
+});
+
+test("a rejected roadside image falls through to the actual exterior linked by the verified venue page", async () => {
+  const state = await fixture();
+  const sculpture = "https://cdn.official.test/sculpture.png";
+  state.candidate.imageUrl = sculpture;
+  state.setHtml(`<h1>${context.venue}</h1><p>1 Haben Boulevard, Palmetto, FL 34221</p><img src="${sculpture}"><div style="background-image:url('${state.imageUrl}')"></div>`);
+  let checks = 0;
+  state.gymnasticsVenueArtworkDeps.inspect = async () => ++checks > 1;
+  const result = await state.prepareGymnasticsVenueReference(context);
+  assert.equal(result.imageUrl, state.imageUrl);
+  assert.equal(checks, 2);
+  assert.equal(state.researchCalls(), 1, "the source page's building photo needs no second search");
+});
+
+test("a missing city resolves only from one exact name-and-street-matched Google place", async () => {
+  const state = await fixture();
+  const original = global.fetch;
+  const previousKey = process.env.GOOGLE_PLACES_API_KEY;
+  process.env.GOOGLE_PLACES_API_KEY = "test-key";
+  let places = [{ displayName: { text: "Georgia International Convention Center" },
+    formattedAddress: "2000 Convention Center Concourse, College Park, GA 30337, USA",
+    addressComponents: [{ longText: "College Park", types: ["locality"] }, { shortText: "GA", types: ["administrative_area_level_1"] }] }];
+  global.fetch = async () => Response.json({ places });
+  const missing = { ...context, city: "", venue: "Georgia International Convention Center", address: "2000 Convention Center Concourse" };
+  try {
+    assert.equal(await state.resolveGymnasticsVenueTown(missing), "College Park, GA");
+    places = [{ ...places[0], formattedAddress: "99 Other Road, Atlanta, GA" }];
+    assert.equal(await state.resolveGymnasticsVenueTown(missing), "");
+  } finally {
+    global.fetch = original;
+    if (previousKey === undefined) delete process.env.GOOGLE_PLACES_API_KEY;
+    else process.env.GOOGLE_PLACES_API_KEY = previousKey;
+  }
 });
 
 test("an owner's verified reference is re-read and reused without another web lookup", async () => {
