@@ -276,28 +276,44 @@ test("a forced preflight failure revokes existing proof before policy or runtime
   }
 });
 
-test("real timed out and interrupted processes clean up the abort listener and never pass", { timeout: 15000 }, async (t) => {
-  const { repository } = fixture(t);
-  const filename = path.join(repository, "package.json");
-  const data = JSON.parse(readFileSync(filename, "utf8"));
-  data.scripts.hold = 'node -e "setInterval(()=>{},1000)"';
-  writeFileSync(filename, JSON.stringify(data));
-  for (const interrupted of [false, true]) {
+for (const interrupted of [false, true]) {
+  test(`real ${interrupted ? "interrupted" : "timed out"} processes clean up the abort listener and never pass`, {
+    timeout: process.platform === "win32" ? 60000 : 15000,
+  }, async (t) => {
+    // The process runner needs only an npm package, not the Git candidate fixture.
+    // Keep Windows Git startup outside this process-termination deadline.
+    mkdirSync(fixtureRoot, { recursive: true });
+    const repository = mkdtempSync(path.join(fixtureRoot, "process with spaces-"));
+    writeFileSync(path.join(repository, "package.json"), JSON.stringify({
+      scripts: { hold: 'node -e "setInterval(()=>{},1000)"' },
+    }));
     const controller = new AbortController();
+    let running;
+    let abort;
+    t.after(async () => {
+      clearTimeout(abort);
+      controller.abort();
+      // A test timeout must stop the child before removing its working directory.
+      await running;
+      assert.equal(path.dirname(repository), fixtureRoot);
+      assert.ok(path.basename(repository).startsWith("process with spaces-"));
+      rmSync(repository, { recursive: true, force: true });
+    });
     const remove = controller.signal.removeEventListener.bind(controller.signal);
     let removed = 0;
     controller.signal.removeEventListener = (...args) => { removed++; return remove(...args); };
-    const abort = interrupted ? setTimeout(() => controller.abort(), 1200) : null;
-    const result = await runValidationCheck({ name: "hold", timeoutMs: interrupted ? 10000 : 1200 }, {
+    abort = interrupted ? setTimeout(() => controller.abort(), 1200) : null;
+    running = runValidationCheck({ name: "hold", timeoutMs: interrupted ? 10000 : 1200 }, {
       root: repository, logPath: path.join(repository, interrupted ? "aborted.log" : "timeout.log"), signal: controller.signal,
     });
+    const result = await running;
     clearTimeout(abort);
     assert.equal(result.completed, false);
     assert.equal(result.timedOut, !interrupted);
     assert.equal(removed, 1, "cleanup uses the AbortSignal rather than the child's exit-signal string");
     if (interrupted) assert.match(result.error, /interrupted/);
-  }
-});
+  });
+}
 
 test("dirty checkout or changed HEAD during validation leaves no success receipt and preserves work", async (t) => {
   for (const changeHead of [false, true]) {
