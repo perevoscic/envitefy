@@ -79,6 +79,8 @@ test("integrated card preserves its composed pixels, verified wording and render
   };
   const assets = new Map();
   let jobs = 0;
+  let releaseSave;
+  const saveResponse = new Promise(resolve => { releaseSave = resolve; });
   const server = http.createServer(async (req, res) => {
     const pathname = new URL(req.url, "http://localhost").pathname;
     if (assets.has(pathname)) {
@@ -118,8 +120,10 @@ test("integrated card preserves its composed pixels, verified wording and render
         });
       }
       if (url.pathname.startsWith("/api/history")) {
-        if (req.method() !== "GET")
+        if (req.method() !== "GET") {
           stored = { ...req.postDataJSON(), id: "integrated-card", public_slug: "midnight-bloom" };
+          await saveResponse;
+        }
         return route.fulfill({ json: stored });
       }
       if (url.pathname === "/api/upload") {
@@ -155,8 +159,10 @@ test("integrated card preserves its composed pixels, verified wording and render
     await page.getByRole("button", { name: "Preview card", exact: true }).click();
     await viewer.waitFor();
     await viewer.getByRole("button", { name: "Save draft", exact: true }).click();
-    await viewer.getByText("Draft saved. Find it in Drafts anytime.", { exact: true }).waitFor();
     await viewer.waitFor({ state: "hidden" });
+    // A save closes Preview before its response arrives; feedback belongs to the editor.
+    releaseSave();
+    await page.getByText("Draft saved. Find it in Drafts anytime.", { exact: true }).waitFor();
     const saved = stored.data.studioCard.invitationData.sharedDesign;
     assert.equal(saved.composition, "integrated-v1");
     assert.equal(saved.headline.renderer, "artwork-v1");
@@ -175,6 +181,7 @@ test("integrated card preserves its composed pixels, verified wording and render
     assert.equal(jobs, 0);
     assert.deepEqual(errors, []);
   } finally {
+    releaseSave();
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
   }

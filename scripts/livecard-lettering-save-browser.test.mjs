@@ -101,8 +101,8 @@ test("main info precedes generation, guest edits survive it, and title-only artw
     await page.getByRole("button", { name: "Preview card", exact: true }).click();
     await viewer.waitFor();
     await viewer.getByRole("button", { name: "Save draft", exact: true }).click();
-    await viewer.getByText("Draft saved. Find it in Drafts anytime.", { exact: true }).waitFor();
     await viewer.waitFor({ state: "hidden" });
+    await page.getByText("Draft saved. Find it in Drafts anytime.", { exact: true }).waitFor();
     const saved = stored.data.studioCard.invitationData.sharedDesign;
     assert.equal(assets.size, 4, "background, composed card, isolated lettering, and reusable material uploaded only on save");
     assert.equal(saved.letteringStyle.direction, direction.direction);
