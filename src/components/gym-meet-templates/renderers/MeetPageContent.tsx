@@ -445,7 +445,7 @@ export default function MeetPageContent({
         <div data-event-page-surface className={variant.shellClass}>
           {!suppressActionStrip && (onMobileEdit || onPreview || mobileEditHref) ? (
             <div className={mobileEditHref && !onMobileEdit && !onPreview
-              ? "absolute right-3 top-[max(0.5rem,env(safe-area-inset-top))] z-20"
+              ? "absolute right-3 top-[calc(var(--event-skin-topbar-offset,0px)+0.5rem)] z-20"
               : "relative z-20 mb-4 px-3 sm:px-6"}>
               <FloatingActionStrip
                 onMobileEdit={onMobileEdit}

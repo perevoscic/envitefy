@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { EVENT_PAGE_COLOR_ATTRIBUTE, EVENT_PAGE_COLOR_PROPERTY, EVENT_PAGE_TONE_ATTRIBUTE, isDarkEventPageColor, normalizeEventPageColor, registerEventPageColor } from "./event-page-chrome.ts";
-import { resolveEventPageBackgroundColor } from "./theme-color.ts";
+import { resolveEventPageBackgroundColor, resolveEventThemeColor } from "./theme-color.ts";
 import { createImportedEventTheme } from "./imported-event-theme.ts";
 
 function rootFixture() {
@@ -100,6 +100,7 @@ test("generated meet startup colors match the renderer's effective saved palette
   });
   const event = { category: "sport_gymnastics", pageTemplateId: "airborne-atlas", importedTheme };
   assert.equal(resolveEventPageBackgroundColor(event), importedTheme.colors.page);
+  assert.equal(resolveEventThemeColor(event), importedTheme.colors.page, "the initial browser hint uses the saved event color before hydration");
   assert.notEqual(resolveEventPageBackgroundColor(event), "#f6f1e7");
   assert.equal(resolveEventPageBackgroundColor({ ...event, importedTheme: { ...importedTheme, enabled: false } }), "#f6f1e7");
   assert.equal(resolveEventPageBackgroundColor({ ...event, importedTheme: { ...importedTheme, preserveTemplateStyle: true } }), "#f6f1e7");

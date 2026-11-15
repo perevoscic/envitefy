@@ -67,8 +67,7 @@ export function getThemeColorDefinitionForPath(
 }
 
 export function resolveEventThemeColor(input?: unknown): string {
-  void input;
-  return BRAND_THEME_COLOR;
+  return resolveEventPageBackgroundColor(input);
 }
 
 export function resolveEventPageBackgroundColor(input?: unknown): string {
@@ -199,9 +198,9 @@ export function isIosBrowserChrome() {
   return !isStandalone;
 }
 
-export function setIosBrowserChromeColors(variant: "light" | "dark" = "light") {
+export function setIosBrowserChromeColors(variant: "light" | "dark" = "light", pageColor?: string) {
   if (typeof document === "undefined") return;
-  const color = variant === "dark" ? DARK_THEME_COLOR : IOS_BROWSER_CHROME_COLOR;
+  const color = normalizeColor(pageColor) || (variant === "dark" ? DARK_THEME_COLOR : IOS_BROWSER_CHROME_COLOR);
   setThemeColorMeta(color);
   document.documentElement.dataset.iosBrowserChrome = "true";
   document.documentElement.style.setProperty(
@@ -223,6 +222,12 @@ export function setLightColorSchemeMeta() {
 
 export function setColorSchemeMeta(scheme: "light" | "dark") {
   if (typeof document === "undefined") return;
+
+  // Safari also reads the computed scheme; the app's inline appearance value
+  // otherwise keeps dark event pages inside light browser chrome.
+  if (document.documentElement.style.colorScheme !== scheme) {
+    document.documentElement.style.colorScheme = scheme;
+  }
 
   const metas = Array.from(document.querySelectorAll<HTMLMetaElement>(COLOR_SCHEME_SELECTOR));
   if (metas.length === 0) {

@@ -271,7 +271,10 @@ export default function EventPreviewViewport({
         display: none;
       }
       [data-event-mobile-edit] { display: ${desktop.matches ? "none" : "inline-flex"} !important; }
-      ${phone ? `${contentSelector} { padding-top: ${navHeight}px !important; }` : ""}
+      ${phone ? `
+      ${contentSelector}:not(:has([data-event-page-frame])) { padding-top: ${navHeight}px !important; }
+      [data-event-page-frame] { --event-skin-topbar-offset: ${navHeight}px; }
+      ` : ""}
       `;
     };
     syncStyle();

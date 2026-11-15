@@ -46,6 +46,7 @@ async function assertChrome(page, color, tone, ios) {
       before: getComputedStyle(document.body, "::before").backgroundColor,
       after: getComputedStyle(document.body, "::after").backgroundColor,
       background: getComputedStyle(root).backgroundColor,
+      scheme: getComputedStyle(root).colorScheme,
       images: ["::before", "::after"].map(pseudo => getComputedStyle(document.body, pseudo).backgroundImage),
       status: [...document.querySelectorAll('meta[name="apple-mobile-web-app-status-bar-style"]')].map(meta => meta.content),
       ios: root.dataset.iosBrowserChrome,
@@ -56,6 +57,7 @@ async function assertChrome(page, color, tone, ios) {
   assert.equal(values.before, rgb);
   assert.equal(values.after, rgb);
   assert.equal(values.background, rgb);
+  assert.equal(values.scheme, tone, "Safari's computed color scheme follows the page rather than the app appearance");
   assert.ok(values.images.every(image => image.split(",").every(layer => layer.trim() === "none")), "safe areas contain no accent gradients");
   assert.ok(values.status.every(style => style === (tone === "dark" ? "black-translucent" : "default")));
   assert.equal(values.ios, ios ? "true" : undefined);
@@ -108,15 +110,15 @@ test("mobile browser hints, safe areas and event colors follow appearance across
             await page.getByRole("button", { name: "Dark", exact: true }).click();
             await assertChrome(page, applicationChromeColors.dark, "dark", iosTab);
             await page.getByRole("button", { name: "Light event", exact: true }).click();
-            await assertChrome(page, "#f6f1e7", "light", false);
+            await assertChrome(page, "#f6f1e7", "light", iosTab);
             await page.getByRole("button", { name: "Light", exact: true }).click();
             await page.getByRole("button", { name: "Dark event", exact: true }).click();
-            await assertChrome(page, "#111b3a", "dark", false);
+            await assertChrome(page, "#111b3a", "dark", iosTab);
             await page.evaluate(() => {
               document.querySelector('meta[name="theme-color"]').content = "#ff0000";
               const meta = document.createElement("meta"); meta.name = "theme-color"; meta.content = "#ff0000"; document.head.append(meta);
             });
-            await assertChrome(page, "#111b3a", "dark", false);
+            await assertChrome(page, "#111b3a", "dark", iosTab);
             // Ensure observing metadata settles, even when event and app tones differ.
             const writes = await page.evaluate(async () => {
               await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));

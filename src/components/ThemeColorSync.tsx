@@ -25,9 +25,14 @@ export default function ThemeColorSync() {
       const eventColor = normalizeEventPageColor(document.documentElement.getAttribute(EVENT_PAGE_COLOR_ATTRIBUTE));
       if (eventColor) {
         const eventTone = document.documentElement.getAttribute(EVENT_PAGE_TONE_ATTRIBUTE);
-        setColorSchemeMeta(eventTone === "light" || eventTone === "dark" ? eventTone : variant);
-        clearIosBrowserChromeColors();
-        setThemeColor(eventColor);
+        const tone = eventTone === "light" || eventTone === "dark" ? eventTone : variant;
+        setColorSchemeMeta(tone);
+        if (isIosBrowserChrome()) {
+          setIosBrowserChromeColors(tone, eventColor);
+        } else {
+          clearIosBrowserChromeColors();
+          setThemeColor(eventColor);
+        }
         return;
       }
       setColorSchemeMeta(variant);
