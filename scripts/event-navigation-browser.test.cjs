@@ -5,7 +5,7 @@ const test = require("node:test");
 const { chromium } = require("playwright");
 const buildFixture = require("./lib/build-bun-fixture.cjs");
 
-test("event navigation is compact, follows event paper and hides only on deliberate scrolling", { timeout: 90000 }, async () => {
+test("event navigation retains its original rounded size, transparent surround and deliberate scroll behavior", { timeout: 90000 }, async () => {
   const built = buildFixture("scripts/build-event-navigation-fixture.mjs");
   const out = built.toString().match(/Built event navigation fixture in (.+)/)?.[1].trim();
   assert.ok(out, "the fixture reports its isolated output directory");
@@ -43,12 +43,20 @@ test("event navigation is compact, follows event paper and hides only on deliber
         await hidden(false);
       } else {
         const geometry = await header.evaluate(el => ({ height: el.getBoundingClientRect().height, background: getComputedStyle(el).backgroundColor, transition: getComputedStyle(el).transitionDuration }));
-        assert.equal(geometry.height, 60, "event header takes 60px without a safe-area inset");
-        assert.equal(geometry.background, "rgb(17, 27, 58)");
+        assert.equal(geometry.height, 86, "event header restores its original 86px height without a safe-area inset");
+        assert.equal(geometry.background, "rgba(0, 0, 0, 0)", "the strip behind the rounded navbar is transparent");
+        const roundedBar = await header.locator(".nav-chrome-glass-header").evaluate(el => {
+          const style = getComputedStyle(el);
+          return { paddingTop: style.paddingTop, paddingBottom: style.paddingBottom, borderRadius: style.borderRadius, backgroundImage: style.backgroundImage, backgroundColor: style.backgroundColor };
+        });
+        assert.equal(roundedBar.paddingTop, "10px");
+        assert.equal(roundedBar.paddingBottom, "10px");
+        assert.equal(roundedBar.borderRadius, "26.4px");
+        assert.ok(roundedBar.backgroundImage !== "none" || roundedBar.backgroundColor !== "rgba(0, 0, 0, 0)", "the rounded navbar keeps its own fill");
         if (dark) assert.equal(await header.locator(".nav-chrome-glass-header").evaluate(el => getComputedStyle(el).backgroundColor), "rgb(37, 31, 45)");
         assert.equal(geometry.transition, "0s", "reduced motion removes the slide animation");
         const heroY = await page.getByTestId("hero").evaluate(el => el.getBoundingClientRect().top);
-        assert.equal(heroY, 76, "event content clears the 60px header with its existing 16px section spacing");
+        assert.equal(heroY, 110, "event content restores its original navbar clearance and section spacing");
         await page.screenshot({ path: path.join(out, `${width}-${dark ? "dark" : "light"}-dark-event.png`) });
         const button = page.getByRole("button", { name: "Open navigation", exact: true });
         const box = await button.boundingBox();
@@ -57,7 +65,7 @@ test("event navigation is compact, follows event paper and hides only on deliber
           const logo = page.getByRole("img", { name: "Envitefy Gymnastics", exact: true });
           await logo.evaluate(image => image.decode());
           const logoBox = await logo.boundingBox();
-          assert.ok(logoBox.height <= 44 && logoBox.y >= 0 && logoBox.y + logoBox.height <= 60, "the complete category logo fits inside compact navigation");
+          assert.ok(logoBox.y >= 0 && logoBox.y + logoBox.height <= geometry.height, "the complete category logo fits inside the original navigation");
         }
         await scroll(70); await hidden(false);
         await scroll(140); await hidden(true);
@@ -76,14 +84,14 @@ test("event navigation is compact, follows event paper and hides only on deliber
         await scroll(320); await hidden(true);
         await page.getByRole("button", { name: "Light event", exact: true }).evaluate(el => el.click());
         await hidden(false);
-        assert.equal(await header.evaluate(el => getComputedStyle(el).backgroundColor), "rgb(246, 241, 231)");
+        assert.equal(await header.evaluate(el => getComputedStyle(el).backgroundColor), "rgba(0, 0, 0, 0)", "changing event paper never paints the navbar surround");
         await scroll(0); await hidden(false);
         await page.screenshot({ path: path.join(out, `${width}-${dark ? "dark" : "light"}.png`) });
         await page.emulateMedia({ reducedMotion: "no-preference" });
         assert.equal(await header.evaluate(el => getComputedStyle(el).transitionDuration), "0.2s");
         await page.getByRole("button", { name: "Leave event", exact: true }).evaluate(el => el.click());
         await page.waitForFunction(() => !document.documentElement.hasAttribute("data-event-page-color"));
-        assert.ok(await header.evaluate(el => el.getBoundingClientRect().height > 60), "app navigation restores its original spacing");
+        assert.equal(await header.evaluate(el => el.getBoundingClientRect().height), geometry.height, "event and app navigation share the original spacing");
         await scroll(400); await hidden(false);
         assert.equal(await page.getByLabel("Unsaved event title").inputValue(), "Keep this title");
         if (width === 375) {

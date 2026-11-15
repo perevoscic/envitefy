@@ -3,6 +3,7 @@ import buildBunFixture from "./build-bun-fixture.cjs";
 
 export const INDEPENDENT_CREATE_BROWSER_TESTS = Object.freeze([
   "scripts/event-navigation-browser.test.cjs",
+  "scripts/pwa-install-browser.test.cjs",
   "scripts/email-appearance-browser.test.cjs",
   "scripts/event-source-updates-browser.test.cjs",
   "scripts/create-guest-preview-offline.test.cjs",

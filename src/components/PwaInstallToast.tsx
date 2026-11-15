@@ -1,6 +1,4 @@
 "use client";
-import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useInstalledAppState } from "@/lib/pwa/install-state";
 import { dismissInstallToast, isInstallToastDismissed } from "@/lib/pwa/install-toast-dismissal";
@@ -38,10 +36,6 @@ const shouldHideInstallUi = (): boolean => {
 };
 
 export default function PwaInstallToast() {
-  const pathname = usePathname();
-  const { status: sessionStatus } = useSession();
-  // Keep the product introduction visible before offering installation.
-  const isMarketingLanding = pathname === "/landing" || (pathname === "/" && sessionStatus !== "authenticated");
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null
   );
@@ -86,11 +80,17 @@ export default function PwaInstallToast() {
         (event as CustomEvent<BeforeInstallPromptEvent | null>).detail ?? null;
       adoptPrompt(detail ?? w.__snapInstallDeferredPrompt ?? null);
     };
+    const onNativePrompt = (event: Event) => {
+      event.preventDefault();
+      adoptPrompt(event as BeforeInstallPromptEvent);
+    };
 
     window.addEventListener(BRIDGE_EVENT_NAME, onPromptReady as any);
+    window.addEventListener("beforeinstallprompt", onNativePrompt);
 
     return () => {
       window.removeEventListener(BRIDGE_EVENT_NAME, onPromptReady as any);
+      window.removeEventListener("beforeinstallprompt", onNativePrompt);
     };
   }, []);
 
@@ -142,14 +142,22 @@ export default function PwaInstallToast() {
           platform: choiceResult.platform ?? "unknown",
         });
         setIsVisible(false);
-        // Clear the prompt
-        const w = window as SnapWindow;
-        w.__snapInstallDeferredPrompt = null;
-        deferredPromptRef.current = null;
-        setDeferred(null);
+      } else {
+        setIsVisible(false);
+        setIsDismissed(true);
+        dismissInstallToast(window);
       }
     } catch (error) {
       console.error("Error showing install prompt:", error);
+      setIsVisible(false);
+    } finally {
+      // Browser install events are single-use, including declined attempts.
+      const w = window as SnapWindow;
+      if (w.__snapInstallDeferredPrompt === prompt) w.__snapInstallDeferredPrompt = null;
+      if (deferredPromptRef.current === prompt) {
+        deferredPromptRef.current = null;
+        setDeferred(null);
+      }
     }
   }, [markInstalled]);
 
@@ -159,7 +167,7 @@ export default function PwaInstallToast() {
     dismissInstallToast(window);
   }, []);
 
-  if (isMarketingLanding || shouldHideInstallUi()) return null;
+  if (shouldHideInstallUi()) return null;
 
   // Don't show if installed, dismissed, no prompt, or not visible
   if (

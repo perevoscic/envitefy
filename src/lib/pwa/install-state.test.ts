@@ -161,3 +161,35 @@ test("writes both install persistence keys", () => {
   assert.equal(win.localStorage.getItem(INSTALLED_FLAG_KEY), "1");
   assert.equal(win.localStorage.getItem(LEGACY_INSTALLED_FLAG_KEY), "1");
 });
+
+test("a fresh install offer overrides either saved installation flag", () => {
+  for (const key of [INSTALLED_FLAG_KEY, LEGACY_INSTALLED_FLAG_KEY]) {
+    const win = createMockWindow({ stored: { [key]: "1" }, relatedApps: null });
+    win.__snapInstallDeferredPrompt = { prompt: async () => {} };
+    assert.deepEqual(getInitialInstalledAppState(win), { status: "not_installed", signal: "installable", meta: null });
+  }
+});
+
+test("installed runtime signals take priority over an old cached offer", () => {
+  for (const options of [{ standalone: true }, { userAgent: "EnvitefyIOS/1.0" }, { mediaMatches: { "(display-mode: standalone)": true } }]) {
+    const win = createMockWindow({ ...options, relatedApps: null });
+    win.__snapInstallDeferredPrompt = { prompt: async () => {} };
+    assert.equal(getInitialInstalledAppState(win).status, "installed");
+  }
+});
+
+test("a browser install offer takes priority over an Android app referrer", () => {
+  const win = createMockWindow({ userAgent: "Mozilla/5.0 (Linux; Android 14)", referrer: "android-app://com.google.android.gm", relatedApps: null });
+  win.__snapInstallDeferredPrompt = { prompt: async () => {} };
+  assert.equal(getInitialInstalledAppState(win).status, "not_installed");
+});
+
+test("current installed-related-apps results recheck historical installation flags", async () => {
+  for (const key of [INSTALLED_FLAG_KEY, LEGACY_INSTALLED_FLAG_KEY]) {
+    const win = createMockWindow({ stored: { [key]: "1" }, relatedApps: [] });
+    assert.equal(getInitialInstalledAppState(win).status, "checking");
+    assert.equal((await resolveInstalledAppState(win)).status, "not_installed");
+    const installed = createMockWindow({ stored: { [key]: "1" }, relatedApps: [{ id: "envitefy" }] });
+    assert.equal((await resolveInstalledAppState(installed)).status, "installed");
+  }
+});

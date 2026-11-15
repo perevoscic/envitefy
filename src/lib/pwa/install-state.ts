@@ -16,6 +16,7 @@ type InstallSignal =
   | "related-apps"
   | "related-apps-error"
   | "appinstalled"
+  | "installable"
   | "accepted"
   | "none";
 
@@ -108,9 +109,6 @@ export const getInitialInstalledAppState = (
   if (!win) return CHECKING_STATE;
   if (/EnvitefyIOS\//.test(win.navigator.userAgent || "")) return createState("installed", "native-ios");
 
-  const storedState = getStoredInstallState(win);
-  if (storedState) return storedState;
-
   try {
     if ((win.navigator as any).standalone === true) {
       return createState("installed", "navigator-standalone");
@@ -121,6 +119,11 @@ export const getInitialInstalledAppState = (
 
   const displayModeState = getDisplayModeInstallState(win);
   if (displayModeState) return displayModeState;
+
+  // A fresh browser offer proves this app can be installed again, even if a
+  // previous installation left its flag behind after an uninstall.
+  const prompt = (win as Window & { __snapInstallDeferredPrompt?: { prompt?: unknown } | null }).__snapInstallDeferredPrompt;
+  if (typeof prompt?.prompt === "function") return createState("not_installed", "installable");
 
   try {
     const isAndroid = /Android/i.test(win.navigator.userAgent || "");
@@ -142,6 +145,9 @@ export const getInitialInstalledAppState = (
   if (hasInstalledRelatedAppsApi(win)) {
     return createState("checking", "related-apps");
   }
+
+  const storedState = getStoredInstallState(win);
+  if (storedState) return storedState;
 
   return createState("not_installed", "none");
 };
@@ -209,6 +215,12 @@ export const useInstalledAppState = (debug?: InstallDebugLogger) => {
 
   const applyInstallState = useCallback(
     (nextState: InstalledAppState, reason: string) => {
+      if (typeof window !== "undefined" && nextState.status === "not_installed" &&
+        (nextState.signal === "installable" || nextState.signal === "related-apps")) {
+        for (const key of [INSTALLED_FLAG_KEY, LEGACY_INSTALLED_FLAG_KEY]) {
+          try { window.localStorage.removeItem(key); } catch { /* Storage may be blocked. */ }
+        }
+      }
       setInstallState((currentState) =>
         installStatesEqual(currentState, nextState) ? currentState : nextState
       );
@@ -229,6 +241,7 @@ export const useInstalledAppState = (debug?: InstallDebugLogger) => {
     let requestId = 0;
 
     const refreshInstallState = async (reason: string) => {
+      const currentRequestId = ++requestId;
       const immediateState = getInitialInstalledAppState(window);
       if (immediateState.status !== "checking") {
         applyInstallState(immediateState, reason);
@@ -236,7 +249,6 @@ export const useInstalledAppState = (debug?: InstallDebugLogger) => {
       }
 
       applyInstallState(immediateState, `${reason}:checking`);
-      const currentRequestId = ++requestId;
       const resolvedState = await resolveInstalledAppState(window);
       if (cancelled || currentRequestId !== requestId) return;
       applyInstallState(resolvedState, `${reason}:resolved`);
@@ -257,8 +269,15 @@ export const useInstalledAppState = (debug?: InstallDebugLogger) => {
       }
     };
     const onInstalled = () => {
+      requestId++;
       markInstalledInStorage(window);
       applyInstallState(createState("installed", "appinstalled"), "appinstalled");
+    };
+    const onInstallable = (event: Event) => {
+      const prompt = event.type === "beforeinstallprompt" ? event : (event as CustomEvent).detail;
+      if (typeof prompt?.prompt !== "function") return;
+      (window as Window & { __snapInstallDeferredPrompt?: unknown }).__snapInstallDeferredPrompt = prompt;
+      void refreshInstallState("installable");
     };
 
     for (const mediaQuery of mediaQueries) {
@@ -272,6 +291,8 @@ export const useInstalledAppState = (debug?: InstallDebugLogger) => {
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("appinstalled", onInstalled);
+    window.addEventListener("beforeinstallprompt", onInstallable);
+    window.addEventListener("envitefy:beforeinstallprompt", onInstallable);
 
     return () => {
       cancelled = true;
@@ -285,6 +306,8 @@ export const useInstalledAppState = (debug?: InstallDebugLogger) => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("appinstalled", onInstalled);
+      window.removeEventListener("beforeinstallprompt", onInstallable);
+      window.removeEventListener("envitefy:beforeinstallprompt", onInstallable);
     };
   }, [applyInstallState]);
 

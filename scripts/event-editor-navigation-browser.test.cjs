@@ -96,8 +96,8 @@ test("editor settings expose the shared aurora while Preview and embedded editor
         assert.equal(clean.gradientDisplay, "none", `${mode}: clean page hides the app aurora`);
         assert.equal(
           clean.outerNav,
-          expectedPaper,
-          `${mode}: navigation surround uses the event paper`,
+          transparent,
+          `${mode}: navigation surround stays transparent`,
         );
         await page.evaluate(() => {
           const editor = document.querySelector("[data-event-page-editor]");
@@ -117,8 +117,8 @@ test("editor settings expose the shared aurora while Preview and embedded editor
         assert.equal(editing.preview, expectedPaper, `${mode}: settings retain the original preview paper`);
         assert.equal(
           editing.outerNav,
-          expectedPaper,
-          `${mode}: controls retain the event-colored navbar surround`,
+          transparent,
+          `${mode}: controls retain the transparent navbar surround`,
         );
         assert.equal(
           editing.roundedNav,
