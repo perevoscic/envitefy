@@ -1,8 +1,8 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { RefreshCw, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ChevronRight, RefreshCw, X } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import { reviewSourceChanges, type SourceChange } from "@/lib/event-source-updates";
 import type { EventPageEditorSession } from "./useEventPageEditor";
 import styles from "./event-editor.module.css";
@@ -36,6 +36,7 @@ export default function EventSourceUpdates({ editor }: { editor: EventPageEditor
   const [clock, tick] = useState(0);
   const controller = useRef<AbortController | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
+  const descriptionId = useId();
   useEffect(() => () => controller.current?.abort(), []);
   useEffect(() => {
     controller.current?.abort();
@@ -52,6 +53,10 @@ export default function EventSourceUpdates({ editor }: { editor: EventPageEditor
   void clock;
   if (!updates || !editor.eventId || !editor.authenticated) return null;
   const unavailable = ended || updates.ended || updates.isEnded();
+  let sourceWebsite = "your original event link";
+  try {
+    sourceWebsite = new URL(updates.url).hostname.replace(/^www\./, "");
+  } catch { /* Keep the generic source label if an older record has no valid URL. */ }
   const check = async () => {
     controller.current?.abort();
     const attempt = new AbortController();
@@ -118,27 +123,28 @@ export default function EventSourceUpdates({ editor }: { editor: EventPageEditor
     setOpen(value);
   };
   return (
-    <div className={styles.sourceUpdates} data-source-updates>
+    <>
       <button
         ref={trigger}
         type="button"
-        className={styles.sourceCheckButton}
+        className={`${styles.menuCard} ${styles.sourceCheckButton}`}
+        data-source-updates
+        aria-label="Check original link for updates"
+        aria-describedby={descriptionId}
         onClick={() => void check()}
         disabled={unavailable || editor.busy || !editor.ready}
       >
-        <RefreshCw size={18} aria-hidden="true" />
-        Check for updates
+        <span className={styles.menuIcon} aria-hidden="true"><RefreshCw size={20} /></span>
+        <span className={styles.menuText}>
+          <strong>Check original link for updates</strong>
+          <span id={descriptionId} className={styles.menuDescription}>Review new information from {sourceWebsite}.</span>
+          {unavailable && <span>Updates are available until the event ends.</span>}
+          {(result?.checkedAt || updates.lastCheckedAt) && <span>
+            Last checked: {new Date(result?.checkedAt || updates.lastCheckedAt!).toLocaleString()}
+          </span>}
+        </span>
+        <ChevronRight size={17} aria-hidden="true" />
       </button>
-      <p>
-        {unavailable
-          ? "Updates are available until the event ends."
-          : "Review new information from your original event link."}
-      </p>
-      {(result?.checkedAt || updates.lastCheckedAt) && (
-        <p>
-          Last checked: {new Date(result?.checkedAt || updates.lastCheckedAt!).toLocaleString()}
-        </p>
-      )}
       <Dialog.Root open={open} onOpenChange={close}>
         <Dialog.Portal>
           <Dialog.Overlay className={styles.sourceOverlay} />
@@ -266,6 +272,6 @@ export default function EventSourceUpdates({ editor }: { editor: EventPageEditor
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-    </div>
+    </>
   );
 }

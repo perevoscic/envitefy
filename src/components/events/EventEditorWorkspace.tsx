@@ -589,6 +589,7 @@ export default function EventEditorWorkspace({
               {canvasEditor && (nativeBuilder || (editor.setComposition && sectionEditors)) && <div className={styles.mobileSections}>
                 <EventEditorMenuCard title="Sections" desc="Add, rename and organize page sections." icon={<ListPlus size={20} />} onClick={() => setTool("sections")} />
               </div>}
+              <EventSourceUpdates editor={editor} />
               <EventEditorToolsContext.Provider
                 value={
                   editor.setComposition && sectionEditors
@@ -604,7 +605,6 @@ export default function EventEditorWorkspace({
                   ? controls(null)
                   : controls}
               </EventEditorToolsContext.Provider>
-              <EventSourceUpdates editor={editor} />
             </div>
           </div>
         </aside>

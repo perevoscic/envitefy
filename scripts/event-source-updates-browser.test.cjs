@@ -160,7 +160,7 @@ for (const width of process.env.SOURCE_UPDATES_WIDTH
     });
     try {
       await page.goto(`${base}/event/design/customize?mode=upload&edit=source-event`);
-      const check = page.getByRole("button", { name: "Check for updates", exact: true });
+      const check = page.getByRole("button", { name: "Check original link for updates", exact: true });
       const openMenu = async () => {
         const opener = page.getByRole("button", { name: "Continue editing", exact: true });
         await Promise.race([check.waitFor(), opener.waitFor()]);
@@ -168,6 +168,27 @@ for (const width of process.env.SOURCE_UPDATES_WIDTH
         await check.waitFor();
       };
       await openMenu();
+      await page.locator("[data-event-page-editor] aside").evaluate(async panel => {
+        await Promise.all(panel.getAnimations().map(animation => animation.finished.catch(() => {})));
+      });
+      const placement = await check.evaluate(button => {
+        const menu = button.closest("aside");
+        const design = [...(menu?.querySelectorAll("button") || [])].find(item => item.textContent.trim().startsWith("Design"));
+        const bounds = button.getBoundingClientRect();
+        return {
+          inEditingMenu: Boolean(menu) && !button.closest("footer"),
+          afterSections: button.previousElementSibling?.textContent.trim().startsWith("Sections"),
+          beforeDesign: Boolean(design && (button.compareDocumentPosition(design) & Node.DOCUMENT_POSITION_FOLLOWING)),
+          top: bounds.top, bottom: bounds.bottom, height: bounds.height,
+          viewport: innerHeight,
+        };
+      });
+      assert.equal(placement.inEditingMenu, true, "source updates belong to the editing menu");
+      assert.equal(placement.afterSections, true, "source updates sit directly below Sections");
+      assert.equal(placement.beforeDesign, true, "content updates precede visual design tools");
+      assert.ok(placement.top >= 0 && placement.bottom <= placement.viewport && placement.height >= 44, "source updates are discoverable without scrolling");
+      assert.match(await check.innerText(), /Review new information from example\.com\./);
+      await page.screenshot({ path: path.join(output, `menu-${width}.png`), fullPage: true });
       assert.equal(checks, 0, "loading an editor never checks automatically");
       await check.click();
       const dialog = page.getByRole("dialog", { name: "Review source updates" });
@@ -180,7 +201,7 @@ for (const width of process.env.SOURCE_UPDATES_WIDTH
       await page.screenshot({ path: path.join(output, `review-${width}.png`) });
       await dialog.getByRole("button", { name: "Apply selected (1)", exact: true }).click();
       await page.waitForFunction(() =>
-        document.activeElement?.textContent?.includes("Check for updates"),
+        document.activeElement?.textContent?.includes("Check original link for updates"),
       );
       assert.equal(writes.length, 0, "applying only edits mounted fields");
       await page.getByRole("button", { name: "Save changes", exact: true }).click();
@@ -362,7 +383,7 @@ test("gymnastics source updates change a session in place and retain host rows, 
   });
   try {
     await page.goto(`${base}/event/gymnastics/customize?mode=gymnastics&edit=gym-source`);
-    const check = page.getByRole("button", { name: "Check for updates", exact: true });
+    const check = page.getByRole("button", { name: "Check original link for updates", exact: true });
     await check.waitFor();
     assert.equal(metadataReads, 1, "the original URL is recovered from protected import metadata");
     assert.equal(sourceChecks, 0, "metadata lookup never crawls the source");
@@ -372,6 +393,10 @@ test("gymnastics source updates change a session in place and retain host rows, 
       0,
       "source metadata hydration stays clean",
     );
+    await page.locator("[data-event-page-editor] aside").evaluate(async panel => {
+      await Promise.all(panel.getAnimations().map(animation => animation.finished.catch(() => {})));
+    });
+    await page.screenshot({ path: path.join(output, "gym-menu-refresh.png"), fullPage: true });
     await check.screenshot({ path: path.join(output, "gym-original-url-recovered-button.png") });
     await check.click();
     const dialog = page.getByRole("dialog", { name: "Review source updates" });

@@ -1355,9 +1355,44 @@ html[data-event-page-color] body::after {
   background: var(--event-editor-chrome-color, var(--event-page-chrome-color)) !important;
 }
 
-/* The rounded navigation owns its surface; its outer surround stays open. */
+/* Continue the event paper behind the compact navigation, even over scrolled artwork. */
 html[data-event-page-color] [data-app-mobile-topbar="app"] {
-  background: transparent !important;
+  background: var(--event-page-chrome-color) !important;
+}
+
+@media (max-width: 1023px) {
+  html[data-event-page-color] {
+    /* 44px controls + 8px inner padding/border + 4px bottom + top safe area.
+       Keep this inset stable while the fixed header slides away: no content jumps. */
+    --app-mobile-topbar-offset: calc(3.5rem + max(0.25rem, env(safe-area-inset-top, 0px)));
+  }
+
+  html[data-event-page-color] [data-app-mobile-topbar="app"] {
+    padding: max(0.25rem, env(safe-area-inset-top, 0px)) 0.75rem 0.25rem;
+    transition: transform 200ms ease-out;
+  }
+
+  html[data-event-page-color] [data-app-mobile-topbar="app"] .nav-chrome-glass-header {
+    padding: 3px 10px;
+    border-radius: 1.25rem;
+  }
+
+  /* Category marks can have a taller silhouette than the standard wordmark. */
+  html[data-event-page-color] [data-app-mobile-topbar="app"] a[aria-label="Envitefy home"] > img {
+    max-height: 2.75rem;
+    width: auto !important;
+  }
+
+  html[data-event-page-color] [data-app-mobile-topbar="app"][data-scroll-hidden="true"]:not(:focus-within) {
+    transform: translateY(-100%);
+    pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-event-page-color] [data-app-mobile-topbar="app"] {
+    transition: none;
+  }
 }
 
 html[data-event-page-color] [data-app-main-content="true"] {

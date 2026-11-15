@@ -24,6 +24,7 @@ import EventPreviewActions from "./EventPreviewActions";
 import { useEventPageColor } from "@/hooks/useEventPageChrome";
 import type { EventPreviewBackground } from "@/lib/event-preview-background";
 import { resolveThemeCssVariables } from "@/themes/registry";
+import { connectEventNavigationScroll } from "@/lib/event-navigation-scroll";
 import toolbarStyles from "./event-preview-toolbar.module.css";
 
 const deviceIcons = { desktop: Monitor, tablet: Tablet, mobile: Smartphone };
@@ -241,13 +242,26 @@ export default function EventPreviewViewport({
   useEffect(() => () => cancelRotation.current?.(), []);
 
   useEffect(() => {
+    const view = frameDocument?.defaultView;
+    if (!view || !preserveNavigation || deviceOnly) return;
+    return connectEventNavigationScroll(view, window);
+  }, [frameDocument, preserveNavigation, deviceOnly]);
+
+  useEffect(() => {
     if (!frameDocument || !preserveNavigation) return;
     // Hide the saved owner view's document scrollbar without disabling scrolling
     // or changing scrollbars inside event controls and dialogs.
     const style = frameDocument.createElement("style");
     const desktop = window.matchMedia("(min-width: 1024px)");
+    let navHeight = 0;
     // Device-sized previews must not duplicate the outer desktop Edit action.
     const syncStyle = () => {
+      // Let phone content scroll through the navbar area instead of leaving an empty strip.
+      const navigation = document.querySelector('[data-app-mobile-topbar="app"]');
+      if (navigation) navHeight = navigation.getBoundingClientRect().height;
+      const phone = window.innerWidth < 768 && !deviceOnly && navHeight > 0;
+      const contentSelector = frameDocument.getElementById("event-preview-content")
+        ? "#event-preview-content" : '[data-app-main-content="true"]';
       style.textContent = `
       html, body, [data-app-main-content] {
         scrollbar-width: none;
@@ -257,16 +271,19 @@ export default function EventPreviewViewport({
         display: none;
       }
       [data-event-mobile-edit] { display: ${desktop.matches ? "none" : "inline-flex"} !important; }
+      ${phone ? `${contentSelector} { padding-top: ${navHeight}px !important; }` : ""}
       `;
     };
     syncStyle();
     frameDocument.head.append(style);
     desktop.addEventListener("change", syncStyle);
+    window.addEventListener("resize", syncStyle);
     return () => {
       desktop.removeEventListener("change", syncStyle);
+      window.removeEventListener("resize", syncStyle);
       style.remove();
     };
-  }, [frameDocument, preserveNavigation]);
+  }, [frameDocument, preserveNavigation, deviceOnly]);
 
   // Wait for the app shell's commit before connecting its preview document.
   // Nested event content may hydrate later; background styling leaves its
@@ -418,7 +435,7 @@ export default function EventPreviewViewport({
   return (
     <section
       aria-label={`${title} preview`}
-      className={`@container ${fullscreen ? "fixed inset-0 z-[7001] h-[100dvh]" : "relative h-full min-h-0"} flex w-full flex-col ${preserveNavigation && !deviceOnly ? "pt-[var(--app-mobile-topbar-offset,6rem)] lg:pt-0" : ""}`}
+      className={`@container ${fullscreen ? "fixed inset-0 z-[7001] h-[100dvh]" : "relative h-full min-h-0"} flex w-full flex-col ${preserveNavigation && !deviceOnly ? "md:pt-[var(--app-mobile-topbar-offset,6rem)] lg:pt-0" : ""}`}
       style={deviceOnly ? { color: screenBackground.color } : background}
     >
       {!deviceOnly ? Object.values(EVENT_PREVIEW_FRAMES).map(({ image }) => (
