@@ -81,13 +81,15 @@ export default function GymnasticsScheduleCalendar<T extends CalendarDay>({
               <button
                 key={item.id}
                 type="button"
+                aria-label={item.label}
+                title={item.label}
                 aria-pressed={period.id === item.id}
                 onClick={() => {
                   setSelection({ id: item.id, periods: schedule.periods });
                   onPeriodChange?.();
                 }}
               >
-                {item.label}
+                {item.tabLabel}
               </button>
             ))}
           </div>

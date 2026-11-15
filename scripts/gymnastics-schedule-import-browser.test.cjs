@@ -83,13 +83,13 @@ test("schedule upload and camera review preserve sessions, explicit saves and ca
       await page.getByRole("heading", { name: "Authored finals", exact: true }).waitFor();
       await page.getByRole("heading", { name: "Reviewed juniors", exact: true }).waitFor();
       const calendar = page.locator('section[aria-label="Meet schedule"]');
-      assert.deepEqual(await calendar.getByRole("group", { name: "Schedule periods" }).getByRole("button").allTextContents(), ["Sat, Apr 10, 2027", "Sun, Apr 11, 2027"]);
+      assert.deepEqual(await calendar.getByRole("group", { name: "Schedule periods" }).getByRole("button").allTextContents(), ["Sat, Apr 10", "Sun, Apr 11"]);
       assert.equal(await calendar.getByText("April 2027", { exact: true }).count(), 0, "two imported dates never expand into a month");
       await page.screenshot({ path: path.join(output, `schedule-provided-dates-${width}-${dark ? "dark" : "light"}.png`) });
       await page.getByRole("button", { name: "Save fixture", exact: true }).click();
       await page.reload();
       await page.getByRole("tab", { name: "Schedule", exact: true }).click();
-      assert.deepEqual(await calendar.getByRole("group", { name: "Schedule periods" }).getByRole("button").allTextContents(), ["Sat, Apr 10, 2027", "Sun, Apr 11, 2027"]);
+      assert.deepEqual(await calendar.getByRole("group", { name: "Schedule periods" }).getByRole("button").allTextContents(), ["Sat, Apr 10", "Sun, Apr 11"]);
       const savedSchedule = await page.evaluate(() => JSON.parse(localStorage.getItem("gymnastics-tab-sync")).schedule);
       assert.deepEqual(savedSchedule.days.map(day => day.isoDate), ["2027-04-10", "2027-04-11"]);
       await calendar.getByRole("heading", { name: "Reviewed juniors", exact: true }).waitFor();

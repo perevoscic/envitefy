@@ -43,6 +43,34 @@ test("legacy and moved days remain reachable without a migration or automatic sa
   assert.deepEqual(periods({ days: schedule.days.slice(0, 2) }).map(view => view.dates), [["2027-01-01"], ["2027-01-02"]]);
 });
 
+test("schedule tabs omit redundant years while retaining full dates and saved data", () => {
+  const schedule = { days: [
+    { id: "friday", isoDate: "2027-01-29" },
+    { id: "saturday", date: "Saturday, January 30, 2027" },
+    { id: "undated", date: "Finals" },
+  ] };
+  const snapshot = JSON.stringify(schedule);
+  const views = periods(schedule);
+  assert.deepEqual(views.map(view => view.tabLabel), ["Fri, Jan 29", "Sat, Jan 30", "Finals"]);
+  assert.equal(views[0].label, "Fri, Jan 29, 2027", "full dates remain available to accessible labels and headings");
+  assert.equal(JSON.stringify(schedule), snapshot);
+  assert.deepEqual(periods(JSON.parse(snapshot)), views);
+});
+
+test("nearby New Year periods use compact day, week and month tabs; distant editions retain years", () => {
+  const days = ["2026-12-31", "2027-01-01", "2027-02-01"].map(isoDate => ({ id: isoDate, isoDate }));
+  const views = periods({ days, periods: [
+    { kind: "week", startDate: "2026-12-31" },
+    { kind: "month", startDate: "2027-02-01" },
+  ] });
+  assert.deepEqual(views.map(view => view.tabLabel), ["Dec 31 – Jan 6", "February"]);
+  assert.deepEqual(periods({ days: days.slice(0, 2) }).map(view => view.tabLabel), ["Thu, Dec 31", "Fri, Jan 1"]);
+  const distant = periods({ days: [days[0], { id: "later", isoDate: "2027-03-01" }] });
+  assert.ok(distant.every(view => view.tabLabel === view.label));
+  const editions = periods({ days: [days[1], { id: "next-edition", isoDate: "2028-01-01" }] });
+  assert.deepEqual(editions.map(view => view.tabLabel), ["Fri, Jan 1, 2027", "Sat, Jan 1, 2028"]);
+});
+
 test("period removal keeps overlapping authored dates, sessions and unrelated schedule metadata", () => {
   let sequence = 0;
   const days = append([], dates("month", "2027-01"), () => `day-${++sequence}`);

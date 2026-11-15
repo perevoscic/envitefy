@@ -66,7 +66,23 @@ export function gymnasticsSchedulePeriods<T extends { id: string; isoDate?: stri
     }
     if (!periods.some(period => period.id === `day:${date}`)) add("day", date, [date]);
   }
-  return periods;
+  const scheduleDates = periods.flatMap(period => period.dates).sort();
+  const firstDate = scheduleDates[0];
+  const lastDate = scheduleDates.at(-1);
+  // Nearby months remain clear across New Year; distant editions need their years.
+  const monthIndex = (date: string) => Number(date.slice(0, 4)) * 12 + Number(date.slice(5, 7));
+  const omitTabYear = firstDate && lastDate && (
+    firstDate.slice(0, 4) === lastDate.slice(0, 4) || monthIndex(lastDate) - monthIndex(firstDate) <= 2
+  );
+  return periods.map(period => {
+    const start = period.dates[0];
+    const end = period.dates.at(-1);
+    const tabLabel = !omitTabYear || !start || !end ? period.label
+      : period.kind === "month" ? format(start, { month: "long" })
+      : period.kind === "week" ? `${format(start, { month: "short", day: "numeric" })} – ${format(end, { month: "short", day: "numeric" })}`
+      : format(start, { weekday: "short", month: "short", day: "numeric" });
+    return { ...period, tabLabel };
+  });
 }
 
 /** Remove a period's own dates, retaining dates also explicitly added in another period. */
