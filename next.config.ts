@@ -34,8 +34,37 @@ const liveCardRuntimeFiles = [
   "./public/fonts/birthday/*.ttf",
   "./node_modules/@napi-rs/canvas/**/*",
   "./node_modules/@napi-rs/canvas-*/**/*",
-  "./node_modules/ffmpeg-static/ffmpeg*",
 ];
+const ffmpegRuntimeFiles = ["./node_modules/ffmpeg-static/ffmpeg*"];
+// These handlers can encode WebP with FFmpeg. Shared imports alone do not
+// imply execution: discovery status/cancel and history subroutes do not
+// encode images, and profile uploads already receive Sharp-produced WebP.
+const ffmpegProcessingRoutes = [
+  "/api/admin/emails/generate",
+  "/api/create/extract",
+  "/api/discovery/intake",
+  "/api/discovery/*/run",
+  "/api/event-themes/generate",
+  "/api/events/*/card/edit",
+  "/api/events/*/original",
+  "/api/events/*/scan-artwork",
+  "/api/events/*/source-updates",
+  "/api/football/prefill",
+  "/api/history",
+  "/api/ingest",
+  "/api/livecard-builder/design",
+  "/api/livecard-builder/headline",
+  "/api/livecard-builder/jobs",
+  "/api/ocr",
+  "/api/parse/*/enrich",
+  "/api/scan/event-page",
+  "/api/signup-themes/generate",
+  "/api/studio/generate",
+  "/api/templates/media",
+  "/api/upload",
+  "/api/uploads/birthday-asset",
+];
+const processingRoutes = new Set([...pdfProcessingRoutes, ...ffmpegProcessingRoutes]);
 
 const nextConfig = (phase: string): NextConfig => ({
   // Keep dev artifacts out of `.next` so `next build` doesn't race with `next dev`.
@@ -90,30 +119,23 @@ const nextConfig = (phase: string): NextConfig => ({
   },
   outputFileTracingIncludes: {
     // Next matches these globs as substrings. Require the route to end here so
-    // /api/upload does not add PDF files to /api/uploads/birthday-asset.
+    // /api/upload and /api/history do not also match other routes.
     ...Object.fromEntries(
-      pdfProcessingRoutes.map((route) => [`${route}(?![\\s\\S])`, [...pdfRuntimeFiles]]),
+      [...processingRoutes].map((route) => [
+        `${route}(?![\\s\\S])`,
+        [
+          ...(pdfProcessingRoutes.includes(route) ? pdfRuntimeFiles : []),
+          ...(ffmpegProcessingRoutes.includes(route) ? ffmpegRuntimeFiles : []),
+        ],
+      ]),
     ),
     "/api/livecard-builder/design": [...liveCardRuntimeFiles],
     "/api/livecard-builder/jobs": [...liveCardRuntimeFiles],
     "/api/livecard-builder/headline": [...liveCardRuntimeFiles],
     "/api/livecard-builder/location": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
-    "/api/upload": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/uploads/*": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/studio/generate": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/events/*/card/edit": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/admin/emails/generate": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/user/profile/avatar": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/templates/media": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/discovery/**": ["./node_modules/ffmpeg-static/ffmpeg*", "./node_modules/geo-tz/data/timezones-1970.geojson.*"],
-    "/api/ingest": ["./node_modules/ffmpeg-static/ffmpeg*", "./node_modules/geo-tz/data/timezones-1970.geojson.*"],
+    "/api/discovery/**": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
+    "/api/ingest": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
     "/api/parse/*/enrich": ["./node_modules/geo-tz/data/timezones-1970.geojson.*"],
-    "/api/football/prefill": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/ocr": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/history": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/scan/event-page": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/events/*/scan-artwork": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/api/events/*/original": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/*": ["./public/fonts/Josefin_Sans/static/JosefinSans-Regular.ttf"],
   },
 

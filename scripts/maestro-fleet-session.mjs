@@ -18,6 +18,7 @@ export const FLEET_STEPS = Object.freeze({
   "chrome-email": "chrome-google-email.yaml",
   "chrome-password": "chrome-google-password.yaml",
   "chrome-password-observed": null,
+  "chrome-password-focused": null,
   "chrome-signin": "chrome-google-email.yaml",
   "app-session": "envitefy-google-session.yaml",
   "app-browse": "envitefy-google-session.yaml",
@@ -25,7 +26,7 @@ export const FLEET_STEPS = Object.freeze({
   "app-signin": null,
 });
 const APP_STEPS = new Set(["app-session", "app-signin", "app-browse", "smoke"]);
-const PASSWORD_STEPS = new Set(["play-password", "device-password", "chrome-password", "chrome-password-observed"]);
+const PASSWORD_STEPS = new Set(["play-password", "device-password", "chrome-password", "chrome-password-observed", "chrome-password-focused"]);
 const CREDENTIAL_STEPS = new Set([...PASSWORD_STEPS, "play-signin", "chrome-signin"]);
 const TIMEOUT_MS = 300000;
 const MASTER_SERIAL = "emulator-5556";
@@ -222,9 +223,9 @@ export function recordedSessionBlockers(files) {
 }
 
 export function credentialEvidence(step, files) {
-  if (!["play-signin", "chrome-signin", "chrome-password-observed"].includes(step)) return {};
+  if (!["play-signin", "chrome-signin", "chrome-password-observed", "chrome-password-focused"].includes(step)) return {};
   const has = (name) => files.some((file) => path.basename(file) === `${name}.png`);
-  const chrome = step === "chrome-signin" || step === "chrome-password-observed";
+  const chrome = step === "chrome-signin" || step === "chrome-password-observed" || step === "chrome-password-focused";
   return {
     credentialsSubmitted: has(chrome ? "google-oauth-password-result" : "google-password-submission-result"),
     credentialOutcomeObserved: has(chrome ? "chrome-credential-outcome" : "google-credential-outcome"),
@@ -235,7 +236,7 @@ export function credentialEvidence(step, files) {
 
 export function classifyFleetSessionResult(step, result, files) {
   const { browserAssociation, ownerGate } = recordedSessionBlockers(files);
-  const chromeCredentialOutcome = step === "chrome-signin" || step === "chrome-password-observed";
+  const chromeCredentialOutcome = step === "chrome-signin" || step === "chrome-password-observed" || step === "chrome-password-focused";
   const combinedSignin = step === "play-signin" || chromeCredentialOutcome;
   const credentials = credentialEvidence(step, files);
   const has = (name) => files.some((file) => path.basename(file) === `${name}.png`);
@@ -272,6 +273,7 @@ export async function buildFleetFlow(step, read = readFile) {
   const guards = gateCommands();
   let source = step === "app-signin" ? SIGNIN_FLOW
     : step === "chrome-password-observed" ? "appId: com.android.chrome\nname: Observed Google website password form\n---\n"
+      : step === "chrome-password-focused" ? "appId: com.android.chrome\nname: Observed focused Google website password form\n---\n"
       : await load(FLEET_STEPS[step]);
   source = preserveSession(source.replaceAll("\r\n", "\n"));
   if (step === "chrome-password-observed") {
@@ -285,6 +287,21 @@ export async function buildFleetFlow(step, read = readFile) {
     source += '- tapOn:\n    id: "^password$"\n    retryTapIfNoChange: false\n- pressKey: Backspace\n- inputText: ${MAESTRO_PASSWORD}\n- hideKeyboard\n';
     source += `${chromeGuards}- assertVisible: 'accounts\\.google\\.com'\n- assertVisible: '.*${EMAIL_PATTERN}.*'\n`;
     source += '- tapOn:\n    id: "^passwordNext$"\n    retryTapIfNoChange: false\n- takeScreenshot: google-oauth-password-result\n';
+    const outcome = [OWNER_GATE, CAPTCHA_GATE, RECOVERY_GATE, CREDENTIAL_ERROR, BROWSER_ASSOCIATION_GATE,
+      GOOGLE_TERMS_GATE, "Set up screen lock to use passkeys", "^Continue$|^Продолжить$|Welcome,.*"].join("|");
+    source += `- extendedWaitUntil:\n    visible: ${JSON.stringify(outcome)}\n    timeout: 90000\n- takeScreenshot: chrome-credential-outcome\n${chromeGuards}`;
+    source += `- runFlow:\n    when:\n      visible: "^Continue$|^Продолжить$"\n    commands:\n      - assertVisible: 'accounts\\.google\\.com'\n      - assertVisible: '.*${EMAIL_PATTERN}.*'\n      - assertVisible: ".*Envitefy.*"\n      - takeScreenshot: chrome-oauth-consent-ready\n`;
+    source += '- runFlow:\n    when:\n      visible: "Welcome,.*"\n    commands:\n      - assertVisible: "Welcome,.*"\n      - takeScreenshot: chrome-dashboard-observed\n';
+  }
+  if (step === "chrome-password-focused") {
+    // QA03's saved November 17 hierarchy exposes the password field only as a
+    // focused EditText without text or a resource ID. The point is calibrated
+    // from that preserved 2208x1840 hierarchy: [1170,601][2121,742].
+    const chromeGuards = `${guards}${stopAt(RECOVERY_GATE, "account-recovery-owner-action-required")}${stopAt(CREDENTIAL_ERROR, "google-credentials-rejected")}${stopAt("Set up screen lock to use passkeys", "owner-verification-required")}${stopAt(GOOGLE_TERMS_GATE, "google-terms-owner-action-required")}`;
+    source += `${chromeGuards}- assertNotVisible: "Sign in to Chrome"\n- assertVisible: 'accounts\\.google\\.com'\n- assertVisible: '.*${EMAIL_PATTERN}.*'\n`;
+    source += '- tapOn:\n    point: "75%,36%"\n    retryTapIfNoChange: false\n- pressKey: Backspace\n- inputText: ${MAESTRO_PASSWORD}\n- hideKeyboard\n';
+    source += `${chromeGuards}- assertVisible: 'accounts\\.google\\.com'\n- assertVisible: '.*${EMAIL_PATTERN}.*'\n`;
+    source += '- tapOn:\n    text: "Next|Далее"\n    retryTapIfNoChange: false\n- takeScreenshot: google-oauth-password-result\n';
     const outcome = [OWNER_GATE, CAPTCHA_GATE, RECOVERY_GATE, CREDENTIAL_ERROR, BROWSER_ASSOCIATION_GATE,
       GOOGLE_TERMS_GATE, "Set up screen lock to use passkeys", "^Continue$|^Продолжить$|Welcome,.*"].join("|");
     source += `- extendedWaitUntil:\n    visible: ${JSON.stringify(outcome)}\n    timeout: 90000\n- takeScreenshot: chrome-credential-outcome\n${chromeGuards}`;
